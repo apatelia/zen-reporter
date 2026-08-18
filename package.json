@@ -1,0 +1,43 @@
+{
+  "name": "zen-reporter-vite",
+  "private": false,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Beautiful test execution reports for Playwright",
+  "bin": {
+    "zen-reporter": "scripts/cli.ts"
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "test": "npx playwright test",
+    "report": "tsx scripts/generate_report.ts",
+    "show": "tsx scripts/cli.ts show"
+  },
+  "dependencies": {
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8",
+    "recharts": "^3.10.1"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.62.1",
+    "@tailwindcss/postcss": "^4.3.3",
+    "@types/node": "^26.2.0",
+    "@types/react": "^19.2.18",
+    "@types/react-dom": "^19.2.4",
+    "@vitejs/plugin-react": "^6.0.5",
+    "autoprefixer": "^10.5.4",
+    "postcss": "^8.5.26",
+    "tailwindcss": "^4.3.3",
+    "tsx": "^4.23.12",
+    "typescript": "^6.0.3",
+    "vite": "^8.2.1",
+    "vite-plugin-singlefile": "^2.3.3"
+  },
+  "author": {
+    "name": "Arpan Patelia",
+    "email": "arpan.is@gmail.com"
+  },
+  "license": "MIT"
+}

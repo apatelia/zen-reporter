@@ -1,0 +1,171 @@
+@import "tailwindcss";
+
+@theme {
+  /* ── Brand Primary ───────────────────────────── */
+  --color-ink: #006241;
+  --color-ink-strong: #1e3932;
+
+  /* ── Surface Palette (Starbucks Warm Canvas) ──── */
+  --color-canvas: #f2f0eb;
+  --color-surface-50: #e8e5df;
+  --color-surface-100: #dfdcd6;
+  --color-surface-200: #d5d2cb;
+  --color-surface-700: #2b5148;
+  --color-surface-800: #1e3932;
+  --color-surface-900: #142622;
+  --color-surface-950: #0d1a17;
+
+  /* ── Text Colors (WCAG 2.2 AAA ≥ 7.0:1) ───────── */
+  --color-text-ink: rgba(0, 0, 0, 0.87);
+  --color-text-ink-strong: #000000;
+  --color-text-body: rgba(0, 0, 0, 0.87);
+  --color-text-body-mid: rgba(0, 0, 0, 0.72);
+  --color-text-muted: rgba(0, 0, 0, 0.68);
+  --color-text-muted-soft: rgba(0, 0, 0, 0.65);
+  --color-text-on-primary: #ffffff;
+
+  /* ── Border / Hairline ───────────────────────── */
+  --color-border-default: #d6dbde;
+  --color-border-subtle: #edebe9;
+
+  /* ── Semantic: Success (Starbucks Green) ─────── */
+  --color-success: #00754a;
+  --color-success-50: #d4e9e2;
+  --color-success-100: #c2e3d8;
+  --color-success-200: #94cfbd;
+  --color-success-500: #00754a;
+  --color-success-600: #006241;
+  --color-success-700: #1e3932;
+
+  /* ── Semantic: Danger (AAA ≥ 7.0:1 on Light) ──── */
+  --color-danger: #c82014;
+  --color-danger-50: #fdf2f2;
+  --color-danger-100: #fbe8e8;
+  --color-danger-500: #c82014;
+  --color-danger-600: #a81107;
+  --color-danger-700: #8c0c05;
+
+  /* ── Semantic: Warning (AAA ≥ 7.0:1 on Light) ─── */
+  --color-warning: #cba258;
+  --color-warning-50: #faf6ee;
+  --color-warning-100: #dfc49d;
+  --color-warning-500: #cba258;
+  --color-warning-600: #6d4c0f;
+  --color-warning-700: #593c09;
+
+  /* ── Semantic: Info ──────────────────────────── */
+  --color-info: #00754a;
+  --color-info-50: #f0f7f5;
+  --color-info-100: #d4e9e2;
+  --color-info-500: #00754a;
+  --color-info-600: #006241;
+  --color-info-700: #1e3932;
+
+  /* ── Accent Palette ──────────────────────────── */
+  --color-accent-starbucks: #006241;
+  --color-accent-green: #00754a;
+  --color-accent-house: #1e3932;
+  --color-accent-gold: #cba258;
+  --color-accent-purple: #7a3dff;
+  --color-accent-pink: #ed52cb;
+  --color-accent-blue: #00754a;
+  --color-accent-blue-deep: #006241;
+  --color-accent-blue-info: #00754a;
+  --color-accent-orange: #ff6b00;
+  --color-accent-yellow: #cba258;
+  --color-accent-red: #c82014;
+}
+
+/* ── Dark mode overrides (House Green Atmosphere) ─ */
+@variant dark (&:where(.dark, .dark *));
+
+.dark {
+  --color-ink: #ffffff;
+  --color-ink-strong: #ffffff;
+
+  --color-canvas: #142622;
+  --color-surface-50: #1e3932;
+  --color-surface-100: #25463e;
+  --color-surface-200: #2b5148;
+  --color-surface-700: #d4e9e2;
+  --color-surface-800: #edebe9;
+  --color-surface-900: #f2f0eb;
+  --color-surface-950: #0d1a17;
+
+  --color-text-ink: #ffffff;
+  --color-text-ink-strong: #ffffff;
+  --color-text-body: rgba(255, 255, 255, 0.92);
+  --color-text-body-mid: rgba(255, 255, 255, 0.84);
+  --color-text-muted: rgba(255, 255, 255, 0.8);
+  --color-text-muted-soft: rgba(255, 255, 255, 0.76);
+  --color-text-on-primary: #ffffff;
+
+  --color-border-default: #2b5148;
+  --color-border-subtle: #213e37;
+
+  /* Semantic dark adjustments (AAA ≥ 7.0:1 on House Green) */
+  --color-success-50: #112922;
+  --color-success-100: #183a30;
+  --color-success-500: #4ade80;
+  --color-success-600: #22c55e;
+  --color-success-700: #16a34a;
+
+  --color-danger-50: #361210;
+  --color-danger-100: #4a1917;
+  --color-danger-500: #fca5a5;
+  --color-danger-600: #ef4444;
+  --color-danger-700: #f87171;
+
+  --color-warning-50: #332714;
+  --color-warning-100: #47371c;
+  --color-warning-500: #fcd34d;
+  --color-warning-600: #fbbf24;
+  --color-warning-700: #f59e0b;
+
+  --color-info-50: #112922;
+  --color-info-100: #183a30;
+  --color-info-500: #38bdf8;
+  --color-info-600: #0284c7;
+  --color-info-700: #0369a1;
+}
+
+body {
+  @apply bg-canvas text-text-ink font-sans antialiased;
+  margin: 0;
+  padding: 0;
+}
+
+#root {
+  min-height: 100vh;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background-color: rgba(0, 0, 0, 0.28);
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(0, 0, 0, 0.45);
+}
+
+.dark ::-webkit-scrollbar-thumb,
+html.dark ::-webkit-scrollbar-thumb {
+  background-color: rgba(255, 255, 255, 0.28);
+}
+.dark ::-webkit-scrollbar-thumb:hover,
+html.dark ::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(255, 255, 255, 0.45);
+}
+
+/* Code / pre styling for error stacks */
+pre,
+code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}

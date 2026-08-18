@@ -1,0 +1,41 @@
+# Playwright browser / state data
+.playwright-cli/
+.playwright/
+
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+
+# Vite cache
+.vite/
+
+# Playwright test results
+test-results/
+
+# Report
+zen-report/
+
+# Intermediate data for single-file Vite build (optional to commit)
+src/__report_data__.json
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# IDE / editors
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# OS generated
+Thumbs.db
+.DS_Store
+
+# Log files
+logs/*.log

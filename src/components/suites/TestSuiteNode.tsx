@@ -1,0 +1,255 @@
+import type { TestSuite, TestCase } from "@/lib/types";
+import TestCaseCard from "./TestCaseCard";
+
+interface Props {
+  suite: TestSuite;
+  filterStatuses: string[];
+  filterProjects: string[];
+  filterTags: string[];
+  filterFiles: string[];
+}
+
+function filterCases(
+  cases: TestCase[],
+  filterStatuses: string[],
+  filterProjects: string[],
+  filterTags: string[],
+  filterFiles: string[],
+): TestCase[] {
+  return cases.filter((c) => {
+    const statusMatch =
+      filterStatuses.length === 0 || filterStatuses.includes(c.status);
+    const projectMatch =
+      filterProjects.length === 0 || filterProjects.includes(c.project);
+    const tagMatch =
+      filterTags.length === 0 ||
+      (c.tags || []).some((tag) => filterTags.includes(tag));
+    const fileMatch =
+      filterFiles.length === 0 || filterFiles.includes(c.fileName);
+
+    return statusMatch && projectMatch && tagMatch && fileMatch;
+  });
+}
+
+function filterSuite(
+  suite: TestSuite,
+  filterStatuses: string[],
+  filterProjects: string[],
+  filterTags: string[],
+  filterFiles: string[],
+): TestSuite {
+  const filteredCases = filterCases(
+    suite.cases,
+    filterStatuses,
+    filterProjects,
+    filterTags,
+    filterFiles,
+  );
+  const filteredSubSuites = (suite.subSuites || [])
+    .map((sub) =>
+      filterSuite(sub, filterStatuses, filterProjects, filterTags, filterFiles),
+    )
+    .filter((sub) =>
+      hasTestCases(
+        sub,
+        filterStatuses,
+        filterProjects,
+        filterTags,
+        filterFiles,
+      ),
+    );
+
+  return {
+    title: suite.title,
+    cases: filteredCases,
+    subSuites: filteredSubSuites.length > 0 ? filteredSubSuites : undefined,
+  };
+}
+
+function hasTestCases(
+  suite: TestSuite,
+  filterStatuses: string[],
+  filterProjects: string[],
+  filterTags: string[],
+  filterFiles: string[],
+): boolean {
+  const hasMatchingCases = suite.cases.some((c) => {
+    const statusMatch =
+      filterStatuses.length === 0 || filterStatuses.includes(c.status);
+    const projectMatch =
+      filterProjects.length === 0 || filterProjects.includes(c.project);
+    const tagMatch =
+      filterTags.length === 0 ||
+      (c.tags || []).some((tag) => filterTags.includes(tag));
+    const fileMatch =
+      filterFiles.length === 0 || filterFiles.includes(c.fileName);
+
+    return statusMatch && projectMatch && tagMatch && fileMatch;
+  });
+
+  if (hasMatchingCases) return true;
+
+  for (const sub of suite.subSuites || []) {
+    if (
+      hasTestCases(sub, filterStatuses, filterProjects, filterTags, filterFiles)
+    )
+      return true;
+  }
+
+  return false;
+}
+
+function countCases(
+  suite: TestSuite,
+  filterStatuses: string[],
+  filterProjects: string[],
+  filterTags: string[],
+  filterFiles: string[],
+): {
+  total: number;
+  passed: number;
+  failed: number;
+  skipped: number;
+  timedOut: number;
+} {
+  let total = 0;
+  let passed = 0;
+  let failed = 0;
+  let skipped = 0;
+  let timedOut = 0;
+
+  const cases = filterCases(
+    suite.cases,
+    filterStatuses,
+    filterProjects,
+    filterTags,
+    filterFiles,
+  );
+  total = cases.length;
+  passed = cases.filter((c) => c.status === "passed").length;
+  failed = cases.filter((c) => c.status === "failed").length;
+  skipped = cases.filter((c) => c.status === "skipped").length;
+  timedOut = cases.filter((c) => c.status === "timedOut").length;
+
+  for (const sub of suite.subSuites || []) {
+    const subCount = countCases(
+      sub,
+      filterStatuses,
+      filterProjects,
+      filterTags,
+      filterFiles,
+    );
+    total += subCount.total;
+    passed += subCount.passed;
+    failed += subCount.failed;
+    skipped += subCount.skipped;
+    timedOut += subCount.timedOut;
+  }
+
+  return { total, passed, failed, skipped, timedOut };
+}
+
+export default function TestSuiteNode({
+  suite,
+  filterStatuses,
+  filterProjects,
+  filterTags,
+  filterFiles,
+}: Props) {
+  const filteredSuite =
+    filterStatuses.length > 0 ||
+    filterProjects.length > 0 ||
+    filterTags.length > 0 ||
+    filterFiles.length > 0
+      ? filterSuite(
+          suite,
+          filterStatuses,
+          filterProjects,
+          filterTags,
+          filterFiles,
+        )
+      : suite;
+
+  const { total, passed, failed, skipped, timedOut } = countCases(
+    filteredSuite,
+    filterStatuses,
+    filterProjects,
+    filterTags,
+    filterFiles,
+  );
+  const passRate = total > 0 ? Math.round((passed / total) * 100) : 100;
+
+  return (
+    <details className="group rounded-md overflow-hidden bg-surface-100 shadow-sm border border-[#9bb0a7] dark:border-[#3b6e62] transition-all">
+      <summary className="rounded-md group-open:rounded-b-none cursor-pointer select-none p-3 flex flex-col gap-1.5 sm:flex-row sm:items-center sm:justify-between sm:gap-0 hover:bg-surface-50 dark:hover:bg-surface-200/30 transition-colors">
+        <div className="flex items-center gap-2">
+          <svg
+            className="h-3.5 w-3.5 text-text-body-mid transition-transform duration-200 group-open:rotate-90"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            strokeWidth={2}
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M9 5l7 7-7 7"
+            />
+          </svg>
+          <span className="text-sm font-semibold text-text-ink dark:text-text-on-primary">
+            {suite.title}
+          </span>
+        </div>
+        <div className="flex flex-col gap-1.5 items-end sm:flex-row sm:items-center sm:gap-3">
+          <span className="text-xs text-text-body-mid dark:text-text-muted">
+            {total} tests · {passRate}%
+          </span>
+          <div className="flex items-center gap-1.5">
+            {skipped > 0 && (
+              <span className="inline-flex items-center rounded-full bg-slate-200/80 text-slate-800 ring-1 ring-slate-300 dark:bg-slate-700/60 dark:text-slate-200 dark:ring-slate-600 px-2.5 py-1 text-xs font-semibold">
+                {skipped}
+              </span>
+            )}
+            {timedOut > 0 && (
+              <span className="inline-flex items-center rounded-full bg-warning-50 dark:bg-warning-500/20 ring-1 ring-warning-500/20 px-2.5 py-1 text-xs font-semibold text-warning-600 dark:text-warning-500">
+                {timedOut} timed out
+              </span>
+            )}
+            {failed > 0 && (
+              <span className="inline-flex items-center rounded-full bg-danger-50 dark:bg-danger-500/20 ring-1 ring-danger-500/20 px-3 py-1 text-xs font-semibold text-danger-600 dark:text-danger-500">
+                {failed} failed
+              </span>
+            )}
+          </div>
+        </div>
+      </summary>
+
+      <div className="divide-y divide-border-default dark:divide-border-default px-3 pb-3">
+        <div className="py-2 space-y-2">
+          {filteredSuite.cases.map((testCase, idx) => (
+            <TestCaseCard key={idx} testCase={testCase} />
+          ))}
+        </div>
+        {filteredSuite.subSuites && filteredSuite.subSuites.length > 0 && (
+          <div className="pt-2">
+            <p className="mb-2 text-[10px] font-bold uppercase tracking-wider text-text-body-mid dark:text-text-muted">
+              Sub-Suites
+            </p>
+            <div className="ml-3 border-l-2 border-[#9bb0a7] dark:border-[#3b6e62] pl-3 space-y-2">
+              {filteredSuite.subSuites.map((sub, idx) => (
+                <TestSuiteNode
+                  key={idx}
+                  suite={sub}
+                  filterStatuses={filterStatuses}
+                  filterProjects={filterProjects}
+                  filterTags={filterTags}
+                  filterFiles={filterFiles}
+                />
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    </details>
+  );
+}
