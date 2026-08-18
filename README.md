@@ -52,7 +52,7 @@ export default defineConfig({
     [
       'zen-reporter',
       {
-        outputDir: 'zen-report',  // Optional: Output directory where report files will be generated (default: "zen-report")
+        outputDir: 'zen-report', // Optional: Output directory where report files will be generated (default: "zen-report")
       },
     ],
   ],
@@ -61,8 +61,8 @@ export default defineConfig({
 
 ### Options Reference
 
-| Option | Type | Default | Description |
-| :--- | :--- | :--- | :--- |
+| Option      | Type     | Default        | Description                                   |
+| :---------- | :------- | :------------- | :-------------------------------------------- |
 | `outputDir` | `string` | `"zen-report"` | Directory where final report files are saved. |
 
 ---

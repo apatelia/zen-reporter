@@ -1,6 +1,6 @@
-import type { TestSuite, TestCase } from "@/lib/types";
-import TestCaseCard from "./TestCaseCard";
-import TestSuiteNode from "./TestSuiteNode";
+import type { TestSuite, TestCase } from '@/lib/types';
+import TestCaseCard from './TestCaseCard';
+import TestSuiteNode from './TestSuiteNode';
 
 interface Props {
   suite: TestSuite;
@@ -10,25 +10,21 @@ interface Props {
   filterFiles: string[];
 }
 
-type TestCaseStatus = "passed" | "failed" | "skipped" | "timedOut";
+type TestCaseStatus = 'passed' | 'failed' | 'skipped' | 'timedOut';
 
 function filterCases(
   cases: TestCase[],
   filterStatuses: string[],
   filterProjects: string[],
   filterTags: string[],
-  filterFiles: string[],
+  filterFiles: string[]
 ): TestCase[] {
   return cases.filter((c) => {
-    const statusMatch =
-      filterStatuses.length === 0 || filterStatuses.includes(c.status);
-    const projectMatch =
-      filterProjects.length === 0 || filterProjects.includes(c.project);
+    const statusMatch = filterStatuses.length === 0 || filterStatuses.includes(c.status);
+    const projectMatch = filterProjects.length === 0 || filterProjects.includes(c.project);
     const tagMatch =
-      filterTags.length === 0 ||
-      (c.tags || []).some((tag) => filterTags.includes(tag));
-    const fileMatch =
-      filterFiles.length === 0 || filterFiles.includes(c.fileName);
+      filterTags.length === 0 || (c.tags || []).some((tag) => filterTags.includes(tag));
+    const fileMatch = filterFiles.length === 0 || filterFiles.includes(c.fileName);
 
     return statusMatch && projectMatch && tagMatch && fileMatch;
   });
@@ -39,28 +35,18 @@ function filterSuite(
   filterStatuses: string[],
   filterProjects: string[],
   filterTags: string[],
-  filterFiles: string[],
+  filterFiles: string[]
 ): TestSuite {
   const filteredCases = filterCases(
     suite.cases,
     filterStatuses,
     filterProjects,
     filterTags,
-    filterFiles,
+    filterFiles
   );
   const filteredSubSuites = (suite.subSuites || [])
-    .map((sub) =>
-      filterSuite(sub, filterStatuses, filterProjects, filterTags, filterFiles),
-    )
-    .filter((sub) =>
-      hasTestCases(
-        sub,
-        filterStatuses,
-        filterProjects,
-        filterTags,
-        filterFiles,
-      ),
-    );
+    .map((sub) => filterSuite(sub, filterStatuses, filterProjects, filterTags, filterFiles))
+    .filter((sub) => hasTestCases(sub, filterStatuses, filterProjects, filterTags, filterFiles));
 
   return {
     title: suite.title,
@@ -74,18 +60,14 @@ function hasTestCases(
   filterStatuses: string[],
   filterProjects: string[],
   filterTags: string[],
-  filterFiles: string[],
+  filterFiles: string[]
 ): boolean {
   const hasMatchingCases = suite.cases.some((c) => {
-    const statusMatch =
-      filterStatuses.length === 0 || filterStatuses.includes(c.status);
-    const projectMatch =
-      filterProjects.length === 0 || filterProjects.includes(c.project);
+    const statusMatch = filterStatuses.length === 0 || filterStatuses.includes(c.status);
+    const projectMatch = filterProjects.length === 0 || filterProjects.includes(c.project);
     const tagMatch =
-      filterTags.length === 0 ||
-      (c.tags || []).some((tag) => filterTags.includes(tag));
-    const fileMatch =
-      filterFiles.length === 0 || filterFiles.includes(c.fileName);
+      filterTags.length === 0 || (c.tags || []).some((tag) => filterTags.includes(tag));
+    const fileMatch = filterFiles.length === 0 || filterFiles.includes(c.fileName);
 
     return statusMatch && projectMatch && tagMatch && fileMatch;
   });
@@ -93,10 +75,7 @@ function hasTestCases(
   if (hasMatchingCases) return true;
 
   for (const sub of suite.subSuites || []) {
-    if (
-      hasTestCases(sub, filterStatuses, filterProjects, filterTags, filterFiles)
-    )
-      return true;
+    if (hasTestCases(sub, filterStatuses, filterProjects, filterTags, filterFiles)) return true;
   }
 
   return false;
@@ -107,7 +86,7 @@ function countCases(
   filterStatuses: string[],
   filterProjects: string[],
   filterTags: string[],
-  filterFiles: string[],
+  filterFiles: string[]
 ): {
   total: number;
   passed: number;
@@ -121,27 +100,15 @@ function countCases(
   let skipped = 0;
   let timedOut = 0;
 
-  const cases = filterCases(
-    suite.cases,
-    filterStatuses,
-    filterProjects,
-    filterTags,
-    filterFiles,
-  );
+  const cases = filterCases(suite.cases, filterStatuses, filterProjects, filterTags, filterFiles);
   total = cases.length;
-  passed = cases.filter((c) => c.status === "passed").length;
-  failed = cases.filter((c) => c.status === "failed").length;
-  skipped = cases.filter((c) => c.status === "skipped").length;
-  timedOut = cases.filter((c) => c.status === "timedOut").length;
+  passed = cases.filter((c) => c.status === 'passed').length;
+  failed = cases.filter((c) => c.status === 'failed').length;
+  skipped = cases.filter((c) => c.status === 'skipped').length;
+  timedOut = cases.filter((c) => c.status === 'timedOut').length;
 
   for (const sub of suite.subSuites || []) {
-    const subCount = countCases(
-      sub,
-      filterStatuses,
-      filterProjects,
-      filterTags,
-      filterFiles,
-    );
+    const subCount = countCases(sub, filterStatuses, filterProjects, filterTags, filterFiles);
     total += subCount.total;
     passed += subCount.passed;
     failed += subCount.failed;
@@ -164,13 +131,7 @@ export default function SuiteView({
     filterProjects.length > 0 ||
     filterTags.length > 0 ||
     filterFiles.length > 0
-      ? filterSuite(
-          suite,
-          filterStatuses,
-          filterProjects,
-          filterTags,
-          filterFiles,
-        )
+      ? filterSuite(suite, filterStatuses, filterProjects, filterTags, filterFiles)
       : suite;
 
   const { total, passed, failed, skipped, timedOut } = countCases(
@@ -178,7 +139,7 @@ export default function SuiteView({
     filterStatuses,
     filterProjects,
     filterTags,
-    filterFiles,
+    filterFiles
   );
   const passRate = total > 0 ? Math.round((passed / total) * 100) : 100;
 
@@ -193,11 +154,7 @@ export default function SuiteView({
             stroke="currentColor"
             strokeWidth={2}
           >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="M9 5l7 7-7 7"
-            />
+            <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
           </svg>
           <div>
             <h3 className="text-sm font-bold text-text-ink dark:text-text-on-primary">

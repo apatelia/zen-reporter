@@ -1,5 +1,5 @@
-import type { FailedTest } from "@/lib/utils";
-import { getTagColor } from "@/lib/tagColors";
+import type { FailedTest } from '@/lib/utils';
+import { getTagColor } from '@/lib/tagColors';
 
 interface Props {
   failedTests: FailedTest[];
@@ -50,11 +50,7 @@ export default function FailureList({ failedTests }: Props) {
                 stroke="currentColor"
                 strokeWidth={2}
               >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M6 18L18 6M6 6l12 12"
-                />
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
               </svg>
               <div className="flex flex-col gap-1 min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
@@ -82,10 +78,12 @@ export default function FailureList({ failedTests }: Props) {
             <div className="flex items-center gap-3 shrink-0">
               {test.duration > 0 && (
                 <span className="text-xs font-medium text-text-body-mid dark:text-text-muted tabular-nums">
-                  {test.duration >= 1000 ? `${(test.duration / 1000).toFixed(1)}s` : `${test.duration}ms`}
+                  {test.duration >= 1000
+                    ? `${(test.duration / 1000).toFixed(1)}s`
+                    : `${test.duration}ms`}
                 </span>
               )}
-              {test.type === "Timed Out" ? (
+              {test.type === 'Timed Out' ? (
                 <span className="inline-flex items-center rounded-full bg-warning-50 dark:bg-warning-500/10 border border-warning-200 dark:border-warning-900/50 px-2.5 py-0.5 text-xs font-semibold text-warning-600 dark:text-warning-500">
                   {test.type}
                 </span>
@@ -100,7 +98,13 @@ export default function FailureList({ failedTests }: Props) {
             <div className="border-t border-danger-200 dark:border-danger-900/50 bg-canvas dark:bg-[#142622] px-4 py-3">
               <details className="group">
                 <summary className="flex cursor-pointer items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-danger-600 dark:text-danger-500 hover:text-danger-700 dark:hover:text-danger-400 select-none list-none [&::-webkit-details-marker]:hidden">
-                  <svg className="h-3 w-3 transition-transform duration-200 group-open:rotate-90" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                  <svg
+                    className="h-3 w-3 transition-transform duration-200 group-open:rotate-90"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    strokeWidth={2.5}
+                  >
                     <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
                   </svg>
                   <span>Error Details</span>

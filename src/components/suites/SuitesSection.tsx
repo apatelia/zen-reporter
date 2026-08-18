@@ -1,9 +1,9 @@
-import type { TestSuite } from "@/lib/types";
-import { useMemo, useState } from "react";
-import MultiSelectFilter from "./MultiSelectFilter";
-import SuiteView from "./SuiteView";
+import type { TestSuite } from '@/lib/types';
+import { useMemo, useState } from 'react';
+import MultiSelectFilter from './MultiSelectFilter';
+import SuiteView from './SuiteView';
 
-type TestCaseStatus = "passed" | "failed" | "skipped" | "timedOut";
+type TestCaseStatus = 'passed' | 'failed' | 'skipped' | 'timedOut';
 
 interface Props {
   suites: TestSuite[];
@@ -25,12 +25,7 @@ function getAllStatuses(suites: TestSuite[]): TestCaseStatus[] {
     collect(suite);
   }
 
-  const statusOrder: TestCaseStatus[] = [
-    "passed",
-    "failed",
-    "skipped",
-    "timedOut",
-  ];
+  const statusOrder: TestCaseStatus[] = ['passed', 'failed', 'skipped', 'timedOut'];
   return statusOrder.filter((s) => statusSet.has(s));
 }
 
@@ -115,7 +110,7 @@ function hasTestCases(
   filterStatuses: TestCaseStatus[],
   filterProjects: string[],
   filterTags: string[],
-  filterFiles: string[],
+  filterFiles: string[]
 ): boolean {
   if (
     filterStatuses.length === 0 &&
@@ -126,15 +121,11 @@ function hasTestCases(
     return true;
 
   const hasMatchingCases = suite.cases.some((c) => {
-    const statusMatch =
-      filterStatuses.length === 0 || filterStatuses.includes(c.status);
-    const projectMatch =
-      filterProjects.length === 0 || filterProjects.includes(c.project);
+    const statusMatch = filterStatuses.length === 0 || filterStatuses.includes(c.status);
+    const projectMatch = filterProjects.length === 0 || filterProjects.includes(c.project);
     const tagMatch =
-      filterTags.length === 0 ||
-      (c.tags || []).some((tag) => filterTags.includes(tag));
-    const fileMatch =
-      filterFiles.length === 0 || filterFiles.includes(c.fileName);
+      filterTags.length === 0 || (c.tags || []).some((tag) => filterTags.includes(tag));
+    const fileMatch = filterFiles.length === 0 || filterFiles.includes(c.fileName);
 
     return statusMatch && projectMatch && tagMatch && fileMatch;
   });
@@ -142,10 +133,7 @@ function hasTestCases(
   if (hasMatchingCases) return true;
 
   for (const sub of suite.subSuites || []) {
-    if (
-      hasTestCases(sub, filterStatuses, filterProjects, filterTags, filterFiles)
-    )
-      return true;
+    if (hasTestCases(sub, filterStatuses, filterProjects, filterTags, filterFiles)) return true;
   }
 
   return false;
@@ -156,7 +144,7 @@ function filterSuites(
   filterStatuses: TestCaseStatus[],
   filterProjects: string[],
   filterTags: string[],
-  filterFiles: string[],
+  filterFiles: string[]
 ): TestSuite[] {
   if (
     filterStatuses.length === 0 &&
@@ -166,13 +154,7 @@ function filterSuites(
   )
     return suites;
   return suites.filter((suite) =>
-    hasTestCases(
-      suite,
-      filterStatuses,
-      filterProjects,
-      filterTags,
-      filterFiles,
-    ),
+    hasTestCases(suite, filterStatuses, filterProjects, filterTags, filterFiles)
   );
 }
 
@@ -251,7 +233,7 @@ export default function SuitesSection({ suites }: Props) {
             options={availableStatuses}
             selectedOptions={filterStatuses}
             onApply={handleStatusApply}
-            getDisplayValue={() => "Status"}
+            getDisplayValue={() => 'Status'}
             icon={
               <svg
                 className="h-3.5 w-3.5"
@@ -273,7 +255,7 @@ export default function SuitesSection({ suites }: Props) {
             options={availableProjects}
             selectedOptions={filterProjects}
             onApply={handleProjectApply}
-            getDisplayValue={() => "Project"}
+            getDisplayValue={() => 'Project'}
             icon={
               <svg
                 className="h-3.5 w-3.5"
@@ -296,7 +278,7 @@ export default function SuitesSection({ suites }: Props) {
             selectedOptions={selectedTags}
             onApply={handleTagsApply}
             showSearch={true}
-            getDisplayValue={() => "Tags"}
+            getDisplayValue={() => 'Tags'}
             icon={
               <svg
                 className="h-3.5 w-3.5"
@@ -319,7 +301,7 @@ export default function SuitesSection({ suites }: Props) {
             selectedOptions={selectedFiles}
             onApply={handleFilesApply}
             showSearch={true}
-            getDisplayValue={() => "Files"}
+            getDisplayValue={() => 'Files'}
             icon={
               <svg
                 className="h-3.5 w-3.5"
@@ -363,22 +345,18 @@ export default function SuitesSection({ suites }: Props) {
 
       {/* Suites List */}
       <div className="space-y-4">
-        {filterSuites(
-          suites,
-          filterStatuses,
-          filterProjects,
-          selectedTags,
-          selectedFiles,
-        ).map((suite, idx) => (
-          <SuiteView
-            key={idx}
-            suite={suite}
-            filterStatuses={filterStatuses}
-            filterProjects={filterProjects}
-            filterTags={selectedTags}
-            filterFiles={selectedFiles}
-          />
-        ))}
+        {filterSuites(suites, filterStatuses, filterProjects, selectedTags, selectedFiles).map(
+          (suite, idx) => (
+            <SuiteView
+              key={idx}
+              suite={suite}
+              filterStatuses={filterStatuses}
+              filterProjects={filterProjects}
+              filterTags={selectedTags}
+              filterFiles={selectedFiles}
+            />
+          )
+        )}
       </div>
     </>
   );

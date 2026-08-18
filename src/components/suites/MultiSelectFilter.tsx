@@ -1,4 +1,4 @@
-import { useMemo, useState, useRef, useEffect, ReactNode } from "react";
+import { useMemo, useState, useRef, useEffect, ReactNode } from 'react';
 
 interface MultiSelectFilterProps<T> {
   label: string;
@@ -7,11 +7,7 @@ interface MultiSelectFilterProps<T> {
   onApply: (options: T[]) => void;
   icon?: ReactNode;
   getDisplayValue: (options: T[]) => string;
-  renderOption?: (
-    option: T,
-    isSelected: boolean,
-    handleToggle: (option: T) => void,
-  ) => ReactNode;
+  renderOption?: (option: T, isSelected: boolean, handleToggle: (option: T) => void) => ReactNode;
   showSearch?: boolean;
 }
 
@@ -27,46 +23,37 @@ export default function MultiSelectFilter<T extends string>({
 }: MultiSelectFilterProps<T>) {
   const [isOpen, setIsOpen] = useState(false);
   const [tempSelection, setTempSelection] = useState<T[]>([...selectedOptions]);
-  const [searchTerm, setSearchTerm] = useState<string>("");
+  const [searchTerm, setSearchTerm] = useState<string>('');
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setTempSelection([...selectedOptions]);
   }, [selectedOptions]);
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
-      if (
-        dropdownRef.current &&
-        !dropdownRef.current.contains(event.target as Node)
-      ) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setIsOpen(false);
       }
     }
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
   const filteredOptions = useMemo(
-    () =>
-      options.filter((option) =>
-        option.toLowerCase().includes(searchTerm.toLowerCase()),
-      ),
-    [options, searchTerm],
+    () => options.filter((option) => option.toLowerCase().includes(searchTerm.toLowerCase())),
+    [options, searchTerm]
   );
 
   const handleToggle = (option: T) => {
     setTempSelection((prev) =>
-      prev.includes(option)
-        ? prev.filter((s) => s !== option)
-        : [...prev, option],
+      prev.includes(option) ? prev.filter((s) => s !== option) : [...prev, option]
     );
   };
 
   const handleSelectAll = () => {
-    setTempSelection([
-      ...(filteredOptions.length > 0 ? filteredOptions : options),
-    ]);
+    setTempSelection([...(filteredOptions.length > 0 ? filteredOptions : options)]);
   };
 
   const handleClear = () => {
@@ -79,7 +66,7 @@ export default function MultiSelectFilter<T extends string>({
   };
 
   const handleClearSearch = () => {
-    setSearchTerm("");
+    setSearchTerm('');
   };
 
   const selectionLabel = getDisplayValue(selectedOptions);
@@ -96,9 +83,7 @@ export default function MultiSelectFilter<T extends string>({
         <button
           type="button"
           onClick={() => {
-            setTempSelection(
-              selectedOptions.length > 0 ? [...selectedOptions] : [...options],
-            );
+            setTempSelection(selectedOptions.length > 0 ? [...selectedOptions] : [...options]);
             setIsOpen(!isOpen);
           }}
           className="inline-flex items-center gap-2 rounded-md border border-border-default bg-surface-100 px-3 py-1.5 text-xs font-medium text-text-body-mid transition-all duration-200 hover:border-border-default hover:text-text-ink dark:border-border-default dark:bg-surface-100 dark:text-text-body-mid dark:hover:border-border-default dark:hover:text-text-on-primary"
@@ -111,17 +96,13 @@ export default function MultiSelectFilter<T extends string>({
             </span>
           )}
           <svg
-            className={`h-3 w-3 transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`}
+            className={`h-3 w-3 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
             fill="none"
             viewBox="0 0 24 24"
             stroke="currentColor"
             strokeWidth={2}
           >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="M19 9l-7 7-7-7"
-            />
+            <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
           </svg>
         </button>
 
@@ -184,15 +165,15 @@ export default function MultiSelectFilter<T extends string>({
                     onClick={() => handleToggle(option)}
                     className={`flex w-full items-center gap-2.5 rounded-md px-2.5 py-2 text-left text-sm font-medium transition-colors ${
                       isSelected
-                        ? "bg-accent-blue/15 ring-1 ring-accent-blue/40 text-accent-blue dark:bg-accent-blue/25 dark:text-success-500 dark:ring-accent-blue/50"
-                        : "text-text-body-mid hover:bg-surface-50 dark:text-text-body-mid dark:hover:bg-surface-100 dark:hover:text-text-on-primary"
+                        ? 'bg-accent-blue/15 ring-1 ring-accent-blue/40 text-accent-blue dark:bg-accent-blue/25 dark:text-success-500 dark:ring-accent-blue/50'
+                        : 'text-text-body-mid hover:bg-surface-50 dark:text-text-body-mid dark:hover:bg-surface-100 dark:hover:text-text-on-primary'
                     }`}
                   >
                     <span
                       className={`flex h-4 w-4 shrink-0 items-center justify-center rounded border transition-all ${
                         isSelected
-                          ? "border-accent-blue bg-accent-blue dark:border-success-500 dark:bg-success-500"
-                          : "border-border-default bg-surface-50 dark:border-border-default dark:bg-surface-50"
+                          ? 'border-accent-blue bg-accent-blue dark:border-success-500 dark:bg-success-500'
+                          : 'border-border-default bg-surface-50 dark:border-border-default dark:bg-surface-50'
                       }`}
                     >
                       {isSelected && (
@@ -203,11 +184,7 @@ export default function MultiSelectFilter<T extends string>({
                           stroke="currentColor"
                           strokeWidth={3}
                         >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            d="M5 13l4 4L19 7"
-                          />
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                         </svg>
                       )}
                     </span>

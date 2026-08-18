@@ -1,10 +1,10 @@
-import { useState, useMemo } from "react";
-import type { TestSuite } from "@/lib/types";
-import { extractFailedTests } from "@/lib/utils";
-import MultiSelectFilter from "../suites/MultiSelectFilter";
-import FailureList from "./FailureList";
+import { useState, useMemo } from 'react';
+import type { TestSuite } from '@/lib/types';
+import { extractFailedTests } from '@/lib/utils';
+import MultiSelectFilter from '../suites/MultiSelectFilter';
+import FailureList from './FailureList';
 
-type FailureType = "Failed" | "Timed Out";
+type FailureType = 'Failed' | 'Timed Out';
 
 interface Props {
   suites: TestSuite[];
@@ -16,8 +16,8 @@ function getAllFailureTypes(suites: TestSuite[]): FailureType[] {
   const types = new Set<FailureType>();
   function collect(suite: TestSuite) {
     for (const c of suite.cases) {
-      if (c.status === "failed" || c.status === "timedOut") {
-        types.add(c.status === "timedOut" ? "Timed Out" : "Failed");
+      if (c.status === 'failed' || c.status === 'timedOut') {
+        types.add(c.status === 'timedOut' ? 'Timed Out' : 'Failed');
       }
     }
     for (const sub of suite.subSuites || []) {
@@ -27,8 +27,8 @@ function getAllFailureTypes(suites: TestSuite[]): FailureType[] {
   for (const suite of suites) {
     collect(suite);
   }
-  return ["Failed", "Timed Out"].filter((t: string): t is FailureType =>
-    types.has(t as FailureType),
+  return ['Failed', 'Timed Out'].filter((t: string): t is FailureType =>
+    types.has(t as FailureType)
   );
 }
 
@@ -36,9 +36,9 @@ function getAllFailureTags(suites: TestSuite[]): string[] {
   const tagSet = new Set<string>();
   function collect(suite: TestSuite) {
     for (const c of suite.cases) {
-      if (c.status === "failed" || c.status === "timedOut") {
+      if (c.status === 'failed' || c.status === 'timedOut') {
         for (const tag of c.tags || []) {
-          tagSet.add(tag.replace("@", ""));
+          tagSet.add(tag.replace('@', ''));
         }
       }
     }
@@ -56,7 +56,7 @@ function getAllFailureFiles(suites: TestSuite[]): string[] {
   const fileSet = new Set<string>();
   function collect(suite: TestSuite) {
     for (const c of suite.cases) {
-      if (c.status === "failed" || c.status === "timedOut") {
+      if (c.status === 'failed' || c.status === 'timedOut') {
         fileSet.add(c.fileName);
       }
     }
@@ -70,11 +70,7 @@ function getAllFailureFiles(suites: TestSuite[]): string[] {
   return Array.from(fileSet).sort();
 }
 
-export default function FailuresSection({
-  suites,
-  failedCount,
-  timedOutCount,
-}: Props) {
+export default function FailuresSection({ suites, failedCount, timedOutCount }: Props) {
   const [filterTypes, setFilterTypes] = useState<FailureType[]>([]);
   const [filterTags, setFilterTags] = useState<string[]>([]);
   const [filterFiles, setFilterFiles] = useState<string[]>([]);
@@ -85,21 +81,14 @@ export default function FailuresSection({
 
   const filteredFailedTests = useMemo(() => {
     const all = extractFailedTests(suites);
-    if (
-      filterTypes.length === 0 &&
-      filterTags.length === 0 &&
-      filterFiles.length === 0
-    ) {
+    if (filterTypes.length === 0 && filterTags.length === 0 && filterFiles.length === 0) {
       return all;
     }
     return all.filter((t) => {
-      const typeMatch =
-        filterTypes.length === 0 || filterTypes.includes(t.type as FailureType);
+      const typeMatch = filterTypes.length === 0 || filterTypes.includes(t.type as FailureType);
       const tagMatch =
-        filterTags.length === 0 ||
-        (t.tags || []).some((tag) => filterTags.includes(tag));
-      const fileMatch =
-        filterFiles.length === 0 || filterFiles.includes(t.fileName);
+        filterTags.length === 0 || (t.tags || []).some((tag) => filterTags.includes(tag));
+      const fileMatch = filterFiles.length === 0 || filterFiles.includes(t.fileName);
       return typeMatch && tagMatch && fileMatch;
     });
   }, [suites, filterTypes, filterTags, filterFiles]);
@@ -145,7 +134,7 @@ export default function FailuresSection({
             options={availableTypes}
             selectedOptions={filterTypes}
             onApply={setFilterTypes}
-            getDisplayValue={() => "Type"}
+            getDisplayValue={() => 'Type'}
             icon={
               <svg
                 className="h-3.5 w-3.5"
@@ -168,7 +157,7 @@ export default function FailuresSection({
             selectedOptions={filterTags}
             onApply={setFilterTags}
             showSearch={true}
-            getDisplayValue={() => "Tags"}
+            getDisplayValue={() => 'Tags'}
             icon={
               <svg
                 className="h-3.5 w-3.5"
@@ -191,7 +180,7 @@ export default function FailuresSection({
             selectedOptions={filterFiles}
             onApply={setFilterFiles}
             showSearch={true}
-            getDisplayValue={() => "Files"}
+            getDisplayValue={() => 'Files'}
             icon={
               <svg
                 className="h-3.5 w-3.5"

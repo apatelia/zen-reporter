@@ -1,10 +1,10 @@
-import { formatDuration, formatDate, computePassRate } from "@/lib/utils";
-import type { ResultSummary, TestSuite } from "@/lib/types";
-import SummaryCard from "../ui/SummaryCard";
-import PassRateRing from "./PassRateRing";
-import QuickStats from "./QuickStats";
-import ProjectBarCharts from "./ProjectBarCharts";
-import FileSummary from "./FileSummary";
+import { formatDuration, formatDate, computePassRate } from '@/lib/utils';
+import type { ResultSummary, TestSuite } from '@/lib/types';
+import SummaryCard from '../ui/SummaryCard';
+import PassRateRing from './PassRateRing';
+import QuickStats from './QuickStats';
+import ProjectBarCharts from './ProjectBarCharts';
+import FileSummary from './FileSummary';
 
 interface Props {
   summary: ResultSummary;
@@ -104,11 +104,7 @@ export default function Overview({ summary, suites }: Props) {
                   stroke="currentColor"
                   strokeWidth={2}
                 >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M5 13l4 4L19 7"
-                  />
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                 </svg>
               }
               color="success"
@@ -125,11 +121,7 @@ export default function Overview({ summary, suites }: Props) {
                   stroke="currentColor"
                   strokeWidth={2}
                 >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M6 18L18 6M6 6l12 12"
-                  />
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
                 </svg>
               }
               color="danger"
@@ -146,11 +138,7 @@ export default function Overview({ summary, suites }: Props) {
                   stroke="currentColor"
                   strokeWidth={2}
                 >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M5 12h14"
-                  />
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 12h14" />
                 </svg>
               }
               color="warning"
@@ -185,11 +173,7 @@ export default function Overview({ summary, suites }: Props) {
       {/* Project Summary + File Summary */}
       <div className="mt-8">
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-          <ProjectBarCharts
-            summary={summary}
-            suites={suites}
-            title="Project Summary"
-          />
+          <ProjectBarCharts summary={summary} suites={suites} title="Project Summary" />
           <FileSummary summary={summary} suites={suites} />
         </div>
       </div>

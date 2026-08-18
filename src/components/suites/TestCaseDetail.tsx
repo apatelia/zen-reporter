@@ -1,4 +1,4 @@
-import type { TestCase } from "@/lib/types";
+import type { TestCase } from '@/lib/types';
 
 interface Props {
   testCase: TestCase;
@@ -6,20 +6,20 @@ interface Props {
 
 const statusConfig = {
   passed: {
-    bg: "bg-success-500 text-white dark:bg-success-500/20 dark:text-success-500",
-    text: "text-success-600 dark:text-success-500",
+    bg: 'bg-success-500 text-white dark:bg-success-500/20 dark:text-success-500',
+    text: 'text-success-600 dark:text-success-500',
   },
   failed: {
-    bg: "bg-danger-500 text-white dark:bg-danger-500/20 dark:text-danger-500",
-    text: "text-danger-600 dark:text-danger-500",
+    bg: 'bg-danger-500 text-white dark:bg-danger-500/20 dark:text-danger-500',
+    text: 'text-danger-600 dark:text-danger-500',
   },
   skipped: {
-    bg: "bg-surface-200 text-text-body-mid dark:bg-surface-200/50 dark:text-text-body-mid",
-    text: "text-text-muted dark:text-text-muted",
+    bg: 'bg-surface-200 text-text-body-mid dark:bg-surface-200/50 dark:text-text-body-mid',
+    text: 'text-text-muted dark:text-text-muted',
   },
   timedOut: {
-    bg: "bg-warning-500 text-white dark:bg-warning-500/20 dark:text-warning-500",
-    text: "text-warning-600 dark:text-warning-500",
+    bg: 'bg-warning-500 text-white dark:bg-warning-500/20 dark:text-warning-500',
+    text: 'text-warning-600 dark:text-warning-500',
   },
 };
 
@@ -44,9 +44,7 @@ export default function TestCaseDetail({ testCase }: Props) {
                   {idx + 1}
                 </span>
                 <div className="min-w-0">
-                  <p
-                    className={`font-medium text-sm ${statusConfig[step.status].text}`}
-                  >
+                  <p className={`font-medium text-sm ${statusConfig[step.status].text}`}>
                     {step.title}
                   </p>
                   <p className="text-xs text-text-body-mid dark:text-text-muted tabular-nums">
@@ -55,11 +53,8 @@ export default function TestCaseDetail({ testCase }: Props) {
                   {step.subSteps && step.subSteps.length > 0 && (
                     <div className="mt-1 ml-2 border-l-2 border-border-default dark:border-border-default pl-2 space-y-1">
                       {step.subSteps.map((sub, i) => (
-                        <p
-                          key={i}
-                          className="text-xs text-text-body-mid dark:text-text-muted"
-                        >
-                          ↳ {sub.title}{" "}
+                        <p key={i} className="text-xs text-text-body-mid dark:text-text-muted">
+                          ↳ {sub.title}{' '}
                           <span className="text-text-body-mid dark:text-text-muted">
                             ({sub.duration}ms)
                           </span>

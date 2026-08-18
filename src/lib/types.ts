@@ -7,7 +7,7 @@ export interface TestError {
 export interface TestStep {
   title: string;
   duration: number;
-  status: "passed" | "failed" | "skipped" | "timedOut";
+  status: 'passed' | 'failed' | 'skipped' | 'timedOut';
   errors?: TestError[];
   subSteps?: TestStep[];
 }
@@ -17,7 +17,7 @@ export interface TestCase {
   parent: string;
   project: string;
   fileName: string;
-  status: "passed" | "failed" | "skipped" | "timedOut";
+  status: 'passed' | 'failed' | 'skipped' | 'timedOut';
   duration: number;
   steps?: TestStep[];
   errors?: TestError[];

@@ -1,9 +1,5 @@
-import {
-  collectAllCases,
-  computeFileStats,
-  truncateFileName,
-} from "@/lib/utils";
-import type { ResultSummary, TestSuite } from "@/lib/types";
+import { collectAllCases, computeFileStats, truncateFileName } from '@/lib/utils';
+import type { ResultSummary, TestSuite } from '@/lib/types';
 
 interface Props {
   summary: ResultSummary;
@@ -11,11 +7,7 @@ interface Props {
   title?: string;
 }
 
-export default function FileSummary({
-  summary,
-  suites,
-  title = "Files Summary",
-}: Props) {
+export default function FileSummary({ summary, suites, title = 'Files Summary' }: Props) {
   const allCases = collectAllCases(suites);
   const fileStats = computeFileStats(allCases);
 
@@ -23,13 +15,13 @@ export default function FileSummary({
 
   const badgeColors: Record<string, string> = {
     passed:
-      "bg-success-50 text-success-600 dark:bg-success-500/20 dark:text-success-400 dark:ring-1 dark:ring-success-500/30",
+      'bg-success-50 text-success-600 dark:bg-success-500/20 dark:text-success-400 dark:ring-1 dark:ring-success-500/30',
     failed:
-      "bg-danger-50 text-danger-600 dark:bg-danger-500/20 dark:text-danger-400 dark:ring-1 dark:ring-danger-500/30",
+      'bg-danger-50 text-danger-600 dark:bg-danger-500/20 dark:text-danger-400 dark:ring-1 dark:ring-danger-500/30',
     skipped:
-      "bg-slate-200/80 text-slate-800 ring-1 ring-slate-300 dark:bg-slate-700/60 dark:text-slate-200 dark:ring-1 dark:ring-slate-600",
+      'bg-slate-200/80 text-slate-800 ring-1 ring-slate-300 dark:bg-slate-700/60 dark:text-slate-200 dark:ring-1 dark:ring-slate-600',
     timedOut:
-      "bg-warning-50 text-warning-600 dark:bg-warning-500/20 dark:text-warning-400 dark:ring-1 dark:ring-warning-500/30",
+      'bg-warning-50 text-warning-600 dark:bg-warning-500/20 dark:text-warning-400 dark:ring-1 dark:ring-warning-500/30',
   };
 
   return (
@@ -72,10 +64,7 @@ export default function FileSummary({
             </thead>
             <tbody>
               {fileStats.map((file) => (
-                <tr
-                  key={file.fileName}
-                  className="border-b border-border-subtle last:border-b-0"
-                >
+                <tr key={file.fileName} className="border-b border-border-subtle last:border-b-0">
                   <td className="px-4 py-2.5">
                     <div className="max-w-48 truncate font-medium text-text-ink dark:text-text-on-primary">
                       {truncateFileName(file.fileName)}
@@ -113,10 +102,7 @@ export default function FileSummary({
                     </span>
                   </td>
                   <td className="px-4 py-2.5 text-center font-semibold text-text-ink dark:text-text-on-primary">
-                    {file.total > 0
-                      ? Math.round((file.passed / file.total) * 100)
-                      : 0}
-                    %
+                    {file.total > 0 ? Math.round((file.passed / file.total) * 100) : 0}%
                   </td>
                 </tr>
               ))}

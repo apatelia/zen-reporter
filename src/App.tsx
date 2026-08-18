@@ -1,16 +1,16 @@
-import Overview from "@/components/dashboard/Overview";
-import FailuresSection from "@/components/failures/FailuresSection";
-import SuitesSection from "@/components/suites/SuitesSection";
-import type { ReportData, TestSuite } from "@/lib/types";
-import { extractFailedTests } from "@/lib/utils";
-import { useEffect, useMemo, useState } from "react";
+import Overview from '@/components/dashboard/Overview';
+import FailuresSection from '@/components/failures/FailuresSection';
+import SuitesSection from '@/components/suites/SuitesSection';
+import type { ReportData, TestSuite } from '@/lib/types';
+import { extractFailedTests } from '@/lib/utils';
+import { useEffect, useMemo, useState } from 'react';
 
-type TabKey = "overview" | "suites" | "failures";
+type TabKey = 'overview' | 'suites' | 'failures';
 
 const TABS: { key: TabKey; label: string; icon: React.ReactNode }[] = [
   {
-    key: "overview",
-    label: "Overview",
+    key: 'overview',
+    label: 'Overview',
     icon: (
       <svg
         className="h-5 w-5"
@@ -28,8 +28,8 @@ const TABS: { key: TabKey; label: string; icon: React.ReactNode }[] = [
     ),
   },
   {
-    key: "suites",
-    label: "Suites",
+    key: 'suites',
+    label: 'Suites',
     icon: (
       <svg
         className="h-5 w-5"
@@ -47,8 +47,8 @@ const TABS: { key: TabKey; label: string; icon: React.ReactNode }[] = [
     ),
   },
   {
-    key: "failures",
-    label: "Failures",
+    key: 'failures',
+    label: 'Failures',
     icon: (
       <svg
         className="h-5 w-5"
@@ -85,15 +85,15 @@ function SidebarItem({
       onClick={onClick}
       className={`group relative flex w-full items-center gap-3 rounded-md px-3 py-2.5 text-sm font-semibold transition-all duration-150 ${
         isActive
-          ? "bg-accent-blue/10 text-accent-blue shadow-sm dark:bg-accent-blue/20 dark:text-success-500"
-          : "text-text-body-mid hover:bg-surface-100 hover:text-text-ink dark:text-text-body-mid dark:hover:bg-surface-100 dark:hover:text-text-on-primary font-medium"
+          ? 'bg-accent-blue/10 text-accent-blue shadow-sm dark:bg-accent-blue/20 dark:text-success-500'
+          : 'text-text-body-mid hover:bg-surface-100 hover:text-text-ink dark:text-text-body-mid dark:hover:bg-surface-100 dark:hover:text-text-on-primary font-medium'
       }`}
     >
       {isActive && (
         <span className="absolute left-0 top-1.5 bottom-1.5 w-1 rounded-r-full bg-accent-blue dark:bg-success-500" />
       )}
       <span
-        className={`shrink-0 transition-colors ${isActive ? "text-accent-blue dark:text-success-500" : "text-text-body-mid group-hover:text-text-ink dark:text-text-body-mid dark:group-hover:text-text-on-primary"}`}
+        className={`shrink-0 transition-colors ${isActive ? 'text-accent-blue dark:text-success-500' : 'text-text-body-mid group-hover:text-text-ink dark:text-text-body-mid dark:group-hover:text-text-on-primary'}`}
       >
         {icon}
       </span>
@@ -108,44 +108,44 @@ function SidebarItem({
 }
 
 export default function App() {
-  const [activeTab, setActiveTab] = useState<TabKey>("overview");
+  const [activeTab, setActiveTab] = useState<TabKey>('overview');
   const [reportData, setReportData] = useState<ReportData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [darkMode, setDarkMode] = useState<"light" | "dark">(
-    ((typeof window !== "undefined" &&
-      (localStorage.getItem("zen-dark-mode") as "light" | "dark" | null)) ||
-      "light") as "light" | "dark",
+  const [darkMode, setDarkMode] = useState<'light' | 'dark'>(
+    ((typeof window !== 'undefined' &&
+      (localStorage.getItem('zen-dark-mode') as 'light' | 'dark' | null)) ||
+      'light') as 'light' | 'dark'
   );
 
   useEffect(() => {
-    if (darkMode === "dark") {
-      document.documentElement.classList.add("dark");
+    if (darkMode === 'dark') {
+      document.documentElement.classList.add('dark');
     } else {
-      document.documentElement.classList.remove("dark");
+      document.documentElement.classList.remove('dark');
     }
   }, [darkMode]);
 
   const cycleDarkMode = () => {
-    const next = darkMode === "light" ? "dark" : "light";
+    const next = darkMode === 'light' ? 'dark' : 'light';
     setDarkMode(next);
-    localStorage.setItem("zen-dark-mode", next);
+    localStorage.setItem('zen-dark-mode', next);
   };
 
   useEffect(() => {
     async function loadReport() {
       try {
-        const resp = await fetch("/report/report.json");
+        const resp = await fetch('/report/report.json');
         if (!resp.ok) {
-          throw new Error("No report found");
+          throw new Error('No report found');
         }
         const data = await resp.json();
         setReportData(data);
       } catch {
-        const inlineEl = document.getElementById("report-data");
+        const inlineEl = document.getElementById('report-data');
         if (inlineEl) {
           try {
-            const data = JSON.parse(inlineEl.textContent || "{}");
+            const data = JSON.parse(inlineEl.textContent || '{}');
             setReportData(data);
           } catch {
             // ignore
@@ -159,8 +159,7 @@ export default function App() {
   }, []);
 
   const { summary, suites } = useMemo(() => {
-    if (!reportData?.testRun)
-      return { summary: null, suites: [] as TestSuite[] };
+    if (!reportData?.testRun) return { summary: null, suites: [] as TestSuite[] };
     return {
       summary: reportData.testRun.summary,
       suites: reportData.testRun.suites,
@@ -197,29 +196,24 @@ export default function App() {
             </svg>
           </div>
           <div>
-            <h1 className="text-sm font-bold tracking-tight text-text-ink">
-              Zen Reporter
-            </h1>
-            <p className="text-[11px] text-text-body-mid">
-              Playwright Test Results
-            </p>
+            <h1 className="text-sm font-bold tracking-tight text-text-ink">Zen Reporter</h1>
+            <p className="text-[11px] text-text-body-mid">Playwright Test Results</p>
           </div>
         </div>
         <div className="mx-3 h-px bg-border-default"></div>
         <div className="flex justify-end px-3 py-2">
           <button
             onClick={cycleDarkMode}
-            className={`relative flex h-6 w-11 items-center rounded-full transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-blue focus-visible:ring-offset-2 focus-visible:ring-offset-surface-50 ${darkMode === "dark" ? "bg-accent-blue" : "bg-surface-200"}`}
-            title={`Switch to ${darkMode === "dark" ? "Light" : "Dark"} mode`}
+            className={`relative flex h-6 w-11 items-center rounded-full transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-blue focus-visible:ring-offset-2 focus-visible:ring-offset-surface-50 ${darkMode === 'dark' ? 'bg-accent-blue' : 'bg-surface-200'}`}
+            title={`Switch to ${darkMode === 'dark' ? 'Light' : 'Dark'} mode`}
           >
             <span
               className="pointer-events-none flex h-5 w-5 transform items-center justify-center rounded-full bg-canvas shadow-sm transition-transform duration-200"
               style={{
-                transform:
-                  darkMode === "dark" ? "translateX(20px)" : "translateX(1px)",
+                transform: darkMode === 'dark' ? 'translateX(20px)' : 'translateX(1px)',
               }}
             >
-              {darkMode === "light" ? (
+              {darkMode === 'light' ? (
                 <svg
                   className="h-3 w-3 text-text-muted"
                   fill="none"
@@ -261,9 +255,7 @@ export default function App() {
               label={tab.label}
               isActive={activeTab === tab.key}
               onClick={() => setActiveTab(tab.key)}
-              badge={
-                tab.key === "failures" ? failedCount + timedOutCount : undefined
-              }
+              badge={tab.key === 'failures' ? failedCount + timedOutCount : undefined}
             />
           ))}
         </nav>
@@ -300,47 +292,36 @@ export default function App() {
                     />
                   </svg>
                 </div>
-                <h3 className="text-base font-semibold text-text-ink">
-                  No report data
-                </h3>
+                <h3 className="text-base font-semibold text-text-ink">No report data</h3>
                 <p className="mt-1 text-sm text-text-body-mid">
-                  Run your tests with the Zen Reporter to generate a report, or
-                  place a{" "}
+                  Run your tests with the Zen Reporter to generate a report, or place a{' '}
                   <code className="rounded bg-surface-100 px-1 py-0.5 text-xs font-mono">
                     report/report.json
-                  </code>{" "}
+                  </code>{' '}
                   in the project.
                 </p>
               </div>
             </div>
           )}
 
-          {!isLoading && reportData && activeTab === "overview" && summary && (
+          {!isLoading && reportData && activeTab === 'overview' && summary && (
             <Overview summary={summary} suites={suites} />
           )}
 
-          {!isLoading &&
-            reportData &&
-            activeTab === "suites" &&
-            suites.length > 0 && <SuitesSection suites={suites} />}
+          {!isLoading && reportData && activeTab === 'suites' && suites.length > 0 && (
+            <SuitesSection suites={suites} />
+          )}
 
-          {!isLoading &&
-            reportData &&
-            activeTab === "suites" &&
-            suites.length === 0 && (
-              <div className="flex items-center justify-center py-24 text-center">
-                <div>
-                  <h3 className="text-base font-semibold text-text-ink">
-                    No suites
-                  </h3>
-                  <p className="mt-1 text-sm text-text-body-mid">
-                    No test suites to display.
-                  </p>
-                </div>
+          {!isLoading && reportData && activeTab === 'suites' && suites.length === 0 && (
+            <div className="flex items-center justify-center py-24 text-center">
+              <div>
+                <h3 className="text-base font-semibold text-text-ink">No suites</h3>
+                <p className="mt-1 text-sm text-text-body-mid">No test suites to display.</p>
               </div>
-            )}
+            </div>
+          )}
 
-          {!isLoading && reportData && activeTab === "failures" && (
+          {!isLoading && reportData && activeTab === 'failures' && (
             <FailuresSection
               suites={suites}
               failedCount={failedCount}

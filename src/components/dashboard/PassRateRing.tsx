@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo } from 'react';
 
 interface Props {
   passRate: number;
@@ -6,45 +6,45 @@ interface Props {
 
 const categoryConfig = {
   excellent: {
-    color: "var(--color-success-500)",
-    bgLight: "bg-success-50/70",
-    bgDark: "dark:bg-success-50/20",
-    dotLight: "bg-success-500",
-    dotDark: "dark:bg-success-500",
-    textLight: "text-success-600",
-    textDark: "dark:text-success-500",
-    label: "Excellent",
-    range: "≥ 90%",
-    borderLight: "border-success-200/50",
-    borderDark: "dark:border-success-800/40",
+    color: 'var(--color-success-500)',
+    bgLight: 'bg-success-50/70',
+    bgDark: 'dark:bg-success-50/20',
+    dotLight: 'bg-success-500',
+    dotDark: 'dark:bg-success-500',
+    textLight: 'text-success-600',
+    textDark: 'dark:text-success-500',
+    label: 'Excellent',
+    range: '≥ 90%',
+    borderLight: 'border-success-200/50',
+    borderDark: 'dark:border-success-800/40',
     active: (passRate: number) => passRate >= 90,
   },
   warning: {
-    color: "var(--color-warning-500)",
-    bgLight: "bg-warning-50/70",
-    bgDark: "dark:bg-warning-50/20",
-    dotLight: "bg-warning-500",
-    dotDark: "dark:bg-warning-500",
-    textLight: "text-warning-600",
-    textDark: "dark:text-warning-500",
-    label: "Needs Improvement",
-    range: "60% – 89%",
-    borderLight: "border-warning-200/50",
-    borderDark: "dark:border-warning-800/40",
+    color: 'var(--color-warning-500)',
+    bgLight: 'bg-warning-50/70',
+    bgDark: 'dark:bg-warning-50/20',
+    dotLight: 'bg-warning-500',
+    dotDark: 'dark:bg-warning-500',
+    textLight: 'text-warning-600',
+    textDark: 'dark:text-warning-500',
+    label: 'Needs Improvement',
+    range: '60% – 89%',
+    borderLight: 'border-warning-200/50',
+    borderDark: 'dark:border-warning-800/40',
     active: (passRate: number) => passRate >= 60 && passRate < 90,
   },
   critical: {
-    color: "var(--color-danger-500)",
-    bgLight: "bg-danger-50/70",
-    bgDark: "dark:bg-danger-50/20",
-    dotLight: "bg-danger-500",
-    dotDark: "dark:bg-danger-500",
-    textLight: "text-danger-600",
-    textDark: "dark:text-danger-500",
-    label: "Critical",
-    range: "< 60%",
-    borderLight: "border-danger-200/50",
-    borderDark: "dark:border-danger-800/40",
+    color: 'var(--color-danger-500)',
+    bgLight: 'bg-danger-50/70',
+    bgDark: 'dark:bg-danger-50/20',
+    dotLight: 'bg-danger-500',
+    dotDark: 'dark:bg-danger-500',
+    textLight: 'text-danger-600',
+    textDark: 'dark:text-danger-500',
+    label: 'Critical',
+    range: '< 60%',
+    borderLight: 'border-danger-200/50',
+    borderDark: 'dark:border-danger-800/40',
     active: (passRate: number) => passRate < 60,
   },
 } as const;
@@ -70,10 +70,7 @@ const circumference = 2 * Math.PI * RADIUS;
 export default function PassRateRing({ passRate }: Props) {
   const activeCategory = categories.find((c) => c.active(passRate))!;
 
-  const dashOffset = useMemo(
-    () => circumference - (passRate / 100) * circumference,
-    [passRate],
-  );
+  const dashOffset = useMemo(() => circumference - (passRate / 100) * circumference, [passRate]);
 
   return (
     <div className="flex flex-col items-center justify-between w-full h-full">
@@ -125,22 +122,18 @@ export default function PassRateRing({ passRate }: Props) {
               className={`flex w-full items-center justify-between rounded-md border px-2.5 py-1.5 transition-colors duration-300 ${
                 isActive
                   ? `${cat.borderLight} ${cat.borderDark} ${cat.bgLight} ${cat.bgDark}`
-                  : "border-transparent"
+                  : 'border-transparent'
               }`}
             >
               <div className="flex items-center">
                 <span
                   className={`mr-2 inline-block h-2 w-2 rounded-full ${cat.dotLight} ${cat.dotDark}`}
                 />
-                <span
-                  className={`text-xs font-medium ${cat.textLight} ${cat.textDark}`}
-                >
+                <span className={`text-xs font-medium ${cat.textLight} ${cat.textDark}`}>
                   {cat.label}
                 </span>
               </div>
-              <span className="text-xs text-text-body-mid dark:text-text-muted">
-                {cat.range}
-              </span>
+              <span className="text-xs text-text-body-mid dark:text-text-muted">{cat.range}</span>
             </div>
           );
         })}
