@@ -84,7 +84,22 @@ class ZenReporter implements Reporter {
       status: 'passed',
       duration: 0,
       steps: [],
-      errors: [],
+      stdout: [],
+      stderr: [],
+      annotations: test.annotations
+        ? test.annotations.map((a) => ({
+            type: a.type,
+            description: a.description || null,
+            location: a.location
+              ? {
+                  file: a.location.file,
+                  line: a.location.line,
+                  column: a.location.column,
+                }
+              : null,
+          }))
+        : [],
+      attachments: [],
       tags: test.tags.flatMap((tag) => tag.replace('@', '')),
       describePath: getDescribePath(test),
     };
@@ -110,18 +125,72 @@ class ZenReporter implements Reporter {
               : 'passed';
     testCase.duration = result.duration;
 
+    if (test.annotations) {
+      testCase.annotations = test.annotations.map((a) => ({
+        type: a.type,
+        description: a.description || null,
+        location: a.location
+          ? {
+              file: a.location.file,
+              line: a.location.line,
+              column: a.location.column,
+            }
+          : null,
+      }));
+    }
+
+    if (result.attachments) {
+      testCase.attachments = result.attachments.map((att) => {
+        let bodyData: Buffer | string | null = att.body || null;
+        if (!bodyData && att.path && fs.existsSync(att.path)) {
+          try {
+            bodyData = fs.readFileSync(att.path).toString('base64');
+          } catch (e) {
+            console.error(`Failed to read attachment file at ${att.path}:`, e);
+          }
+        }
+        return {
+          name: att.name,
+          contentType: att.contentType,
+          path: att.path || null,
+          body: bodyData as any,
+        };
+      });
+    }
+
     if (result.error) {
       testCase.errors = [
         {
           name: 'Error',
           message: sanitizeAnsi(result.error.message || ''),
           stack: sanitizeAnsi(result.error.stack || ''),
+          location: result.error.location
+            ? {
+                file: result.error.location.file,
+                line: result.error.location.line,
+                column: result.error.location.column,
+              }
+            : null,
+          snippet: result.error.snippet || '',
+          cause: (result.error.cause as any) || null,
         },
       ];
     }
 
     if (result.steps && result.steps.length > 0) {
       testCase.steps = convertPlaywrightSteps(result.steps);
+    }
+
+    if (result.stdout && result.stdout.length > 0) {
+      testCase.stdout = result.stdout.map((entry) =>
+        typeof entry === 'string' ? entry : entry.toString('utf8')
+      );
+    }
+
+    if (result.stderr && result.stderr.length > 0) {
+      testCase.stderr = result.stderr.map((entry) =>
+        typeof entry === 'string' ? entry : entry.toString('utf8')
+      );
     }
 
     this.testCases.push(testCase);

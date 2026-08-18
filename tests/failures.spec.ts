@@ -7,7 +7,9 @@ test.describe('Failing Tests', () => {
       tag: ['@failure'],
     },
     async () => {
+      console.log('This test should fail');
       expect(true).toBe(true);
+      console.error('True can never be False');
       expect(true).toBe(false);
     }
   );

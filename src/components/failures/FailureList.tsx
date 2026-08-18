@@ -1,4 +1,5 @@
 import type { FailedTest } from '@/lib/utils';
+import { parseAnsiToHtml } from '@/lib/utils';
 import { getTagColor } from '@/lib/tagColors';
 
 interface Props {
@@ -111,14 +112,55 @@ export default function FailureList({ failedTests }: Props) {
                 </summary>
                 <div className="mt-3 space-y-3">
                   {test.errors.map((err, errIdx) => (
-                    <div key={errIdx} className="space-y-1.5">
-                      <p className="text-xs font-bold text-danger-600 dark:text-danger-500">
-                        {err.name}: {err.message}
-                      </p>
+                    <div
+                      key={errIdx}
+                      className="space-y-2 rounded-md border border-danger-200 dark:border-danger-900/40 bg-surface-50/50 dark:bg-surface-200/20 p-3"
+                    >
+                      <div className="flex items-center justify-between gap-2 flex-wrap border-b border-danger-200/50 dark:border-danger-900/30 pb-1.5">
+                        <p className="text-xs font-bold text-danger-600 dark:text-danger-500">
+                          {err.name}: {err.message}
+                        </p>
+                        {err.location && (
+                          <span className="text-[11px] font-mono text-text-body-mid dark:text-text-muted">
+                            {err.location.file}:{err.location.line}:{err.location.column}
+                          </span>
+                        )}
+                      </div>
+
+                      {err.cause && (
+                        <div className="rounded bg-danger-500/10 p-2 text-xs border border-danger-500/20">
+                          <span className="font-bold text-danger-600 dark:text-danger-400">
+                            Cause:{' '}
+                          </span>
+                          <span className="text-text-body-mid dark:text-text-muted font-mono">
+                            {typeof err.cause === 'object'
+                              ? JSON.stringify(err.cause)
+                              : String(err.cause)}
+                          </span>
+                        </div>
+                      )}
+
+                      {err.snippet && (
+                        <div>
+                          <p className="text-[11px] font-semibold text-text-body-mid dark:text-text-muted mb-1">
+                            Code Snippet:
+                          </p>
+                          <pre
+                            className="rounded-md bg-[#0d1a17] p-2.5 text-xs font-mono leading-relaxed text-[#f2f0eb] border border-[#213e37] overflow-x-auto"
+                            dangerouslySetInnerHTML={{ __html: parseAnsiToHtml(err.snippet) }}
+                          />
+                        </div>
+                      )}
+
                       {err.stack && (
-                        <pre className="mt-2 rounded-md bg-[#0d1a17] p-3 text-xs font-mono leading-relaxed text-[#f2f0eb] border border-[#213e37] overflow-x-auto">
-                          {err.stack}
-                        </pre>
+                        <div>
+                          <p className="text-[11px] font-semibold text-text-body-mid dark:text-text-muted mb-1">
+                            Stack Trace:
+                          </p>
+                          <pre className="rounded-md bg-[#0d1a17] p-3 text-xs font-mono leading-relaxed text-[#f2f0eb] border border-[#213e37] overflow-x-auto">
+                            {err.stack}
+                          </pre>
+                        </div>
                       )}
                     </div>
                   ))}

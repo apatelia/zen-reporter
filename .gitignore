@@ -14,7 +14,8 @@ dist/
 # Playwright test results
 test-results/
 
-# Report
+# Reports
+playwright-report/
 zen-report/
 
 # Intermediate data for single-file Vite build (optional to commit)
@@ -39,3 +40,6 @@ Thumbs.db
 
 # Log files
 logs/*.log
+
+# Screenshots
+screenshots/

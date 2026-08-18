@@ -8,6 +8,11 @@
     "singlefile",
     "Arpan",
     "Patelia",
-    "Inlines"
+    "Inlines",
+    "noopener",
+    "noreferrer",
+    "webp",
+    "nums",
+    "vtsls"
   ]
 }

@@ -5,6 +5,12 @@ test.describe('Example Tests', () => {
     'has title',
     {
       tag: ['@title'],
+      annotation: [
+        {
+          type: 'test',
+          description: 'Verifies that the page title contains "Playwright"',
+        },
+      ],
     },
     async ({ page }) => {
       await test.step("Go to Playwright's website", async () => {
@@ -21,8 +27,14 @@ test.describe('Example Tests', () => {
     'get started link',
     {
       tag: ['@link', '@heading'],
+      annotation: [
+        {
+          type: 'test',
+          description: 'Verifies that get started link redirects to the Installation instructions',
+        },
+      ],
     },
-    async ({ page }) => {
+    async ({ page, browserName }, testInfo) => {
       await test.step("Go to Playwright's website", async () => {
         await page.goto('https://playwright.dev/');
       });
@@ -33,6 +45,19 @@ test.describe('Example Tests', () => {
 
       await test.step('Expects page to have a heading with the name of Installation', async () => {
         await expect(page.getByRole('heading', { name: 'Installation' })).toBeVisible();
+
+        if (browserName === 'chromium') {
+          console.log('attaching screenshot for chromium');
+
+          const screenshotPath = 'screenshots/Installation.png';
+          await page.screenshot({ fullPage: false, path: screenshotPath });
+          await testInfo.attach('Installation Screenshot', {
+            path: screenshotPath,
+            contentType: 'image/png',
+          });
+
+          console.log('successfully attached screenshot');
+        }
       });
     }
   );

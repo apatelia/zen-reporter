@@ -1,0 +1,45 @@
+{
+  "line_ending": "prefer_lf",
+  "tab_size": 2,
+  "colorize_brackets": true,
+  "indent_guides": {
+    "coloring": "indent_aware",
+    "active_line_width": 2
+  },
+  "semantic_tokens": "combined",
+  "languages": {
+    "HTML": {
+      "formatter": "prettier"
+    },
+    "TypeScript": {
+      "format_on_save": "on",
+      "formatter": [
+        {
+          "code_action": "source.fixAll.eslint"
+        },
+        {
+          "code_action": "source.organizeImports"
+        },
+        "prettier"
+      ],
+      "language_servers": ["vtsls", "eslint", "cspell"]
+    },
+    "JavaScript": {
+      "format_on_save": "on",
+      "formatter": [
+        {
+          "code_action": "source.fixAll.eslint"
+        },
+        {
+          "code_action": "source.organizeImports"
+        },
+        "prettier"
+      ],
+      "language_servers": ["vtsls", "eslint", "cspell"]
+    },
+    "JSON": {
+      "format_on_save": "on",
+      "formatter": "prettier"
+    }
+  }
+}

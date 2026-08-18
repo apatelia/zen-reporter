@@ -1,23 +1,41 @@
 import type { TestStep as PwTestStep } from '@playwright/test/reporter';
-import type { ResultSummary, TestCase, TestStep, TestSuite } from './types';
+import type { ResultSummary, TestCase, TestError, TestStep, TestSuite } from './types';
 
 export function convertPlaywrightSteps(pwSteps: PwTestStep[]): TestStep[] {
   return pwSteps.map((step) => {
-    const errors: TestStep['errors'] = step.error
-      ? [{ name: 'Error', message: step.error.message ?? '', stack: step.error.stack || '' }]
-      : [];
+    const error: TestStep['error'] = step.error
+      ? {
+          name: 'Error',
+          message: step.error.message ?? '',
+          stack: step.error.stack || '',
+          location: step.error.location
+            ? {
+                file: step.error.location.file,
+                line: step.error.location.line,
+                column: step.error.location.column,
+              }
+            : null,
+          snippet: step.error.snippet || '',
+          cause: (step.error.cause as any) || null,
+        }
+      : null;
 
-    const status: TestStep['status'] = step.error
-      ? 'failed'
-      : step.steps?.length === 0
-        ? 'passed'
-        : 'passed';
+    const status: TestStep['status'] = step.error ? 'failed' : 'passed';
 
     return {
       title: step.title,
       duration: step.duration,
       status,
-      errors,
+      annotations: (step as any).annotations || [],
+      attachments: step.attachments
+        ? step.attachments.map((att) => ({
+            name: att.name,
+            contentType: att.contentType,
+            path: att.path || null,
+            body: att.body || null,
+          }))
+        : [],
+      error,
       subSteps:
         step.steps && step.steps.length > 0 ? convertPlaywrightSteps(step.steps) : undefined,
     };
@@ -27,6 +45,68 @@ export function convertPlaywrightSteps(pwSteps: PwTestStep[]): TestStep[] {
 export function sanitizeAnsi(str: string): string {
   // eslint-disable-next-line no-control-regex
   return str.replace(/\x1b\[[0-9;]*m/g, '');
+}
+
+export function parseAnsiToHtml(str: string): string {
+  if (!str) return '';
+
+  const ansiColorMap: Record<number, string> = {
+    30: 'color: #4b5563', // black
+    31: 'color: #ef4444', // red
+    32: 'color: #22c55e', // green
+    33: 'color: #eab308', // yellow
+    34: 'color: #3b82f6', // blue
+    35: 'color: #a855f7', // magenta
+    36: 'color: #06b6d4', // cyan
+    37: 'color: #f3f4f6', // white
+    90: 'color: #6b7280', // bright black / gray
+    91: 'color: #f87171', // bright red
+    92: 'color: #4ade80', // bright green
+    93: 'color: #facc15', // bright yellow
+    94: 'color: #60a5fa', // bright blue
+    95: 'color: #c084fc', // bright magenta
+    96: 'color: #22d3ee', // bright cyan
+    97: 'color: #ffffff', // bright white
+  };
+
+  const styleMap: Record<number, string> = {
+    1: 'font-weight: bold',
+    2: 'opacity: 0.7',
+    3: 'font-style: italic',
+    4: 'text-decoration: underline',
+  };
+
+  let openSpans = 0;
+  // eslint-disable-next-line no-control-regex
+  const result = escapeHTML(str).replace(/\x1b\[([0-9;]*)m/g, (_, p1) => {
+    if (!p1 || p1 === '0') {
+      const closing = '</span>'.repeat(openSpans);
+      openSpans = 0;
+      return closing;
+    }
+
+    const codes = p1.split(';').map(Number);
+    const styles: string[] = [];
+
+    for (const code of codes) {
+      if (code === 0) {
+        // Reset handled below
+      } else if (ansiColorMap[code]) {
+        styles.push(ansiColorMap[code]);
+      } else if (styleMap[code]) {
+        styles.push(styleMap[code]);
+      }
+    }
+
+    if (styles.length > 0) {
+      openSpans++;
+      return `<span style="${styles.join('; ')}">`;
+    }
+
+    return '';
+  });
+
+  return result + '</span>'.repeat(openSpans);
 }
 
 export function escapeHTML(html: string): string {
@@ -130,7 +210,7 @@ export interface FailedTest {
   duration: number;
   type: string;
   tags?: string[];
-  errors: { name: string; message: string; stack?: string }[];
+  errors: TestError[];
 }
 
 export function extractFailedTests(suites: TestSuite[]): FailedTest[] {
@@ -146,11 +226,7 @@ export function extractFailedTests(suites: TestSuite[]): FailedTest[] {
           duration: Math.round(testCase.duration / 1000),
           type: testCase.status === 'timedOut' ? 'Timed Out' : 'Failed',
           tags: testCase.tags?.map((tag) => tag.replace('@', '')),
-          errors: (testCase.errors || []).map((err) => ({
-            name: err.name,
-            message: err.message,
-            stack: err.stack,
-          })),
+          errors: testCase.errors || [],
         });
       }
     }

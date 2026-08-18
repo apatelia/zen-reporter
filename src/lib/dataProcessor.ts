@@ -60,9 +60,18 @@ function convertSteps(steps: RawTestStep[]): TestStep[] {
     title: step.title,
     duration: step.duration,
     status: step.error ? 'failed' : step.duration > 0 ? 'passed' : 'skipped',
-    errors: step.error
-      ? [{ name: 'Error', message: step.error.message || '', stack: step.error.stack || '' }]
-      : undefined,
+    annotations: [],
+    attachments: [],
+    error: step.error
+      ? {
+          name: 'Error',
+          message: step.error.message || '',
+          stack: step.error.stack || '',
+          location: null,
+          snippet: '',
+          cause: null,
+        }
+      : null,
     subSteps: step.steps && step.steps.length > 0 ? convertSteps(step.steps) : undefined,
   }));
 }
@@ -122,6 +131,9 @@ export function processRawData(rawData: RawPlaywrightData): ReportData {
             name: e.name || 'Error',
             message: sanitizeAnsi(e.message || ''),
             stack: sanitizeAnsi(e.stack || ''),
+            location: null,
+            snippet: '',
+            cause: null,
           }))
         : [],
       tags: test.tags?.map((tag: string) => tag.replace('@', '')) || [],

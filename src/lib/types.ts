@@ -2,13 +2,18 @@ export interface TestError {
   name: string;
   message: string;
   stack: string;
+  location: Location | null;
+  snippet: string;
+  cause: TestError | null;
 }
 
 export interface TestStep {
   title: string;
   duration: number;
   status: 'passed' | 'failed' | 'skipped' | 'timedOut';
-  errors?: TestError[];
+  annotations: Annotation[];
+  attachments: Attachment[];
+  error: TestError | null;
   subSteps?: TestStep[];
 }
 
@@ -21,6 +26,10 @@ export interface TestCase {
   duration: number;
   steps?: TestStep[];
   errors?: TestError[];
+  stdout?: string[];
+  stderr?: string[];
+  annotations?: Annotation[];
+  attachments?: Attachment[];
   tags?: string[];
   describePath?: string[];
 }
@@ -50,4 +59,22 @@ export interface TestRun {
 
 export interface ReportData {
   testRun: TestRun;
+}
+export interface Annotation {
+  type: string;
+  description: string | null;
+  location: Location | null;
+}
+
+export interface Attachment {
+  name: string;
+  contentType: string;
+  path: string | null;
+  body: Buffer | null;
+}
+
+export interface Location {
+  file: string;
+  line: number;
+  column: number;
 }
