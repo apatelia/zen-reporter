@@ -62,6 +62,7 @@ export default function MultiSelectFilter<T extends string>({
 
   const handleApply = () => {
     onApply(tempSelection);
+    setSearchTerm('');
     setIsOpen(false);
   };
 

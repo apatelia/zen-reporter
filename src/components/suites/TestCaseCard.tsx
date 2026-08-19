@@ -5,40 +5,37 @@ import TestCaseDetail from './TestCaseDetail';
 
 interface Props {
   testCase: TestCase;
+  showSteps?: boolean;
 }
 
 const statusConfig = {
   passed: {
-    bg: 'bg-surface-50 dark:bg-surface-100',
+    bg: 'bg-surface-50 dark:bg-surface-50',
     text: 'text-success-600 dark:text-success-500',
     dot: 'bg-success-500',
     ring: 'ring-success-100 dark:ring-success-500/20',
-    border: 'border-success-200 dark:border-success-900/50',
   },
   failed: {
-    bg: 'bg-surface-50 dark:bg-surface-100',
+    bg: 'bg-surface-50 dark:bg-surface-50',
     text: 'text-danger-600 dark:text-danger-500',
     dot: 'bg-danger-500',
     ring: 'ring-danger-100 dark:ring-danger-500/20',
-    border: 'border-danger-200 dark:border-danger-900/50',
   },
   skipped: {
-    bg: 'bg-surface-50 dark:bg-surface-100',
+    bg: 'bg-surface-50 dark:bg-surface-50',
     text: 'text-text-muted dark:text-text-muted',
     dot: 'bg-text-muted',
     ring: 'ring-surface-200 dark:ring-surface-200',
-    border: 'border-slate-300 dark:border-slate-600',
   },
   timedOut: {
-    bg: 'bg-surface-50 dark:bg-surface-100',
+    bg: 'bg-surface-50 dark:bg-surface-50',
     text: 'text-warning-600 dark:text-warning-500',
     dot: 'bg-warning-500',
     ring: 'ring-warning-100 dark:ring-warning-500/20',
-    border: 'border-warning-200 dark:border-warning-900/50',
   },
 };
 
-export default function TestCaseCard({ testCase }: Props) {
+export default function TestCaseCard({ testCase, showSteps }: Props) {
   const [isExpanded, setIsExpanded] = useState(false);
   const config = statusConfig[testCase.status];
 
@@ -101,7 +98,7 @@ export default function TestCaseCard({ testCase }: Props) {
   return (
     <div
       data-test-card="true"
-      className={`rounded-md border ${config.border} ${config.bg} transition-all duration-200 hover:shadow-sm dark:hover:bg-surface-200/30`}
+      className={`rounded-md shadow-sm ring-1 ring-black/5 dark:ring-white/5 ${config.bg} transition-all duration-200 hover:shadow-md dark:hover:bg-surface-200/30`}
     >
       <div className="cursor-pointer" onClick={() => setIsExpanded(!isExpanded)}>
         <div className="flex items-center justify-between px-3 py-2">
@@ -173,7 +170,7 @@ export default function TestCaseCard({ testCase }: Props) {
       {isExpanded && (
         <div className="border-t border-border-default">
           <div className="px-3 py-3">
-            <TestCaseDetail testCase={testCase} />
+            <TestCaseDetail testCase={testCase} showSteps={showSteps} />
           </div>
         </div>
       )}

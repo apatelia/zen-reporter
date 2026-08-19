@@ -173,7 +173,7 @@ export default function Overview({ summary, suites }: Props) {
       {/* Project Summary + File Summary */}
       <div className="mt-8">
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-          <ProjectBarCharts summary={summary} suites={suites} title="Project Summary" />
+          <ProjectBarCharts summary={summary} suites={suites} title="Projects Summary" />
           <FileSummary summary={summary} suites={suites} />
         </div>
       </div>

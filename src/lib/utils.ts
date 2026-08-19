@@ -211,6 +211,7 @@ export interface FailedTest {
   type: string;
   tags?: string[];
   errors: TestError[];
+  testCase: TestCase;
 }
 
 export function extractFailedTests(suites: TestSuite[]): FailedTest[] {
@@ -223,10 +224,11 @@ export function extractFailedTests(suites: TestSuite[]): FailedTest[] {
           title: testCase.title,
           suiteTitle: parentTitle,
           fileName: testCase.fileName,
-          duration: Math.round(testCase.duration / 1000),
+          duration: testCase.duration,
           type: testCase.status === 'timedOut' ? 'Timed Out' : 'Failed',
           tags: testCase.tags?.map((tag) => tag.replace('@', '')),
           errors: testCase.errors || [],
+          testCase,
         });
       }
     }

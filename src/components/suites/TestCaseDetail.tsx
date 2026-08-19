@@ -4,6 +4,7 @@ import { parseAnsiToHtml } from '@/lib/utils';
 
 interface Props {
   testCase: TestCase;
+  showSteps?: boolean;
 }
 
 const statusConfig = {
@@ -25,8 +26,14 @@ const statusConfig = {
   },
 };
 
-export default function TestCaseDetail({ testCase }: Props) {
-  const [activeImage, setActiveImage] = useState<{ name: string; url: string } | null>(null);
+export default function TestCaseDetail({ testCase, showSteps = true }: Props) {
+  const [activeAttachment, setActiveAttachment] = useState<{
+    name: string;
+    url: string;
+    type: 'image' | 'text';
+    contentType?: string;
+    content?: string;
+  } | null>(null);
 
   // Collect annotations from test case
   const caseAnnotations = testCase.annotations || [];
@@ -40,7 +47,8 @@ export default function TestCaseDetail({ testCase }: Props) {
     if (att.body) {
       const base64 =
         typeof att.body === 'string' ? att.body : Buffer.from(att.body).toString('base64');
-      return `data:${att.contentType || 'image/png'};base64,${base64}`;
+      const mime = att.contentType || 'application/octet-stream';
+      return `data:${mime};base64,${base64}`;
     }
     return null;
   };
@@ -50,6 +58,28 @@ export default function TestCaseDetail({ testCase }: Props) {
       (att.contentType && att.contentType.startsWith('image/')) ||
       /\.(png|jpe?g|gif|webp|svg)$/i.test(att.name || att.path || '')
     );
+  };
+
+  const isTextAttachment = (att: Attachment): boolean => {
+    return (
+      (att.contentType && att.contentType.startsWith('text/')) ||
+      /\.(txt|log|json|csv|html|xml|md|yaml|yml|js|ts|jsx|tsx|css)$/i.test(att.name || att.path || '')
+    );
+  };
+
+  const getTextContent = (att: Attachment): string => {
+    if (att.body) {
+      if (typeof att.body === 'string') {
+        // If it's a base64 string or plain string
+        try {
+          return atob(att.body);
+        } catch {
+          return att.body;
+        }
+      }
+      return Buffer.from(att.body).toString('utf-8');
+    }
+    return '';
   };
 
   // Helper to extract attachments from steps recursively and deduplicate
@@ -95,7 +125,7 @@ export default function TestCaseDetail({ testCase }: Props) {
             {validAnnotations.map((anno, idx) => (
               <div
                 key={idx}
-                className="rounded-md border border-border-default dark:border-[#2b5148] bg-surface-50 dark:bg-[#142622] p-3 text-sm shadow-xs"
+                className="rounded-md border border-border-default dark:border-[#2b5148] bg-canvas dark:bg-[#142622] p-3 text-sm shadow-xs"
               >
                 <div className="flex items-center gap-2 mb-1">
                   <span className="inline-flex items-center rounded bg-surface-200 dark:bg-surface-200/50 px-2 py-0.5 text-xs font-semibold text-text-body-mid">
@@ -112,7 +142,7 @@ export default function TestCaseDetail({ testCase }: Props) {
       )}
 
       {/* Execution Steps */}
-      {testCase.steps && testCase.steps.length > 0 && (
+      {showSteps && testCase.steps && testCase.steps.length > 0 && (
         <div className="mb-4">
           <h5 className="mb-2 text-xs font-bold uppercase tracking-wider text-text-body-mid dark:text-text-muted">
             Execution Steps
@@ -265,16 +295,58 @@ export default function TestCaseDetail({ testCase }: Props) {
             {attachments.map((att, idx) => {
               const url = getAttachmentUrl(att);
               const isImg = isImageAttachment(att);
+              const isTxt = isTextAttachment(att);
 
               if (isImg && url) {
                 return (
-                  <button
+                  <div
                     key={idx}
-                    type="button"
-                    onClick={() => setActiveImage({ name: att.name, url })}
-                    className="flex items-center gap-3 rounded-md border border-border-default dark:border-[#2b5148] bg-canvas dark:bg-[#142622] p-2.5 text-left text-sm hover:border-primary-500 transition-colors shadow-xs group cursor-pointer"
+                    className="flex items-center justify-between gap-3 rounded-md border border-border-default dark:border-[#2b5148] bg-canvas dark:bg-[#142622] p-2.5 text-sm hover:border-primary-500 transition-colors shadow-xs group"
                   >
-                    <div className="flex h-8 w-8 items-center justify-center rounded bg-primary-500/10 text-primary-600 dark:text-primary-400 shrink-0">
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setActiveAttachment({
+                          name: att.name || 'Image Attachment',
+                          url,
+                          type: 'image',
+                        })
+                      }
+                      className="flex items-center gap-3 min-w-0 flex-1 text-left cursor-pointer"
+                    >
+                      <div className="flex h-8 w-8 items-center justify-center rounded bg-primary-500/10 text-primary-600 dark:text-primary-400 shrink-0">
+                        <svg
+                          className="h-4 w-4"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                          strokeWidth={2}
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+                          />
+                        </svg>
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="font-medium text-xs text-text-ink dark:text-text-on-primary truncate group-hover:text-primary-600 dark:group-hover:text-primary-400">
+                          {att.name || 'Screenshot'}
+                        </p>
+                        <p className="text-[11px] text-text-body-mid dark:text-text-muted">
+                          Click to preview image
+                        </p>
+                      </div>
+                    </button>
+                    <a
+                      href={url}
+                      download={att.name || 'screenshot'}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="rounded p-1.5 text-text-body-mid dark:text-text-muted hover:bg-surface-200 dark:hover:bg-surface-200/50 hover:text-primary-600 dark:hover:text-primary-400 transition-colors shrink-0"
+                      title="Download image"
+                      onClick={(e) => e.stopPropagation()}
+                    >
                       <svg
                         className="h-4 w-4"
                         fill="none"
@@ -285,19 +357,91 @@ export default function TestCaseDetail({ testCase }: Props) {
                         <path
                           strokeLinecap="round"
                           strokeLinejoin="round"
-                          d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+                          d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
                         />
                       </svg>
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <p className="font-medium text-xs text-text-ink dark:text-text-on-primary truncate group-hover:text-primary-600 dark:group-hover:text-primary-400">
-                        {att.name || 'Screenshot'}
-                      </p>
-                      <p className="text-[11px] text-text-body-mid dark:text-text-muted">
-                        Click to preview screenshot
-                      </p>
-                    </div>
-                  </button>
+                    </a>
+                  </div>
+                );
+              }
+
+              if (isTxt) {
+                const textContent = getTextContent(att);
+                const mime = att.contentType || 'text/plain';
+                const base64 =
+                  typeof att.body === 'string'
+                    ? att.body
+                    : att.body
+                      ? Buffer.from(att.body).toString('base64')
+                      : btoa(unescape(encodeURIComponent(textContent)));
+                const downloadHref = url && url !== '#' ? url : `data:${mime};base64,${base64}`;
+
+                return (
+                  <div
+                    key={idx}
+                    className="flex items-center justify-between gap-3 rounded-md border border-border-default dark:border-[#2b5148] bg-canvas dark:bg-[#142622] p-2.5 text-sm hover:border-primary-500 transition-colors shadow-xs group"
+                  >
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setActiveAttachment({
+                          name: att.name || 'Text Attachment',
+                          url: downloadHref,
+                          type: 'text',
+                          contentType: mime,
+                          content: textContent,
+                        })
+                      }
+                      className="flex items-center gap-3 min-w-0 flex-1 text-left cursor-pointer"
+                    >
+                      <div className="flex h-8 w-8 items-center justify-center rounded bg-primary-500/10 text-primary-600 dark:text-primary-400 shrink-0">
+                        <svg
+                          className="h-4 w-4"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                          strokeWidth={2}
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                          />
+                        </svg>
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="font-medium text-xs text-text-ink dark:text-text-on-primary truncate group-hover:text-primary-600 dark:group-hover:text-primary-400">
+                          {att.name || 'Text Attachment'}
+                        </p>
+                        <p className="text-[11px] text-text-body-mid dark:text-text-muted">
+                          Click to preview text
+                        </p>
+                      </div>
+                    </button>
+                    <a
+                      href={downloadHref}
+                      download={att.name || 'attachment.txt'}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="rounded p-1.5 text-text-body-mid dark:text-text-muted hover:bg-surface-200 dark:hover:bg-surface-200/50 hover:text-primary-600 dark:hover:text-primary-400 transition-colors shrink-0"
+                      title="Download text file"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <svg
+                        className="h-4 w-4"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                        strokeWidth={2}
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
+                        />
+                      </svg>
+                    </a>
+                  </div>
                 );
               }
 
@@ -377,42 +521,74 @@ export default function TestCaseDetail({ testCase }: Props) {
         </div>
       )}
 
-      {/* Screenshot Preview Modal */}
-      {activeImage && (
+      {/* Attachment Preview Modal */}
+      {activeAttachment && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-4 backdrop-blur-xs"
-          onClick={() => setActiveImage(null)}
+          onClick={() => setActiveAttachment(null)}
         >
           <div
-            className="relative max-h-[90vh] max-w-[90vw] overflow-hidden rounded-lg bg-surface-50 dark:bg-surface-100 p-2 shadow-2xl"
+            className="relative max-h-[90vh] w-full max-w-4xl overflow-hidden rounded-lg bg-surface-50 dark:bg-surface-100 p-4 shadow-2xl flex flex-col"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center justify-between border-b border-border-default dark:border-border-default/50 pb-2 px-2 mb-2">
-              <h4 className="text-sm font-semibold text-text-ink dark:text-text-on-primary truncate">
-                {activeImage.name}
+            <div className="flex items-center justify-between border-b border-border-default dark:border-border-default/50 pb-3 mb-3 shrink-0">
+              <h4 className="text-sm font-semibold text-text-ink dark:text-text-on-primary truncate pr-4">
+                {activeAttachment.name}
               </h4>
-              <button
-                type="button"
-                onClick={() => setActiveImage(null)}
-                className="rounded p-1 text-text-body-mid hover:bg-surface-200 dark:hover:bg-surface-200/50 hover:text-text-ink dark:hover:text-text-on-primary"
-              >
-                <svg
-                  className="h-5 w-5"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                  strokeWidth={2}
+              <div className="flex items-center gap-1.5 shrink-0">
+                <a
+                  href={activeAttachment.url}
+                  download={activeAttachment.name || 'attachment'}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="rounded px-2.5 py-1 text-text-body-mid bg-surface-200/50 dark:bg-surface-200/50 dark:text-text-on-primary hover:bg-surface-200 dark:hover:bg-success-600 hover:text-text-ink dark:hover:text-white transition-colors flex items-center gap-1.5 text-xs font-semibold shadow-2xs"
+                  title="Download file"
                 >
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
+                  <svg
+                    className="h-4 w-4"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    strokeWidth={2}
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
+                    />
+                  </svg>
+                  <span className="hidden sm:inline">Download</span>
+                </a>
+                <button
+                  type="button"
+                  onClick={() => setActiveAttachment(null)}
+                  className="rounded p-1 text-text-body-mid dark:text-text-on-primary hover:bg-surface-200 dark:hover:bg-surface-200/80 hover:text-text-ink dark:hover:text-white transition-colors"
+                  title="Close"
+                >
+                  <svg
+                    className="h-5 w-5"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    strokeWidth={2}
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
             </div>
-            <div className="max-h-[80vh] overflow-auto flex justify-center">
-              <img
-                src={activeImage.url}
-                alt={activeImage.name}
-                className="max-h-[80vh] w-auto object-contain rounded"
-              />
+            <div className="max-h-[75vh] overflow-auto flex-1 flex justify-center">
+              {activeAttachment.type === 'image' ? (
+                <img
+                  src={activeAttachment.url}
+                  alt={activeAttachment.name}
+                  className="max-h-[75vh] w-auto object-contain rounded"
+                />
+              ) : (
+                <pre className="w-full max-h-[75vh] overflow-y-auto rounded-md bg-[#0d1a17] p-4 text-xs font-mono leading-relaxed text-[#f2f0eb] border border-[#213e37] whitespace-pre-wrap break-words">
+                  {activeAttachment.content}
+                </pre>
+              )}
             </div>
           </div>
         </div>

@@ -52,6 +52,26 @@ function getAllFailureTags(suites: TestSuite[]): string[] {
   return Array.from(tagSet).sort();
 }
 
+function getAllFailureProjects(suites: TestSuite[]): string[] {
+  const projectSet = new Set<string>();
+  function collect(suite: TestSuite) {
+    for (const c of suite.cases) {
+      if (c.status === 'failed' || c.status === 'timedOut') {
+        if (c.project) {
+          projectSet.add(c.project);
+        }
+      }
+    }
+    for (const sub of suite.subSuites || []) {
+      collect(sub);
+    }
+  }
+  for (const suite of suites) {
+    collect(suite);
+  }
+  return Array.from(projectSet).sort();
+}
+
 function getAllFailureFiles(suites: TestSuite[]): string[] {
   const fileSet = new Set<string>();
   function collect(suite: TestSuite) {
@@ -72,32 +92,45 @@ function getAllFailureFiles(suites: TestSuite[]): string[] {
 
 export default function FailuresSection({ suites, failedCount, timedOutCount }: Props) {
   const [filterTypes, setFilterTypes] = useState<FailureType[]>([]);
+  const [filterProjects, setFilterProjects] = useState<string[]>([]);
   const [filterTags, setFilterTags] = useState<string[]>([]);
   const [filterFiles, setFilterFiles] = useState<string[]>([]);
 
   const availableTypes = useMemo(() => getAllFailureTypes(suites), [suites]);
+  const availableProjects = useMemo(() => getAllFailureProjects(suites), [suites]);
   const availableTags = useMemo(() => getAllFailureTags(suites), [suites]);
   const availableFiles = useMemo(() => getAllFailureFiles(suites), [suites]);
 
   const filteredFailedTests = useMemo(() => {
     const all = extractFailedTests(suites);
-    if (filterTypes.length === 0 && filterTags.length === 0 && filterFiles.length === 0) {
+    if (
+      filterTypes.length === 0 &&
+      filterProjects.length === 0 &&
+      filterTags.length === 0 &&
+      filterFiles.length === 0
+    ) {
       return all;
     }
     return all.filter((t) => {
       const typeMatch = filterTypes.length === 0 || filterTypes.includes(t.type as FailureType);
+      const projectMatch =
+        filterProjects.length === 0 || filterProjects.includes(t.testCase?.project || '');
       const tagMatch =
         filterTags.length === 0 || (t.tags || []).some((tag) => filterTags.includes(tag));
       const fileMatch = filterFiles.length === 0 || filterFiles.includes(t.fileName);
-      return typeMatch && tagMatch && fileMatch;
+      return typeMatch && projectMatch && tagMatch && fileMatch;
     });
-  }, [suites, filterTypes, filterTags, filterFiles]);
+  }, [suites, filterTypes, filterProjects, filterTags, filterFiles]);
 
   const hasActiveFilters =
-    filterTypes.length > 0 || filterTags.length > 0 || filterFiles.length > 0;
+    filterTypes.length > 0 ||
+    filterProjects.length > 0 ||
+    filterTags.length > 0 ||
+    filterFiles.length > 0;
 
   const handleResetFilters = () => {
     setFilterTypes([]);
+    setFilterProjects([]);
     setFilterTags([]);
     setFilterFiles([]);
   };
@@ -147,6 +180,29 @@ export default function FailuresSection({ suites, failedCount, timedOutCount }: 
                   strokeLinecap="round"
                   strokeLinejoin="round"
                   d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                />
+              </svg>
+            }
+          />
+          <MultiSelectFilter
+            label="Projects"
+            options={availableProjects}
+            selectedOptions={filterProjects}
+            onApply={setFilterProjects}
+            showSearch={true}
+            getDisplayValue={() => 'Projects'}
+            icon={
+              <svg
+                className="h-3.5 w-3.5"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={2}
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M2.25 12.75l8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12.75M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125h4.375A1.125 1.125 0 0011.125 19.875v-4.125c0-.621.504-1.125 1.125-1.125h3.375c.621 0 1.125.504 1.125 1.125v4.125c0 .621.504 1.125 1.125 1.125h4.375c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25"
                 />
               </svg>
             }

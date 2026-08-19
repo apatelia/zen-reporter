@@ -36,7 +36,7 @@ interface ChartDataItem {
   'Timed Out': number;
 }
 
-export default function ProjectBarCharts({ summary, suites, title = 'Project Summary' }: Props) {
+export default function ProjectBarCharts({ summary, suites, title = 'Projects Summary' }: Props) {
   const allCases = collectAllCases(suites);
   const projectStats = computeProjectStats(allCases);
 
