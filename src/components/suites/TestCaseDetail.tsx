@@ -63,7 +63,9 @@ export default function TestCaseDetail({ testCase, showSteps = true }: Props) {
   const isTextAttachment = (att: Attachment): boolean => {
     return (
       (att.contentType && att.contentType.startsWith('text/')) ||
-      /\.(txt|log|json|csv|html|xml|md|yaml|yml|js|ts|jsx|tsx|css)$/i.test(att.name || att.path || '')
+      /\.(txt|log|json|csv|html|xml|md|yaml|yml|js|ts|jsx|tsx|css)$/i.test(
+        att.name || att.path || ''
+      )
     );
   };
 
