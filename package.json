@@ -7,6 +7,11 @@
   "bin": {
     "zen-reporter": "scripts/cli.ts"
   },
+  "author": {
+    "name": "Arpan Patelia",
+    "email": "arpan.is@gmail.com"
+  },
+  "license": "MIT",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
@@ -17,7 +22,17 @@
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "format": "prettier --write .",
-    "format:check": "prettier --check ."
+    "format:check": "prettier --check .",
+    "prepare": "husky"
+  },
+  "lint-staged": {
+    "*.{js,jsx,ts,tsx}": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "*.{json,css,md,yml,yaml,html}": [
+      "prettier --write"
+    ]
   },
   "dependencies": {
     "react": "^19.2.8",
@@ -36,6 +51,8 @@
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-react": "^7.37.5",
     "eslint-plugin-react-hooks": "^7.1.1",
+    "husky": "^9.1.7",
+    "lint-staged": "^17.3.0",
     "postcss": "^8.5.26",
     "prettier": "^3.9.6",
     "tailwindcss": "^4.3.3",
@@ -44,10 +61,5 @@
     "typescript-eslint": "^8.67.0",
     "vite": "^8.2.1",
     "vite-plugin-singlefile": "^2.3.3"
-  },
-  "author": {
-    "name": "Arpan Patelia",
-    "email": "arpan.is@gmail.com"
-  },
-  "license": "MIT"
+  }
 }
