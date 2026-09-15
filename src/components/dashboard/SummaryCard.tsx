@@ -18,7 +18,7 @@ const bgMap = {
 const textMap = {
   success: 'text-success-600 dark:text-success-500',
   danger: 'text-danger-600 dark:text-danger-500',
-  warning: 'text-warning-600 dark:text-warning-500',
+  warning: 'text-warning-500 dark:text-warning-500',
   info: 'text-info-600 dark:text-info-500',
 };
 

@@ -9,19 +9,18 @@ zen-reporter/
 │   │   │   ├── Overview.tsx           # Dashboard layout & high-level stats
 │   │   │   ├── PassRateRing.tsx       # Radial pass rate indicator
 │   │   │   ├── ProjectBarCharts.tsx   # Per-project test status bar charts
-│   │   │   └── QuickStats.tsx         # KPI summary counters
+│   │   │   ├── QuickStats.tsx         # KPI summary counters
+│   │   │   └── SummaryCard.tsx        # Reusable metric card with icons
 │   │   ├── failures/
 │   │   │   ├── FailureList.tsx        # List view for failed & timed-out tests
 │   │   │   └── FailuresSection.tsx    # Failures tab container with search & filters
-│   │   ├── suites/
-│   │   │   ├── MultiSelectFilter.tsx  # Multi-select dropdown filter component
-│   │   │   ├── SuiteView.tsx          # Tree view container for test suites
-│   │   │   ├── SuitesSection.tsx       # Suites tab container with search & expand all
-│   │   │   ├── TestCaseCard.tsx       # Individual test case card with header toggle
-│   │   │   ├── TestCaseDetail.tsx     # Expanded test step execution & error stack
-│   │   │   └── TestSuiteNode.tsx      # Collapsible suite node for nested describes
-│   │   └── ui/
-│   │       └── SummaryCard.tsx        # Reusable metric card with icons
+│   │   └── suites/
+│   │       ├── MultiSelectFilter.tsx  # Multi-select dropdown filter component
+│   │       ├── SuiteView.tsx          # Tree view container for test suites
+│   │       ├── SuitesSection.tsx       # Suites tab container with search & expand all
+│   │       ├── TestCaseCard.tsx       # Individual test case card with header toggle
+│   │       ├── TestCaseDetail.tsx     # Expanded test step execution & error stack
+│   │       └── TestSuiteNode.tsx      # Collapsible suite node for nested describes
 │   ├── lib/
 │   │   ├── dataProcessor.ts         # Raw data conversion & package manager detector
 │   │   ├── reporter.ts              # Playwright Reporter implementation (ZenReporter)

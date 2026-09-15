@@ -1,6 +1,6 @@
 import { formatDuration, formatDate, computePassRate } from '@/lib/utils';
 import type { ResultSummary, TestSuite } from '@/lib/types';
-import SummaryCard from '../ui/SummaryCard';
+import SummaryCard from './SummaryCard';
 import PassRateRing from './PassRateRing';
 import QuickStats from './QuickStats';
 import ProjectBarCharts from './ProjectBarCharts';

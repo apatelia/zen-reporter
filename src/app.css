@@ -139,6 +139,10 @@ body {
   min-height: 100vh;
 }
 
+@utility text-warning-500 {
+  color: var(--color-warning-500);
+}
+
 /* Custom scrollbar */
 ::-webkit-scrollbar {
   width: 6px;

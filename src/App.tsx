@@ -4,6 +4,9 @@ import SuitesSection from '@/components/suites/SuitesSection';
 import type { ReportData, TestSuite } from '@/lib/types';
 import { extractFailedTests } from '@/lib/utils';
 import { useEffect, useMemo, useState } from 'react';
+import logoRaw from '@/assets/logo.svg?raw';
+
+const logo = `data:image/svg+xml;utf8,${encodeURIComponent(logoRaw)}`;
 
 type TabKey = 'overview' | 'suites' | 'failures';
 
@@ -124,6 +127,15 @@ export default function App() {
     } else {
       document.documentElement.classList.remove('dark');
     }
+
+    let link = document.querySelector<HTMLLinkElement>("link[rel~='icon']");
+    if (!link) {
+      link = document.createElement('link');
+      link.rel = 'icon';
+      document.head.appendChild(link);
+    }
+    link.type = 'image/svg+xml';
+    link.href = logo;
   }, [darkMode]);
 
   const cycleDarkMode = () => {
@@ -135,7 +147,7 @@ export default function App() {
   useEffect(() => {
     async function loadReport() {
       try {
-        const resp = await fetch('/report/report.json');
+        const resp = await fetch('/zen-report/report.json');
         if (!resp.ok) {
           throw new Error('No report found');
         }
@@ -180,21 +192,7 @@ export default function App() {
       <aside className="flex w-60 flex-col border-r border-border-default bg-surface-50">
         {/* Brand */}
         <div className="flex items-center gap-3 px-5 py-5">
-          <div className="flex h-9 w-9 items-center justify-center rounded-md bg-linear-to-br from-success to-accent-blue shadow-sm">
-            <svg
-              className="h-5 w-5 text-text-on-primary"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              strokeWidth={2}
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-              />
-            </svg>
-          </div>
+          <img src={logo} alt="Zen Reporter" className="h-9 w-9 object-contain drop-shadow-xs" />
           <div>
             <h1 className="text-sm font-bold tracking-tight text-text-ink">Zen Reporter</h1>
             <p className="text-[11px] text-text-body-mid">Playwright Test Results</p>
