@@ -140,6 +140,8 @@ export default function FailuresSection({
     filterTags.length > 0 ||
     filterFiles.length > 0;
 
+  const noFailures = failedCount + timedOutCount + interruptedCount === 0;
+
   const handleResetFilters = () => {
     setFilterTypes([]);
     setFilterProjects([]);
@@ -190,6 +192,7 @@ export default function FailuresSection({
             selectedOptions={filterTypes}
             onApply={setFilterTypes}
             getDisplayValue={() => 'Type'}
+            disabled={noFailures}
             icon={
               <svg
                 className="h-3.5 w-3.5"
@@ -213,6 +216,7 @@ export default function FailuresSection({
             onApply={setFilterProjects}
             showSearch={true}
             getDisplayValue={() => 'Projects'}
+            disabled={noFailures}
             icon={
               <svg
                 className="h-3.5 w-3.5"
@@ -236,6 +240,7 @@ export default function FailuresSection({
             onApply={setFilterTags}
             showSearch={true}
             getDisplayValue={() => 'Tags'}
+            disabled={noFailures}
             icon={
               <svg
                 className="h-3.5 w-3.5"
@@ -259,6 +264,7 @@ export default function FailuresSection({
             onApply={setFilterFiles}
             showSearch={true}
             getDisplayValue={() => 'Files'}
+            disabled={noFailures}
             icon={
               <svg
                 className="h-3.5 w-3.5"

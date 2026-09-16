@@ -8,9 +8,9 @@ interface Props {
 export default function FailureList({ failedTests }: Props) {
   if (failedTests.length === 0) {
     return (
-      <div className="flex items-center gap-3 rounded-md bg-success-50 dark:bg-success-50/20 px-6 py-8 text-center">
+      <div className="flex items-center gap-4 rounded-md border border-success-200 bg-success-50/50 px-6 py-6 shadow-sm dark:border-success-500/30 dark:bg-success-500/10">
         <svg
-          className="h-8 w-8 text-success-500"
+          className="h-8 w-8 text-success-500 dark:text-success-400 shrink-0"
           fill="none"
           viewBox="0 0 24 24"
           stroke="currentColor"
@@ -23,7 +23,7 @@ export default function FailureList({ failedTests }: Props) {
           />
         </svg>
         <div className="text-left">
-          <p className="text-sm font-semibold text-success-600 dark:text-success-500">
+          <p className="text-sm font-semibold text-success-600 dark:text-success-400">
             No failures
           </p>
           <p className="text-xs text-text-body-mid dark:text-text-muted">

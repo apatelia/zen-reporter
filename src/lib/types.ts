@@ -59,6 +59,8 @@ export interface ResultSummary {
 export interface TestRun {
   summary: ResultSummary;
   suites: TestSuite[];
+  projectName?: string;
+  testRunName?: string;
 }
 
 export interface ReportData {
@@ -74,7 +76,7 @@ export interface Attachment {
   name: string;
   contentType: string;
   path: string | null;
-  body: Buffer | null;
+  body: Buffer | string | null;
 }
 
 export interface Location {

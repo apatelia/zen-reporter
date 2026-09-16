@@ -9,10 +9,10 @@ interface MultiSelectFilterProps<T> {
   getDisplayValue: (options: T[]) => string;
   renderOption?: (option: T, isSelected: boolean, handleToggle: (option: T) => void) => ReactNode;
   showSearch?: boolean;
+  disabled?: boolean;
 }
 
 export default function MultiSelectFilter<T extends string>({
-  label,
   options,
   selectedOptions,
   onApply,
@@ -20,11 +20,14 @@ export default function MultiSelectFilter<T extends string>({
   getDisplayValue,
   renderOption,
   showSearch = false,
+  disabled = false,
 }: MultiSelectFilterProps<T>) {
   const [isOpen, setIsOpen] = useState(false);
   const [tempSelection, setTempSelection] = useState<T[]>([...selectedOptions]);
   const [searchTerm, setSearchTerm] = useState<string>('');
   const dropdownRef = useRef<HTMLDivElement>(null);
+
+  const isDisabled = disabled || options.length === 0;
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -83,11 +86,17 @@ export default function MultiSelectFilter<T extends string>({
       <div className="relative" ref={dropdownRef}>
         <button
           type="button"
+          disabled={isDisabled}
           onClick={() => {
+            if (isDisabled) return;
             setTempSelection(selectedOptions.length > 0 ? [...selectedOptions] : [...options]);
             setIsOpen(!isOpen);
           }}
-          className="inline-flex items-center gap-2 rounded-md border border-border-default bg-surface-100 px-3 py-1.5 text-xs font-medium text-text-body-mid transition-all duration-200 hover:border-border-default hover:text-text-ink dark:border-border-default dark:bg-surface-100 dark:text-text-body-mid dark:hover:border-border-default dark:hover:text-text-on-primary"
+          className={`inline-flex items-center gap-2 rounded-md border border-border-default bg-surface-100 px-3 py-1.5 text-xs font-medium text-text-body-mid transition-all duration-200 ${
+            isDisabled
+              ? 'opacity-50 cursor-not-allowed pointer-events-none'
+              : 'hover:border-border-default hover:text-text-ink dark:border-border-default dark:bg-surface-100 dark:text-text-body-mid dark:hover:border-border-default dark:hover:text-text-on-primary'
+          }`}
         >
           {icon && <span className="shrink-0">{icon}</span>}
           <span className="truncate max-w-37.5">{selectionLabel}</span>

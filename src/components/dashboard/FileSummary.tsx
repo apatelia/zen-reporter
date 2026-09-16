@@ -1,13 +1,12 @@
 import { collectAllCases, computeFileStats, truncateFileName } from '@/lib/utils';
-import type { ResultSummary, TestSuite } from '@/lib/types';
+import type { TestSuite } from '@/lib/types';
 
 interface Props {
-  summary: ResultSummary;
   suites: TestSuite[];
   title?: string;
 }
 
-export default function FileSummary({ summary, suites, title = 'Files Summary' }: Props) {
+export default function FileSummary({ suites, title = 'Files Summary' }: Props) {
   const allCases = collectAllCases(suites);
   const fileStats = computeFileStats(allCases);
 
@@ -30,7 +29,7 @@ export default function FileSummary({ summary, suites, title = 'Files Summary' }
     <div className="overflow-hidden rounded-md bg-canvas border border-border-default shadow-sm">
       <div className="overflow-x-auto">
         <div>
-          <table className="w-full text-xs">
+          <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-border-default">
                 <th
@@ -41,28 +40,28 @@ export default function FileSummary({ summary, suites, title = 'Files Summary' }
                 </th>
               </tr>
               <tr className="border-b border-border-subtle">
-                <th className="px-2 py-2 text-left font-semibold text-text-ink dark:text-text-on-primary">
+                <th className="px-1.5 py-2.5 text-left font-semibold text-text-ink dark:text-text-on-primary">
                   File
                 </th>
-                <th className="px-2 py-2 text-center font-semibold text-text-ink dark:text-text-on-primary">
+                <th className="px-1.5 py-2.5 text-center font-semibold text-text-ink dark:text-text-on-primary">
                   Total
                 </th>
-                <th className="px-2 py-2 text-center font-semibold text-text-ink dark:text-text-on-primary">
+                <th className="px-1.5 py-2.5 text-center font-semibold text-text-ink dark:text-text-on-primary">
                   Passed
                 </th>
-                <th className="px-2 py-2 text-center font-semibold text-text-ink dark:text-text-on-primary">
+                <th className="px-1.5 py-2.5 text-center font-semibold text-text-ink dark:text-text-on-primary">
                   Failed
                 </th>
-                <th className="px-2 py-2 text-center font-semibold text-text-ink dark:text-text-on-primary">
+                <th className="px-1.5 py-2.5 text-center font-semibold text-text-ink dark:text-text-on-primary">
                   Timed Out
                 </th>
-                <th className="px-2 py-2 text-center font-semibold text-text-ink dark:text-text-on-primary">
+                <th className="px-1.5 py-2.5 text-center font-semibold text-text-ink dark:text-text-on-primary">
                   Interrupted
                 </th>
-                <th className="px-2 py-2 text-center font-semibold text-text-ink dark:text-text-on-primary">
+                <th className="px-1.5 py-2.5 text-center font-semibold text-text-ink dark:text-text-on-primary">
                   Skipped
                 </th>
-                <th className="px-2 py-2 text-center font-semibold text-text-ink dark:text-text-on-primary">
+                <th className="px-1.5 py-2.5 text-center font-semibold text-text-ink dark:text-text-on-primary">
                   Pass Rate
                 </th>
               </tr>
@@ -70,50 +69,50 @@ export default function FileSummary({ summary, suites, title = 'Files Summary' }
             <tbody>
               {fileStats.map((file) => (
                 <tr key={file.fileName} className="border-b border-border-subtle last:border-b-0">
-                  <td className="px-2 py-2">
-                    <div className="max-w-40 truncate font-medium text-text-ink dark:text-text-on-primary">
+                  <td className="px-1.5 py-2.5">
+                    <div className="max-w-44 truncate font-medium text-text-ink dark:text-text-on-primary">
                       {truncateFileName(file.fileName)}
                     </div>
                   </td>
-                  <td className="px-2 py-2 text-center text-text-body-mid dark:text-text-muted">
+                  <td className="px-1.5 py-2.5 text-center text-text-body-mid dark:text-text-muted">
                     {file.total}
                   </td>
-                  <td className="px-2 py-2 text-center">
+                  <td className="px-1.5 py-2.5 text-center">
                     <span
-                      className={`inline-block rounded-full px-1.5 py-0.5 text-[10px] font-medium ring-1 ${badgeColors.passed}`}
+                      className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium ring-1 ${badgeColors.passed}`}
                     >
                       {file.passed}
                     </span>
                   </td>
-                  <td className="px-2 py-2 text-center">
+                  <td className="px-1.5 py-2.5 text-center">
                     <span
-                      className={`inline-block rounded-full px-1.5 py-0.5 text-[10px] font-medium ring-1 ${badgeColors.failed}`}
+                      className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium ring-1 ${badgeColors.failed}`}
                     >
                       {file.failed}
                     </span>
                   </td>
-                  <td className="px-2 py-2 text-center">
+                  <td className="px-1.5 py-2.5 text-center">
                     <span
-                      className={`inline-block rounded-full px-1.5 py-0.5 text-[10px] font-medium ring-1 ${badgeColors.timedOut}`}
+                      className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium ring-1 ${badgeColors.timedOut}`}
                     >
                       {file.timedOut}
                     </span>
                   </td>
-                  <td className="px-2 py-2 text-center">
+                  <td className="px-1.5 py-2.5 text-center">
                     <span
-                      className={`inline-block rounded-full px-1.5 py-0.5 text-[10px] font-medium ring-1 ${badgeColors.interrupted}`}
+                      className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium ring-1 ${badgeColors.interrupted}`}
                     >
                       {file.interrupted}
                     </span>
                   </td>
-                  <td className="px-2 py-2 text-center">
+                  <td className="px-1.5 py-2.5 text-center">
                     <span
-                      className={`inline-block rounded-full px-1.5 py-0.5 text-[10px] font-medium ring-1 ${badgeColors.skipped}`}
+                      className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium ring-1 ${badgeColors.skipped}`}
                     >
                       {file.skipped}
                     </span>
                   </td>
-                  <td className="px-2 py-2 text-center font-semibold text-text-ink dark:text-text-on-primary">
+                  <td className="px-1.5 py-2.5 text-center font-semibold text-text-ink dark:text-text-on-primary">
                     {file.total > 0 ? Math.round((file.passed / file.total) * 100) : 0}%
                   </td>
                 </tr>

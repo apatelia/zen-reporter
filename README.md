@@ -54,6 +54,8 @@ export default defineConfig({
       'zen-reporter',
       {
         outputDir: 'zen-report', // Optional: Output directory where report files will be generated (default: "zen-report")
+        projectName: 'My E2E Project', // Optional: Project name displayed in the top bar header
+        testRunName: 'Nightly Build #42', // Optional: Test run / build name displayed in the top bar header
       },
     ],
   ],
@@ -62,9 +64,11 @@ export default defineConfig({
 
 ### Options Reference
 
-| Option      | Type     | Default        | Description                                   |
-| :---------- | :------- | :------------- | :-------------------------------------------- |
-| `outputDir` | `string` | `"zen-report"` | Directory where final report files are saved. |
+| Option        | Type     | Default                     | Description                                                         |
+| :------------ | :------- | :-------------------------- | :------------------------------------------------------------------ |
+| `outputDir`   | `string` | `"zen-report"`              | Directory where final report files are saved.                       |
+| `projectName` | `string` | `"Test Automation Project"` | Project name displayed prominently in the top bar of the dashboard. |
+| `testRunName` | `string` | `"Test Run #1"`             | Test run or build name displayed in the top bar of the dashboard.   |
 
 ---
 

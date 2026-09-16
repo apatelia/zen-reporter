@@ -1,10 +1,9 @@
+import logoRaw from '@/assets/logo.svg?raw';
 import Overview from '@/components/dashboard/Overview';
 import FailuresSection from '@/components/failures/FailuresSection';
 import SuitesSection from '@/components/suites/SuitesSection';
 import type { ReportData, TestSuite } from '@/lib/types';
-import { extractFailedTests } from '@/lib/utils';
 import { useEffect, useMemo, useState } from 'react';
-import logoRaw from '@/assets/logo.svg?raw';
 
 const logo = `data:image/svg+xml;utf8,${encodeURIComponent(logoRaw)}`;
 
@@ -76,17 +75,22 @@ function SidebarItem({
   isActive,
   onClick,
   badge,
+  isCollapsed,
 }: {
   icon: React.ReactNode;
   label: string;
   isActive: boolean;
   onClick: () => void;
   badge?: number;
+  isCollapsed?: boolean;
 }) {
   return (
     <button
       onClick={onClick}
-      className={`group relative flex w-full items-center gap-3 rounded-md px-3 py-2.5 text-sm font-semibold transition-all duration-150 ${
+      title={isCollapsed ? label : undefined}
+      className={`group relative flex w-full items-center ${
+        isCollapsed ? 'justify-center px-2 py-2.5' : 'gap-3 px-3 py-2.5'
+      } rounded-md text-sm font-semibold transition-all duration-150 ${
         isActive
           ? 'bg-accent-blue/10 text-accent-blue shadow-sm dark:bg-accent-blue/20 dark:text-success-500'
           : 'text-text-body-mid hover:bg-surface-100 hover:text-text-ink dark:text-text-body-mid dark:hover:bg-surface-100 dark:hover:text-text-on-primary font-medium'
@@ -96,13 +100,23 @@ function SidebarItem({
         <span className="absolute left-0 top-1.5 bottom-1.5 w-1 rounded-r-full bg-accent-blue dark:bg-success-500" />
       )}
       <span
-        className={`shrink-0 transition-colors ${isActive ? 'text-accent-blue dark:text-success-500' : 'text-text-body-mid group-hover:text-text-ink dark:text-text-body-mid dark:group-hover:text-text-on-primary'}`}
+        className={`shrink-0 transition-colors ${
+          isActive
+            ? 'text-accent-blue dark:text-success-500'
+            : 'text-text-body-mid group-hover:text-text-ink dark:text-text-body-mid dark:group-hover:text-text-on-primary'
+        }`}
       >
         {icon}
       </span>
-      <span className="truncate">{label}</span>
+      {!isCollapsed && <span className="truncate">{label}</span>}
       {badge !== undefined && badge > 0 && (
-        <span className="ml-auto flex h-5 min-w-5 items-center justify-center rounded-full bg-accent-red px-1.5 text-[11px] font-semibold text-text-on-primary">
+        <span
+          className={
+            isCollapsed
+              ? 'absolute -top-1 -right-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-accent-red px-1 text-[10px] font-bold text-text-on-primary shadow-sm'
+              : 'ml-auto flex h-5 min-w-5 items-center justify-center rounded-full bg-accent-red px-1.5 text-[11px] font-semibold text-text-on-primary'
+          }
+        >
           {badge}
         </span>
       )}
@@ -114,7 +128,7 @@ export default function App() {
   const [activeTab, setActiveTab] = useState<TabKey>('overview');
   const [reportData, setReportData] = useState<ReportData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [isCollapsed, setIsCollapsed] = useState(false);
   const [darkMode, setDarkMode] = useState<'light' | 'dark'>(
     ((typeof window !== 'undefined' &&
       (localStorage.getItem('zen-dark-mode') as 'light' | 'dark' | null)) ||
@@ -147,22 +161,32 @@ export default function App() {
   useEffect(() => {
     async function loadReport() {
       try {
-        const resp = await fetch('/zen-report/report.json');
-        if (!resp.ok) {
-          throw new Error('No report found');
-        }
-        const data = await resp.json();
-        setReportData(data);
-      } catch {
+        // First check for embedded inline report data (used in static single-file HTML reports)
         const inlineEl = document.getElementById('report-data');
         if (inlineEl) {
-          try {
-            const data = JSON.parse(inlineEl.textContent || '{}');
-            setReportData(data);
-          } catch {
-            // ignore
+          const text = inlineEl.textContent?.trim();
+          if (text) {
+            try {
+              const data = JSON.parse(text);
+              setReportData(data);
+              return;
+            } catch {
+              // ignore parse errors and proceed
+            }
           }
         }
+
+        // Only attempt fetching if not running under file:// protocol (e.g., local dev server)
+        if (typeof window !== 'undefined' && window.location.protocol !== 'file:') {
+          const resp = await fetch('/zen-report/report.json');
+          if (resp.ok) {
+            const data = await resp.json();
+            setReportData(data);
+            return;
+          }
+        }
+      } catch (err) {
+        console.warn('Could not load report data:', err);
       } finally {
         setIsLoading(false);
       }
@@ -170,11 +194,19 @@ export default function App() {
     loadReport();
   }, []);
 
-  const { summary, suites } = useMemo(() => {
-    if (!reportData?.testRun) return { summary: null, suites: [] as TestSuite[] };
+  const { summary, suites, projectName, testRunName } = useMemo(() => {
+    if (!reportData?.testRun)
+      return {
+        summary: null,
+        suites: [] as TestSuite[],
+        projectName: undefined,
+        testRunName: undefined,
+      };
     return {
       summary: reportData.testRun.summary,
       suites: reportData.testRun.suites,
+      projectName: reportData.testRun.projectName,
+      testRunName: reportData.testRun.testRunName,
     };
   }, [reportData]);
 
@@ -186,63 +218,84 @@ export default function App() {
   return (
     <div className="flex h-screen overflow-hidden bg-canvas">
       {/* Sidebar */}
-      <aside className="flex w-60 flex-col border-r border-border-default bg-surface-50">
-        {/* Brand */}
-        <div className="flex items-center gap-3 px-5 py-5">
-          <img src={logo} alt="Zen Reporter" className="h-9 w-9 object-contain drop-shadow-xs" />
-          <div>
-            <h1 className="text-sm font-bold tracking-tight text-text-ink">Zen Reporter</h1>
-            <p className="text-[11px] text-text-body-mid">Playwright Test Results</p>
-          </div>
+      <aside
+        className={`flex flex-col border-r border-border-default bg-surface-50 transition-all duration-200 ${
+          isCollapsed ? 'w-16' : 'w-60'
+        }`}
+      >
+        {/* Sidebar Header & Collapse Toggle */}
+        <div
+          className={`flex items-center ${
+            isCollapsed ? 'justify-center py-4' : 'justify-between min-w-0 px-4 py-4'
+          }`}
+        >
+          {!isCollapsed ? (
+            <>
+              <div className="flex items-center gap-2 min-w-0">
+                <svg
+                  className="h-4 w-4 text-text-muted shrink-0"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={1.5}
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M12 21a9 9 0 100-18 9 9 0 000 18z"
+                  />
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M15.414 8.586l-2.828 5.657-5.657 2.828 2.828-5.657 5.657-2.828z"
+                  />
+                </svg>
+                <span className="text-xs font-semibold tracking-wider text-text-muted uppercase truncate">
+                  Navigation
+                </span>
+              </div>
+              <button
+                onClick={() => setIsCollapsed(true)}
+                className="p-1.5 rounded-md text-text-body-mid hover:text-text-ink hover:bg-surface-100 transition-colors shrink-0"
+                title="Collapse sidebar"
+              >
+                <svg
+                  className="h-5 w-5"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={1.5}
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M15.75 19.5L8.25 12l7.5-7.5"
+                  />
+                </svg>
+              </button>
+            </>
+          ) : (
+            <button
+              onClick={() => setIsCollapsed(false)}
+              className="p-1.5 rounded-md text-text-body-mid hover:text-text-ink hover:bg-surface-100 transition-colors"
+              title="Expand sidebar"
+            >
+              <svg
+                className="h-5 w-5"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={1.5}
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+              </svg>
+            </button>
+          )}
         </div>
         <div className="mx-3 h-px bg-border-default"></div>
-        <div className="flex justify-end px-3 py-2">
-          <button
-            onClick={cycleDarkMode}
-            className={`relative flex h-6 w-11 items-center rounded-full transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-blue focus-visible:ring-offset-2 focus-visible:ring-offset-surface-50 ${darkMode === 'dark' ? 'bg-accent-blue' : 'bg-surface-200'}`}
-            title={`Switch to ${darkMode === 'dark' ? 'Light' : 'Dark'} mode`}
-          >
-            <span
-              className="pointer-events-none flex h-5 w-5 transform items-center justify-center rounded-full bg-canvas shadow-sm transition-transform duration-200"
-              style={{
-                transform: darkMode === 'dark' ? 'translateX(20px)' : 'translateX(1px)',
-              }}
-            >
-              {darkMode === 'light' ? (
-                <svg
-                  className="h-3 w-3 text-text-muted"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                  strokeWidth={2}
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M12 3v2.25m6.364.386l-1.591 1.591M21 12h-2.25m-.386 6.364l-1.591-1.591M12 18.75V21m-4.773-4.227l-1.591 1.591M5.25 12H3m4.227-4.773L5.636 5.636M15.75 12a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0z"
-                  />
-                </svg>
-              ) : (
-                <svg
-                  className="h-3 w-3 text-text-muted"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                  strokeWidth={2}
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M21.752 15.002A9.718 9.718 0 0118 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 003 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 009.002-5.998z"
-                  />
-                </svg>
-              )}
-            </span>
-          </button>
-        </div>
 
         {/* Nav */}
-        <nav className="flex-1 space-y-1 px-3 py-2">
+        <nav className={`flex-1 space-y-1 ${isCollapsed ? 'px-2' : 'px-3'} py-2`}>
           {TABS.map((tab) => (
             <SidebarItem
               key={tab.key}
@@ -253,79 +306,207 @@ export default function App() {
               badge={
                 tab.key === 'failures' ? failedCount + timedOutCount + interruptedCount : undefined
               }
+              isCollapsed={isCollapsed}
             />
           ))}
         </nav>
         <div className="mx-3 h-px bg-border-default"></div>
-      </aside>
 
-      {/* Main Content */}
-      <main className="flex-1 overflow-auto">
-        <div className="mx-auto max-w-full bg-canvas px-10 py-8">
-          {isLoading && (
-            <div className="flex items-center justify-center py-24">
-              <div className="text-center">
-                <div className="mx-auto mb-4 h-8 w-8 animate-spin rounded-full border-4 border-surface-200 border-t-accent-blue"></div>
-                <p className="text-sm text-text-body-mid">Loading report…</p>
+        {/* Brand & Theme Toggle at Bottom */}
+        {!isCollapsed ? (
+          <div className="flex items-center justify-between px-4 py-3">
+            <div className="flex items-center gap-2.5 min-w-0">
+              <img
+                src={logo}
+                alt="Zen Reporter"
+                className="h-7 w-7 shrink-0 object-contain drop-shadow-xs"
+              />
+              <div className="min-w-0">
+                <h2 className="text-xs font-bold tracking-tight text-text-ink truncate">
+                  Zen Reporter
+                </h2>
+                <p className="text-[10px] text-text-body-mid truncate">Playwright Test Reporter</p>
               </div>
             </div>
-          )}
-
-          {!isLoading && !reportData && (
-            <div className="flex items-center justify-center py-24 text-center">
-              <div>
-                <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-md bg-surface-100">
+            <button
+              onClick={cycleDarkMode}
+              className={`relative flex h-5 w-9 shrink-0 items-center rounded-full transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-blue focus-visible:ring-offset-2 focus-visible:ring-offset-surface-50 ${
+                darkMode === 'dark' ? 'bg-accent-blue' : 'bg-surface-200'
+              }`}
+              title={`Switch to ${darkMode === 'dark' ? 'Light' : 'Dark'} mode`}
+            >
+              <span
+                className="pointer-events-none flex h-4 w-4 transform items-center justify-center rounded-full bg-canvas shadow-sm transition-transform duration-200"
+                style={{
+                  transform: darkMode === 'dark' ? 'translateX(16px)' : 'translateX(1px)',
+                }}
+              >
+                {darkMode === 'light' ? (
                   <svg
-                    className="h-8 w-8 text-text-body-mid"
+                    className="h-2.5 w-2.5 text-text-muted"
                     fill="none"
                     viewBox="0 0 24 24"
                     stroke="currentColor"
-                    strokeWidth={1.5}
+                    strokeWidth={2}
                   >
                     <path
                       strokeLinecap="round"
                       strokeLinejoin="round"
-                      d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"
+                      d="M12 3v2.25m6.364.386l-1.591 1.591M21 12h-2.25m-.386 6.364l-1.591-1.591M12 18.75V21m-4.773-4.227l-1.591 1.591M5.25 12H3m4.227-4.773L5.636 5.636M15.75 12a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0z"
                     />
                   </svg>
-                </div>
-                <h3 className="text-base font-semibold text-text-ink">No report data</h3>
-                <p className="mt-1 text-sm text-text-body-mid">
-                  Run your tests with the Zen Reporter to generate a report, or place a{' '}
-                  <code className="rounded bg-surface-100 px-1 py-0.5 text-xs font-mono">
-                    report/report.json
-                  </code>{' '}
-                  in the project.
+                ) : (
+                  <svg
+                    className="h-2.5 w-2.5 text-text-muted"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    strokeWidth={2}
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M21.752 15.002A9.718 9.718 0 0118 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 003 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 009.002-5.998z"
+                    />
+                  </svg>
+                )}
+              </span>
+            </button>
+          </div>
+        ) : (
+          <div className="flex flex-col items-center justify-center px-2 py-3 gap-3">
+            <button
+              onClick={cycleDarkMode}
+              className="flex h-9 w-9 items-center justify-center rounded-md text-text-body-mid hover:bg-surface-100 hover:text-text-ink transition-colors"
+              title={`Switch to ${darkMode === 'dark' ? 'Light' : 'Dark'} mode`}
+            >
+              {darkMode === 'light' ? (
+                <svg
+                  className="h-5 w-5"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={1.5}
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M12 3v2.25m6.364.386l-1.591 1.591M21 12h-2.25m-.386 6.364l-1.591-1.591M12 18.75V21m-4.773-4.227l-1.591 1.591M5.25 12H3m4.227-4.773L5.636 5.636M15.75 12a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0z"
+                  />
+                </svg>
+              ) : (
+                <svg
+                  className="h-5 w-5"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={1.5}
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M21.752 15.002A9.718 9.718 0 0118 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 003 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 009.002-5.998z"
+                  />
+                </svg>
+              )}
+            </button>
+          </div>
+        )}
+      </aside>
+
+      {/* Main Content */}
+      <main className="flex-1 flex flex-col min-w-0 overflow-hidden bg-canvas">
+        {/* Top Bar for Project Name & Test Run Name */}
+        {(projectName || testRunName) && (
+          <header className="border-b border-border-default bg-surface-50/50 px-10 py-5 shrink-0 text-center">
+            <div className="flex flex-col min-w-0">
+              {projectName && (
+                <h1
+                  className="text-2xl font-bold tracking-tight text-text-ink dark:text-text-on-primary sm:text-3xl truncate"
+                  title={projectName}
+                >
+                  {projectName}
+                </h1>
+              )}
+              {testRunName && (
+                <p
+                  className="text-sm font-medium text-text-body-mid dark:text-text-muted sm:text-base truncate mt-1"
+                  title={testRunName}
+                >
+                  {testRunName}
                 </p>
-              </div>
+              )}
             </div>
-          )}
+          </header>
+        )}
 
-          {!isLoading && reportData && activeTab === 'overview' && summary && (
-            <Overview summary={summary} suites={suites} />
-          )}
-
-          {!isLoading && reportData && activeTab === 'suites' && suites.length > 0 && (
-            <SuitesSection suites={suites} />
-          )}
-
-          {!isLoading && reportData && activeTab === 'suites' && suites.length === 0 && (
-            <div className="flex items-center justify-center py-24 text-center">
-              <div>
-                <h3 className="text-base font-semibold text-text-ink">No suites</h3>
-                <p className="mt-1 text-sm text-text-body-mid">No test suites to display.</p>
+        <div className="flex-1 overflow-auto">
+          <div className="mx-auto max-w-full px-10 py-8">
+            {isLoading && (
+              <div className="flex items-center justify-center py-24">
+                <div className="text-center">
+                  <div className="mx-auto mb-4 h-8 w-8 animate-spin rounded-full border-4 border-surface-200 border-t-accent-blue"></div>
+                  <p className="text-sm text-text-body-mid">Loading report…</p>
+                </div>
               </div>
-            </div>
-          )}
+            )}
 
-          {!isLoading && reportData && activeTab === 'failures' && (
-            <FailuresSection
-              suites={suites}
-              failedCount={failedCount}
-              timedOutCount={timedOutCount}
-              interruptedCount={interruptedCount}
-            />
-          )}
+            {!isLoading && !reportData && (
+              <div className="flex items-center justify-center py-24 text-center">
+                <div>
+                  <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-md bg-surface-100">
+                    <svg
+                      className="h-8 w-8 text-text-body-mid"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                      strokeWidth={1.5}
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"
+                      />
+                    </svg>
+                  </div>
+                  <h3 className="text-base font-semibold text-text-ink">No report data</h3>
+                  <p className="mt-1 text-sm text-text-body-mid">
+                    Run your tests with the Zen Reporter to generate a report, or place a{' '}
+                    <code className="rounded bg-surface-100 px-1 py-0.5 text-xs font-mono">
+                      report/report.json
+                    </code>{' '}
+                    in the project.
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {!isLoading && reportData && activeTab === 'overview' && summary && (
+              <Overview summary={summary} suites={suites} />
+            )}
+
+            {!isLoading && reportData && activeTab === 'suites' && suites.length > 0 && (
+              <SuitesSection suites={suites} />
+            )}
+
+            {!isLoading && reportData && activeTab === 'suites' && suites.length === 0 && (
+              <div className="flex items-center justify-center py-24 text-center">
+                <div>
+                  <h3 className="text-base font-semibold text-text-ink">No suites</h3>
+                  <p className="mt-1 text-sm text-text-body-mid">No test suites to display.</p>
+                </div>
+              </div>
+            )}
+
+            {!isLoading && reportData && activeTab === 'failures' && (
+              <FailuresSection
+                suites={suites}
+                failedCount={failedCount}
+                timedOutCount={timedOutCount}
+                interruptedCount={interruptedCount}
+              />
+            )}
+          </div>
         </div>
       </main>
     </div>

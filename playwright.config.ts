@@ -6,7 +6,17 @@ export default defineConfig({
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 1,
   workers: process.env.CI ? 1 : undefined,
-  reporter: [['list'], ['html'], ['./src/lib/reporter.ts']],
+  reporter: [
+    ['list'],
+    ['html', { open: 'never' }],
+    [
+      './src/lib/reporter.ts',
+      {
+        projectName: 'Zen Reporter',
+        testRunName: 'Playwright Tests For Reporter',
+      },
+    ],
+  ],
   use: {
     // baseURL: 'http://localhost:3000',
     trace: 'on-first-retry',

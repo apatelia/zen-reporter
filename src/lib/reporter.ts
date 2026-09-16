@@ -14,6 +14,7 @@ import type {
   ReportData,
   ResultSummary,
   TestCase as TestCaseModel,
+  TestError,
   TestRun as TestRunModel,
   TestSuite,
 } from './types';
@@ -37,6 +38,8 @@ function getDescribePath(test: TestCase): string[] {
 export interface ReporterConfig {
   outputDir: string;
   packageManager: string;
+  projectName: string;
+  testRunName: string;
 }
 
 export function resolveConfig(
@@ -45,8 +48,12 @@ export function resolveConfig(
 ): ReporterConfig {
   const outputDir = rawConfig?.outputDir ? String(rawConfig.outputDir) : 'zen-report';
   const packageManager = detectPackageManager(cwd);
+  const projectName = rawConfig?.projectName
+    ? String(rawConfig.projectName)
+    : 'Test Automation Project';
+  const testRunName = rawConfig?.testRunName ? String(rawConfig.testRunName) : 'Test Run #1';
 
-  return { outputDir, packageManager };
+  return { outputDir, packageManager, projectName, testRunName };
 }
 
 class ZenReporter implements Reporter {
@@ -67,7 +74,10 @@ class ZenReporter implements Reporter {
 
   onBegin(config: FullConfig, _suite: Suite): void {
     this.config = config;
-    this.reportConfig = resolveConfig(this.options || (config as any).reporterConfig);
+    this.reportConfig = resolveConfig(
+      this.options ||
+        (config as FullConfig & { reporterConfig?: Record<string, unknown> }).reporterConfig
+    );
     this.startTime = new Date().toISOString();
     this.testCaseMap.clear();
     this.testCases = [];
@@ -178,7 +188,7 @@ class ZenReporter implements Reporter {
         name: att.name,
         contentType: att.contentType,
         path: att.path || null,
-        body: bodyData as any,
+        body: bodyData,
       };
     });
 
@@ -200,7 +210,7 @@ class ZenReporter implements Reporter {
                 }
               : null,
             snippet: result.error.snippet || '',
-            cause: (result.error.cause as any) || null,
+            cause: (result.error.cause as unknown as TestError) || null,
           },
         ]
       : undefined;
@@ -263,6 +273,8 @@ class ZenReporter implements Reporter {
     const testRun: TestRunModel = {
       summary,
       suites,
+      projectName: this.reportConfig.projectName,
+      testRunName: this.reportConfig.testRunName,
     };
 
     const reportData: ReportData = { testRun };

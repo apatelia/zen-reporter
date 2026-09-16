@@ -24,7 +24,7 @@ const LegendFormatter = (value: string) => {
 };
 
 interface Props {
-  summary: ResultSummary;
+  summary?: ResultSummary;
   suites: TestSuite[];
   title?: string;
 }
@@ -38,9 +38,12 @@ interface ChartDataItem {
   'Timed Out': number;
 }
 
-export default function ProjectBarCharts({ summary, suites, title = 'Projects Summary' }: Props) {
+export default function ProjectBarCharts({ suites, title = 'Projects Summary' }: Props) {
   const allCases = collectAllCases(suites);
   const projectStats = computeProjectStats(allCases);
+
+  const maxLen = projectStats.reduce((max, p) => Math.max(max, p.name.length), 0);
+  const yAxisWidth = Math.max(80, Math.min(240, maxLen * 8 + 24));
 
   const data: ChartDataItem[] = projectStats.map((project) => ({
     name: project.name,
@@ -60,7 +63,7 @@ export default function ProjectBarCharts({ summary, suites, title = 'Projects Su
         <BarChart
           data={data}
           layout="vertical"
-          margin={{ top: 5, right: 5, left: 5, bottom: 5 }}
+          margin={{ top: 5, right: 15, left: 10, bottom: 5 }}
           barSize={32}
         >
           <CartesianGrid
@@ -78,7 +81,11 @@ export default function ProjectBarCharts({ summary, suites, title = 'Projects Su
             type="category"
             dataKey="name"
             fontSize={12}
+            width={yAxisWidth}
             tick={{ fill: 'var(--color-text-muted)' }}
+            tickFormatter={(val: string) =>
+              val.length === maxLen && maxLen > 0 ? `\u00A0${val}` : val
+            }
           />
           <Tooltip
             contentStyle={{
