@@ -1,16 +1,10 @@
 import { expect, test } from '@playwright/test';
 
-test.describe('Example Tests', () => {
+test.describe('Tests in nested suite', () => {
   test(
     'has title',
     {
       tag: ['@title'],
-      annotation: [
-        {
-          type: 'test',
-          description: 'Verifies that the page title contains "Playwright"',
-        },
-      ],
     },
     async ({ page }) => {
       await test.step("Go to Playwright's website", async () => {
@@ -27,12 +21,6 @@ test.describe('Example Tests', () => {
     'get started link',
     {
       tag: ['@link', '@heading'],
-      annotation: [
-        {
-          type: 'test',
-          description: 'Verifies that get started link redirects to the Installation instructions',
-        },
-      ],
     },
     async ({ page, browserName }, testInfo) => {
       await test.step("Go to Playwright's website", async () => {

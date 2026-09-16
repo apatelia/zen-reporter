@@ -4,20 +4,27 @@ import { extractFailedTests } from '@/lib/utils';
 import MultiSelectFilter from '../suites/MultiSelectFilter';
 import FailureList from './FailureList';
 
-type FailureType = 'Failed' | 'Timed Out';
+type FailureType = 'Failed' | 'Timed Out' | 'Interrupted';
 
 interface Props {
   suites: TestSuite[];
   failedCount: number;
   timedOutCount: number;
+  interruptedCount?: number;
 }
 
 function getAllFailureTypes(suites: TestSuite[]): FailureType[] {
   const types = new Set<FailureType>();
   function collect(suite: TestSuite) {
     for (const c of suite.cases) {
-      if (c.status === 'failed' || c.status === 'timedOut') {
-        types.add(c.status === 'timedOut' ? 'Timed Out' : 'Failed');
+      if (c.status === 'failed' || c.status === 'timedOut' || c.status === 'interrupted') {
+        types.add(
+          c.status === 'timedOut'
+            ? 'Timed Out'
+            : c.status === 'interrupted'
+              ? 'Interrupted'
+              : 'Failed'
+        );
       }
     }
     for (const sub of suite.subSuites || []) {
@@ -27,7 +34,7 @@ function getAllFailureTypes(suites: TestSuite[]): FailureType[] {
   for (const suite of suites) {
     collect(suite);
   }
-  return ['Failed', 'Timed Out'].filter((t: string): t is FailureType =>
+  return ['Failed', 'Timed Out', 'Interrupted'].filter((t: string): t is FailureType =>
     types.has(t as FailureType)
   );
 }
@@ -36,7 +43,7 @@ function getAllFailureTags(suites: TestSuite[]): string[] {
   const tagSet = new Set<string>();
   function collect(suite: TestSuite) {
     for (const c of suite.cases) {
-      if (c.status === 'failed' || c.status === 'timedOut') {
+      if (c.status === 'failed' || c.status === 'timedOut' || c.status === 'interrupted') {
         for (const tag of c.tags || []) {
           tagSet.add(tag.replace('@', ''));
         }
@@ -56,7 +63,7 @@ function getAllFailureProjects(suites: TestSuite[]): string[] {
   const projectSet = new Set<string>();
   function collect(suite: TestSuite) {
     for (const c of suite.cases) {
-      if (c.status === 'failed' || c.status === 'timedOut') {
+      if (c.status === 'failed' || c.status === 'timedOut' || c.status === 'interrupted') {
         if (c.project) {
           projectSet.add(c.project);
         }
@@ -76,7 +83,7 @@ function getAllFailureFiles(suites: TestSuite[]): string[] {
   const fileSet = new Set<string>();
   function collect(suite: TestSuite) {
     for (const c of suite.cases) {
-      if (c.status === 'failed' || c.status === 'timedOut') {
+      if (c.status === 'failed' || c.status === 'timedOut' || c.status === 'interrupted') {
         fileSet.add(c.fileName);
       }
     }
@@ -90,7 +97,12 @@ function getAllFailureFiles(suites: TestSuite[]): string[] {
   return Array.from(fileSet).sort();
 }
 
-export default function FailuresSection({ suites, failedCount, timedOutCount }: Props) {
+export default function FailuresSection({
+  suites,
+  failedCount,
+  timedOutCount,
+  interruptedCount = 0,
+}: Props) {
   const [filterTypes, setFilterTypes] = useState<FailureType[]>([]);
   const [filterProjects, setFilterProjects] = useState<string[]>([]);
   const [filterTags, setFilterTags] = useState<string[]>([]);
@@ -141,7 +153,7 @@ export default function FailuresSection({ suites, failedCount, timedOutCount }: 
         Failed Tests
       </h2>
       <div className="mb-4 w-fit grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <div className="rounded-md bg-surface-50 border border-border-default px-4 py-3 shadow-sm">
+        <div className="rounded-md bg-danger-50/50 dark:bg-danger-500/10 border border-danger-200 dark:border-danger-500/30 px-4 py-3 shadow-sm">
           <p className="text-[11px] font-medium uppercase tracking-wider text-text-body-mid dark:text-text-muted">
             Failed
           </p>
@@ -149,7 +161,7 @@ export default function FailuresSection({ suites, failedCount, timedOutCount }: 
             {failedCount}
           </p>
         </div>
-        <div className="rounded-md bg-surface-50 border border-border-default px-4 py-3 shadow-sm">
+        <div className="rounded-md bg-warning-50/50 dark:bg-warning-500/10 border border-warning-200 dark:border-warning-500/30 px-4 py-3 shadow-sm">
           <p className="text-[11px] font-medium uppercase tracking-wider text-text-body-mid dark:text-text-muted">
             Timed Out
           </p>
@@ -157,6 +169,16 @@ export default function FailuresSection({ suites, failedCount, timedOutCount }: 
             {timedOutCount}
           </p>
         </div>
+        {interruptedCount > 0 && (
+          <div className="rounded-md bg-danger-50/50 dark:bg-danger-500/10 border border-danger-200 dark:border-danger-500/30 px-4 py-3 shadow-sm">
+            <p className="text-[11px] font-medium uppercase tracking-wider text-text-body-mid dark:text-text-muted">
+              Interrupted
+            </p>
+            <p className="mt-1 text-xl font-extrabold text-danger-600 dark:text-danger-500">
+              {interruptedCount}
+            </p>
+          </div>
+        )}
       </div>
 
       {/* Filter Controls */}
@@ -202,7 +224,7 @@ export default function FailuresSection({ suites, failedCount, timedOutCount }: 
                 <path
                   strokeLinecap="round"
                   strokeLinejoin="round"
-                  d="M2.25 12.75l8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12.75M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125h4.375A1.125 1.125 0 0011.125 19.875v-4.125c0-.621.504-1.125 1.125-1.125h3.375c.621 0 1.125.504 1.125 1.125v4.125c0 .621.504 1.125 1.125 1.125h4.375c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25"
+                  d="M6.429 9.75L12 12.75l5.571-3M6.429 14.25L12 17.25l5.571-3M12 3.75L3.375 8.25 12 12.75l8.625-4.5L12 3.75z"
                 />
               </svg>
             }

@@ -178,12 +178,9 @@ export default function App() {
     };
   }, [reportData]);
 
-  const failedTests = useMemo(() => {
-    return summary && suites.length > 0 ? extractFailedTests(suites) : [];
-  }, [summary, suites]);
-
   const failedCount = summary ? summary.failed : 0;
   const timedOutCount = summary ? summary.timedOut : 0;
+  const interruptedCount = summary ? summary.interrupted || 0 : 0;
 
   /** Single root element for the app layout */
   return (
@@ -253,7 +250,9 @@ export default function App() {
               label={tab.label}
               isActive={activeTab === tab.key}
               onClick={() => setActiveTab(tab.key)}
-              badge={tab.key === 'failures' ? failedCount + timedOutCount : undefined}
+              badge={
+                tab.key === 'failures' ? failedCount + timedOutCount + interruptedCount : undefined
+              }
             />
           ))}
         </nav>
@@ -324,6 +323,7 @@ export default function App() {
               suites={suites}
               failedCount={failedCount}
               timedOutCount={timedOutCount}
+              interruptedCount={interruptedCount}
             />
           )}
         </div>

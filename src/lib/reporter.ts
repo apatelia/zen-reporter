@@ -34,12 +34,12 @@ function getDescribePath(test: TestCase): string[] {
   return path;
 }
 
-interface ReporterConfig {
+export interface ReporterConfig {
   outputDir: string;
   packageManager: string;
 }
 
-function resolveConfig(
+export function resolveConfig(
   rawConfig?: Record<string, unknown>,
   cwd: string = process.cwd()
 ): ReporterConfig {
@@ -74,6 +74,12 @@ class ZenReporter implements Reporter {
   }
 
   onTestBegin(test: TestCase, _result: TestResult): void {
+    const existing = this.testCaseMap.get(test.id);
+    if (existing) {
+      // Retried attempt: keep prior attempt data and just bump the counter.
+      existing.attempts = (existing.attempts ?? 0) + 1;
+      return;
+    }
     const fileName = test.parent.location?.file.replace(process.cwd(), '') || 'unknown file';
 
     const testCase: TestCaseModel = {
@@ -102,6 +108,8 @@ class ZenReporter implements Reporter {
       attachments: [],
       tags: test.tags.flatMap((tag) => tag.replace('@', '')),
       describePath: getDescribePath(test),
+      attempts: 1,
+      failedAttempts: [],
     };
 
     testCase.tags?.push(testCase.project);
@@ -122,8 +130,20 @@ class ZenReporter implements Reporter {
             ? 'skipped'
             : result.status === 'timedOut'
               ? 'timedOut'
-              : 'passed';
-    testCase.duration = result.duration;
+              : result.status === 'interrupted'
+                ? 'interrupted'
+                : 'failed';
+    // Compute this attempt's details once and share them between the final
+    // attempt (the TestCase model) and the failed-attempt records, so each
+    // recorded attempt can render its own steps/output/attachments.
+    const attemptSteps =
+      result.steps && result.steps.length > 0 ? convertPlaywrightSteps(result.steps) : undefined;
+    const stepDurationSum = attemptSteps
+      ? attemptSteps.reduce((sum, step) => sum + (step.duration || 0), 0)
+      : 0;
+    const attemptDuration = stepDurationSum > 0 ? stepDurationSum : result.duration;
+
+    testCase.duration = attemptDuration;
 
     if (test.annotations) {
       testCase.annotations = test.annotations.map((a) => ({
@@ -139,71 +159,89 @@ class ZenReporter implements Reporter {
       }));
     }
 
-    if (result.attachments) {
-      testCase.attachments = result.attachments.map((att) => {
-        let bodyData: Buffer | string | null = att.body || null;
-        if (!bodyData && att.path && fs.existsSync(att.path)) {
-          try {
-            bodyData = fs.readFileSync(att.path).toString('base64');
-          } catch (e) {
-            console.error(`Failed to read attachment file at ${att.path}:`, e);
-          }
+    const attemptStdout = (result.stdout || []).map((entry) =>
+      typeof entry === 'string' ? entry : entry.toString('utf8')
+    );
+    const attemptStderr = (result.stderr || []).map((entry) =>
+      typeof entry === 'string' ? entry : entry.toString('utf8')
+    );
+    const attemptAttachments = (result.attachments || []).map((att) => {
+      let bodyData: Buffer | string | null = att.body || null;
+      if (!bodyData && att.path && fs.existsSync(att.path)) {
+        try {
+          bodyData = fs.readFileSync(att.path).toString('base64');
+        } catch (e) {
+          console.error(`Failed to read attachment file at ${att.path}:`, e);
         }
-        return {
-          name: att.name,
-          contentType: att.contentType,
-          path: att.path || null,
-          body: bodyData as any,
-        };
+      }
+      return {
+        name: att.name,
+        contentType: att.contentType,
+        path: att.path || null,
+        body: bodyData as any,
+      };
+    });
+
+    // Always mirror the last attempt's data into the TestCase model so a
+    // successful retry doesn't leak the previous attempt's errors/output.
+    testCase.attachments = attemptAttachments.length > 0 ? attemptAttachments : undefined;
+
+    testCase.errors = result.error
+      ? [
+          {
+            name: 'Error',
+            message: sanitizeAnsi(result.error.message || ''),
+            stack: sanitizeAnsi(result.error.stack || ''),
+            location: result.error.location
+              ? {
+                  file: result.error.location.file,
+                  line: result.error.location.line,
+                  column: result.error.location.column,
+                }
+              : null,
+            snippet: result.error.snippet || '',
+            cause: (result.error.cause as any) || null,
+          },
+        ]
+      : undefined;
+
+    if (
+      result.status === 'failed' ||
+      result.status === 'timedOut' ||
+      result.status === 'interrupted'
+    ) {
+      testCase.failedAttempts = testCase.failedAttempts ?? [];
+      testCase.failedAttempts.push({
+        status: result.status,
+        duration: attemptDuration,
+        error: testCase.errors && testCase.errors.length > 0 ? testCase.errors[0] : null,
+        steps: attemptSteps,
+        stdout: attemptStdout.length > 0 ? attemptStdout : undefined,
+        stderr: attemptStderr.length > 0 ? attemptStderr : undefined,
+        attachments: attemptAttachments.length > 0 ? attemptAttachments : undefined,
       });
     }
 
-    if (result.error) {
-      testCase.errors = [
-        {
-          name: 'Error',
-          message: sanitizeAnsi(result.error.message || ''),
-          stack: sanitizeAnsi(result.error.stack || ''),
-          location: result.error.location
-            ? {
-                file: result.error.location.file,
-                line: result.error.location.line,
-                column: result.error.location.column,
-              }
-            : null,
-          snippet: result.error.snippet || '',
-          cause: (result.error.cause as any) || null,
-        },
-      ];
-    }
-
-    if (result.steps && result.steps.length > 0) {
-      testCase.steps = convertPlaywrightSteps(result.steps);
-    }
-
-    if (result.stdout && result.stdout.length > 0) {
-      testCase.stdout = result.stdout.map((entry) =>
-        typeof entry === 'string' ? entry : entry.toString('utf8')
-      );
-    }
-
-    if (result.stderr && result.stderr.length > 0) {
-      testCase.stderr = result.stderr.map((entry) =>
-        typeof entry === 'string' ? entry : entry.toString('utf8')
-      );
-    }
-
-    this.testCases.push(testCase);
+    testCase.steps = attemptSteps;
+    testCase.stdout = attemptStdout.length > 0 ? attemptStdout : undefined;
+    testCase.stderr = attemptStderr.length > 0 ? attemptStderr : undefined;
   }
 
   onEnd(_result: FullResult): void {
+    // `onTestBegin`/`onTestEnd` fire per attempt (including retries).
+    // `testCaseMap` always holds the final attempt's model, so derive
+    // the flat list here instead of accumulating one entry per attempt.
+    this.testCases = Array.from(this.testCaseMap.values());
     const endTime = new Date().toISOString();
-    const totalDuration = this.testCases.reduce((sum, tc) => sum + tc.duration, 0);
+    const startTimeMs = new Date(this.startTime).getTime();
+    const endTimeMs = new Date(endTime).getTime();
+    const wallClockDuration = Math.max(0, endTimeMs - startTimeMs);
 
     const passed = this.testCases.filter((tc) => tc.status === 'passed').length;
     const failed = this.testCases.filter((tc) => tc.status === 'failed').length;
     const skipped = this.testCases.filter((tc) => tc.status === 'skipped').length;
     const timedOut = this.testCases.filter((tc) => tc.status === 'timedOut').length;
+    const interrupted = this.testCases.filter((tc) => tc.status === 'interrupted').length;
     const numberOfProjects = this.config.projects.length;
 
     const summary: ResultSummary = {
@@ -212,10 +250,12 @@ class ZenReporter implements Reporter {
       failed,
       skipped,
       timedOut,
+      interrupted,
       startTime: this.startTime,
       endTime,
-      duration: totalDuration,
+      duration: wallClockDuration,
       numberOfProjects,
+      workers: this.config?.workers,
     };
 
     const suites = this.buildSuites();

@@ -14,6 +14,7 @@ import type { ResultSummary, TestSuite } from '@/lib/types';
 const colorMap: Record<string, string> = {
   Passed: 'var(--color-success-500)',
   Failed: 'var(--color-danger-500)',
+  Interrupted: 'var(--color-danger-600)',
   Skipped: 'var(--color-text-muted)',
   'Timed Out': 'var(--color-warning-500)',
 };
@@ -32,6 +33,7 @@ interface ChartDataItem {
   name: string;
   Passed: number;
   Failed: number;
+  Interrupted: number;
   Skipped: number;
   'Timed Out': number;
 }
@@ -44,6 +46,7 @@ export default function ProjectBarCharts({ summary, suites, title = 'Projects Su
     name: project.name,
     Passed: project.passed,
     Failed: project.failed,
+    Interrupted: project.interrupted,
     Skipped: project.skipped,
     'Timed Out': project.timedOut,
   }));
@@ -109,6 +112,12 @@ export default function ProjectBarCharts({ summary, suites, title = 'Projects Su
             dataKey="Failed"
             stackId="status"
             fill="var(--color-danger-500)"
+            radius={[0, 0, 0, 0]}
+          />
+          <Bar
+            dataKey="Interrupted"
+            stackId="status"
+            fill="var(--color-danger-600)"
             radius={[0, 0, 0, 0]}
           />
           <Bar

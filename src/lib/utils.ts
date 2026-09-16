@@ -109,6 +109,20 @@ export function parseAnsiToHtml(str: string): string {
   return result + '</span>'.repeat(openSpans);
 }
 
+export function highlightExpectedReceived(str: string): string {
+  if (!str) return '';
+  const parsed = parseAnsiToHtml(str);
+  return parsed
+    .replace(
+      /(Expected:?\s*)([^\n<]+)/g,
+      (_, p1, p2) => `${p1}<span class="text-[#4ade80] font-bold">${p2}</span>`
+    )
+    .replace(
+      /(Received:?\s*)([^\n<]+)/g,
+      (_, p1, p2) => `${p1}<span class="text-[#f87171] font-bold">${p2}</span>`
+    );
+}
+
 export function escapeHTML(html: string): string {
   return html
     .replace(/&/g, '&amp;')
@@ -116,14 +130,6 @@ export function escapeHTML(html: string): string {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#39;');
-}
-
-export function extractGroupKey(tc: TestCase): string {
-  const parts = tc.title.split(' > ');
-  if (parts.length >= 2) {
-    return parts.slice(0, 2).join(' > ');
-  }
-  return tc.fileName;
 }
 
 export function buildHierarchyForFile(fileName: string, cases: TestCase[]): TestSuite {
@@ -174,6 +180,7 @@ export function buildSuitesFromCases(testCases: TestCase[]): TestSuite[] {
 }
 
 export function formatDuration(ms: number): string {
+  if (ms < 1000) return `${ms}ms`;
   const seconds = Math.floor(ms / 1000);
   const minutes = Math.floor(seconds / 60);
   const secs = seconds % 60;
@@ -219,13 +226,22 @@ export function extractFailedTests(suites: TestSuite[]): FailedTest[] {
 
   function processSuiteForFailures(suite: TestSuite, parentTitle: string) {
     for (const testCase of suite.cases) {
-      if (testCase.status === 'failed' || testCase.status === 'timedOut') {
+      if (
+        testCase.status === 'failed' ||
+        testCase.status === 'timedOut' ||
+        testCase.status === 'interrupted'
+      ) {
         results.push({
           title: testCase.title,
           suiteTitle: parentTitle,
           fileName: testCase.fileName,
           duration: testCase.duration,
-          type: testCase.status === 'timedOut' ? 'Timed Out' : 'Failed',
+          type:
+            testCase.status === 'timedOut'
+              ? 'Timed Out'
+              : testCase.status === 'interrupted'
+                ? 'Interrupted'
+                : 'Failed',
           tags: testCase.tags?.map((tag) => tag.replace('@', '')),
           errors: testCase.errors || [],
           testCase,
@@ -262,6 +278,7 @@ export interface ProjectStats {
   failed: number;
   skipped: number;
   timedOut: number;
+  interrupted: number;
 }
 
 export function computeProjectStats(allCases: TestCase[]): ProjectStats[] {
@@ -270,7 +287,14 @@ export function computeProjectStats(allCases: TestCase[]): ProjectStats[] {
   for (const tc of allCases) {
     const project = tc.project;
     if (!projectMap.has(project)) {
-      projectMap.set(project, { name: project, passed: 0, failed: 0, skipped: 0, timedOut: 0 });
+      projectMap.set(project, {
+        name: project,
+        passed: 0,
+        failed: 0,
+        skipped: 0,
+        timedOut: 0,
+        interrupted: 0,
+      });
     }
     const stats = projectMap.get(project)!;
     switch (tc.status) {
@@ -286,6 +310,9 @@ export function computeProjectStats(allCases: TestCase[]): ProjectStats[] {
       case 'timedOut':
         stats.timedOut++;
         break;
+      case 'interrupted':
+        stats.interrupted++;
+        break;
     }
   }
 
@@ -300,6 +327,12 @@ export function computePassRate(summary: ResultSummary): number {
 export function computeSlowestTest(allCases: TestCase[]): number {
   if (allCases.length === 0) return 0;
   return Math.max(...allCases.map((tc) => tc.duration));
+}
+
+export function computeFastestTest(allCases: TestCase[]): number {
+  const executedCases = allCases.filter((tc) => tc.status !== 'skipped');
+  if (executedCases.length === 0) return 0;
+  return Math.min(...executedCases.map((tc) => tc.duration));
 }
 
 export function getTotalTags(allCases: TestCase[]): number {
@@ -319,6 +352,7 @@ export interface FileStats {
   failed: number;
   skipped: number;
   timedOut: number;
+  interrupted: number;
 }
 
 export function computeFileStats(allCases: TestCase[]): FileStats[] {
@@ -334,6 +368,7 @@ export function computeFileStats(allCases: TestCase[]): FileStats[] {
         failed: 0,
         skipped: 0,
         timedOut: 0,
+        interrupted: 0,
       });
     }
     const stats = fileMap.get(file)!;
@@ -350,6 +385,9 @@ export function computeFileStats(allCases: TestCase[]): FileStats[] {
         break;
       case 'timedOut':
         stats.timedOut++;
+        break;
+      case 'interrupted':
+        stats.interrupted++;
         break;
     }
   }

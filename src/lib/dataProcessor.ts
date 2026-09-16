@@ -116,7 +116,15 @@ export function processRawData(rawData: RawPlaywrightData): ReportData {
           ? ('failed' as const)
           : test.status === 'skipped'
             ? ('skipped' as const)
-            : ('timedOut' as const);
+            : test.status === 'timedOut'
+              ? ('timedOut' as const)
+              : test.status === 'interrupted'
+                ? ('interrupted' as const)
+                : ('failed' as const);
+
+    const steps = test.steps ? convertSteps(test.steps) : [];
+    const stepDurationSum = steps.reduce((sum, s) => sum + (s.duration || 0), 0);
+    const duration = stepDurationSum > 0 ? stepDurationSum : test.duration || 0;
 
     const testCase: TestCase = {
       title: test.title || '',
@@ -124,8 +132,8 @@ export function processRawData(rawData: RawPlaywrightData): ReportData {
       project: test.project?.name || 'unknown',
       fileName,
       status,
-      duration: test.duration || 0,
-      steps: test.steps ? convertSteps(test.steps) : [],
+      duration,
+      steps,
       errors: test.errors
         ? test.errors.map((e: RawError) => ({
             name: e.name || 'Error',
@@ -143,12 +151,15 @@ export function processRawData(rawData: RawPlaywrightData): ReportData {
   }
 
   const endTime = new Date().toISOString();
-  const totalDuration = testCases.reduce((sum, tc) => sum + tc.duration, 0);
+  const startTimeMs = new Date(startTime).getTime();
+  const endTimeMs = new Date(endTime).getTime();
+  const wallClockDuration = Math.max(0, endTimeMs - startTimeMs);
 
   const passed = testCases.filter((tc) => tc.status === 'passed').length;
   const failed = testCases.filter((tc) => tc.status === 'failed').length;
   const skipped = testCases.filter((tc) => tc.status === 'skipped').length;
   const timedOut = testCases.filter((tc) => tc.status === 'timedOut').length;
+  const interrupted = testCases.filter((tc) => tc.status === 'interrupted').length;
 
   const projects = new Set(testCases.map((tc) => tc.project));
 
@@ -158,9 +169,10 @@ export function processRawData(rawData: RawPlaywrightData): ReportData {
     failed,
     skipped,
     timedOut,
+    interrupted,
     startTime,
     endTime,
-    duration: totalDuration,
+    duration: wallClockDuration,
     numberOfProjects: projects.size || 1,
   };
 
@@ -169,12 +181,4 @@ export function processRawData(rawData: RawPlaywrightData): ReportData {
   const testRun: TestRun = { summary, suites };
 
   return { testRun };
-}
-
-function extractGroupKey(tc: TestCase): string {
-  const parts = tc.title.split(' > ');
-  if (parts.length >= 2) {
-    return parts.slice(0, 2).join(' > ');
-  }
-  return tc.fileName;
 }

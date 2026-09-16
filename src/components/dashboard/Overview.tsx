@@ -33,7 +33,9 @@ export default function Overview({ summary, suites }: Props) {
           <div className="p-4">
             <div className="flex items-center gap-2 mb-2">
               <span className="text-sm font-semibold uppercase tracking-wider text-text-body-mid dark:text-text-muted">
-                Duration
+                {summary.workers && summary.workers > 1
+                  ? 'Duration (Parallel Execution)'
+                  : 'Duration (Sequential Execution)'}
               </span>
             </div>
             <span className="text-3xl font-bold text-text-ink dark:text-text-on-primary">
@@ -82,16 +84,11 @@ export default function Overview({ summary, suites }: Props) {
         </div>
       </div>
 
-      {/* Pass Rate + Summary Cards */}
+      {/* Summary Cards + Pass Rate Ring */}
       <div className="grid grid-cols-1 items-stretch gap-6 lg:grid-cols-12">
-        {/* Pass Rate Ring */}
-        <div className="flex flex-col justify-between rounded-md bg-canvas border border-border-default p-5 text-center shadow-sm lg:col-span-3">
-          <PassRateRing passRate={passRate} />
-        </div>
-
         {/* Summary Cards + Quick Stats */}
         <div className="flex flex-col justify-between lg:col-span-9">
-          <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+          <div className="grid grid-cols-2 gap-4 lg:grid-cols-5">
             <SummaryCard
               label="Passed"
               value={summary.passed}
@@ -127,23 +124,6 @@ export default function Overview({ summary, suites }: Props) {
               color="danger"
             />
             <SummaryCard
-              label="Skipped"
-              value={summary.skipped}
-              total={summary.total}
-              icon={
-                <svg
-                  className="h-5 w-5"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                  strokeWidth={2}
-                >
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 12h14" />
-                </svg>
-              }
-              color="warning"
-            />
-            <SummaryCard
               label="Timed Out"
               value={summary.timedOut}
               total={summary.total}
@@ -164,9 +144,52 @@ export default function Overview({ summary, suites }: Props) {
               }
               color="danger"
             />
+            <SummaryCard
+              label="Interrupted"
+              value={summary.interrupted ?? 0}
+              total={summary.total}
+              icon={
+                <svg
+                  className="h-5 w-5"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={2}
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M18.364 18.364A9 9 0 0 0 5.636 5.636m12.728 12.728A9 9 0 0 1 5.636 5.636m12.728 12.728L5.636 5.636"
+                  />
+                </svg>
+              }
+              color="danger"
+            />
+            <SummaryCard
+              label="Skipped"
+              value={summary.skipped}
+              total={summary.total}
+              icon={
+                <svg
+                  className="h-5 w-5"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={2}
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 12h14" />
+                </svg>
+              }
+              color="warning"
+            />
           </div>
 
           <QuickStats summary={summary} suites={suites} />
+        </div>
+
+        {/* Pass Rate Ring */}
+        <div className="flex flex-col justify-between rounded-md bg-canvas border border-border-default p-5 text-center shadow-sm lg:col-span-3">
+          <PassRateRing passRate={passRate} />
         </div>
       </div>
 

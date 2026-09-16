@@ -3,7 +3,7 @@ import { useMemo, useState } from 'react';
 import MultiSelectFilter from './MultiSelectFilter';
 import SuiteView from './SuiteView';
 
-type TestCaseStatus = 'passed' | 'failed' | 'skipped' | 'timedOut';
+type TestCaseStatus = 'passed' | 'failed' | 'skipped' | 'timedOut' | 'interrupted';
 
 interface Props {
   suites: TestSuite[];
@@ -25,7 +25,7 @@ function getAllStatuses(suites: TestSuite[]): TestCaseStatus[] {
     collect(suite);
   }
 
-  const statusOrder: TestCaseStatus[] = ['passed', 'failed', 'skipped', 'timedOut'];
+  const statusOrder: TestCaseStatus[] = ['passed', 'failed', 'skipped', 'timedOut', 'interrupted'];
   return statusOrder.filter((s) => statusSet.has(s));
 }
 
@@ -267,7 +267,7 @@ export default function SuitesSection({ suites }: Props) {
                 <path
                   strokeLinecap="round"
                   strokeLinejoin="round"
-                  d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9l-7-7H5a2 2 0 00-2 2z"
+                  d="M6.429 9.75L12 12.75l5.571-3M6.429 14.25L12 17.25l5.571-3M12 3.75L3.375 8.25 12 12.75l8.625-4.5L12 3.75z"
                 />
               </svg>
             }

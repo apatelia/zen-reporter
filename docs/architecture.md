@@ -5,30 +5,30 @@ zen-reporter/
 ├── src/
 │   ├── components/
 │   │   ├── dashboard/
-│   │   │   ├── FileSummary.tsx        # File breakdown table with status counts
-│   │   │   ├── Overview.tsx           # Dashboard layout & high-level stats
+│   │   │   ├── FileSummary.tsx        # File breakdown table with status counts (including Interrupted)
+│   │   │   ├── Overview.tsx           # Dashboard layout, wall-clock timing & high-level stats
 │   │   │   ├── PassRateRing.tsx       # Radial pass rate indicator
-│   │   │   ├── ProjectBarCharts.tsx   # Per-project test status bar charts
-│   │   │   ├── QuickStats.tsx         # KPI summary counters
-│   │   │   └── SummaryCard.tsx        # Reusable metric card with icons
+│   │   │   ├── ProjectBarCharts.tsx   # Per-project test status bar charts with stacked interrupted bars
+│   │   │   ├── QuickStats.tsx         # KPI summary counters with calculation tooltips
+│   │   │   └── SummaryCard.tsx        # Reusable metric card with icons & contrast borders
 │   │   ├── failures/
-│   │   │   ├── FailureList.tsx        # List view for failed & timed-out tests
-│   │   │   └── FailuresSection.tsx    # Failures tab container with search & filters
+│   │   │   ├── FailureList.tsx        # List view for failed, timed-out & interrupted tests
+│   │   │   └── FailuresSection.tsx    # Failures tab container with search, filters & Interrupted KPI
 │   │   └── suites/
 │   │       ├── MultiSelectFilter.tsx  # Multi-select dropdown filter component
 │   │       ├── SuiteView.tsx          # Tree view container for test suites
 │   │       ├── SuitesSection.tsx       # Suites tab container with search & expand all
-│   │       ├── TestCaseCard.tsx       # Individual test case card with header toggle
-│   │       ├── TestCaseDetail.tsx     # Expanded test step execution & error stack
+│   │       ├── TestCaseCard.tsx       # Individual test case card with retry badge (N Retries)
+│   │       ├── TestCaseDetail.tsx     # Attempt tabs (Run, Retry #N), highlighted stack traces, & attachment modal
 │   │       └── TestSuiteNode.tsx      # Collapsible suite node for nested describes
 │   ├── lib/
-│   │   ├── dataProcessor.ts         # Raw data conversion & package manager detector
-│   │   ├── reporter.ts              # Playwright Reporter implementation (ZenReporter)
+│   │   ├── dataProcessor.ts         # Raw data conversion, wall-clock calculation & package manager detector
+│   │   ├── reporter.ts              # Playwright Reporter implementation with interrupted status & wall-clock timing
 │   │   ├── tagColors.ts             # Deterministic HSL color generator for tags
-│   │   ├── types.ts                 # TypeScript interfaces for report data models
-│   │   └── utils.ts                 # Suite tree builders, step converters & ANSI cleaner
+│   │   ├── types.ts                 # TypeScript interfaces for report data models (with 'interrupted' status & workers)
+│   │   └── utils.ts                 # Suite tree builders, fastest/slowest calculators & ANSI cleaner
 │   ├── App.tsx                      # Root component with tab routing & filter state
-│   ├── app.css                      # Design system CSS & dark mode tokens
+│   ├── app.css                      # Design system CSS, WCAG contrast tokens & dark mode styles
 │   ├── main.tsx                     # React application entry point
 │   ├── vite-env.d.ts                # Vite type declarations
 │   └── vite-plugin-inject-data.ts   # Vite plugin to inline report.json into HTML
@@ -38,7 +38,7 @@ zen-reporter/
 ├── zen-report/
 │   ├── index.html                   # Generated standalone single-file HTML report
 │   └── report.json                  # Processed test execution JSON data
-├── tests/                           # Playwright E2E test files
+├── tests/                           # Playwright test files (failures, retry, interrupted, annotations)
 ├── playwright.config.ts             # Playwright test configuration
 ├── vite.config.ts                   # Vite single-file bundling configuration
 └── package.json
@@ -48,13 +48,26 @@ zen-reporter/
 
 ## Data Flow
 
+```mermaid
+flowchart TD
+    A["Playwright Test Runner"] -->|onBegin / onTestBegin / onTestEnd / onEnd| B["ZenReporter (src/lib/reporter.ts)"]
+    B -->|Generates metadata & JSON| C["report.json (<outputDir>/report.json)"]
+    C -->|Reads dataset| D["Report Pipeline (scripts/generate_report.ts)"]
+    D -->|Processes data| E["dataProcessor.ts"]
+    E -->|Triggers single-file build| F["Vite Bundler (npx vite build)"]
+    F -->|Injects dataset| G["vite-plugin-inject-data.ts"]
+    G -->|Outputs bundle| H["Single-File HTML Report (<outputDir>/index.html)"]
+    H -->|Served via CLI| I["CLI Server (npx zen-reporter show)"]
+```
+
 ```text
                Playwright Test Execution
                          │
                          ▼
         ZenReporter (src/lib/reporter.ts)
   Hooks: onBegin ➔ onTestBegin ➔ onTestEnd ➔ onEnd
-  Collects test metadata, describe hierarchy, steps & errors
+  Captures test metadata, describe hierarchy, retry attempts,
+  interrupted states (SIGKILL/crash), wall-clock duration & worker counts
                          │
                          ▼
               <outputDir>/report.json
@@ -66,7 +79,7 @@ zen-reporter/
   Triggers Vite single-file compilation (npx vite build)
                          │
                          ▼
-   Vite Data Injector (src/vite-plugin-inject-data.ts)
+    Vite Data Injector (src/vite-plugin-inject-data.ts)
   Inlines report.json into <script id="report-data"> tag in HTML
                          │
                          ▼
@@ -74,6 +87,6 @@ zen-reporter/
   Fully self-contained interactive React web application
                          │
                          ▼
-       CLI Report Server (npx zen-reporter show)
+        CLI Report Server (npx zen-reporter show)
   Launches Playwright web server to serve the report locally
 ```

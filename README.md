@@ -9,11 +9,12 @@ Zen Reporter transforms Playwright's raw test results into an interactive, visua
 ## Features
 
 - **Interactive Dashboard** — Navigate test results through Overview, Suites, and Failures tabs
-- **Multi-Project Support** — Track and compare results across multiple Playwright projects (e.g., Chromium, Firefox, WebKit)
-- **Rich Filtering** — Filter test cases by project, status (`passed`, `failed`, `skipped`, `timedOut`), tag, or test file name.
-- **Detailed Failure Analysis** — Expand failed test cases to view step-by-step execution steps, sub-steps, timing, and sanitized error stack traces
-- **Visual Metrics** — Pass rate rings, project bar charts, quick KPIs, and test file summaries at a glance
-- **Dark Mode** — Toggle between light and dark themes with persistent preference storage
+- **Multi-Project & Parallel Execution** — Track and compare results across multiple Playwright projects (e.g., Chromium, Firefox, WebKit) and parallel worker execution times
+- **Interrupted Status Support** — Explicitly captures and reports worker crash or SIGKILL interrupted test states across charts, KPIs, and failure tabs
+- **Rich Filtering** — Filter test cases by project, status (`passed`, `failed`, `skipped`, `timedOut`, `interrupted`), tag, or test file name
+- **Detailed Failure & Retry Analysis** — Expand test cases to inspect individual retry attempts (`Run`, `Retry #1`, `Retry #2`), step-by-step execution, sub-steps, duration, highlighted stack traces (`Expected` vs `Received`), and attachment previews (images, and text)
+- **Visual Metrics & Quick Stats** — Pass rate ring, project bar charts, KPI cards with calculation tooltips, and file summary tables
+- **Dark Mode & Accessibility** — Toggle between light and dark themes with high-contrast WCAG-compliant status badges and buttons
 - **Single-File Output** — Self-contained HTML report for easy sharing and CI/CD archiving
 
 ---

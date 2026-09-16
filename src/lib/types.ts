@@ -10,7 +10,7 @@ export interface TestError {
 export interface TestStep {
   title: string;
   duration: number;
-  status: 'passed' | 'failed' | 'skipped' | 'timedOut';
+  status: 'passed' | 'failed' | 'skipped' | 'timedOut' | 'interrupted';
   annotations: Annotation[];
   attachments: Attachment[];
   error: TestError | null;
@@ -22,7 +22,7 @@ export interface TestCase {
   parent: string;
   project: string;
   fileName: string;
-  status: 'passed' | 'failed' | 'skipped' | 'timedOut';
+  status: 'passed' | 'failed' | 'skipped' | 'timedOut' | 'interrupted';
   duration: number;
   steps?: TestStep[];
   errors?: TestError[];
@@ -32,6 +32,8 @@ export interface TestCase {
   attachments?: Attachment[];
   tags?: string[];
   describePath?: string[];
+  attempts?: number;
+  failedAttempts?: FailedAttempt[];
 }
 
 export interface TestSuite {
@@ -46,10 +48,12 @@ export interface ResultSummary {
   failed: number;
   skipped: number;
   timedOut: number;
+  interrupted?: number;
   startTime: string;
   endTime: string;
   duration: number;
   numberOfProjects: number;
+  workers?: number;
 }
 
 export interface TestRun {
@@ -77,4 +81,15 @@ export interface Location {
   file: string;
   line: number;
   column: number;
+}
+
+export interface FailedAttempt {
+  status: 'failed' | 'timedOut' | 'interrupted';
+  duration: number;
+  error: TestError | null;
+  /** Full execution details of this attempt, so it can be rendered like the final attempt. */
+  steps?: TestStep[];
+  stdout?: string[];
+  stderr?: string[];
+  attachments?: Attachment[];
 }

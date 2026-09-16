@@ -9,10 +9,10 @@ interface Props {
 }
 
 const bgMap = {
-  success: 'bg-success-50 border-success-200/50 dark:bg-success-50/20 dark:border-success-800/40',
-  danger: 'bg-danger-50 border-danger-200/50 dark:bg-danger-50/20 dark:border-danger-800/40',
-  warning: 'bg-warning-50 border-warning-200/50 dark:bg-warning-50/20 dark:border-warning-800/40',
-  info: 'bg-info-50 border-info-200/50 dark:bg-info-50/20 dark:border-info-800/40',
+  success: 'bg-success-50 border-success-200 dark:bg-success-50/20 dark:border-success-500/30',
+  danger: 'bg-danger-50 border-danger-200 dark:bg-danger-50/20 dark:border-danger-500/30',
+  warning: 'bg-warning-50 border-warning-200 dark:bg-warning-50/20 dark:border-warning-500/30',
+  info: 'bg-info-50 border-info-200 dark:bg-info-50/20 dark:border-info-500/30',
 };
 
 const textMap = {

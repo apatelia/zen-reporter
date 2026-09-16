@@ -1,4 +1,6 @@
+import { useState } from 'react';
 import type { TestSuite, TestCase } from '@/lib/types';
+import { formatDurationVerbose } from '@/lib/utils';
 import TestCaseCard from './TestCaseCard';
 import TestSuiteNode from './TestSuiteNode';
 
@@ -93,12 +95,16 @@ function countCases(
   failed: number;
   skipped: number;
   timedOut: number;
+  interrupted: number;
+  duration: number;
 } {
   let total = 0;
   let passed = 0;
   let failed = 0;
   let skipped = 0;
   let timedOut = 0;
+  let interrupted = 0;
+  let duration = 0;
 
   const cases = filterCases(suite.cases, filterStatuses, filterProjects, filterTags, filterFiles);
   total = cases.length;
@@ -106,6 +112,15 @@ function countCases(
   failed = cases.filter((c) => c.status === 'failed').length;
   skipped = cases.filter((c) => c.status === 'skipped').length;
   timedOut = cases.filter((c) => c.status === 'timedOut').length;
+  interrupted = cases.filter((c) => c.status === 'interrupted').length;
+  duration = cases.reduce(
+    (sum, c) =>
+      sum +
+      (c.steps && c.steps.length > 0
+        ? c.steps.reduce((acc, step) => acc + (step.duration || 0), 0)
+        : c.duration || 0),
+    0
+  );
 
   for (const sub of suite.subSuites || []) {
     const subCount = countCases(sub, filterStatuses, filterProjects, filterTags, filterFiles);
@@ -114,9 +129,11 @@ function countCases(
     failed += subCount.failed;
     skipped += subCount.skipped;
     timedOut += subCount.timedOut;
+    interrupted += subCount.interrupted;
+    duration += subCount.duration;
   }
 
-  return { total, passed, failed, skipped, timedOut };
+  return { total, passed, failed, skipped, timedOut, interrupted, duration };
 }
 
 export default function SuiteView({
@@ -126,6 +143,8 @@ export default function SuiteView({
   filterTags,
   filterFiles,
 }: Props) {
+  const [isOpen, setIsOpen] = useState(false);
+
   const filteredSuite =
     filterStatuses.length > 0 ||
     filterProjects.length > 0 ||
@@ -134,7 +153,7 @@ export default function SuiteView({
       ? filterSuite(suite, filterStatuses, filterProjects, filterTags, filterFiles)
       : suite;
 
-  const { total, passed, failed, skipped, timedOut } = countCases(
+  const { total, passed, failed, skipped, timedOut, interrupted, duration } = countCases(
     filteredSuite,
     filterStatuses,
     filterProjects,
@@ -144,11 +163,16 @@ export default function SuiteView({
   const passRate = total > 0 ? Math.round((passed / total) * 100) : 100;
 
   return (
-    <details className="group rounded-md overflow-hidden bg-surface-100 shadow-sm ring-1 ring-black/5 dark:ring-white/5 transition-all duration-200">
+    <details
+      onToggle={(e) => setIsOpen(e.currentTarget.open)}
+      className="group rounded-md overflow-hidden bg-surface-100 shadow-sm ring-1 ring-black/5 dark:ring-white/5 transition-all duration-200"
+    >
       <summary className="rounded-md group-open:rounded-b-none cursor-pointer select-none p-4 flex items-center justify-between hover:bg-surface-50 dark:hover:bg-surface-200/30 transition-colors">
         <div className="flex gap-3">
           <svg
-            className="h-4 w-4 mt-1 text-text-body-mid transition-transform duration-200 group-has-[details[open]]:rotate-90"
+            className={`h-4 w-4 mt-1 text-text-body-mid transition-transform duration-200 ${
+              isOpen ? 'rotate-90' : ''
+            }`}
             fill="none"
             viewBox="0 0 24 24"
             stroke="currentColor"
@@ -165,6 +189,10 @@ export default function SuiteView({
                 {total} tests
               </span>
               <span className="text-text-body-mid dark:text-text-muted">·</span>
+              <span className="text-[11px] font-medium text-text-body-mid dark:text-text-muted tabular-nums">
+                {formatDurationVerbose(duration)}
+              </span>
+              <span className="text-text-body-mid dark:text-text-muted">·</span>
               <span className="text-[11px] font-medium text-success-600 dark:text-success-500">
                 {passRate}% pass rate
               </span>
@@ -175,6 +203,11 @@ export default function SuiteView({
           {skipped > 0 && (
             <span className="inline-flex items-center rounded-full bg-slate-200/80 text-slate-800 ring-1 ring-slate-300 dark:bg-slate-700/60 dark:text-slate-200 dark:ring-slate-600 px-2.5 py-1 text-xs font-semibold">
               {skipped} skipped
+            </span>
+          )}
+          {interrupted > 0 && (
+            <span className="inline-flex items-center rounded-full bg-danger-50 dark:bg-danger-500/20 ring-1 ring-danger-500/20 px-2.5 py-1 text-xs font-semibold text-danger-600 dark:text-danger-500">
+              {interrupted} interrupted
             </span>
           )}
           {timedOut > 0 && (
