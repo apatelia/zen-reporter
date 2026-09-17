@@ -79,7 +79,7 @@ export function highlightCodeLine(codeLine: string): string {
   const pipeIdx = codeLine.indexOf('|');
 
   let prefixHtml = '';
-  let codePart = codeLine;
+  let codePart: string;
 
   if (pipeIdx !== -1) {
     const rawPrefix = codeLine.slice(0, pipeIdx + 1);
@@ -165,12 +165,28 @@ export function convertPlaywrightSteps(pwSteps: PwTestStep[]): TestStep[] {
       status,
       annotations: Array.isArray(rawStep.annotations) ? rawStep.annotations : [],
       attachments: step.attachments
-        ? step.attachments.map((att) => ({
-            name: att.name,
-            contentType: att.contentType,
-            path: att.path || null,
-            body: att.body || null,
-          }))
+        ? step.attachments.map((att) => {
+            let bodyData: Buffer | string | null = att.body || null;
+            if (
+              !bodyData &&
+              att.path &&
+              typeof fs !== 'undefined' &&
+              typeof fs.existsSync === 'function' &&
+              fs.existsSync(att.path)
+            ) {
+              try {
+                bodyData = fs.readFileSync(att.path).toString('base64');
+              } catch {
+                // Ignore if cannot be read
+              }
+            }
+            return {
+              name: att.name,
+              contentType: att.contentType,
+              path: att.path || null,
+              body: bodyData,
+            };
+          })
         : [],
       error,
       subSteps:

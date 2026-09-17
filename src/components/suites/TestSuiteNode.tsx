@@ -95,22 +95,14 @@ function countCases(
   interrupted: number;
   duration: number;
 } {
-  let total = 0;
-  let passed = 0;
-  let failed = 0;
-  let skipped = 0;
-  let timedOut = 0;
-  let interrupted = 0;
-  let duration = 0;
-
   const cases = filterCases(suite.cases, filterStatuses, filterProjects, filterTags, filterFiles);
-  total = cases.length;
-  passed = cases.filter((c) => c.status === 'passed').length;
-  failed = cases.filter((c) => c.status === 'failed').length;
-  skipped = cases.filter((c) => c.status === 'skipped').length;
-  timedOut = cases.filter((c) => c.status === 'timedOut').length;
-  interrupted = cases.filter((c) => c.status === 'interrupted').length;
-  duration = cases.reduce(
+  let total = cases.length;
+  let passed = cases.filter((c) => c.status === 'passed').length;
+  let failed = cases.filter((c) => c.status === 'failed').length;
+  let skipped = cases.filter((c) => c.status === 'skipped').length;
+  let timedOut = cases.filter((c) => c.status === 'timedOut').length;
+  let interrupted = cases.filter((c) => c.status === 'interrupted').length;
+  let duration = cases.reduce(
     (sum, c) =>
       sum +
       (c.steps && c.steps.length > 0
@@ -212,8 +204,11 @@ export default function TestSuiteNode({
 
       <div className="divide-y divide-border-default dark:divide-border-default px-3 pb-3">
         <div className="py-2 space-y-2">
-          {filteredSuite.cases.map((testCase, idx) => (
-            <TestCaseCard key={idx} testCase={testCase} />
+          {filteredSuite.cases.map((testCase) => (
+            <TestCaseCard
+              key={`${testCase.project}-${testCase.fileName}-${testCase.title}`}
+              testCase={testCase}
+            />
           ))}
         </div>
         {filteredSuite.subSuites && filteredSuite.subSuites.length > 0 && (
@@ -222,9 +217,9 @@ export default function TestSuiteNode({
               Sub-Suites
             </p>
             <div className="ml-3 border-l-2 border-[#9bb0a7] dark:border-[#3b6e62] pl-3 space-y-2">
-              {filteredSuite.subSuites.map((sub, idx) => (
+              {filteredSuite.subSuites.map((sub) => (
                 <TestSuiteNode
-                  key={idx}
+                  key={sub.title}
                   suite={sub}
                   filterStatuses={filterStatuses}
                   filterProjects={filterProjects}

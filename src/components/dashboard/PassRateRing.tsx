@@ -114,11 +114,11 @@ export default function PassRateRing({ passRate }: Props) {
 
       {/* Category indicators */}
       <div className="mt-2 flex w-full flex-col gap-y-1">
-        {categories.map((cat, idx) => {
+        {categories.map((cat) => {
           const isActive = isCategoryActive(cat, passRate);
           return (
             <div
-              key={idx}
+              key={cat.label}
               className={`flex w-full items-center justify-between rounded-md border px-2.5 py-1.5 transition-colors duration-300 ${
                 isActive
                   ? `${cat.borderLight} ${cat.borderDark} ${cat.bgLight} ${cat.bgDark}`

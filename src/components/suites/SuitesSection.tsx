@@ -384,9 +384,9 @@ export default function SuitesSection({ suites }: Props) {
               </div>
             );
           }
-          return filteredSuites.map((suite, idx) => (
+          return filteredSuites.map((suite) => (
             <SuiteView
-              key={idx}
+              key={suite.title}
               suite={suite}
               filterStatuses={filterStatuses}
               filterProjects={filterProjects}

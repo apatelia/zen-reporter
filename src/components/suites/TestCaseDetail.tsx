@@ -160,6 +160,7 @@ function StepItem({ step, idx }: StepItemProps) {
             <div className="mt-1 mb-1.5">
               <div
                 className="rounded-md bg-surface-100 dark:bg-surface-950 text-text-ink dark:text-surface-900 p-2.5 border border-border-default dark:border-border-subtle overflow-x-auto shadow-xs"
+                /* eslint-disable-next-line @eslint-react/dom-no-dangerously-set-innerhtml */
                 dangerouslySetInnerHTML={{
                   __html: highlightCodeSnippet(snippetContent),
                 }}
@@ -179,7 +180,7 @@ function StepItem({ step, idx }: StepItemProps) {
             <div className="mt-1 flex flex-wrap gap-1.5">
               {step.annotations.map((anno, aIdx) => (
                 <span
-                  key={aIdx}
+                  key={`${anno.type}-${anno.description || aIdx}`}
                   className="inline-flex items-center rounded bg-surface-100 dark:bg-surface-200/30 px-2 py-0.5 text-[11px] text-text-body-mid"
                 >
                   <span className="font-semibold mr-1">{anno.type}:</span>
@@ -192,10 +193,10 @@ function StepItem({ step, idx }: StepItemProps) {
           {/* Step Sub-steps */}
           {step.subSteps && step.subSteps.length > 0 && (
             <div className="mt-1.5 ml-2 border-l-2 border-border-default dark:border-border-default pl-2 space-y-2">
-              {step.subSteps.map((sub, i) => {
+              {step.subSteps.map((sub) => {
                 const subSnippet = sub.snippet || getStepCodeSnippet(sub.location);
                 return (
-                  <div key={i}>
+                  <div key={`${sub.title}-${sub.duration}`}>
                     <div className="flex items-center justify-between gap-2">
                       <p className="text-xs text-text-body-mid dark:text-text-muted font-medium">
                         ↳ {sub.title}
@@ -208,6 +209,7 @@ function StepItem({ step, idx }: StepItemProps) {
                       <div className="mt-1 ml-3">
                         <div
                           className="rounded-md bg-surface-100 dark:bg-surface-950 text-text-ink dark:text-surface-900 p-2 border border-border-default dark:border-border-subtle overflow-x-auto shadow-xs"
+                          /* eslint-disable-next-line @eslint-react/dom-no-dangerously-set-innerhtml */
                           dangerouslySetInnerHTML={{
                             __html: highlightCodeSnippet(subSnippet),
                           }}
@@ -272,12 +274,17 @@ export default function TestCaseDetail({ testCase, showSteps = true }: Props) {
 
   // Helper to determine image URL / preview suitability
   const getAttachmentUrl = (att: Attachment): string | null => {
-    if (att.path) return att.path;
     if (att.body) {
-      const base64 =
+      const bodyStr =
         typeof att.body === 'string' ? att.body : Buffer.from(att.body).toString('base64');
-      const mime = att.contentType || 'application/octet-stream';
-      return `data:${mime};base64,${base64}`;
+      if (bodyStr.startsWith('data:')) {
+        return bodyStr;
+      }
+      const mime = att.contentType || 'image/png';
+      return `data:${mime};base64,${bodyStr}`;
+    }
+    if (att.path) {
+      return att.path;
     }
     return null;
   };
@@ -336,7 +343,7 @@ export default function TestCaseDetail({ testCase, showSteps = true }: Props) {
             </h5>
             <div className="space-y-1">
               {attempt.steps.map((step, idx) => (
-                <StepItem key={idx} step={step} idx={idx} />
+                <StepItem key={`${step.title}-${step.duration}`} step={step} idx={idx} />
               ))}
             </div>
           </div>
@@ -401,6 +408,7 @@ export default function TestCaseDetail({ testCase, showSteps = true }: Props) {
                       </p>
                       <pre
                         className="rounded-md bg-surface-950 p-2.5 text-xs font-mono leading-relaxed text-canvas dark:text-surface-900 border border-border-default dark:border-border-subtle overflow-x-auto"
+                        /* eslint-disable-next-line @eslint-react/dom-no-dangerously-set-innerhtml */
                         dangerouslySetInnerHTML={{ __html: parseAnsiToHtml(attempt.error.snippet) }}
                       />
                     </div>
@@ -413,6 +421,7 @@ export default function TestCaseDetail({ testCase, showSteps = true }: Props) {
                       </p>
                       <pre
                         className="rounded-md bg-surface-950 p-3 text-xs font-mono leading-relaxed text-canvas dark:text-surface-900 border border-border-default dark:border-border-subtle overflow-x-auto"
+                        /* eslint-disable-next-line @eslint-react/dom-no-dangerously-set-innerhtml */
                         dangerouslySetInnerHTML={{
                           __html: highlightExpectedReceived(attempt.error.stack),
                         }}
@@ -440,7 +449,7 @@ export default function TestCaseDetail({ testCase, showSteps = true }: Props) {
                 if (isImg && url) {
                   return (
                     <div
-                      key={idx}
+                      key={`img-${att.name || att.path || idx}`}
                       className="flex items-center justify-between gap-3 rounded-md border border-border-default bg-canvas p-2.5 text-sm hover:border-primary-500 transition-colors shadow-xs group"
                     >
                       <button
@@ -518,7 +527,7 @@ export default function TestCaseDetail({ testCase, showSteps = true }: Props) {
 
                   return (
                     <div
-                      key={idx}
+                      key={`txt-${att.name || att.path || idx}`}
                       className="flex items-center justify-between gap-3 rounded-md border border-border-default bg-canvas p-2.5 text-sm hover:border-primary-500 transition-colors shadow-xs group"
                     >
                       <button
@@ -592,7 +601,7 @@ export default function TestCaseDetail({ testCase, showSteps = true }: Props) {
 
                 return (
                   <a
-                    key={idx}
+                    key={`att-${att.name || att.path || idx}`}
                     href={url || '#'}
                     download={att.name || 'attachment'}
                     target="_blank"
@@ -709,7 +718,7 @@ export default function TestCaseDetail({ testCase, showSteps = true }: Props) {
           <div className="space-y-2">
             {validAnnotations.map((anno, idx) => (
               <div
-                key={idx}
+                key={`valid-anno-${anno.type}-${anno.description || idx}`}
                 className="rounded-md border border-border-default bg-canvas p-3 text-sm shadow-xs"
               >
                 <div className="flex items-center gap-2 mb-1">
@@ -735,7 +744,7 @@ export default function TestCaseDetail({ testCase, showSteps = true }: Props) {
               const tabTitle = idx === 0 ? 'Run' : `Retry #${idx}`;
               return (
                 <button
-                  key={idx}
+                  key={`attempt-tab-${attempt.status}-${attempt.duration}`}
                   type="button"
                   onClick={() => {
                     setActiveAttemptIdx(idx);

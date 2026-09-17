@@ -129,11 +129,15 @@ export default function App() {
   const [reportData, setReportData] = useState<ReportData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isCollapsed, setIsCollapsed] = useState(false);
-  const [darkMode, setDarkMode] = useState<'light' | 'dark'>(
-    ((typeof window !== 'undefined' &&
-      (localStorage.getItem('zen-dark-mode') as 'light' | 'dark' | null)) ||
-      'light') as 'light' | 'dark'
-  );
+  const [darkMode, setDarkMode] = useState<'light' | 'dark'>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('zen-dark-mode');
+      if (saved === 'dark' || saved === 'light') {
+        return saved;
+      }
+    }
+    return 'light';
+  });
 
   useEffect(() => {
     if (darkMode === 'dark') {

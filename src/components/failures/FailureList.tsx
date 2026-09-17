@@ -37,8 +37,12 @@ export default function FailureList({ failedTests, hasSuites = true }: Props) {
 
   return (
     <div className="space-y-2">
-      {failedTests.map((test, idx) => (
-        <TestCaseCard key={idx} testCase={test.testCase} showSteps={false} />
+      {failedTests.map((test) => (
+        <TestCaseCard
+          key={`${test.testCase.project}-${test.testCase.fileName}-${test.testCase.title}`}
+          testCase={test.testCase}
+          showSteps={false}
+        />
       ))}
     </div>
   );

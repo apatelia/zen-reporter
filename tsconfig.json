@@ -18,6 +18,13 @@
       "@/*": ["./src/*"]
     }
   },
-  "include": ["src/**/*.ts", "src/**/*.tsx", "scripts/*.ts", "*.config.ts", "tests/**/*.ts"],
+  "include": [
+    "src/**/*.ts",
+    "src/**/*.tsx",
+    "scripts/*.ts",
+    "*.config.ts",
+    "tests/**/*.ts",
+    "*.config.mjs"
+  ],
   "exclude": ["node_modules"]
 }

@@ -29,10 +29,12 @@ export default function MultiSelectFilter<T extends string>({
 
   const isDisabled = disabled || options.length === 0;
 
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
+  const [prevSelectedOptions, setPrevSelectedOptions] = useState<T[]>(selectedOptions);
+
+  if (prevSelectedOptions !== selectedOptions) {
+    setPrevSelectedOptions(selectedOptions);
     setTempSelection([...selectedOptions]);
-  }, [selectedOptions]);
+  }
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {

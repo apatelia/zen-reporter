@@ -87,7 +87,9 @@ try {
     const stdout = execErr.stdout ? execErr.stdout.toString() : '';
     const stderr = execErr.stderr ? execErr.stderr.toString() : '';
     const output = [stdout, stderr].filter(Boolean).join('\n');
-    throw new Error(`Vite build failed:\n${output || execErr.message || String(error)}`);
+    throw new Error(`Vite build failed:\n${output || execErr.message || String(error)}`, {
+      cause: error,
+    });
   }
 
   const distHtml = resolve(ROOT, 'dist', 'index.html');
