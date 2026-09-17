@@ -401,34 +401,76 @@ class ZenReporter implements Reporter {
     const jsonPath = path.join(outputDir, 'report.json');
     fs.writeFileSync(jsonPath, JSON.stringify(reportData, null, 2), 'utf8');
 
-    // Generate the single-file HTML report
+    // Generate the single-file HTML report by injecting report.json data into pre-built template
     try {
       const pm = this.reportConfig.packageManager;
       const packageRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
-      const buildCmd = getViteBuildCommand(pm, packageRoot);
 
-      execSync(buildCmd, {
-        cwd: packageRoot,
-        stdio: 'pipe',
-        env: { ...process.env, PW_REPORTER_OUTPUT: outputDir },
-      });
+      const possibleTemplatePaths = [
+        path.join(packageRoot, 'assets', 'template.html'),
+        path.join(packageRoot, 'dist', 'index.html'),
+        path.join(packageRoot, 'dist', 'template.html'),
+      ];
+      let templateContent: string | null = null;
+      for (const p of possibleTemplatePaths) {
+        if (fs.existsSync(p)) {
+          try {
+            templateContent = fs.readFileSync(p, 'utf8');
+            break;
+          } catch {
+            /* ignore */
+          }
+        }
+      }
 
-      const srcHtml = path.join(packageRoot, 'dist', 'index.html');
-      const destHtml = path.join(outputDir, 'index.html');
-      if (fs.existsSync(srcHtml)) {
-        fs.copyFileSync(srcHtml, destHtml);
+      // If template is missing in dev mode, run vite build once to create it
+      if (!templateContent) {
+        const buildCmd = getViteBuildCommand(pm, packageRoot);
+        execSync(buildCmd, {
+          cwd: packageRoot,
+          stdio: 'pipe',
+          env: { ...process.env, PW_REPORTER_OUTPUT: outputDir },
+        });
+        for (const p of possibleTemplatePaths) {
+          if (fs.existsSync(p)) {
+            try {
+              templateContent = fs.readFileSync(p, 'utf8');
+              break;
+            } catch {
+              /* ignore */
+            }
+          }
+        }
+      }
+
+      if (templateContent) {
+        const safeData = JSON.stringify(reportData).replace(/</g, '\\u003c');
+        const dataScript = `<script id="report-data" type="application/json">${safeData}</script>`;
+
+        // Strip any existing report-data script tag in template before injecting
+        const cleanTemplate = templateContent.replace(
+          /<script id="report-data" type="application\/json">[\s\S]*?<\/script>/,
+          ''
+        );
+        const finalHtml = cleanTemplate.replace('</head>', `${dataScript}\n</head>`);
+
+        const destHtml = path.join(outputDir, 'index.html');
+        fs.writeFileSync(destHtml, finalHtml, 'utf8');
         console.log(`\n✓ Report generated: ${destHtml}`);
         console.log(`\n💡 Run "${getShowReportCommand(pm)}" to view the report\n`);
 
         if (this.reportConfig.singleSummaryFile) {
           const summaryHtmlPath = path.join(outputDir, 'summary.html');
-          const originalHtml = fs.readFileSync(srcHtml, 'utf8');
-          // Inject an inline script that activates summary mode regardless of file:/// URL or browser environment
           const summaryScript = `<script>window.__ZEN_SUMMARY_ONLY__ = true;</script>`;
-          const summaryHtml = originalHtml.replace('<head>', `<head>\n  ${summaryScript}`);
+          const summaryHtml = cleanTemplate.replace(
+            '</head>',
+            `${dataScript}\n${summaryScript}\n</head>`
+          );
           fs.writeFileSync(summaryHtmlPath, summaryHtml, 'utf8');
           console.log(`✓ Standalone Summary generated: ${summaryHtmlPath}`);
         }
+      } else {
+        console.error('Report template not found and build failed.');
       }
     } catch (err) {
       console.error('Report generation failed, keeping report.json:', err);

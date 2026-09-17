@@ -112,28 +112,63 @@ try {
   }
 
   console.log('→ Preparing test report...');
-  const buildCmd = getViteBuildCommand(undefined, ROOT);
-  try {
-    execSync(buildCmd, { cwd: ROOT, stdio: 'pipe' });
-  } catch (error) {
-    const stdout = error?.stdout ? error.stdout.toString() : '';
-    const stderr = error?.stderr ? error.stderr.toString() : '';
-    const output = [stdout, stderr].filter(Boolean).join('\n');
-    throw new Error(`Vite build failed:\n${output || error?.message || String(error)}`, {
-      cause: error,
-    });
+  const possibleTemplatePaths = [
+    resolve(ROOT, 'assets', 'template.html'),
+    resolve(ROOT, 'dist', 'index.html'),
+    resolve(ROOT, 'dist', 'template.html'),
+  ];
+  let templateContent = null;
+  for (const p of possibleTemplatePaths) {
+    if (existsSync(p)) {
+      try {
+        templateContent = readFileSync(p, 'utf8');
+        break;
+      } catch {
+        /* ignore */
+      }
+    }
   }
 
-  const distHtml = resolve(ROOT, 'dist', 'index.html');
-  const reportHtml = resolve(REPORT_DIR, 'index.html');
+  if (!templateContent) {
+    const buildCmd = getViteBuildCommand(undefined, ROOT);
+    try {
+      execSync(buildCmd, { cwd: ROOT, stdio: 'pipe' });
+    } catch (error) {
+      const stdout = error?.stdout ? error.stdout.toString() : '';
+      const stderr = error?.stderr ? error.stderr.toString() : '';
+      const output = [stdout, stderr].filter(Boolean).join('\n');
+      throw new Error(`Vite build failed:\n${output || error?.message || String(error)}`, {
+        cause: error,
+      });
+    }
+    for (const p of possibleTemplatePaths) {
+      if (existsSync(p)) {
+        try {
+          templateContent = readFileSync(p, 'utf8');
+          break;
+        } catch {
+          /* ignore */
+        }
+      }
+    }
+  }
 
-  if (existsSync(distHtml)) {
+  if (templateContent) {
+    const reportHtml = resolve(REPORT_DIR, 'index.html');
     mkdirSync(REPORT_DIR, { recursive: true });
-    const html = readFileSync(distHtml, 'utf8');
-    writeFileSync(reportHtml, html, 'utf8');
-  }
 
-  console.log('✓ Report generation complete!');
+    const safeData = JSON.stringify(reportData).replace(/</g, '\\u003c');
+    const dataScript = `<script id="report-data" type="application/json">${safeData}</script>`;
+    const cleanTemplate = templateContent.replace(
+      /<script id="report-data" type="application\/json">[\s\S]*?<\/script>/,
+      ''
+    );
+    const finalHtml = cleanTemplate.replace('</head>', `${dataScript}\n</head>`);
+    writeFileSync(reportHtml, finalHtml, 'utf8');
+    console.log('✓ Report generation complete!');
+  } else {
+    throw new Error('Could not find or build HTML template.');
+  }
 } catch (err) {
   console.error('✗ Report generation failed:', err);
   process.exit(1);
