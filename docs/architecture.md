@@ -10,6 +10,7 @@ zen-reporter/
 │   │   │   ├── PassRateRing.tsx       # Radial pass rate indicator
 │   │   │   ├── ProjectBarCharts.tsx   # Per-project test status bar charts with stacked interrupted bars
 │   │   │   ├── QuickStats.tsx         # KPI summary counters with calculation tooltips
+│   │   │   ├── RunInfoCard.tsx        # Reusable metric tile for Run Info Bar metrics
 │   │   │   └── SummaryCard.tsx        # Reusable metric card with icons & contrast borders
 │   │   ├── failures/
 │   │   │   ├── FailureList.tsx        # List view for failed, timed-out & interrupted tests

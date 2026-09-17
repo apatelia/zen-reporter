@@ -1,10 +1,11 @@
-import { formatDuration, formatDate, computePassRate } from '@/lib/utils';
 import type { ResultSummary, TestSuite } from '@/lib/types';
-import SummaryCard from './SummaryCard';
-import PassRateRing from './PassRateRing';
-import QuickStats from './QuickStats';
-import ProjectBarCharts from './ProjectBarCharts';
+import { computePassRate, formatDate, formatDuration } from '@/lib/utils';
 import FileSummary from './FileSummary';
+import PassRateRing from './PassRateRing';
+import ProjectBarCharts from './ProjectBarCharts';
+import QuickStats from './QuickStats';
+import RunInfoCard from './RunInfoCard';
+import SummaryCard from './SummaryCard';
 
 interface Props {
   summary: ResultSummary;
@@ -28,60 +29,22 @@ export default function Overview({ summary, suites }: Props) {
 
       {/* Run Info Bar */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-6">
-        <div className="rounded-md bg-canvas border border-border-default shadow-sm overflow-hidden">
-          <div className="h-1 bg-accent-blue" />
-          <div className="p-4">
-            <div className="flex items-center gap-2 mb-2">
-              <span className="text-sm font-semibold uppercase tracking-wider text-text-body-mid dark:text-text-muted">
-                {summary.workers && summary.workers > 1
-                  ? 'Duration (Parallel Execution)'
-                  : 'Duration (Sequential Execution)'}
-              </span>
-            </div>
-            <span className="text-3xl font-bold text-text-ink dark:text-text-on-primary">
-              {formatDuration(summary.duration)}
-            </span>
-          </div>
-        </div>
-        <div className="rounded-md bg-canvas border border-border-default shadow-sm overflow-hidden">
-          <div className="h-1 bg-warning-500" />
-          <div className="p-4">
-            <div className="flex items-center gap-2 mb-2">
-              <span className="text-sm font-semibold uppercase tracking-wider text-text-body-mid dark:text-text-muted">
-                Projects / Browsers
-              </span>
-            </div>
-            <span className="text-3xl font-bold text-text-ink dark:text-text-on-primary">
-              {summary.numberOfProjects}
-            </span>
-          </div>
-        </div>
-        <div className="rounded-md bg-canvas border border-border-default shadow-sm overflow-hidden">
-          <div className="h-1 bg-danger-500" />
-          <div className="p-4">
-            <div className="flex items-center gap-2 mb-2">
-              <span className="text-sm font-semibold uppercase tracking-wider text-text-body-mid dark:text-text-muted">
-                Suites / Files
-              </span>
-            </div>
-            <span className="text-3xl font-bold text-text-ink dark:text-text-on-primary">
-              {suites.length}
-            </span>
-          </div>
-        </div>
-        <div className="rounded-md bg-canvas border border-border-default shadow-sm overflow-hidden">
-          <div className="h-1 bg-success-500" />
-          <div className="p-4">
-            <div className="flex items-center gap-2 mb-2">
-              <span className="text-sm font-semibold uppercase tracking-wider text-text-body-mid dark:text-text-muted">
-                Test Cases
-              </span>
-            </div>
-            <span className="text-3xl font-bold text-text-ink dark:text-text-on-primary">
-              {summary.total}
-            </span>
-          </div>
-        </div>
+        <RunInfoCard
+          label={
+            summary.workers && summary.workers > 1
+              ? 'Duration (Parallel Execution)'
+              : 'Duration (Sequential Execution)'
+          }
+          value={formatDuration(summary.duration)}
+          barColorClass="bg-accent-blue"
+        />
+        <RunInfoCard
+          label="Projects / Browsers"
+          value={summary.numberOfProjects}
+          barColorClass="bg-warning-500"
+        />
+        <RunInfoCard label="Suites / Files" value={suites.length} barColorClass="bg-danger-500" />
+        <RunInfoCard label="Test Cases" value={summary.total} barColorClass="bg-success-500" />
       </div>
 
       {/* Summary Cards + Pass Rate Ring */}
