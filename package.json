@@ -8,22 +8,20 @@
     "zen-reporter": "bin/zen-reporter.js",
     "zr": "bin/zen-reporter.js"
   },
-  "main": "src/lib/reporter.ts",
+  "main": "dist/reporter.cjs",
+  "module": "dist/reporter.js",
+  "types": "dist/reporter.d.ts",
   "exports": {
-    ".": "./src/lib/reporter.ts"
+    ".": {
+      "types": "./dist/reporter.d.ts",
+      "import": "./dist/reporter.js",
+      "require": "./dist/reporter.cjs"
+    },
+    "./package.json": "./package.json"
   },
   "files": [
     "bin",
-    "dist",
-    "src",
-    "scripts",
-    "docs/screenshots",
-    "vite.config.ts",
-    "index.html",
-    "postcss.config.mjs",
-    "tsconfig.json",
-    "README.md",
-    "LICENSE"
+    "dist"
   ],
   "author": {
     "name": "Arpan Patelia",
@@ -32,7 +30,7 @@
   "license": "MIT",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "vite build && vite build --config vite.reporter.config.ts && tsc -p tsconfig.lib.json",
     "preview": "vite preview",
     "test": "npx playwright test",
     "report": "node scripts/generate_report.js",
@@ -41,7 +39,8 @@
     "lint:fix": "eslint . --fix",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "prepare": "husky"
+    "prepare": "husky",
+    "prepack": "npm run build"
   },
   "lint-staged": {
     "*.{js,jsx,ts,tsx}": [
@@ -51,6 +50,9 @@
     "*.{json,css,md,yml,yaml,html}": [
       "prettier --write"
     ]
+  },
+  "engines": {
+    "node": ">=18.0.0"
   },
   "peerDependencies": {
     "@playwright/test": ">=1.63.0"

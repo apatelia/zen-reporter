@@ -404,7 +404,15 @@ class ZenReporter implements Reporter {
     // Generate the single-file HTML report by injecting report.json data into pre-built template
     try {
       const pm = this.reportConfig.packageManager;
-      const packageRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
+      // Works in both shipped bundles: __filename in CJS, import.meta.url in ESM.
+      // The bundle lives in dist/, one level below the package root.
+      const moduleFile =
+        typeof __filename !== 'undefined' ? __filename : fileURLToPath(import.meta.url);
+      const moduleDir = path.dirname(moduleFile);
+      const packageRoot =
+        moduleDir.endsWith(path.join('src', 'lib')) || moduleDir.endsWith('src/lib')
+          ? path.resolve(moduleDir, '..', '..')
+          : path.resolve(moduleDir, '..');
 
       const possibleTemplatePaths = [
         path.join(packageRoot, 'assets', 'template.html'),
