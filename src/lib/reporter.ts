@@ -72,7 +72,7 @@ class ZenReporter implements Reporter {
     return buildSuitesFromCases(this.testCases);
   }
 
-  onBegin(config: FullConfig, _suite: Suite): void {
+  onBegin(config: FullConfig, suite: Suite): void {
     this.config = config;
     this.reportConfig = resolveConfig(
       this.options ||
@@ -81,50 +81,89 @@ class ZenReporter implements Reporter {
     this.startTime = new Date().toISOString();
     this.testCaseMap.clear();
     this.testCases = [];
+
+    for (const test of suite.allTests()) {
+      const fileName = test.location?.file
+        ? test.location.file.replace(process.cwd(), '')
+        : 'unknown file';
+
+      const testCase: TestCaseModel = {
+        title: test.title,
+        parent: test.parent.title,
+        project: test.parent.project()?.name || 'unknown',
+        fileName,
+        status: 'skipped',
+        duration: 0,
+        steps: [],
+        stdout: [],
+        stderr: [],
+        annotations: test.annotations
+          ? test.annotations.map((a) => ({
+              type: a.type,
+              description: a.description || null,
+              location: a.location
+                ? {
+                    file: a.location.file,
+                    line: a.location.line,
+                    column: a.location.column,
+                  }
+                : null,
+            }))
+          : [],
+        attachments: [],
+        tags: test.tags.flatMap((tag) => tag.replace('@', '')),
+        describePath: getDescribePath(test),
+        attempts: 0,
+        failedAttempts: [],
+      };
+
+      testCase.tags?.push(testCase.project);
+      this.testCaseMap.set(test.id, testCase);
+    }
   }
 
   onTestBegin(test: TestCase, _result: TestResult): void {
-    const existing = this.testCaseMap.get(test.id);
-    if (existing) {
-      // Retried attempt: keep prior attempt data and just bump the counter.
-      existing.attempts = (existing.attempts ?? 0) + 1;
-      return;
+    let existing = this.testCaseMap.get(test.id);
+    if (!existing) {
+      const fileName = test.parent.location?.file
+        ? test.parent.location.file.replace(process.cwd(), '')
+        : 'unknown file';
+
+      existing = {
+        title: test.title,
+        parent: test.parent.title,
+        project: test.parent.project()?.name || 'unknown',
+        fileName,
+        status: 'passed',
+        duration: 0,
+        steps: [],
+        stdout: [],
+        stderr: [],
+        annotations: test.annotations
+          ? test.annotations.map((a) => ({
+              type: a.type,
+              description: a.description || null,
+              location: a.location
+                ? {
+                    file: a.location.file,
+                    line: a.location.line,
+                    column: a.location.column,
+                  }
+                : null,
+            }))
+          : [],
+        attachments: [],
+        tags: test.tags.flatMap((tag) => tag.replace('@', '')),
+        describePath: getDescribePath(test),
+        attempts: 0,
+        failedAttempts: [],
+      };
+
+      existing.tags?.push(existing.project);
+      this.testCaseMap.set(test.id, existing);
     }
-    const fileName = test.parent.location?.file.replace(process.cwd(), '') || 'unknown file';
 
-    const testCase: TestCaseModel = {
-      title: test.title,
-      parent: test.parent.title,
-      project: test.parent.project()?.name || 'unknown',
-      fileName: fileName,
-      status: 'passed',
-      duration: 0,
-      steps: [],
-      stdout: [],
-      stderr: [],
-      annotations: test.annotations
-        ? test.annotations.map((a) => ({
-            type: a.type,
-            description: a.description || null,
-            location: a.location
-              ? {
-                  file: a.location.file,
-                  line: a.location.line,
-                  column: a.location.column,
-                }
-              : null,
-          }))
-        : [],
-      attachments: [],
-      tags: test.tags.flatMap((tag) => tag.replace('@', '')),
-      describePath: getDescribePath(test),
-      attempts: 1,
-      failedAttempts: [],
-    };
-
-    testCase.tags?.push(testCase.project);
-
-    this.testCaseMap.set(test.id, testCase);
+    existing.attempts = (existing.attempts ?? 0) + 1;
   }
 
   onTestEnd(test: TestCase, result: TestResult): void {
@@ -237,7 +276,15 @@ class ZenReporter implements Reporter {
     testCase.stderr = attemptStderr.length > 0 ? attemptStderr : undefined;
   }
 
-  onEnd(_result: FullResult): void {
+  onEnd(result: FullResult): void {
+    if (result.status === 'interrupted') {
+      for (const testCase of this.testCaseMap.values()) {
+        if ((testCase.attempts ?? 0) === 0) {
+          testCase.status = 'interrupted';
+        }
+      }
+    }
+
     // `onTestBegin`/`onTestEnd` fire per attempt (including retries).
     // `testCaseMap` always holds the final attempt's model, so derive
     // the flat list here instead of accumulating one entry per attempt.
