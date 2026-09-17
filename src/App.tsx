@@ -125,6 +125,15 @@ function SidebarItem({
 }
 
 export default function App() {
+  const isSummaryView = useMemo(() => {
+    if (typeof window === 'undefined') return false;
+    const params = new URLSearchParams(window.location.search);
+    return (
+      params.get('view') === 'summary' ||
+      Boolean((window as unknown as { __ZEN_SUMMARY_ONLY__?: boolean }).__ZEN_SUMMARY_ONLY__)
+    );
+  }, []);
+
   const [activeTab, setActiveTab] = useState<TabKey>('overview');
   const [reportData, setReportData] = useState<ReportData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -182,7 +191,7 @@ export default function App() {
 
         // Only attempt fetching if not running under file:// protocol (e.g., local dev server)
         if (typeof window !== 'undefined' && window.location.protocol !== 'file:') {
-          const resp = await fetch('/zen-report/report.json');
+          const resp = await fetch('./report.json');
           if (resp.ok) {
             const data = await resp.json();
             setReportData(data);
@@ -221,47 +230,69 @@ export default function App() {
   /** Single root element for the app layout */
   return (
     <div className="flex h-screen overflow-hidden bg-canvas">
-      {/* Sidebar */}
-      <aside
-        className={`flex flex-col border-r border-border-default bg-surface-50 transition-all duration-200 ${
-          isCollapsed ? 'w-16' : 'w-60'
-        }`}
-      >
-        {/* Sidebar Header & Collapse Toggle */}
-        <div
-          className={`flex items-center ${
-            isCollapsed ? 'justify-center py-4' : 'justify-between min-w-0 px-4 py-4'
+      {/* Sidebar - hidden in summary view */}
+      {!isSummaryView && (
+        <aside
+          className={`flex flex-col border-r border-border-default bg-surface-50 transition-all duration-200 ${
+            isCollapsed ? 'w-16' : 'w-60'
           }`}
         >
-          {!isCollapsed ? (
-            <>
-              <div className="flex items-center gap-2 min-w-0">
-                <svg
-                  className="h-4 w-4 text-text-muted shrink-0"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                  strokeWidth={1.5}
+          {/* Sidebar Header & Collapse Toggle */}
+          <div
+            className={`flex items-center ${
+              isCollapsed ? 'justify-center py-4' : 'justify-between min-w-0 px-4 py-4'
+            }`}
+          >
+            {!isCollapsed ? (
+              <>
+                <div className="flex items-center gap-2 min-w-0">
+                  <svg
+                    className="h-4 w-4 text-text-muted shrink-0"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    strokeWidth={1.5}
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M12 21a9 9 0 100-18 9 9 0 000 18z"
+                    />
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M15.414 8.586l-2.828 5.657-5.657 2.828 2.828-5.657 5.657-2.828z"
+                    />
+                  </svg>
+                  <span className="text-xs font-semibold tracking-wider text-text-muted uppercase truncate">
+                    Navigation
+                  </span>
+                </div>
+                <button
+                  onClick={() => setIsCollapsed(true)}
+                  className="p-1.5 rounded-md text-text-body-mid hover:text-text-ink hover:bg-surface-100 transition-colors shrink-0"
+                  title="Collapse sidebar"
                 >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M12 21a9 9 0 100-18 9 9 0 000 18z"
-                  />
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M15.414 8.586l-2.828 5.657-5.657 2.828 2.828-5.657 5.657-2.828z"
-                  />
-                </svg>
-                <span className="text-xs font-semibold tracking-wider text-text-muted uppercase truncate">
-                  Navigation
-                </span>
-              </div>
+                  <svg
+                    className="h-5 w-5"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    strokeWidth={1.5}
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M15.75 19.5L8.25 12l7.5-7.5"
+                    />
+                  </svg>
+                </button>
+              </>
+            ) : (
               <button
-                onClick={() => setIsCollapsed(true)}
-                className="p-1.5 rounded-md text-text-body-mid hover:text-text-ink hover:bg-surface-100 transition-colors shrink-0"
-                title="Collapse sidebar"
+                onClick={() => setIsCollapsed(false)}
+                className="p-1.5 rounded-md text-text-body-mid hover:text-text-ink hover:bg-surface-100 transition-colors"
+                title="Expand sidebar"
               >
                 <svg
                   className="h-5 w-5"
@@ -273,85 +304,111 @@ export default function App() {
                   <path
                     strokeLinecap="round"
                     strokeLinejoin="round"
-                    d="M15.75 19.5L8.25 12l7.5-7.5"
+                    d="M8.25 4.5l7.5 7.5-7.5 7.5"
                   />
                 </svg>
               </button>
-            </>
-          ) : (
-            <button
-              onClick={() => setIsCollapsed(false)}
-              className="p-1.5 rounded-md text-text-body-mid hover:text-text-ink hover:bg-surface-100 transition-colors"
-              title="Expand sidebar"
-            >
-              <svg
-                className="h-5 w-5"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                strokeWidth={1.5}
-              >
-                <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
-              </svg>
-            </button>
-          )}
-        </div>
-        <div className="mx-3 h-px bg-border-default"></div>
+            )}
+          </div>
+          <div className="mx-3 h-px bg-border-default"></div>
 
-        {/* Nav */}
-        <nav className={`flex-1 space-y-1 ${isCollapsed ? 'px-2' : 'px-3'} py-2`}>
-          {TABS.map((tab) => (
-            <SidebarItem
-              key={tab.key}
-              icon={tab.icon}
-              label={tab.label}
-              isActive={activeTab === tab.key}
-              onClick={() => setActiveTab(tab.key)}
-              badge={
-                tab.key === 'failures' ? failedCount + timedOutCount + interruptedCount : undefined
-              }
-              isCollapsed={isCollapsed}
-            />
-          ))}
-        </nav>
-        <div className="mx-3 h-px bg-border-default"></div>
-
-        {/* Brand & Theme Toggle at Bottom */}
-        {!isCollapsed ? (
-          <div className="flex items-center justify-between px-4 py-3">
-            <div className="flex items-center gap-2.5 min-w-0">
-              <img
-                src={logo}
-                alt="Zen Reporter"
-                className="h-7 w-7 shrink-0 object-contain drop-shadow-xs"
+          {/* Nav */}
+          <nav className={`flex-1 space-y-1 ${isCollapsed ? 'px-2' : 'px-3'} py-2`}>
+            {TABS.map((tab) => (
+              <SidebarItem
+                key={tab.key}
+                icon={tab.icon}
+                label={tab.label}
+                isActive={activeTab === tab.key}
+                onClick={() => setActiveTab(tab.key)}
+                badge={
+                  tab.key === 'failures'
+                    ? failedCount + timedOutCount + interruptedCount
+                    : undefined
+                }
+                isCollapsed={isCollapsed}
               />
-              <div className="min-w-0">
-                <h2 className="text-xs font-bold tracking-tight text-text-ink truncate">
-                  Zen Reporter
-                </h2>
-                <p className="text-[10px] text-text-body-mid truncate">Playwright Test Reporter</p>
+            ))}
+          </nav>
+          <div className="mx-3 h-px bg-border-default"></div>
+
+          {/* Brand & Theme Toggle at Bottom */}
+          {!isCollapsed ? (
+            <div className="flex items-center justify-between px-4 py-3">
+              <div className="flex items-center gap-2.5 min-w-0">
+                <img
+                  src={logo}
+                  alt="Zen Reporter"
+                  className="h-7 w-7 shrink-0 object-contain drop-shadow-xs"
+                />
+                <div className="min-w-0">
+                  <h2 className="text-xs font-bold tracking-tight text-text-ink truncate">
+                    Zen Reporter
+                  </h2>
+                  <p className="text-[10px] text-text-body-mid truncate">
+                    Playwright Test Reporter
+                  </p>
+                </div>
               </div>
+              <button
+                onClick={cycleDarkMode}
+                className={`relative flex h-5 w-9 shrink-0 items-center rounded-full transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-blue focus-visible:ring-offset-2 focus-visible:ring-offset-surface-50 ${
+                  darkMode === 'dark' ? 'bg-accent-blue' : 'bg-surface-200'
+                }`}
+                title={`Switch to ${darkMode === 'dark' ? 'Light' : 'Dark'} mode`}
+              >
+                <span
+                  className="pointer-events-none flex h-4 w-4 transform items-center justify-center rounded-full bg-canvas shadow-sm transition-transform duration-200"
+                  style={{
+                    transform: darkMode === 'dark' ? 'translateX(16px)' : 'translateX(1px)',
+                  }}
+                >
+                  {darkMode === 'light' ? (
+                    <svg
+                      className="h-2.5 w-2.5 text-text-muted"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                      strokeWidth={2}
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M12 3v2.25m6.364.386l-1.591 1.591M21 12h-2.25m-.386 6.364l-1.591-1.591M12 18.75V21m-4.773-4.227l-1.591 1.591M5.25 12H3m4.227-4.773L5.636 5.636M15.75 12a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0z"
+                      />
+                    </svg>
+                  ) : (
+                    <svg
+                      className="h-2.5 w-2.5 text-text-muted"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                      strokeWidth={2}
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M21.752 15.002A9.718 9.718 0 0118 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 003 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 009.002-5.998z"
+                      />
+                    </svg>
+                  )}
+                </span>
+              </button>
             </div>
-            <button
-              onClick={cycleDarkMode}
-              className={`relative flex h-5 w-9 shrink-0 items-center rounded-full transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-blue focus-visible:ring-offset-2 focus-visible:ring-offset-surface-50 ${
-                darkMode === 'dark' ? 'bg-accent-blue' : 'bg-surface-200'
-              }`}
-              title={`Switch to ${darkMode === 'dark' ? 'Light' : 'Dark'} mode`}
-            >
-              <span
-                className="pointer-events-none flex h-4 w-4 transform items-center justify-center rounded-full bg-canvas shadow-sm transition-transform duration-200"
-                style={{
-                  transform: darkMode === 'dark' ? 'translateX(16px)' : 'translateX(1px)',
-                }}
+          ) : (
+            <div className="flex flex-col items-center justify-center px-2 py-3 gap-3">
+              <button
+                onClick={cycleDarkMode}
+                className="flex h-9 w-9 items-center justify-center rounded-md text-text-body-mid hover:bg-surface-100 hover:text-text-ink transition-colors"
+                title={`Switch to ${darkMode === 'dark' ? 'Light' : 'Dark'} mode`}
               >
                 {darkMode === 'light' ? (
                   <svg
-                    className="h-2.5 w-2.5 text-text-muted"
+                    className="h-5 w-5"
                     fill="none"
                     viewBox="0 0 24 24"
                     stroke="currentColor"
-                    strokeWidth={2}
+                    strokeWidth={1.5}
                   >
                     <path
                       strokeLinecap="round"
@@ -361,11 +418,11 @@ export default function App() {
                   </svg>
                 ) : (
                   <svg
-                    className="h-2.5 w-2.5 text-text-muted"
+                    className="h-5 w-5"
                     fill="none"
                     viewBox="0 0 24 24"
                     stroke="currentColor"
-                    strokeWidth={2}
+                    strokeWidth={1.5}
                   >
                     <path
                       strokeLinecap="round"
@@ -374,56 +431,19 @@ export default function App() {
                     />
                   </svg>
                 )}
-              </span>
-            </button>
-          </div>
-        ) : (
-          <div className="flex flex-col items-center justify-center px-2 py-3 gap-3">
-            <button
-              onClick={cycleDarkMode}
-              className="flex h-9 w-9 items-center justify-center rounded-md text-text-body-mid hover:bg-surface-100 hover:text-text-ink transition-colors"
-              title={`Switch to ${darkMode === 'dark' ? 'Light' : 'Dark'} mode`}
-            >
-              {darkMode === 'light' ? (
-                <svg
-                  className="h-5 w-5"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                  strokeWidth={1.5}
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M12 3v2.25m6.364.386l-1.591 1.591M21 12h-2.25m-.386 6.364l-1.591-1.591M12 18.75V21m-4.773-4.227l-1.591 1.591M5.25 12H3m4.227-4.773L5.636 5.636M15.75 12a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0z"
-                  />
-                </svg>
-              ) : (
-                <svg
-                  className="h-5 w-5"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                  strokeWidth={1.5}
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M21.752 15.002A9.718 9.718 0 0118 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 003 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 009.002-5.998z"
-                  />
-                </svg>
-              )}
-            </button>
-          </div>
-        )}
-      </aside>
+              </button>
+            </div>
+          )}
+        </aside>
+      )}
 
       {/* Main Content */}
       <main className="flex-1 flex flex-col min-w-0 overflow-hidden bg-canvas">
         {/* Top Bar for Project Name & Test Run Name */}
-        {(projectName || testRunName) && (
-          <header className="border-b border-border-default bg-surface-50/50 px-10 py-5 shrink-0 text-center">
-            <div className="flex flex-col min-w-0">
+        {(projectName || testRunName || isSummaryView) && (
+          <header className="border-b border-border-default bg-surface-50/50 px-10 py-5 shrink-0 flex items-center justify-between">
+            {isSummaryView && <div className="w-9 shrink-0 hidden sm:block" />}
+            <div className="flex flex-col min-w-0 flex-1 text-center">
               {projectName && (
                 <h1
                   className="text-2xl font-bold tracking-tight text-text-ink dark:text-text-on-primary sm:text-3xl truncate"
@@ -441,6 +461,49 @@ export default function App() {
                 </p>
               )}
             </div>
+            {isSummaryView && (
+              <button
+                onClick={cycleDarkMode}
+                className="inline-flex items-center gap-2 px-3 py-1.5 rounded-md border border-border-default text-text-body-mid hover:text-text-ink hover:bg-surface-100 dark:text-text-muted dark:hover:text-text-on-primary transition-colors shrink-0 ml-4 cursor-pointer text-xs font-medium"
+                title={darkMode === 'light' ? 'Switch to Dark Mode' : 'Switch to Light Mode'}
+              >
+                {darkMode === 'dark' ? (
+                  <>
+                    <svg
+                      className="h-4 w-4"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                      strokeWidth={1.5}
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M12 3v2.25m6.364.386l-1.591 1.591M21 12h-2.25m-.386 6.364l-1.591-1.591M12 18.75V21m-4.773-4.227l-1.591 1.591M5.25 12H3m4.227-4.773L5.636 5.636M15.75 12a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0z"
+                      />
+                    </svg>
+                    <span className="hidden sm:inline">Light</span>
+                  </>
+                ) : (
+                  <>
+                    <svg
+                      className="h-4 w-4"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                      strokeWidth={1.5}
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M21.752 15.002A9.718 9.718 0 0118 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 003 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 009.002-5.998z"
+                      />
+                    </svg>
+                    <span className="hidden sm:inline">Dark</span>
+                  </>
+                )}
+              </button>
+            )}
           </header>
         )}
 
@@ -485,15 +548,15 @@ export default function App() {
               </div>
             )}
 
-            {!isLoading && reportData && activeTab === 'overview' && summary && (
+            {!isLoading && reportData && (isSummaryView || activeTab === 'overview') && summary && (
               <Overview summary={summary} suites={suites} />
             )}
 
-            {!isLoading && reportData && activeTab === 'suites' && (
+            {!isLoading && !isSummaryView && reportData && activeTab === 'suites' && (
               <SuitesSection suites={suites} />
             )}
 
-            {!isLoading && reportData && activeTab === 'failures' && (
+            {!isLoading && !isSummaryView && reportData && activeTab === 'failures' && (
               <FailuresSection
                 suites={suites}
                 failedCount={failedCount}

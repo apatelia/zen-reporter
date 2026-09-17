@@ -6,6 +6,14 @@ Beautiful test execution reports for Playwright.
 
 Zen Reporter transforms Playwright's raw test results into an interactive, visually stunning dashboard. It provides a clean, modern interface for exploring test suites, analyzing pass/fail rates, and diving into individual test failures with full step-by-step execution traces, source code snippets, syntax highlighting, and error stacks.
 
+Light mode:
+
+![Dashboard Overview - Light Mode](docs/screenshots/light-mode.png)
+
+Dark mode:
+
+![Dashboard Overview - Dark Mode](docs/screenshots/dark-mode.png)
+
 ## Features
 
 - **Interactive Dashboard** — Navigate test results seamlessly across Overview, Suites, and Failures tabs.
@@ -58,6 +66,7 @@ export default defineConfig({
         outputDir: 'zen-report', // Optional: Output directory where report files will be generated (default: "zen-report")
         projectName: 'My E2E Project', // Optional: Project name displayed in the top bar header
         testRunName: 'Nightly Build #42', // Optional: Test run / build name displayed in the top bar header
+        singleSummaryFile: true, // Optional: Generates a standalone summary.html file alongside index.html
       },
     ],
   ],
@@ -66,11 +75,12 @@ export default defineConfig({
 
 ### Options Reference
 
-| Option        | Type     | Default                     | Description                                                         |
-| :------------ | :------- | :-------------------------- | :------------------------------------------------------------------ |
-| `outputDir`   | `string` | `"zen-report"`              | Directory where final report files are saved.                       |
-| `projectName` | `string` | `"Test Automation Project"` | Project name displayed prominently in the top bar of the dashboard. |
-| `testRunName` | `string` | `"Test Run #1"`             | Test run or build name displayed in the top bar of the dashboard.   |
+| Option              | Type      | Default                     | Description                                                         |
+| :------------------ | :-------- | :-------------------------- | :------------------------------------------------------------------ |
+| `outputDir`         | `string`  | `"zen-report"`              | Directory where final report files are saved.                       |
+| `projectName`       | `string`  | `"Test Automation Project"` | Project name displayed prominently in the top bar of the dashboard. |
+| `testRunName`       | `string`  | `"Test Run #1"`             | Test run or build name displayed in the top bar of the dashboard.   |
+| `singleSummaryFile` | `boolean` | `false`                     | Generates a standalone `summary.html` for executive summary views.  |
 
 ---
 
@@ -81,13 +91,15 @@ export default defineConfig({
 Run your Playwright tests as usual. Zen Reporter will automatically record test run metadata, build structured suite trees, and generate the standalone HTML report:
 
 ```bash
-npm run test
+npx playwright test
 ```
 
 ### 2. Viewing the Generated Report
 
-Launch the built-in report server to open the interactive dashboard in your browser:
+Launch the built-in report server to open the interactive dashboard in your browser using either `npx zr show` or `npx zen-reporter show`:
 
 ```bash
+npx zr show
+# or
 npx zen-reporter show
 ```

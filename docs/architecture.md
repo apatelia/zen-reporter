@@ -33,12 +33,15 @@ zen-reporter/
 │   ├── main.tsx                     # React application entry point
 │   ├── vite-env.d.ts                # Vite type declarations
 │   └── vite-plugin-inject-data.ts   # Vite plugin to inline report.json into HTML
+├── bin/
+│   └── zen-reporter.js              # CLI executable (npx zen-reporter show)
 ├── scripts/
-│   ├── cli.ts                       # CLI executable (npx zen-reporter show)
-│   └── generate_report.ts           # Standalone HTML build script
+│   └── generate_report.js           # Standalone HTML build script (Node ES module)
 ├── zen-report/
 │   ├── index.html                   # Generated standalone single-file HTML report
-│   └── report.json                  # Processed test execution JSON data
+│   ├── summary.html                 # Optional standalone summary HTML (Overview dashboard only)
+│   ├── report.json                  # Processed test execution JSON data
+│   └── attachments/                 # Copied test assets (screenshots, videos, traces)
 ├── tests/                           # Playwright test files (failures, retry, interrupted, annotations)
 ├── playwright.config.ts             # Playwright test configuration
 ├── vite.config.ts                   # Vite single-file bundling configuration
@@ -53,7 +56,7 @@ zen-reporter/
 flowchart TD
     A["Playwright Test Runner"] -->|onBegin / onTestBegin / onTestEnd / onEnd| B["ZenReporter (src/lib/reporter.ts)"]
     B -->|Generates metadata & JSON| C["report.json (<outputDir>/report.json)"]
-    C -->|Reads dataset| D["Report Pipeline (scripts/generate_report.ts)"]
+    C -->|Reads dataset| D["Report Pipeline (scripts/generate_report.js)"]
     D -->|Processes data| E["dataProcessor.ts"]
     E -->|Triggers single-file build| F["Vite Bundler (npx vite build)"]
     F -->|Injects dataset| G["vite-plugin-inject-data.ts"]

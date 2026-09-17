@@ -58,12 +58,13 @@ const statusConfig = {
 
 /** Collect top-level and step-level attachments for a single attempt, deduplicated. */
 function collectAttemptAttachments(attempt: AttemptView): Attachment[] {
-  const rawList: Attachment[] = [...(attempt.attachments || [])];
+  const topLevel = attempt.attachments || [];
+  const stepList: Attachment[] = [];
   const collectFromSteps = (steps?: TestStep[]) => {
     if (!steps) return;
     for (const step of steps) {
       if (step.attachments && step.attachments.length > 0) {
-        rawList.push(...step.attachments);
+        stepList.push(...step.attachments);
       }
       if (step.subSteps && step.subSteps.length > 0) {
         collectFromSteps(step.subSteps);
@@ -72,17 +73,26 @@ function collectAttemptAttachments(attempt: AttemptView): Attachment[] {
   };
   collectFromSteps(attempt.steps);
 
-  // Deduplicate by combination of name, path, and contentType
-  const seen = new Set<string>();
-  const deduplicated: Attachment[] = [];
-  for (const att of rawList) {
-    const key = `${att.name || ''}_${att.path || ''}_${att.contentType || ''}`;
-    if (!seen.has(key)) {
-      seen.add(key);
-      deduplicated.push(att);
+  // Start with top-level attachments (which have relative ./attachments/ URLs)
+  const result: Attachment[] = topLevel.map((att) => ({ ...att }));
+
+  // Match step attachments to top-level attempt attachments by name/contentType
+  for (const stepAtt of stepList) {
+    const existing = result.find(
+      (a) =>
+        a.name === stepAtt.name &&
+        (a.contentType === stepAtt.contentType || !a.contentType || !stepAtt.contentType)
+    );
+    if (existing) {
+      if (!existing.body && stepAtt.body) {
+        existing.body = stepAtt.body;
+      }
+    } else {
+      result.push({ ...stepAtt });
     }
   }
-  return deduplicated;
+
+  return result;
 }
 
 /** Calculate total duration of an attempt, summing step durations if steps are present. */
@@ -178,9 +188,9 @@ function StepItem({ step, idx }: StepItemProps) {
           {/* Step Annotations */}
           {step.annotations && step.annotations.length > 0 && (
             <div className="mt-1 flex flex-wrap gap-1.5">
-              {step.annotations.map((anno, aIdx) => (
+              {step.annotations.map((anno) => (
                 <span
-                  key={`${anno.type}-${anno.description || aIdx}`}
+                  key={`step-anno-${anno.type}-${anno.description || ''}`}
                   className="inline-flex items-center rounded bg-surface-100 dark:bg-surface-200/30 px-2 py-0.5 text-[11px] text-text-body-mid"
                 >
                   <span className="font-semibold mr-1">{anno.type}:</span>
@@ -196,7 +206,7 @@ function StepItem({ step, idx }: StepItemProps) {
               {step.subSteps.map((sub) => {
                 const subSnippet = sub.snippet || getStepCodeSnippet(sub.location);
                 return (
-                  <div key={`${sub.title}-${sub.duration}`}>
+                  <div key={`sub-${sub.title}-${sub.duration}-${sub.location?.line || ''}`}>
                     <div className="flex items-center justify-between gap-2">
                       <p className="text-xs text-text-body-mid dark:text-text-muted font-medium">
                         ↳ {sub.title}
@@ -275,13 +285,11 @@ export default function TestCaseDetail({ testCase, showSteps = true }: Props) {
   // Helper to determine image URL / preview suitability
   const getAttachmentUrl = (att: Attachment): string | null => {
     if (att.body) {
-      const bodyStr =
-        typeof att.body === 'string' ? att.body : Buffer.from(att.body).toString('base64');
-      if (bodyStr.startsWith('data:')) {
-        return bodyStr;
+      if (att.body.startsWith('data:')) {
+        return att.body;
       }
       const mime = att.contentType || 'image/png';
-      return `data:${mime};base64,${bodyStr}`;
+      return `data:${mime};base64,${att.body}`;
     }
     if (att.path) {
       return att.path;
@@ -307,15 +315,11 @@ export default function TestCaseDetail({ testCase, showSteps = true }: Props) {
 
   const getTextContent = (att: Attachment): string => {
     if (att.body) {
-      if (typeof att.body === 'string') {
-        // If it's a base64 string or plain string
-        try {
-          return atob(att.body);
-        } catch {
-          return att.body;
-        }
+      try {
+        return atob(att.body);
+      } catch {
+        return att.body;
       }
-      return Buffer.from(att.body).toString('utf-8');
     }
     return '';
   };
@@ -341,9 +345,13 @@ export default function TestCaseDetail({ testCase, showSteps = true }: Props) {
             <h5 className="mb-2 text-xs font-bold uppercase tracking-wider text-text-body-mid dark:text-text-muted">
               Execution Steps
             </h5>
-            <div className="space-y-1">
+            <div className="space-y-2">
               {attempt.steps.map((step, idx) => (
-                <StepItem key={`${step.title}-${step.duration}`} step={step} idx={idx} />
+                <StepItem
+                  key={`step-${step.title}-${step.duration}-${step.location?.line || ''}`}
+                  step={step}
+                  idx={idx}
+                />
               ))}
             </div>
           </div>
@@ -441,7 +449,7 @@ export default function TestCaseDetail({ testCase, showSteps = true }: Props) {
               Attachments
             </h5>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-              {attachments.map((att, idx) => {
+              {attachments.map((att) => {
                 const url = getAttachmentUrl(att);
                 const isImg = isImageAttachment(att);
                 const isTxt = isTextAttachment(att);
@@ -449,7 +457,7 @@ export default function TestCaseDetail({ testCase, showSteps = true }: Props) {
                 if (isImg && url) {
                   return (
                     <div
-                      key={`img-${att.name || att.path || idx}`}
+                      key={`img-${att.path || att.name || 'image'}-${att.contentType || ''}`}
                       className="flex items-center justify-between gap-3 rounded-md border border-border-default bg-canvas p-2.5 text-sm hover:border-primary-500 transition-colors shadow-xs group"
                     >
                       <button
@@ -518,16 +526,12 @@ export default function TestCaseDetail({ testCase, showSteps = true }: Props) {
                   const textContent = getTextContent(att);
                   const mime = att.contentType || 'text/plain';
                   const base64 =
-                    typeof att.body === 'string'
-                      ? att.body
-                      : att.body
-                        ? Buffer.from(att.body).toString('base64')
-                        : Buffer.from(textContent).toString('base64');
+                    att.body || (typeof btoa === 'function' ? btoa(textContent) : textContent);
                   const downloadHref = url && url !== '#' ? url : `data:${mime};base64,${base64}`;
 
                   return (
                     <div
-                      key={`txt-${att.name || att.path || idx}`}
+                      key={`txt-${att.path || att.name || 'text'}-${mime}`}
                       className="flex items-center justify-between gap-3 rounded-md border border-border-default bg-canvas p-2.5 text-sm hover:border-primary-500 transition-colors shadow-xs group"
                     >
                       <button
@@ -601,7 +605,7 @@ export default function TestCaseDetail({ testCase, showSteps = true }: Props) {
 
                 return (
                   <a
-                    key={`att-${att.name || att.path || idx}`}
+                    key={`att-${att.path || att.name || 'file'}-${att.contentType || ''}`}
                     href={url || '#'}
                     download={att.name || 'attachment'}
                     target="_blank"
@@ -716,9 +720,9 @@ export default function TestCaseDetail({ testCase, showSteps = true }: Props) {
             Annotations & Description
           </h5>
           <div className="space-y-2">
-            {validAnnotations.map((anno, idx) => (
+            {validAnnotations.map((anno) => (
               <div
-                key={`valid-anno-${anno.type}-${anno.description || idx}`}
+                key={`valid-anno-${anno.type}-${anno.description}`}
                 className="rounded-md border border-border-default bg-canvas p-3 text-sm shadow-xs"
               >
                 <div className="flex items-center gap-2 mb-1">
@@ -744,7 +748,7 @@ export default function TestCaseDetail({ testCase, showSteps = true }: Props) {
               const tabTitle = idx === 0 ? 'Run' : `Retry #${idx}`;
               return (
                 <button
-                  key={`attempt-tab-${attempt.status}-${attempt.duration}`}
+                  key={`attempt-tab-${tabTitle}-${attempt.status}-${attempt.duration}`}
                   type="button"
                   onClick={() => {
                     setActiveAttemptIdx(idx);

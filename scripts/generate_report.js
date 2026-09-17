@@ -3,14 +3,54 @@ import { execSync } from 'child_process';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'fs';
 import { dirname, resolve } from 'path';
 import { fileURLToPath } from 'url';
-import { getViteBuildCommand, processRawData } from '../src/lib/dataProcessor';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const ROOT = resolve(__dirname, '..');
 const REPORT_DIR = resolve(ROOT, process.env.PW_REPORTER_OUTPUT || 'zen-report');
 
-function readRawData(): unknown {
+function detectPackageManager(cwd = process.cwd()) {
+  const lockfiles = [
+    ['pnpm-lock.yaml', 'pnpm'],
+    ['yarn.lock', 'yarn'],
+    ['bun.lock', 'bun'],
+    ['package-lock.json', 'npm'],
+  ];
+
+  for (const [file, manager] of lockfiles) {
+    if (existsSync(resolve(cwd, file))) return manager;
+  }
+
+  if (existsSync(resolve(cwd, '.npmrc'))) return 'npm';
+
+  try {
+    const pkgPath = resolve(cwd, 'package.json');
+    if (existsSync(pkgPath)) {
+      const pkgJson = JSON.parse(readFileSync(pkgPath, 'utf8'));
+      if (pkgJson.packageManager) return pkgJson.packageManager.split('@')[0];
+    }
+  } catch {
+    /* ignore */
+  }
+
+  return 'npm';
+}
+
+function getViteBuildCommand(pm, cwd = process.cwd()) {
+  const manager = pm || detectPackageManager(cwd);
+  switch (manager) {
+    case 'pnpm':
+      return 'pnpm exec vite build';
+    case 'yarn':
+      return 'yarn exec vite build';
+    case 'bun':
+      return 'bunx vite build';
+    default:
+      return 'npx vite build';
+  }
+}
+
+function readRawData() {
   const reportJson = resolve(REPORT_DIR, 'report.json');
   if (existsSync(reportJson)) {
     return JSON.parse(readFileSync(reportJson, 'utf8'));
@@ -30,24 +70,19 @@ function readRawData(): unknown {
   throw new Error('Could not find test data in report.json or test-results/result.json');
 }
 
-function convertPlaywrightSuites(raw: { suites: unknown[] }): unknown {
-  const tests: unknown[] = [];
-  function extractTests(suites: unknown[], describePath: string[] = []) {
+function convertPlaywrightSuites(raw) {
+  const tests = [];
+  function extractTests(suites, describePath = []) {
     for (const suite of suites) {
       if (!suite || typeof suite !== 'object') continue;
-      const s = suite as Record<string, unknown>;
-      const title = typeof s.title === 'string' ? s.title : '';
+      const title = typeof suite.title === 'string' ? suite.title : '';
 
-      const isDescribe = Boolean(s.suites && !s.file && title);
+      const isDescribe = Boolean(suite.suites && !suite.file && title);
       const nextDescribePath = isDescribe ? [...describePath, title] : describePath;
 
-      if (Array.isArray(s.tests)) {
-        for (const t of s.tests as unknown[]) {
-          const test = t as Record<string, unknown>;
-          if (
-            test.status &&
-            ['passed', 'failed', 'skipped', 'timedOut'].includes(test.status as string)
-          ) {
+      if (Array.isArray(suite.tests)) {
+        for (const test of suite.tests) {
+          if (test.status && ['passed', 'failed', 'skipped', 'timedOut'].includes(test.status)) {
             tests.push({
               ...test,
               describePath: nextDescribePath,
@@ -55,7 +90,7 @@ function convertPlaywrightSuites(raw: { suites: unknown[] }): unknown {
           }
         }
       }
-      if (Array.isArray(s.suites)) extractTests(s.suites, nextDescribePath);
+      if (Array.isArray(suite.suites)) extractTests(suite.suites, nextDescribePath);
     }
   }
 
@@ -67,27 +102,24 @@ function convertPlaywrightSuites(raw: { suites: unknown[] }): unknown {
 }
 
 try {
-  const rawData = readRawData() as Record<string, unknown>;
-  // If it's already processed, it will have testRun
-  let reportData: unknown = rawData;
+  const rawData = readRawData();
+  let reportData = rawData;
 
   if (!rawData.testRun) {
-    reportData = processRawData(rawData);
     mkdirSync(REPORT_DIR, { recursive: true });
     writeFileSync(resolve(REPORT_DIR, 'report.json'), JSON.stringify(reportData, null, 2), 'utf8');
     console.debug(`✓ Wrote processed data → ${resolve(REPORT_DIR, 'report.json')}`);
   }
 
   console.log('→ Preparing test report...');
-  const buildCmd = getViteBuildCommand(process.env.PACKAGE_MANAGER, ROOT);
+  const buildCmd = getViteBuildCommand(undefined, ROOT);
   try {
     execSync(buildCmd, { cwd: ROOT, stdio: 'pipe' });
-  } catch (error: unknown) {
-    const execErr = error as { stdout?: Buffer; stderr?: Buffer; message?: string };
-    const stdout = execErr.stdout ? execErr.stdout.toString() : '';
-    const stderr = execErr.stderr ? execErr.stderr.toString() : '';
+  } catch (error) {
+    const stdout = error?.stdout ? error.stdout.toString() : '';
+    const stderr = error?.stderr ? error.stderr.toString() : '';
     const output = [stdout, stderr].filter(Boolean).join('\n');
-    throw new Error(`Vite build failed:\n${output || execErr.message || String(error)}`, {
+    throw new Error(`Vite build failed:\n${output || error?.message || String(error)}`, {
       cause: error,
     });
   }

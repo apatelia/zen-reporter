@@ -71,7 +71,7 @@ function convertSteps(steps: RawTestStep[]): TestStep[] {
         }
       : null;
 
-    const snippet = step.snippet || getStepCodeSnippet(location);
+    const snippet = step.snippet || getStepCodeSnippet(location, { existsSync, readFileSync });
 
     return {
       title: step.title,

@@ -3,8 +3,8 @@ import { execSync } from 'child_process';
 import { existsSync, readFileSync } from 'fs';
 import { resolve } from 'path';
 
-function detectPackageManager(cwd: string = process.cwd()): string {
-  const lockfiles: [string, string][] = [
+function detectPackageManager(cwd = process.cwd()) {
+  const lockfiles = [
     ['pnpm-lock.yaml', 'pnpm'],
     ['yarn.lock', 'yarn'],
     ['bun.lock', 'bun'],
@@ -57,10 +57,15 @@ if (command === 'show') {
 
   try {
     execSync(showCmd, { cwd, stdio: 'inherit' });
-  } catch (err: unknown) {
-    const execErr = err as { status?: number; message?: string };
-    if (execErr.status !== 130 && execErr.status !== 0) {
-      console.error('✗ Failed to launch report server:', execErr.message || err);
+  } catch (err) {
+    if (
+      err &&
+      typeof err === 'object' &&
+      'status' in err &&
+      err.status !== 130 &&
+      err.status !== 0
+    ) {
+      console.error('✗ Failed to launch report server:', err.message || err);
     }
   }
 } else {
@@ -69,5 +74,6 @@ Zen Reporter CLI
 
 Usage:
   npx zen-reporter show    Serve and view the HTML report
+  npx zr show              Alias for zen-reporter show
 `);
 }

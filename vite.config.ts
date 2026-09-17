@@ -19,7 +19,11 @@ export default defineConfig({
     outDir: 'dist',
     emptyOutDir: true,
     assetsInlineLimit: 10000000,
+    rolldownOptions: {
+      external: ['fs', 'node:fs'],
+    },
     rollupOptions: {
+      external: ['fs', 'node:fs'],
       output: {
         dir: 'dist',
       },

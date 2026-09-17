@@ -5,7 +5,8 @@
   "type": "module",
   "description": "Beautiful test execution reports for Playwright",
   "bin": {
-    "zen-reporter": "scripts/cli.ts"
+    "zen-reporter": "bin/zen-reporter.js",
+    "zr": "bin/zen-reporter.js"
   },
   "author": {
     "name": "Arpan Patelia",
@@ -17,8 +18,8 @@
     "build": "vite build",
     "preview": "vite preview",
     "test": "npx playwright test",
-    "report": "tsx scripts/generate_report.ts",
-    "show": "tsx scripts/cli.ts show",
+    "report": "node scripts/generate_report.js",
+    "show": "node bin/zen-reporter.js show",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "format": "prettier --write .",
@@ -63,7 +64,6 @@
     "postcss": "^8.5.28",
     "prettier": "^3.9.7",
     "tailwindcss": "^4.3.3",
-    "tsx": "^4.23.13",
     "typescript": "^6.0.3",
     "typescript-eslint": "^8.70.0"
   }

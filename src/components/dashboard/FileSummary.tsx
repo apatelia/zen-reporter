@@ -70,7 +70,10 @@ export default function FileSummary({ suites, title = 'Files Summary' }: Props) 
               {fileStats.map((file) => (
                 <tr key={file.fileName} className="border-b border-border-subtle last:border-b-0">
                   <td className="px-1.5 py-2.5">
-                    <div className="max-w-44 truncate font-medium text-text-ink dark:text-text-on-primary">
+                    <div
+                      className="max-w-60 overflow-hidden text-ellipsis whitespace-nowrap font-medium text-text-ink dark:text-text-on-primary"
+                      title={file.fileName}
+                    >
                       {truncateFileName(file.fileName)}
                     </div>
                   </td>

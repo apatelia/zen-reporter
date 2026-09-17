@@ -80,7 +80,7 @@ export interface Attachment {
   name: string;
   contentType: string;
   path: string | null;
-  body: Buffer | string | null;
+  body: string | null;
 }
 
 export interface Location {
@@ -98,4 +98,12 @@ export interface FailedAttempt {
   stdout?: string[];
   stderr?: string[];
   attachments?: Attachment[];
+}
+
+export interface ReporterConfig {
+  outputDir?: string;
+  packageManager?: string;
+  projectName?: string;
+  testRunName?: string;
+  singleSummaryFile?: boolean;
 }

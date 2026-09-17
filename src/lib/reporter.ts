@@ -9,7 +9,8 @@ import type {
 import { execSync } from 'child_process';
 import * as fs from 'fs';
 import * as path from 'path';
-import { detectPackageManager } from './dataProcessor';
+import { fileURLToPath } from 'url';
+import { detectPackageManager, getViteBuildCommand } from './dataProcessor';
 import type {
   ReportData,
   ResultSummary,
@@ -18,7 +19,9 @@ import type {
   TestRun as TestRunModel,
   TestSuite,
 } from './types';
-import { buildSuitesFromCases, convertPlaywrightSteps, sanitizeAnsi } from './utils';
+import { buildSuitesFromCases, convertPlaywrightSteps, sanitizeAnsi, setFsModule } from './utils';
+
+setFsModule(fs);
 
 function getDescribePath(test: TestCase): string[] {
   const path: string[] = [];
@@ -40,6 +43,7 @@ export interface ReporterConfig {
   packageManager: string;
   projectName: string;
   testRunName: string;
+  singleSummaryFile?: boolean;
 }
 
 export function resolveConfig(
@@ -52,8 +56,15 @@ export function resolveConfig(
     ? String(rawConfig.projectName)
     : 'Test Automation Project';
   const testRunName = rawConfig?.testRunName ? String(rawConfig.testRunName) : 'Test Run #1';
+  const singleSummaryFile = Boolean(rawConfig?.singleSummaryFile);
 
-  return { outputDir, packageManager, projectName, testRunName };
+  return {
+    outputDir,
+    packageManager,
+    projectName,
+    testRunName,
+    singleSummaryFile,
+  };
 }
 
 class ZenReporter implements Reporter {
@@ -186,7 +197,9 @@ class ZenReporter implements Reporter {
     // attempt (the TestCase model) and the failed-attempt records, so each
     // recorded attempt can render its own steps/output/attachments.
     const attemptSteps =
-      result.steps && result.steps.length > 0 ? convertPlaywrightSteps(result.steps) : undefined;
+      result.steps && result.steps.length > 0
+        ? convertPlaywrightSteps(result.steps, fs)
+        : undefined;
     const stepDurationSum = attemptSteps
       ? attemptSteps.reduce((sum, step) => sum + (step.duration || 0), 0)
       : 0;
@@ -214,19 +227,73 @@ class ZenReporter implements Reporter {
     const attemptStderr = (result.stderr || []).map((entry) =>
       typeof entry === 'string' ? entry : entry.toString('utf8')
     );
-    const attemptAttachments = (result.attachments || []).map((att) => {
-      let bodyData: Buffer | string | null = att.body || null;
-      if (!bodyData && att.path && fs.existsSync(att.path)) {
+    const cwd = process.cwd();
+    const normalizedCwd = cwd.endsWith('/') ? cwd.slice(0, -1) : cwd;
+    const outputDir = path.resolve(normalizedCwd, this.reportConfig.outputDir);
+    const attachmentsDir = path.join(outputDir, 'attachments');
+
+    const attemptAttachments = (result.attachments || []).map((att, attIdx) => {
+      let bodyData: string | null = null;
+      let finalPath: string | null = att.path || null;
+
+      const isText =
+        att.contentType?.startsWith('text/') ||
+        /\.(txt|log|json|csv|html|xml|md|yaml|yml|js|ts|jsx|tsx|css)$/i.test(
+          att.name || att.path || ''
+        );
+
+      // If att has a file on disk, copy to outputDir/attachments
+      if (att.path && fs.existsSync(att.path)) {
         try {
-          bodyData = fs.readFileSync(att.path).toString('base64');
+          fs.mkdirSync(attachmentsDir, { recursive: true });
+          const safeName = path.basename(att.path).replace(/[^a-zA-Z0-9._-]/g, '_');
+          const safeTestId = test.id.replace(/[^a-zA-Z0-9_-]/g, '_');
+          const targetFilename = `${safeTestId}_att${attIdx}_${safeName}`;
+          const targetPath = path.join(attachmentsDir, targetFilename);
+          fs.copyFileSync(att.path, targetPath);
+          finalPath = `./attachments/${targetFilename}`;
+
+          // Only store small text attachments inline
+          if (isText) {
+            bodyData = fs.readFileSync(att.path, 'utf8');
+          }
         } catch (e) {
-          console.error(`Failed to read attachment file at ${att.path}:`, e);
+          console.error(`Failed to copy attachment file from ${att.path}:`, e);
+        }
+      } else if (att.body) {
+        // Buffer or string in memory
+        if (isText) {
+          bodyData = Buffer.isBuffer(att.body)
+            ? att.body.toString('utf8')
+            : typeof att.body === 'string'
+              ? att.body
+              : String(att.body);
+        } else {
+          // Binary buffer in memory - write to attachments folder
+          try {
+            fs.mkdirSync(attachmentsDir, { recursive: true });
+            const ext =
+              att.contentType === 'image/png'
+                ? '.png'
+                : att.contentType === 'image/jpeg'
+                  ? '.jpg'
+                  : '.bin';
+            const safeTestId = test.id.replace(/[^a-zA-Z0-9_-]/g, '_');
+            const targetFilename = `${safeTestId}_att${attIdx}${ext}`;
+            const targetPath = path.join(attachmentsDir, targetFilename);
+            const buf = Buffer.isBuffer(att.body) ? att.body : Buffer.from(att.body);
+            fs.writeFileSync(targetPath, buf);
+            finalPath = `./attachments/${targetFilename}`;
+          } catch (e) {
+            console.error('Failed to write in-memory attachment to disk:', e);
+          }
         }
       }
+
       return {
         name: att.name,
         contentType: att.contentType,
-        path: att.path || null,
+        path: finalPath,
         body: bodyData,
       };
     });
@@ -337,29 +404,31 @@ class ZenReporter implements Reporter {
     // Generate the single-file HTML report
     try {
       const pm = this.reportConfig.packageManager;
-      const buildCmd =
-        pm === 'pnpm'
-          ? 'pnpm exec tsx ../zen-reporter/scripts/generate_report.ts'
-          : pm === 'yarn'
-            ? 'yarn exec tsx ../zen-reporter/scripts/generate_report.ts'
-            : pm === 'bun'
-              ? 'bunx tsx ../zen-reporter/scripts/generate_report.ts'
-              : 'npx tsx ../zen-reporter/scripts/generate_report.ts';
+      const packageRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
+      const buildCmd = getViteBuildCommand(pm, packageRoot);
 
-      const reportRoot = path.resolve(normalizedCwd, '..', 'zen-reporter');
       execSync(buildCmd, {
-        cwd: reportRoot,
-        stdio: 'inherit',
-        env: { ...process.env, PW_REPORTER_OUTPUT: this.reportConfig.outputDir },
+        cwd: packageRoot,
+        stdio: 'pipe',
+        env: { ...process.env, PW_REPORTER_OUTPUT: outputDir },
       });
 
-      // Copy generated HTML to output directory
-      const srcHtml = path.join(reportRoot, this.reportConfig.outputDir, 'index.html');
+      const srcHtml = path.join(packageRoot, 'dist', 'index.html');
       const destHtml = path.join(outputDir, 'index.html');
       if (fs.existsSync(srcHtml)) {
         fs.copyFileSync(srcHtml, destHtml);
         console.log(`\n✓ Report generated: ${destHtml}`);
-        console.log(`\n💡 Run "${getShowReportCommand(pm)}" to view the report`);
+        console.log(`\n💡 Run "${getShowReportCommand(pm)}" to view the report\n`);
+
+        if (this.reportConfig.singleSummaryFile) {
+          const summaryHtmlPath = path.join(outputDir, 'summary.html');
+          const originalHtml = fs.readFileSync(srcHtml, 'utf8');
+          // Inject an inline script that activates summary mode regardless of file:/// URL or browser environment
+          const summaryScript = `<script>window.__ZEN_SUMMARY_ONLY__ = true;</script>`;
+          const summaryHtml = originalHtml.replace('<head>', `<head>\n  ${summaryScript}`);
+          fs.writeFileSync(summaryHtmlPath, summaryHtml, 'utf8');
+          console.log(`✓ Standalone Summary generated: ${summaryHtmlPath}`);
+        }
       }
     } catch (err) {
       console.error('Report generation failed, keeping report.json:', err);
@@ -371,13 +440,13 @@ export function getShowReportCommand(pm?: string, cwd: string = process.cwd()): 
   const manager = pm || detectPackageManager(cwd);
   switch (manager) {
     case 'pnpm':
-      return 'pnpm zen-reporter show';
+      return 'pnpm zen-reporter show (or pnpm zr show)';
     case 'yarn':
-      return 'yarn zen-reporter show';
+      return 'yarn zen-reporter show (or yarn zr show)';
     case 'bun':
-      return 'bunx zen-reporter show';
+      return 'bunx zen-reporter show (or bunx zr show)';
     default:
-      return 'npx zen-reporter show';
+      return 'npx zen-reporter show (or npx zr show)';
   }
 }
 

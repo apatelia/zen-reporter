@@ -1,35 +1,89 @@
+import type { existsSync as fsExistsSync, readFileSync as fsReadFileSync } from 'fs';
 import type { TestStep as PwTestStep } from '@playwright/test/reporter';
-import * as fs from 'fs';
 import type { Location, ResultSummary, TestCase, TestError, TestStep, TestSuite } from './types';
 
-export function getStepCodeSnippet(location: Location | null | undefined): string | undefined {
+export interface FsModule {
+  existsSync: typeof fsExistsSync;
+  readFileSync: typeof fsReadFileSync;
+}
+
+let customFsInstance: FsModule | null = null;
+
+export function setFsModule(fsInstance: FsModule | null): void {
+  customFsInstance = fsInstance;
+}
+
+function getNodeFs(): FsModule | null {
+  if (typeof window !== 'undefined') return null;
+  if (customFsInstance) return customFsInstance;
+
+  try {
+    const proc =
+      typeof process !== 'undefined'
+        ? (process as unknown as { getBuiltinModule?: (name: string) => FsModule })
+        : undefined;
+    if (proc && typeof proc.getBuiltinModule === 'function') {
+      const builtinFs = proc.getBuiltinModule('fs');
+      if (builtinFs) return builtinFs;
+    }
+
+    const g = globalThis as unknown as { require?: (mod: string) => FsModule };
+    if (typeof g.require === 'function') {
+      return g.require('fs');
+    }
+  } catch {
+    return null;
+  }
+
+  return null;
+}
+
+const fileSnippetCache = new Map<string, string[]>();
+
+export function getStepCodeSnippet(
+  location: Location | null | undefined,
+  fsModule?: FsModule | null
+): string | undefined {
   if (!location || !location.file || !location.line) {
     return undefined;
   }
 
   try {
-    if (
-      typeof fs !== 'undefined' &&
-      typeof fs.existsSync === 'function' &&
-      fs.existsSync(location.file)
-    ) {
-      const content = fs.readFileSync(location.file, 'utf8');
-      const lines = content.split(/\r?\n/);
-      const targetLine = location.line;
-      if (targetLine < 1 || targetLine > lines.length) return undefined;
+    const fs = fsModule || getNodeFs();
+    if (!fs) return undefined;
 
-      const startLine = Math.max(1, targetLine - 1);
-      const endLine = Math.min(lines.length, targetLine + 1);
-
-      const snippetLines: string[] = [];
-      for (let l = startLine; l <= endLine; l++) {
-        const isTarget = l === targetLine;
-        const prefix = isTarget ? '>' : ' ';
-        const lineNum = String(l).padStart(4, ' ');
-        snippetLines.push(`${prefix} ${lineNum} | ${lines[l - 1]}`);
+    let filePath = location.file;
+    if (!fs.existsSync(filePath)) {
+      const resolved =
+        typeof process !== 'undefined' && process.cwd ? `${process.cwd()}/${filePath}` : filePath;
+      if (fs.existsSync(resolved)) {
+        filePath = resolved;
+      } else {
+        return undefined;
       }
-      return snippetLines.join('\n');
     }
+
+    let lines = fileSnippetCache.get(filePath);
+    if (!lines) {
+      const content = fs.readFileSync(filePath, 'utf8') as string;
+      lines = content.split(/\r?\n/);
+      fileSnippetCache.set(filePath, lines);
+    }
+
+    const targetLine = location.line;
+    if (targetLine < 1 || targetLine > lines.length) return undefined;
+
+    const startLine = Math.max(1, targetLine - 1);
+    const endLine = Math.min(lines.length, targetLine + 1);
+
+    const snippetLines: string[] = [];
+    for (let l = startLine; l <= endLine; l++) {
+      const isTarget = l === targetLine;
+      const prefix = isTarget ? '>' : ' ';
+      const lineNum = String(l).padStart(4, ' ');
+      snippetLines.push(`${prefix} ${lineNum} | ${lines[l - 1]}`);
+    }
+    return snippetLines.join('\n');
   } catch {
     // Ignore in browser or when file cannot be read
   }
@@ -113,7 +167,11 @@ export function highlightCodeSnippet(snippet: string): string {
     .join('');
 }
 
-export function convertPlaywrightSteps(pwSteps: PwTestStep[]): TestStep[] {
+export function convertPlaywrightSteps(
+  pwSteps: PwTestStep[],
+  fsModule?: FsModule | null
+): TestStep[] {
+  const activeFs = fsModule || getNodeFs();
   return pwSteps.map((step) => {
     const rawStep = step as unknown as Record<string, unknown>;
     const rawError = step.error as unknown as Record<string, unknown> | undefined;
@@ -147,7 +205,7 @@ export function convertPlaywrightSteps(pwSteps: PwTestStep[]): TestStep[] {
 
     const snippet: string | undefined =
       (typeof rawStep.snippet === 'string' ? rawStep.snippet : undefined) ||
-      getStepCodeSnippet(location);
+      getStepCodeSnippet(location, activeFs);
 
     const rawParams = rawStep.params;
     const params =
@@ -166,18 +224,20 @@ export function convertPlaywrightSteps(pwSteps: PwTestStep[]): TestStep[] {
       annotations: Array.isArray(rawStep.annotations) ? rawStep.annotations : [],
       attachments: step.attachments
         ? step.attachments.map((att) => {
-            let bodyData: Buffer | string | null = att.body || null;
-            if (
-              !bodyData &&
-              att.path &&
-              typeof fs !== 'undefined' &&
-              typeof fs.existsSync === 'function' &&
-              fs.existsSync(att.path)
-            ) {
-              try {
-                bodyData = fs.readFileSync(att.path).toString('base64');
-              } catch {
-                // Ignore if cannot be read
+            let bodyData: string | null = null;
+            if (att.body) {
+              bodyData = Buffer.isBuffer(att.body)
+                ? att.body.toString('base64')
+                : typeof att.body === 'string'
+                  ? att.body
+                  : Buffer.from(att.body).toString('base64');
+            } else if (att.path) {
+              if (activeFs && activeFs.existsSync(att.path)) {
+                try {
+                  bodyData = activeFs.readFileSync(att.path).toString('base64');
+                } catch {
+                  // Ignore if cannot be read
+                }
               }
             }
             return {
@@ -190,7 +250,9 @@ export function convertPlaywrightSteps(pwSteps: PwTestStep[]): TestStep[] {
         : [],
       error,
       subSteps:
-        step.steps && step.steps.length > 0 ? convertPlaywrightSteps(step.steps) : undefined,
+        step.steps && step.steps.length > 0
+          ? convertPlaywrightSteps(step.steps, activeFs)
+          : undefined,
     };
   });
 }
@@ -553,10 +615,13 @@ export function truncateFileName(fileName: string, maxLength: number = 40): stri
   const extensionIndex = fileName.lastIndexOf('.');
   const extension = extensionIndex !== -1 ? fileName.slice(extensionIndex) : '';
   const nameWithoutExt = extensionIndex !== -1 ? fileName.slice(0, extensionIndex) : fileName;
-  const availableNameLength = maxLength - extension.length;
-  if (availableNameLength <= 6) {
-    return '...' + fileName.slice(maxLength - 3);
+  const availableNameLength = maxLength - extension.length - 3; // reserve 3 chars for '...'
+  if (availableNameLength <= 1) {
+    const stemStart = nameWithoutExt.slice(0, Math.max(1, availableNameLength + 3));
+    return `${stemStart}...${extension}`;
   }
   const halfLen = Math.floor(availableNameLength / 2);
-  return nameWithoutExt.slice(0, halfLen) + '...' + nameWithoutExt.slice(-halfLen) + extension;
+  const start = nameWithoutExt.slice(0, halfLen + (availableNameLength % 2));
+  const end = nameWithoutExt.slice(-halfLen);
+  return `${start}...${end}${extension}`;
 }

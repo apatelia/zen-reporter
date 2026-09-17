@@ -14,6 +14,7 @@ export default defineConfig({
       {
         projectName: 'Zen Reporter',
         testRunName: 'Unit Tests For Reporter',
+        singleSummaryFile: true,
       },
     ],
   ],

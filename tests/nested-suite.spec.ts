@@ -34,18 +34,16 @@ test.describe('Tests in nested suite', () => {
       await test.step('Expects page to have a heading with the name of Installation', async () => {
         await expect(page.getByRole('heading', { name: 'Installation' })).toBeVisible();
 
-        if (browserName === 'chromium') {
-          console.log('attaching screenshot for chromium');
+        console.log(`attaching screenshot for ${browserName}`);
 
-          const screenshotPath = 'screenshots/Installation.png';
-          await page.screenshot({ fullPage: false, path: screenshotPath });
-          await testInfo.attach('Installation Screenshot', {
-            path: screenshotPath,
-            contentType: 'image/png',
-          });
+        const screenshotPath = `screenshots/Installation-${browserName}.png`;
+        await page.screenshot({ fullPage: false, path: screenshotPath });
+        await testInfo.attach('Installation Screenshot', {
+          path: screenshotPath,
+          contentType: 'image/png',
+        });
 
-          console.log('successfully attached screenshot');
-        }
+        console.log(`successfully attached screenshot for ${browserName}`);
       });
     }
   );
