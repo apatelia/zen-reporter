@@ -57,9 +57,10 @@ if (command === 'show') {
 
   try {
     execSync(showCmd, { cwd, stdio: 'inherit' });
-  } catch (err: any) {
-    if (err.status !== 130 && err.status !== 0) {
-      console.error('✗ Failed to launch report server:', err.message || err);
+  } catch (err: unknown) {
+    const execErr = err as { status?: number; message?: string };
+    if (execErr.status !== 130 && execErr.status !== 0) {
+      console.error('✗ Failed to launch report server:', execErr.message || err);
     }
   }
 } else {

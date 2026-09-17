@@ -12,8 +12,6 @@ interface Props {
   filterFiles: string[];
 }
 
-type TestCaseStatus = 'passed' | 'failed' | 'skipped' | 'timedOut';
-
 function filterCases(
   cases: TestCase[],
   filterStatuses: string[],

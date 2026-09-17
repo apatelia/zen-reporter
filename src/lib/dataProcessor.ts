@@ -44,8 +44,14 @@ export function getViteBuildCommand(pm?: string, cwd: string = process.cwd()): s
   }
 }
 
+import { getStepCodeSnippet } from './utils';
+
 interface RawTestStep {
   title: string;
+  subtitle?: string;
+  location?: { file?: string; line?: number; column?: number } | null;
+  snippet?: string;
+  params?: Record<string, unknown>;
   duration: number;
   error?: { message?: string; stack?: string };
   steps?: RawTestStep[];
@@ -56,24 +62,40 @@ function isRawTestStep(s: unknown): s is RawTestStep {
 }
 
 function convertSteps(steps: RawTestStep[]): TestStep[] {
-  return steps.filter(isRawTestStep).map((step) => ({
-    title: step.title,
-    duration: step.duration,
-    status: step.error ? 'failed' : step.duration > 0 ? 'passed' : 'skipped',
-    annotations: [],
-    attachments: [],
-    error: step.error
+  return steps.filter(isRawTestStep).map((step) => {
+    const location = step.location
       ? {
-          name: 'Error',
-          message: step.error.message || '',
-          stack: step.error.stack || '',
-          location: null,
-          snippet: '',
-          cause: null,
+          file: step.location.file || '',
+          line: step.location.line || 0,
+          column: step.location.column || 0,
         }
-      : null,
-    subSteps: step.steps && step.steps.length > 0 ? convertSteps(step.steps) : undefined,
-  }));
+      : null;
+
+    const snippet = step.snippet || getStepCodeSnippet(location);
+
+    return {
+      title: step.title,
+      subtitle: step.subtitle || undefined,
+      location,
+      snippet,
+      params: step.params || undefined,
+      duration: step.duration,
+      status: step.error ? 'failed' : step.duration > 0 ? 'passed' : 'skipped',
+      annotations: [],
+      attachments: [],
+      error: step.error
+        ? {
+            name: 'Error',
+            message: step.error.message || '',
+            stack: step.error.stack || '',
+            location: null,
+            snippet: '',
+            cause: null,
+          }
+        : null,
+      subSteps: step.steps && step.steps.length > 0 ? convertSteps(step.steps) : undefined,
+    };
+  });
 }
 
 interface RawError {
@@ -144,8 +166,8 @@ export function processRawData(rawData: RawPlaywrightData): ReportData {
             cause: null,
           }))
         : [],
-      tags: test.tags?.map((tag: string) => tag.replace('@', '')) || [],
-      describePath: (test as any).describePath || [],
+      describePath:
+        ((test as unknown as Record<string, unknown>).describePath as string[] | undefined) || [],
     };
     testCases.push(testCase);
   }

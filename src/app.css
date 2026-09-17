@@ -79,7 +79,7 @@
 }
 
 /* ── Dark mode overrides (House Green Atmosphere) ─ */
-@variant dark (&:where(.dark, .dark *));
+@custom-variant dark (&:where(.dark, .dark *));
 
 .dark {
   --color-ink: #ffffff;

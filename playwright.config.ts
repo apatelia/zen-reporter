@@ -13,7 +13,7 @@ export default defineConfig({
       './src/lib/reporter.ts',
       {
         projectName: 'Zen Reporter',
-        testRunName: 'Playwright Tests For Reporter',
+        testRunName: 'Unit Tests For Reporter',
       },
     ],
   ],

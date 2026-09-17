@@ -1,8 +1,123 @@
 import type { TestStep as PwTestStep } from '@playwright/test/reporter';
-import type { ResultSummary, TestCase, TestError, TestStep, TestSuite } from './types';
+import * as fs from 'fs';
+import type { Location, ResultSummary, TestCase, TestError, TestStep, TestSuite } from './types';
+
+export function getStepCodeSnippet(location: Location | null | undefined): string | undefined {
+  if (!location || !location.file || !location.line) {
+    return undefined;
+  }
+
+  try {
+    if (
+      typeof fs !== 'undefined' &&
+      typeof fs.existsSync === 'function' &&
+      fs.existsSync(location.file)
+    ) {
+      const content = fs.readFileSync(location.file, 'utf8');
+      const lines = content.split(/\r?\n/);
+      const targetLine = location.line;
+      if (targetLine < 1 || targetLine > lines.length) return undefined;
+
+      const startLine = Math.max(1, targetLine - 1);
+      const endLine = Math.min(lines.length, targetLine + 1);
+
+      const snippetLines: string[] = [];
+      for (let l = startLine; l <= endLine; l++) {
+        const isTarget = l === targetLine;
+        const prefix = isTarget ? '>' : ' ';
+        const lineNum = String(l).padStart(4, ' ');
+        snippetLines.push(`${prefix} ${lineNum} | ${lines[l - 1]}`);
+      }
+      return snippetLines.join('\n');
+    }
+  } catch {
+    // Ignore in browser or when file cannot be read
+  }
+
+  return undefined;
+}
+
+export function highlightJsTokens(code: string): string {
+  if (!code) return '';
+
+  const regex =
+    /(\/\/[^\n]*)|('(?:\\[\s\S]|[^'\\])*'|"(?:\\[\s\S]|[^"\\])*"|`(?:\\[\s\S]|[^`\\])*`)|(\b(?:await|async|test|expect|const|let|var|function|return|import|from|if|else|try|catch|finally|for|while|do|switch|case|break|continue|default|new|typeof|instanceof)\b)|(\b(?:true|false|null|undefined|\d+)\b)|(\.\w+)/g;
+
+  let result = '';
+  let lastIndex = 0;
+  let match: RegExpExecArray | null;
+
+  while ((match = regex.exec(code)) !== null) {
+    result += escapeHTML(code.slice(lastIndex, match.index));
+    lastIndex = regex.lastIndex;
+
+    const [fullMatch, comment, str, keyword, numBool, method] = match;
+
+    if (comment) {
+      result += `<span class="text-slate-500 dark:text-slate-400 italic">${escapeHTML(comment)}</span>`;
+    } else if (str) {
+      result += `<span class="text-emerald-700 dark:text-emerald-300 font-medium">${escapeHTML(str)}</span>`;
+    } else if (keyword) {
+      result += `<span class="text-purple-700 dark:text-purple-300 font-semibold">${escapeHTML(keyword)}</span>`;
+    } else if (numBool) {
+      result += `<span class="text-amber-700 dark:text-amber-300 font-mono">${escapeHTML(numBool)}</span>`;
+    } else if (method) {
+      result += `<span class="text-sky-700 dark:text-sky-300 font-medium">${escapeHTML(method)}</span>`;
+    } else {
+      result += escapeHTML(fullMatch);
+    }
+  }
+
+  result += escapeHTML(code.slice(lastIndex));
+  return result;
+}
+
+export function highlightCodeLine(codeLine: string): string {
+  if (!codeLine) return '';
+
+  const isTarget = codeLine.startsWith('>');
+  const pipeIdx = codeLine.indexOf('|');
+
+  let prefixHtml = '';
+  let codePart = codeLine;
+
+  if (pipeIdx !== -1) {
+    const rawPrefix = codeLine.slice(0, pipeIdx + 1);
+    codePart = codeLine.slice(pipeIdx + 1);
+
+    if (isTarget) {
+      const lineNo = rawPrefix.slice(1, pipeIdx).trim();
+      prefixHtml = `<span class="inline-flex items-center gap-1 font-bold text-emerald-700 dark:text-emerald-400"><span class="flex h-3.5 w-3.5 items-center justify-center rounded bg-emerald-600 dark:bg-emerald-500 text-[9px] text-white font-black shadow-xs">▶</span>${lineNo.padStart(4, ' ')} |</span>`;
+    } else {
+      const lineNo = rawPrefix.slice(0, pipeIdx).trim();
+      prefixHtml = `<span class="text-slate-500/70 dark:text-text-muted/60 font-mono">${lineNo.padStart(5, ' ')} |</span>`;
+    }
+  } else {
+    codePart = codeLine;
+  }
+
+  const highlightedCode = highlightJsTokens(codePart);
+
+  if (isTarget) {
+    return `<div class="flex items-center gap-2 bg-emerald-500/10 dark:bg-emerald-500/20 border-l-3 border-emerald-600 dark:border-emerald-500 px-2 py-1 rounded-r shadow-xs font-mono text-[11px] leading-relaxed my-0.5">${prefixHtml} <span>${highlightedCode}</span></div>`;
+  }
+
+  return `<div class="flex items-center gap-2 px-2 py-0.5 font-mono text-[11px] leading-relaxed">${prefixHtml} <span>${highlightedCode}</span></div>`;
+}
+
+export function highlightCodeSnippet(snippet: string): string {
+  if (!snippet) return '';
+  return snippet
+    .split(/\r?\n/)
+    .map((line) => highlightCodeLine(line))
+    .join('');
+}
 
 export function convertPlaywrightSteps(pwSteps: PwTestStep[]): TestStep[] {
   return pwSteps.map((step) => {
+    const rawStep = step as unknown as Record<string, unknown>;
+    const rawError = step.error as unknown as Record<string, unknown> | undefined;
+
     const error: TestStep['error'] = step.error
       ? {
           name: 'Error',
@@ -16,17 +131,39 @@ export function convertPlaywrightSteps(pwSteps: PwTestStep[]): TestStep[] {
               }
             : null,
           snippet: step.error.snippet || '',
-          cause: (step.error.cause as any) || null,
+          cause: (rawError?.cause as TestError | null) || null,
         }
       : null;
 
     const status: TestStep['status'] = step.error ? 'failed' : 'passed';
 
+    const location: Location | null = step.location
+      ? {
+          file: step.location.file,
+          line: step.location.line,
+          column: step.location.column,
+        }
+      : null;
+
+    const snippet: string | undefined =
+      (typeof rawStep.snippet === 'string' ? rawStep.snippet : undefined) ||
+      getStepCodeSnippet(location);
+
+    const rawParams = rawStep.params;
+    const params =
+      rawParams && typeof rawParams === 'object'
+        ? (rawParams as Record<string, unknown>)
+        : undefined;
+
     return {
       title: step.title,
+      subtitle: typeof rawStep.subtitle === 'string' ? rawStep.subtitle : undefined,
+      location,
+      snippet,
+      params,
       duration: step.duration,
       status,
-      annotations: (step as any).annotations || [],
+      annotations: Array.isArray(rawStep.annotations) ? rawStep.annotations : [],
       attachments: step.attachments
         ? step.attachments.map((att) => ({
             name: att.name,

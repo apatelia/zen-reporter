@@ -3,9 +3,10 @@ import TestCaseCard from '../suites/TestCaseCard';
 
 interface Props {
   failedTests: FailedTest[];
+  hasSuites?: boolean;
 }
 
-export default function FailureList({ failedTests }: Props) {
+export default function FailureList({ failedTests, hasSuites = true }: Props) {
   if (failedTests.length === 0) {
     return (
       <div className="flex items-center gap-4 rounded-md border border-success-200 bg-success-50/50 px-6 py-6 shadow-sm dark:border-success-500/30 dark:bg-success-500/10">
@@ -27,7 +28,7 @@ export default function FailureList({ failedTests }: Props) {
             No failures
           </p>
           <p className="text-xs text-text-body-mid dark:text-text-muted">
-            All tests passed successfully.
+            {hasSuites ? 'All tests passed successfully.' : 'No suites/tests found.'}
           </p>
         </div>
       </div>

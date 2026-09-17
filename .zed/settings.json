@@ -11,6 +11,9 @@
     "HTML": {
       "formatter": "prettier"
     },
+    "CSS": {
+      "language_servers": ["tailwindcss-language-server"]
+    },
     "TypeScript": {
       "format_on_save": "on",
       "formatter": [

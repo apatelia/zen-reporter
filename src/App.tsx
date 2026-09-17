@@ -485,17 +485,8 @@ export default function App() {
               <Overview summary={summary} suites={suites} />
             )}
 
-            {!isLoading && reportData && activeTab === 'suites' && suites.length > 0 && (
+            {!isLoading && reportData && activeTab === 'suites' && (
               <SuitesSection suites={suites} />
-            )}
-
-            {!isLoading && reportData && activeTab === 'suites' && suites.length === 0 && (
-              <div className="flex items-center justify-center py-24 text-center">
-                <div>
-                  <h3 className="text-base font-semibold text-text-ink">No suites</h3>
-                  <p className="mt-1 text-sm text-text-body-mid">No test suites to display.</p>
-                </div>
-              </div>
             )}
 
             {!isLoading && reportData && activeTab === 'failures' && (

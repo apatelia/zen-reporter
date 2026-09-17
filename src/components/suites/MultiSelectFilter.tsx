@@ -92,21 +92,21 @@ export default function MultiSelectFilter<T extends string>({
             setTempSelection(selectedOptions.length > 0 ? [...selectedOptions] : [...options]);
             setIsOpen(!isOpen);
           }}
-          className={`inline-flex items-center gap-2 rounded-md border border-border-default bg-surface-100 px-3 py-1.5 text-xs font-medium text-text-body-mid transition-all duration-200 ${
+          className={`inline-flex items-center gap-2.5 rounded-lg border border-border-default bg-surface-100 px-4 py-2 text-sm font-semibold text-text-body-mid shadow-xs transition-all duration-200 ${
             isDisabled
               ? 'opacity-50 cursor-not-allowed pointer-events-none'
-              : 'hover:border-border-default hover:text-text-ink dark:border-border-default dark:bg-surface-100 dark:text-text-body-mid dark:hover:border-border-default dark:hover:text-text-on-primary'
+              : 'hover:border-primary-500 hover:text-text-ink dark:border-border-default dark:bg-surface-100 dark:text-text-body-mid dark:hover:border-primary-400 dark:hover:text-text-on-primary'
           }`}
         >
-          {icon && <span className="shrink-0">{icon}</span>}
-          <span className="truncate max-w-37.5">{selectionLabel}</span>
+          {icon && <span className="shrink-0 text-base">{icon}</span>}
+          <span className="truncate max-w-48">{selectionLabel}</span>
           {filterCount !== 0 && (
-            <span className="inline-flex h-4 w-4 items-center justify-center rounded-full bg-accent-blue text-[10px] font-bold text-text-on-primary dark:bg-accent-blue/80">
+            <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-accent-blue text-xs font-bold text-text-on-primary dark:bg-accent-blue/80 shadow-xs">
               {filterCount}
             </span>
           )}
           <svg
-            className={`h-3 w-3 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
+            className={`h-4 w-4 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
             fill="none"
             viewBox="0 0 24 24"
             stroke="currentColor"

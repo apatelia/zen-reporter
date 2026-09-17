@@ -67,9 +67,9 @@ function convertPlaywrightSuites(raw: { suites: unknown[] }): unknown {
 }
 
 try {
-  const rawData = readRawData() as any;
+  const rawData = readRawData() as Record<string, unknown>;
   // If it's already processed, it will have testRun
-  let reportData = rawData;
+  let reportData: unknown = rawData;
 
   if (!rawData.testRun) {
     reportData = processRawData(rawData);
@@ -82,11 +82,12 @@ try {
   const buildCmd = getViteBuildCommand(process.env.PACKAGE_MANAGER, ROOT);
   try {
     execSync(buildCmd, { cwd: ROOT, stdio: 'pipe' });
-  } catch (error: any) {
-    const stdout = error.stdout ? error.stdout.toString() : '';
-    const stderr = error.stderr ? error.stderr.toString() : '';
+  } catch (error: unknown) {
+    const execErr = error as { stdout?: Buffer; stderr?: Buffer; message?: string };
+    const stdout = execErr.stdout ? execErr.stdout.toString() : '';
+    const stderr = execErr.stderr ? execErr.stderr.toString() : '';
     const output = [stdout, stderr].filter(Boolean).join('\n');
-    throw new Error(`Vite build failed:\n${output || error.message || String(error)}`);
+    throw new Error(`Vite build failed:\n${output || execErr.message || String(error)}`);
   }
 
   const distHtml = resolve(ROOT, 'dist', 'index.html');

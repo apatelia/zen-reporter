@@ -4,18 +4,20 @@
 
 Beautiful test execution reports for Playwright.
 
-Zen Reporter transforms Playwright's raw test results into an interactive, visually stunning dashboard. It provides a clean, modern interface for exploring test suites, analyzing pass/fail rates, and diving into individual test failures with full step-by-step execution traces and error stacks.
+Zen Reporter transforms Playwright's raw test results into an interactive, visually stunning dashboard. It provides a clean, modern interface for exploring test suites, analyzing pass/fail rates, and diving into individual test failures with full step-by-step execution traces, source code snippets, syntax highlighting, and error stacks.
 
 ## Features
 
-- **Interactive Dashboard** — Navigate test results through Overview, Suites, and Failures tabs
-- **Multi-Project & Parallel Execution** — Track and compare results across multiple Playwright projects (e.g., Chromium, Firefox, WebKit) and parallel worker execution times
-- **Interrupted Status Support** — Explicitly captures and reports worker crash or SIGKILL interrupted test states across charts, KPIs, and failure tabs
+- **Interactive Dashboard** — Navigate test results seamlessly across Overview, Suites, and Failures tabs.
+- **Step-by-Step Code Snippets & Syntax Highlighting** — Expand test execution steps to view formatted source code snippets around target line locations with custom syntax highlighting (keywords, strings, methods, numbers) and execution target indicators (`▶`).
+- **Step Parameters & Sub-steps** — Inspect step parameters, nested sub-steps with individual durations, and step annotations.
 - **Rich Filtering** — Filter test cases by project, status (`passed`, `failed`, `skipped`, `timedOut`, `interrupted`), tag, or test file name
-- **Detailed Failure & Retry Analysis** — Expand test cases to inspect individual retry attempts (`Run`, `Retry #1`, `Retry #2`), step-by-step execution, sub-steps, duration, highlighted stack traces (`Expected` vs `Received`), and attachment previews (images, and text)
-- **Visual Metrics & Quick Stats** — Pass rate ring, project bar charts, KPI cards with calculation tooltips, and file summary tables
-- **Dark Mode & Accessibility** — Toggle between light and dark themes with high-contrast WCAG-compliant status badges and buttons
-- **Single-File Output** — Self-contained HTML report for easy sharing and CI/CD archiving
+- **Detailed Failure & Retry Analysis** — Inspect retry attempts (`Run`, `Retry #1`, `Retry #2`), step-by-step execution, duration, highlighted stack traces (`Expected` vs `Received`), and attachment previews (images and text files).
+- **Multi-Project & Parallel Execution** — Track and compare results across multiple Playwright projects (Chromium, Firefox, WebKit) and parallel worker execution times.
+- **Interrupted Status Support** — Explicitly captures and reports worker crashes or SIGKILL interrupted test states across charts, KPIs, and failure tabs.
+- **Visual Metrics & Quick Stats** — Pass rate ring, project bar charts, KPI cards with calculation tooltips, and file summary tables.
+- **Dark Mode & Accessibility** — Switch between light and dark themes with high-contrast, WCAG-compliant status badges, syntax-highlighted code blocks, and UI elements.
+- **Single-File Output** — Self-contained HTML report for easy sharing and CI/CD archiving.
 
 ---
 

@@ -9,6 +9,10 @@ export interface TestError {
 
 export interface TestStep {
   title: string;
+  subtitle?: string;
+  location?: Location | null;
+  snippet?: string;
+  params?: Record<string, unknown>;
   duration: number;
   status: 'passed' | 'failed' | 'skipped' | 'timedOut' | 'interrupted';
   annotations: Annotation[];
