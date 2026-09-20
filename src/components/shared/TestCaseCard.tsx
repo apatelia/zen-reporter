@@ -119,9 +119,12 @@ export default function TestCaseCard({ testCase, showSteps }: Props) {
   return (
     <div
       data-test-card="true"
-      className={`rounded-md shadow-sm ring-1 ring-black/5 dark:ring-white/5 ${config.bg} transition-all duration-200 hover:shadow-md dark:hover:bg-surface-200/30`}
+      className={`rounded-md shadow-sm ring-1 ring-black/5 dark:ring-white/10 ${config.bg} transition-all duration-200 hover:shadow-md`}
     >
-      <div className="cursor-pointer" onClick={() => setIsExpanded(!isExpanded)}>
+      <div
+        className="cursor-pointer hover:bg-surface-100/50 dark:hover:bg-surface-200/30 rounded-md transition-colors"
+        onClick={() => setIsExpanded(!isExpanded)}
+      >
         <div className="flex items-center justify-between px-3 py-2">
           {/* Left side */}
           <div className="flex items-center gap-2.5 min-w-0">

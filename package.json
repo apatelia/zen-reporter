@@ -1,7 +1,7 @@
 {
   "name": "zen-reporter",
   "private": false,
-  "version": "0.1.0",
+  "version": "0.2.0",
   "type": "module",
   "description": "Beautiful test execution reports for Playwright",
   "bin": {
@@ -21,7 +21,12 @@
   },
   "files": [
     "bin",
-    "dist"
+    "dist",
+    "vite.config.ts",
+    "index.html",
+    "postcss.config.mjs",
+    "tsconfig.json",
+    "src"
   ],
   "author": {
     "name": "Arpan Patelia",
@@ -33,10 +38,11 @@
     "build": "vite build && vite build --config vite.reporter.config.ts && tsc -p tsconfig.lib.json",
     "preview": "vite preview",
     "test": "npx playwright test",
-    "report": "node scripts/generate_report.js",
+    "report": "npm run build && node scripts/generate_report.js",
     "show": "node bin/zen-reporter.js show",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
+    "typecheck": "tsc --noEmit",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "prepare": "husky",
@@ -55,15 +61,20 @@
     "node": ">=18.0.0"
   },
   "peerDependencies": {
-    "@playwright/test": ">=1.63.0"
+    "@playwright/test": ">=1.63.0",
+    "@duckdb/node-api": "1.5.5-r.5"
   },
   "peerDependenciesMeta": {
     "@playwright/test": {
+      "optional": true
+    },
+    "@duckdb/node-api": {
       "optional": true
     }
   },
   "devDependencies": {
     "@eslint-react/eslint-plugin": "^5.19.1",
+    "@duckdb/node-api": "1.5.5-r.5",
     "@eslint/js": "^10.0.1",
     "@eslint/json": "^2.1.0",
     "@eslint/markdown": "^8.0.3",

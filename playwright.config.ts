@@ -1,19 +1,31 @@
 import { defineConfig, devices } from '@playwright/test';
+import * as fs from 'fs';
+import * as path from 'path';
+
+function getNextTestRunName(prefix = 'Unit Tests Run'): string {
+  const runsDir = path.resolve(process.cwd(), 'zen-report', 'runs');
+  let count = 0;
+
+  if (fs.existsSync(runsDir)) {
+    count = fs.readdirSync(runsDir).filter((file) => file.endsWith('.jsonl')).length;
+  }
+
+  return `${prefix} #${count + 1}`;
+}
 
 export default defineConfig({
   testDir: './tests',
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
-  retries: process.env.CI ? 2 : 1,
+  retries: 0,
   workers: process.env.CI ? 1 : undefined,
   reporter: [
     ['list'],
-    ['html', { open: 'never' }],
     [
       './src/lib/reporter.ts',
       {
         projectName: 'Zen Reporter',
-        testRunName: 'Unit Tests For Reporter',
+        testRunName: getNextTestRunName(),
         singleSummaryFile: true,
       },
     ],

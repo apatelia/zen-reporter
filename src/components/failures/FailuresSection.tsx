@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import type { TestSuite } from '@/lib/types';
 import { extractFailedTests } from '@/lib/utils';
-import MultiSelectFilter from '../suites/MultiSelectFilter';
+import { MultiSelectFilter, StatCard } from '@/components/shared';
 import FailureList from './FailureList';
 
 type FailureType = 'Failed' | 'Timed Out' | 'Interrupted';
@@ -150,42 +150,54 @@ export default function FailuresSection({
   };
 
   return (
-    <>
-      <h2 className="mb-2 text-2xl font-bold tracking-tight text-text-ink dark:text-text-on-primary sm:text-3xl">
-        Failed Tests
-      </h2>
-      <div className="mb-4 w-fit grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <div className="rounded-md bg-danger-50/50 dark:bg-danger-500/10 border border-danger-200 dark:border-danger-500/30 px-4 py-3 shadow-sm">
-          <p className="text-[11px] font-medium uppercase tracking-wider text-text-body-mid dark:text-text-muted">
-            Failed
-          </p>
-          <p className="mt-1 text-xl font-extrabold text-danger-600 dark:text-danger-500">
-            {failedCount}
-          </p>
-        </div>
-        <div className="rounded-md bg-warning-50/50 dark:bg-warning-500/10 border border-warning-200 dark:border-warning-500/30 px-4 py-3 shadow-sm">
-          <p className="text-[11px] font-medium uppercase tracking-wider text-text-body-mid dark:text-text-muted">
-            Timed Out
-          </p>
-          <p className="mt-1 text-xl font-extrabold text-warning-600 dark:text-warning-500">
-            {timedOutCount}
-          </p>
-        </div>
+    <div className="w-full space-y-6">
+      <div>
+        <h2 className="text-2xl font-bold tracking-tight text-text-ink dark:text-text-on-primary sm:text-3xl">
+          Failures
+        </h2>
+        <p className="mt-1 text-sm text-text-body-mid dark:text-text-muted">
+          Detailed error tracebacks, screenshot evidence, and root-cause analysis for failed tests.
+        </p>
+      </div>
+
+      <div className="grid grid-cols-2 gap-4 lg:grid-cols-5">
+        <StatCard
+          label="Failed"
+          value={failedCount}
+          subtext={failedCount === 1 ? '1 test failed' : `${failedCount} tests failed`}
+          description="Test cases that encountered assertion or runtime execution errors"
+          badgeClass={
+            failedCount > 0
+              ? 'bg-danger-500/10 text-danger-600 dark:bg-danger-500/20 dark:text-danger-500'
+              : 'bg-success-500/10 text-success-600 dark:bg-success-500/20 dark:text-success-500'
+          }
+          isFirst={true}
+        />
+        <StatCard
+          label="Timed Out"
+          value={timedOutCount}
+          subtext={timedOutCount === 1 ? '1 test timed out' : `${timedOutCount} tests timed out`}
+          description="Test cases that exceeded their maximum allotted timeout threshold"
+          badgeClass={
+            timedOutCount > 0
+              ? 'bg-warning-500/10 text-warning-600 dark:bg-warning-500/20 dark:text-warning-500'
+              : 'bg-success-500/10 text-success-600 dark:bg-success-500/20 dark:text-success-500'
+          }
+        />
         {interruptedCount > 0 && (
-          <div className="rounded-md bg-danger-50/50 dark:bg-danger-500/10 border border-danger-200 dark:border-danger-500/30 px-4 py-3 shadow-sm">
-            <p className="text-[11px] font-medium uppercase tracking-wider text-text-body-mid dark:text-text-muted">
-              Interrupted
-            </p>
-            <p className="mt-1 text-xl font-extrabold text-danger-600 dark:text-danger-500">
-              {interruptedCount}
-            </p>
-          </div>
+          <StatCard
+            label="Interrupted"
+            value={interruptedCount}
+            subtext={`${interruptedCount} interrupted`}
+            description="Test cases interrupted by worker crashes or process termination"
+            badgeClass="bg-danger-500/10 text-danger-600 dark:bg-danger-500/20 dark:text-danger-500"
+          />
         )}
       </div>
 
       {/* Filter Controls */}
       {!noFailures && (
-        <div className="mt-6 mb-6">
+        <div>
           <div className="flex flex-wrap items-center gap-3.5">
             <MultiSelectFilter
               label="Type"
@@ -309,6 +321,6 @@ export default function FailuresSection({
       )}
 
       <FailureList failedTests={filteredFailedTests} hasSuites={suites.length > 0} />
-    </>
+    </div>
   );
 }

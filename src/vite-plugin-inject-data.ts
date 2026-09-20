@@ -1,5 +1,5 @@
 import { existsSync, readFileSync } from 'fs';
-import { isAbsolute, resolve } from 'path';
+import { dirname, isAbsolute, resolve } from 'path';
 import type { Plugin } from 'vite';
 
 export function injectReportData(options: { dataFile?: string } = {}): Plugin {
@@ -20,18 +20,36 @@ export function injectReportData(options: { dataFile?: string } = {}): Plugin {
     }
   }
 
+  const historyFile = resolve(dirname(dataFile), 'history.json');
+
   return {
     name: 'inject-report-data',
     transformIndexHtml(html) {
-      if (!existsSync(dataFile)) return html;
-      try {
-        const data = readFileSync(dataFile, 'utf8');
-        const safeData = data.replace(/</g, '\\u003c');
-        const script = `<script id="report-data" type="application/json">${safeData}</script>`;
-        return html.replace('</head>', `${script}\n</head>`);
-      } catch {
-        return html;
+      let out = html;
+
+      if (existsSync(dataFile)) {
+        try {
+          const data = readFileSync(dataFile, 'utf8');
+          const safeData = data.replace(/</g, '\\u003c');
+          const script = `<script id="report-data" type="application/json">${safeData}</script>`;
+          out = out.replace('</head>', `${script}\n</head>`);
+        } catch {
+          /* ignore */
+        }
       }
+
+      if (existsSync(historyFile)) {
+        try {
+          const data = readFileSync(historyFile, 'utf8');
+          const safeData = data.replace(/</g, '\\u003c');
+          const script = `<script id="history-data" type="application/json">${safeData}</script>`;
+          out = out.replace('</head>', `${script}\n</head>`);
+        } catch {
+          /* ignore */
+        }
+      }
+
+      return out;
     },
   };
 }

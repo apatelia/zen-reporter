@@ -6,6 +6,8 @@ import { resolveConfig } from '../src/lib/reporter';
 const counterDir = path.resolve(process.cwd(), resolveConfig().outputDir);
 const counterFile = path.join(counterDir, '_retry_counter');
 
+test.describe.configure({ retries: 1 });
+
 test('flaky once (fails on first attempt, passes on retry)', () => {
   const n = existsSync(counterFile) ? Number(readFileSync(counterFile, 'utf8')) : 0;
 

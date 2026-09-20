@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import type { TestSuite, TestCase } from '@/lib/types';
 import { formatDurationVerbose } from '@/lib/utils';
-import TestCaseCard from './TestCaseCard';
+import { TestCaseCard } from '@/components/shared';
 import TestSuiteNode from './TestSuiteNode';
 
 interface Props {
@@ -235,7 +235,7 @@ export default function SuiteView({
             <p className="mb-2 text-[11px] font-bold uppercase tracking-wider text-text-body-mid dark:text-text-muted">
               Nested Suites
             </p>
-            <div className="ml-3 border-l-2 border-[#9bb0a7] dark:border-[#3b6e62] pl-4 space-y-3">
+            <div className="ml-3 border-l-2 border-border-default dark:border-border-default pl-4 space-y-3">
               {filteredSuite.subSuites.map((sub) => (
                 <TestSuiteNode
                   key={sub.title}

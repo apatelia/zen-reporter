@@ -1,6 +1,6 @@
 import type { TestSuite } from '@/lib/types';
 import { useMemo, useState } from 'react';
-import MultiSelectFilter from './MultiSelectFilter';
+import { MultiSelectFilter, StatCard } from '@/components/shared';
 import SuiteView from './SuiteView';
 
 type TestCaseStatus = 'passed' | 'failed' | 'skipped' | 'timedOut' | 'interrupted';
@@ -200,34 +200,38 @@ export default function SuitesSection({ suites }: Props) {
   };
 
   return (
-    <>
-      <h2 className="mb-2 text-2xl font-bold tracking-tight text-text-ink dark:text-text-on-primary sm:text-3xl">
-        Test Suites
-      </h2>
+    <div className="w-full space-y-6">
+      <div>
+        <h2 className="text-2xl font-bold tracking-tight text-text-ink dark:text-text-on-primary sm:text-3xl">
+          Test Suites
+        </h2>
+        <p className="mt-1 text-sm text-text-body-mid dark:text-text-muted">
+          Hierarchical view, status filtering, and organized test suite breakdown.
+        </p>
+      </div>
 
-      {/* Quick Stat Card */}
-      <div className="mb-3 w-fit grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <div className="rounded-md bg-surface-50 border border-border-default px-4 py-3 shadow-sm">
-          <p className="text-[11px] font-medium uppercase tracking-wider text-text-body-mid dark:text-text-muted">
-            Suites
-          </p>
-          <p className="mt-1 text-xl font-extrabold text-text-ink dark:text-text-on-primary">
-            {suites.length}
-          </p>
-        </div>
-        <div className="rounded-md bg-surface-50 border border-border-default px-4 py-3 shadow-sm">
-          <p className="text-[11px] font-medium uppercase tracking-wider text-text-body-mid dark:text-text-muted">
-            Total Tests
-          </p>
-          <p className="mt-1 text-xl font-extrabold text-text-ink dark:text-text-on-primary">
-            {totalTestCases}
-          </p>
-        </div>
+      {/* Quick Stat Cards */}
+      <div className="grid grid-cols-2 gap-4 lg:grid-cols-5">
+        <StatCard
+          label="Suites"
+          value={suites.length}
+          subtext={`${suites.length} top-level suites`}
+          description="Total count of top-level test suites"
+          badgeClass="bg-success-500/10 text-success-600 dark:bg-success-500/20 dark:text-success-500"
+          isFirst={true}
+        />
+        <StatCard
+          label="Total Tests"
+          value={totalTestCases}
+          subtext={`${totalTestCases} test cases`}
+          description="Total test cases executed across all suites"
+          badgeClass="bg-success-500/10 text-success-600 dark:bg-success-500/20 dark:text-success-500"
+        />
       </div>
 
       {/* Filter Controls */}
       {suites.length > 0 && (
-        <div className="mt-6 mb-6">
+        <div>
           <div className="flex flex-wrap items-center gap-3.5">
             <MultiSelectFilter
               label="Status"
@@ -396,6 +400,6 @@ export default function SuitesSection({ suites }: Props) {
           ));
         })()}
       </div>
-    </>
+    </div>
   );
 }

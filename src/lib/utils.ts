@@ -112,7 +112,7 @@ export function highlightJsTokens(code: string): string {
     } else if (str) {
       result += `<span class="text-emerald-700 dark:text-emerald-300 font-medium">${escapeHTML(str)}</span>`;
     } else if (keyword) {
-      result += `<span class="text-purple-700 dark:text-purple-300 font-semibold">${escapeHTML(keyword)}</span>`;
+      result += `<span class="text-success-700 dark:text-success-500 font-semibold">${escapeHTML(keyword)}</span>`;
     } else if (numBool) {
       result += `<span class="text-amber-700 dark:text-amber-300 font-mono">${escapeHTML(numBool)}</span>`;
     } else if (method) {
@@ -266,22 +266,22 @@ export function parseAnsiToHtml(str: string): string {
   if (!str) return '';
 
   const ansiColorMap: Record<number, string> = {
-    30: 'color: #4b5563', // black
-    31: 'color: #ef4444', // red
-    32: 'color: #22c55e', // green
-    33: 'color: #eab308', // yellow
-    34: 'color: #3b82f6', // blue
-    35: 'color: #a855f7', // magenta
-    36: 'color: #06b6d4', // cyan
-    37: 'color: #f3f4f6', // white
-    90: 'color: #6b7280', // bright black / gray
-    91: 'color: #f87171', // bright red
-    92: 'color: #4ade80', // bright green
-    93: 'color: #facc15', // bright yellow
-    94: 'color: #60a5fa', // bright blue
-    95: 'color: #c084fc', // bright magenta
-    96: 'color: #22d3ee', // bright cyan
-    97: 'color: #ffffff', // bright white
+    30: 'color: var(--color-text-body-mid)', // dark gray / ink
+    31: 'color: var(--color-danger-500)', // red
+    32: 'color: var(--color-success-500)', // green
+    33: 'color: var(--color-warning-500)', // yellow
+    34: 'color: var(--color-info-500)', // blue
+    35: 'color: var(--color-accent-gold)', // magenta / gold
+    36: 'color: var(--color-info-500)', // cyan
+    37: 'color: var(--color-text-muted-soft)', // white / soft text
+    90: 'color: var(--color-text-muted)', // bright black / gray
+    91: 'color: var(--color-danger-500)', // bright red
+    92: 'color: var(--color-success-500)', // bright green
+    93: 'color: var(--color-warning-500)', // bright yellow
+    94: 'color: var(--color-info-500)', // bright blue
+    95: 'color: var(--color-accent-gold)', // bright magenta / gold
+    96: 'color: var(--color-info-500)', // bright cyan
+    97: 'color: var(--color-text-ink)', // bright white
   };
 
   const styleMap: Record<number, string> = {
@@ -330,11 +330,11 @@ export function highlightExpectedReceived(str: string): string {
   return parsed
     .replace(
       /(Expected:?\s*)([^\n<]+)/g,
-      (_, p1, p2) => `${p1}<span class="text-[#4ade80] font-bold">${p2}</span>`
+      (_, p1, p2) => `${p1}<span class="text-success-500 font-bold">${p2}</span>`
     )
     .replace(
       /(Received:?\s*)([^\n<]+)/g,
-      (_, p1, p2) => `${p1}<span class="text-[#f87171] font-bold">${p2}</span>`
+      (_, p1, p2) => `${p1}<span class="text-danger-500 font-bold">${p2}</span>`
     );
 }
 
@@ -425,6 +425,77 @@ export function formatDate(iso: string): string {
   );
 }
 
+/**
+ * Format a start and end ISO timestamp into a smart, non-repetitive date-time range string.
+ * e.g., "Sep 20, 2026 • 05:38:12 AM – 05:40:26 AM IST" (for same-day runs)
+ */
+export function formatDateRange(startIso: string, endIso?: string): string {
+  if (!startIso) return '';
+  const start = new Date(startIso);
+  if (isNaN(start.getTime())) return startIso;
+
+  if (!endIso) {
+    return formatDate(startIso);
+  }
+
+  const end = new Date(endIso);
+  if (isNaN(end.getTime())) {
+    return formatDate(startIso);
+  }
+
+  const startDateStr = start.toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  });
+  const endDateStr = end.toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  });
+
+  const startTimeStr = start.toLocaleTimeString('en-US', {
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+  });
+  const endTimeStr = end.toLocaleTimeString('en-US', {
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    timeZoneName: 'short',
+  });
+
+  if (startDateStr === endDateStr) {
+    return `${startDateStr}  •  ${startTimeStr} – ${endTimeStr}`;
+  }
+
+  const startTimeShort = start.toLocaleTimeString('en-US', {
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+
+  return `${startDateStr}, ${startTimeShort} – ${endDateStr}, ${endTimeStr}`;
+}
+
+/**
+ * Split an ISO timestamp into a human-readable date line ("Sep 18, 2026")
+ * and an AM/PM time line ("04:57 AM"). No time zone, for two-line chart labels.
+ */
+export function formatDateParts(iso: string): [string, string] {
+  const d = new Date(iso);
+  const date = d.toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  });
+  const time = d.toLocaleTimeString('en-US', {
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+  return [date, time];
+}
+
 export interface FailedTest {
   title: string;
   suiteTitle: string;
@@ -489,49 +560,222 @@ export function collectAllCases(suites: TestSuite[]): TestCase[] {
 
 export interface ProjectStats {
   name: string;
+  total: number;
   passed: number;
   failed: number;
   skipped: number;
   timedOut: number;
   interrupted: number;
+  passRate: number;
+  flakyCount: number;
+  flakyRate: number;
+  totalDuration: number;
+  avgDuration: number;
+  p95Duration: number;
+  medianDuration: number;
+  minDuration: number;
+  maxDuration: number;
+  uniqueFiles: number;
+  uniqueTagsCount: number;
+  speedMultiplier: number;
+  cases: TestCase[];
+}
+
+export interface ProjectExecutiveKPIs {
+  totalProjects: number;
+  mostStableProject: { name: string; passRate: number; total: number } | null;
+  slowestProject: { name: string; totalDuration: number; avgDuration: number } | null;
+  passRateParityDelta: number;
+  totalFlakyCount: number;
+  overallAvgDuration: number;
 }
 
 export function computeProjectStats(allCases: TestCase[]): ProjectStats[] {
-  const projectMap = new Map<string, ProjectStats>();
+  const projectCasesMap = new Map<string, TestCase[]>();
 
   for (const tc of allCases) {
-    const project = tc.project;
-    if (!projectMap.has(project)) {
-      projectMap.set(project, {
-        name: project,
-        passed: 0,
-        failed: 0,
-        skipped: 0,
-        timedOut: 0,
-        interrupted: 0,
-      });
+    const proj = tc.project || 'default';
+    if (!projectCasesMap.has(proj)) {
+      projectCasesMap.set(proj, []);
     }
-    const stats = projectMap.get(project)!;
-    switch (tc.status) {
-      case 'passed':
-        stats.passed++;
-        break;
-      case 'failed':
-        stats.failed++;
-        break;
-      case 'skipped':
-        stats.skipped++;
-        break;
-      case 'timedOut':
-        stats.timedOut++;
-        break;
-      case 'interrupted':
-        stats.interrupted++;
-        break;
+    projectCasesMap.get(proj)!.push(tc);
+  }
+
+  const executedAllCases = allCases.filter((tc) => tc.status !== 'skipped');
+  const overallTotalDuration = executedAllCases.reduce((acc, tc) => acc + tc.duration, 0);
+  const overallAvgDuration =
+    executedAllCases.length > 0 ? overallTotalDuration / executedAllCases.length : 0;
+
+  const result: ProjectStats[] = [];
+
+  for (const [name, cases] of projectCasesMap.entries()) {
+    let passed = 0;
+    let failed = 0;
+    let skipped = 0;
+    let timedOut = 0;
+    let interrupted = 0;
+    let flakyCount = 0;
+
+    const fileSet = new Set<string>();
+    const tagSet = new Set<string>();
+
+    for (const tc of cases) {
+      if (tc.fileName) fileSet.add(tc.fileName);
+      for (const tag of tc.tags || []) {
+        tagSet.add(tag);
+      }
+
+      const isFlaky =
+        (tc.attempts !== undefined && tc.attempts > 1) ||
+        (tc.failedAttempts !== undefined && tc.failedAttempts.length > 0);
+      if (isFlaky) {
+        flakyCount++;
+      }
+
+      switch (tc.status) {
+        case 'passed':
+          passed++;
+          break;
+        case 'failed':
+          failed++;
+          break;
+        case 'skipped':
+          skipped++;
+          break;
+        case 'timedOut':
+          timedOut++;
+          break;
+        case 'interrupted':
+          interrupted++;
+          break;
+      }
+    }
+
+    const total = cases.length;
+    const passRate = total > 0 ? Math.round((passed / total) * 100) : 0;
+    const flakyRate = total > 0 ? Math.round((flakyCount / total) * 100) : 0;
+
+    const executedCases = cases.filter((tc) => tc.status !== 'skipped');
+    const durations = executedCases.map((tc) => tc.duration).sort((a, b) => a - b);
+    const totalDuration = cases.reduce((acc, tc) => acc + tc.duration, 0);
+    const avgDuration =
+      executedCases.length > 0 ? Math.round(totalDuration / executedCases.length) : 0;
+
+    let minDuration = 0;
+    let maxDuration = 0;
+    let medianDuration = 0;
+    let p95Duration = 0;
+
+    if (durations.length > 0) {
+      minDuration = durations[0];
+      maxDuration = durations[durations.length - 1];
+
+      const len = durations.length;
+      if (len % 2 === 1) {
+        medianDuration = durations[Math.floor(len / 2)];
+      } else {
+        medianDuration = Math.round((durations[len / 2 - 1] + durations[len / 2]) / 2);
+      }
+
+      const p95Idx = Math.min(len - 1, Math.max(0, Math.ceil(0.95 * len) - 1));
+      p95Duration = durations[p95Idx];
+    }
+
+    const speedMultiplier =
+      overallAvgDuration > 0 && avgDuration > 0
+        ? Math.round((avgDuration / overallAvgDuration) * 10) / 10
+        : 1.0;
+
+    result.push({
+      name,
+      total,
+      passed,
+      failed,
+      skipped,
+      timedOut,
+      interrupted,
+      passRate,
+      flakyCount,
+      flakyRate,
+      totalDuration,
+      avgDuration,
+      p95Duration,
+      medianDuration,
+      minDuration,
+      maxDuration,
+      uniqueFiles: fileSet.size,
+      uniqueTagsCount: tagSet.size,
+      speedMultiplier,
+      cases,
+    });
+  }
+
+  return result;
+}
+
+export function computeProjectExecutiveKPIs(projectStats: ProjectStats[]): ProjectExecutiveKPIs {
+  if (projectStats.length === 0) {
+    return {
+      totalProjects: 0,
+      mostStableProject: null,
+      slowestProject: null,
+      passRateParityDelta: 0,
+      totalFlakyCount: 0,
+      overallAvgDuration: 0,
+    };
+  }
+
+  let mostStable = projectStats[0];
+  let slowest = projectStats[0];
+  let maxPassRate = projectStats[0].passRate;
+  let minPassRate = projectStats[0].passRate;
+  let totalFlaky = 0;
+  let combinedTotalDuration = 0;
+  let combinedTotalExecuted = 0;
+
+  for (const proj of projectStats) {
+    totalFlaky += proj.flakyCount;
+    combinedTotalDuration += proj.totalDuration;
+    combinedTotalExecuted += proj.total - proj.skipped;
+
+    if (proj.passRate > maxPassRate) maxPassRate = proj.passRate;
+    if (proj.passRate < minPassRate) minPassRate = proj.passRate;
+
+    if (
+      proj.passRate > mostStable.passRate ||
+      (proj.passRate === mostStable.passRate && proj.flakyRate < mostStable.flakyRate) ||
+      (proj.passRate === mostStable.passRate &&
+        proj.flakyRate === mostStable.flakyRate &&
+        proj.total > mostStable.total)
+    ) {
+      mostStable = proj;
+    }
+
+    if (proj.totalDuration > slowest.totalDuration) {
+      slowest = proj;
     }
   }
 
-  return Array.from(projectMap.values());
+  const passRateParityDelta = maxPassRate - minPassRate;
+  const overallAvgDuration =
+    combinedTotalExecuted > 0 ? Math.round(combinedTotalDuration / combinedTotalExecuted) : 0;
+
+  return {
+    totalProjects: projectStats.length,
+    mostStableProject: {
+      name: mostStable.name,
+      passRate: mostStable.passRate,
+      total: mostStable.total,
+    },
+    slowestProject: {
+      name: slowest.name,
+      totalDuration: slowest.totalDuration,
+      avgDuration: slowest.avgDuration,
+    },
+    passRateParityDelta,
+    totalFlakyCount: totalFlaky,
+    overallAvgDuration,
+  };
 }
 
 export function computePassRate(summary: ResultSummary): number {
@@ -568,13 +812,16 @@ export interface FileStats {
   skipped: number;
   timedOut: number;
   interrupted: number;
+  totalDuration: number;
+  avgDuration: number;
+  flakyCount: number;
 }
 
 export function computeFileStats(allCases: TestCase[]): FileStats[] {
   const fileMap = new Map<string, FileStats>();
 
   for (const tc of allCases) {
-    const file = tc.fileName;
+    const file = tc.fileName || 'unknown file';
     if (!fileMap.has(file)) {
       fileMap.set(file, {
         fileName: file,
@@ -584,10 +831,22 @@ export function computeFileStats(allCases: TestCase[]): FileStats[] {
         skipped: 0,
         timedOut: 0,
         interrupted: 0,
+        totalDuration: 0,
+        avgDuration: 0,
+        flakyCount: 0,
       });
     }
     const stats = fileMap.get(file)!;
     stats.total++;
+    stats.totalDuration += tc.duration || 0;
+
+    const isFlaky =
+      (tc.attempts !== undefined && tc.attempts > 1) ||
+      (tc.failedAttempts !== undefined && tc.failedAttempts.length > 0);
+    if (isFlaky) {
+      stats.flakyCount++;
+    }
+
     switch (tc.status) {
       case 'passed':
         stats.passed++;
@@ -607,6 +866,11 @@ export function computeFileStats(allCases: TestCase[]): FileStats[] {
     }
   }
 
+  for (const stats of fileMap.values()) {
+    const executed = stats.total - stats.skipped;
+    stats.avgDuration = executed > 0 ? Math.round(stats.totalDuration / executed) : 0;
+  }
+
   return Array.from(fileMap.values()).sort((a, b) => b.total - a.total);
 }
 
@@ -624,4 +888,139 @@ export function truncateFileName(fileName: string, maxLength: number = 40): stri
   const start = nameWithoutExt.slice(0, halfLen + (availableNameLength % 2));
   const end = nameWithoutExt.slice(-halfLen);
   return `${start}...${end}${extension}`;
+}
+
+/**
+ * Normalizes error messages and stack traces by masking dynamic tokens (timestamps,
+ * pointers, line numbers, ports, durations) so identical failure causes yield the same signature.
+ */
+export function normalizeErrorText(message: string, stack: string): string {
+  const normMsg = (message || '')
+    .replace(/\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?Z?/gi, '<TIMESTAMP>')
+    .replace(/0x[a-fA-F0-9]+/g, '<PTR>')
+    .replace(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/gi, '<UUID>')
+    .replace(/localhost:\d+/g, '<HOST>')
+    .replace(/\d+ms/gi, '<DURATION>')
+    .replace(/:\d+:\d+/g, ':<LINE>:<COL>');
+
+  const normStack = (stack || '')
+    .split('\n')
+    .filter((line) => !line.includes('node_modules') && !line.includes('internal/'))
+    .slice(0, 4)
+    .join('\n')
+    .replace(/:\d+:\d+/g, ':<LINE>:<COL>');
+
+  return `${normMsg.trim()}\n${normStack.trim()}`;
+}
+
+/**
+ * Synchronous SHA-256 hash generator for string inputs.
+ */
+export function sha256Sync(str: string): string {
+  function rightRotate(value: number, amount: number) {
+    return (value >>> amount) | (value << (32 - amount));
+  }
+
+  const mathPow = Math.pow;
+  const maxWord = mathPow(2, 32);
+  const hash: number[] = [];
+  const k: number[] = [];
+  let primeCounter = 0;
+
+  const isComposite: Record<number, boolean> = {};
+  for (let candidate = 2; primeCounter < 64; candidate++) {
+    if (!isComposite[candidate]) {
+      for (let i = 0; i < 313; i += candidate) {
+        isComposite[i] = true;
+      }
+      if (primeCounter < 8) {
+        hash[primeCounter] = (mathPow(candidate, 1 / 2) * maxWord) | 0;
+      }
+      k[primeCounter] = (mathPow(candidate, 1 / 3) * maxWord) | 0;
+      primeCounter++;
+    }
+  }
+
+  let wordsStr = str + '\x80';
+  while ((wordsStr.length % 64) - 56) wordsStr += '\x00';
+
+  const words: number[] = [];
+  const asciiBitLength = str.length * 8;
+
+  for (let i = 0; i < wordsStr.length; i++) {
+    const charCode = wordsStr.charCodeAt(i);
+    words[i >> 2] |= charCode << (((3 - i) % 4) * 8);
+  }
+  words[words.length] = (asciiBitLength / maxWord) | 0;
+  words[words.length] = asciiBitLength;
+
+  for (let j = 0; j < words.length;) {
+    const w = words.slice(j, (j += 16));
+    const oldHash = hash.slice(0);
+
+    for (let i = 0; i < 64; i++) {
+      const w15 = w[i - 15],
+        w2 = w[i - 2];
+      const a = hash[0],
+        e = hash[4];
+      const temp1 =
+        hash[7] +
+        (rightRotate(e, 6) ^ rightRotate(e, 11) ^ rightRotate(e, 25)) +
+        ((e & hash[5]) ^ (~e & hash[6])) +
+        k[i] +
+        (w[i] =
+          i < 16
+            ? w[i]
+            : (w[i - 16] +
+                (rightRotate(w15, 7) ^ rightRotate(w15, 18) ^ (w15 >>> 3)) +
+                w[i - 7] +
+                (rightRotate(w2, 17) ^ rightRotate(w2, 19) ^ (w2 >>> 10))) |
+              0);
+      const temp2 =
+        (rightRotate(a, 2) ^ rightRotate(a, 13) ^ rightRotate(a, 22)) +
+        ((a & hash[1]) ^ (a & hash[2]) ^ (hash[1] & hash[2]));
+
+      hash[7] = hash[6];
+      hash[6] = hash[5];
+      hash[5] = hash[4];
+      hash[4] = (hash[3] + temp1) | 0;
+      hash[3] = hash[2];
+      hash[2] = hash[1];
+      hash[1] = hash[0];
+      hash[0] = (temp1 + temp2) | 0;
+    }
+
+    for (let i = 0; i < 8; i++) {
+      hash[i] = (hash[i] + oldHash[i]) | 0;
+    }
+  }
+
+  let result = '';
+  for (let i = 0; i < 8; i++) {
+    for (let j = 3; j >= 0; j--) {
+      const b = (hash[i] >> (j * 8)) & 255;
+      result += (b < 16 ? '0' : '') + b.toString(16);
+    }
+  }
+  return result;
+}
+
+export interface ErrorSignatureDetails {
+  hash: string;
+  shortHash: string;
+  representativeMessage: string;
+}
+
+export function getErrorSignature(test: FailedTest): ErrorSignatureDetails {
+  const err = test.errors?.[0];
+  const msg = err?.message || test.type || 'Unknown Failure';
+  const stack = err?.stack || '';
+  const normalized = normalizeErrorText(msg, stack);
+  const hash =
+    sha256Sync(normalized) || 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855';
+  return {
+    hash,
+    shortHash: `sha256:${hash.slice(0, 8)}`,
+    representativeMessage: msg.split('\n')[0],
+  };
 }

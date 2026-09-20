@@ -146,7 +146,8 @@ export function processRawData(rawData: RawPlaywrightData): ReportData {
 
     const steps = test.steps ? convertSteps(test.steps) : [];
     const stepDurationSum = steps.reduce((sum, s) => sum + (s.duration || 0), 0);
-    const duration = stepDurationSum > 0 ? stepDurationSum : test.duration || 0;
+    const duration =
+      typeof test.duration === 'number' && test.duration > 0 ? test.duration : stepDurationSum;
 
     const testCase: TestCase = {
       title: test.title || '',
@@ -184,6 +185,7 @@ export function processRawData(rawData: RawPlaywrightData): ReportData {
   const interrupted = testCases.filter((tc) => tc.status === 'interrupted').length;
 
   const projects = new Set(testCases.map((tc) => tc.project));
+  const totalSequentialDuration = testCases.reduce((sum, tc) => sum + (tc.duration || 0), 0);
 
   const summary: ResultSummary = {
     total: testCases.length,
@@ -195,6 +197,7 @@ export function processRawData(rawData: RawPlaywrightData): ReportData {
     startTime,
     endTime,
     duration: wallClockDuration,
+    totalSequentialDuration,
     numberOfProjects: projects.size || 1,
   };
 

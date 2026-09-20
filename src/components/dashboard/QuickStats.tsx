@@ -6,6 +6,7 @@ import {
   collectAllCases,
 } from '@/lib/utils';
 import type { ResultSummary, TestSuite } from '@/lib/types';
+import { StatCard } from '@/components/shared';
 
 interface Props {
   summary: ResultSummary;
@@ -55,42 +56,18 @@ export default function QuickStats({ summary, suites }: Props) {
   ];
 
   return (
-    <div className="mt-4 grid grid-cols-2 gap-4 sm:grid-cols-5">
-      {stats.map((stat) => (
-        <div
+    <div className="mt-3 grid grid-cols-2 gap-4 sm:grid-cols-5">
+      {stats.map((stat, index) => (
+        <StatCard
           key={stat.label}
-          className="rounded-md bg-canvas border border-border-default px-5 py-4 shadow-sm"
-        >
-          <div className="flex items-center gap-1.5">
-            <p className="text-[14px] font-medium uppercase tracking-wider text-text-body-mid dark:text-text-muted">
-              {stat.label}
-            </p>
-            <div className="group relative inline-flex items-center">
-              <svg
-                className="h-3.5 w-3.5 cursor-help text-text-body-mid opacity-60 hover:opacity-100 dark:text-text-muted transition-opacity"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                strokeWidth={2}
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z"
-                />
-              </svg>
-              <div className="pointer-events-none absolute bottom-full left-1/2 mb-2 hidden -translate-x-1/2 group-hover:block z-50 w-48 rounded bg-slate-900 dark:bg-slate-800 p-2 text-center text-xs text-white shadow-lg ring-1 ring-slate-700">
-                {stat.description}
-                <div className="absolute top-full left-1/2 -mt-1 -translate-x-1/2 border-4 border-transparent border-t-slate-900 dark:border-t-slate-800" />
-              </div>
-            </div>
-          </div>
-          <p
-            className={`mt-1.5 text-xl font-bold text-text-ink dark:text-text-on-primary ${stat.className || ''}`}
-          >
-            {stat.value}
-          </p>
-        </div>
+          label={stat.label}
+          value={stat.value}
+          description={stat.description}
+          valueClassName={stat.className}
+          className="p-4!"
+          isFirst={index === 0}
+          isLast={index === stats.length - 1}
+        />
       ))}
     </div>
   );

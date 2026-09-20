@@ -36,7 +36,7 @@ test.describe('Tests in nested suite', () => {
 
         console.log(`attaching screenshot for ${browserName}`);
 
-        const screenshotPath = `screenshots/Installation-${browserName}.png`;
+        const screenshotPath = testInfo.outputPath(`Installation-${browserName}.png`);
         await page.screenshot({ fullPage: false, path: screenshotPath });
         await testInfo.attach('Installation Screenshot', {
           path: screenshotPath,

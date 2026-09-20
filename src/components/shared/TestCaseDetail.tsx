@@ -114,7 +114,7 @@ function StepItem({ step, idx }: StepItemProps) {
   const snippetContent = step.snippet || getStepCodeSnippet(step.location);
 
   return (
-    <div className="rounded-md border border-border-default bg-canvas p-2.5 text-sm shadow-xs transition-all">
+    <div className="rounded-md border border-border-default bg-white dark:bg-surface-100/40 p-2.5 text-sm shadow-xs transition-all">
       <div
         className="flex items-center justify-between gap-2.5 cursor-pointer select-none"
         onClick={() => setIsExpanded(!isExpanded)}
@@ -271,7 +271,7 @@ export default function TestCaseDetail({ testCase, showSteps = true }: Props) {
   const [activeAttachment, setActiveAttachment] = useState<{
     name: string;
     url: string;
-    type: 'image' | 'text';
+    type: 'image' | 'text' | 'video';
     contentType?: string;
     content?: string;
   } | null>(null);
@@ -301,6 +301,13 @@ export default function TestCaseDetail({ testCase, showSteps = true }: Props) {
     return (
       (att.contentType && att.contentType.startsWith('image/')) ||
       /\.(png|jpe?g|gif|webp|svg)$/i.test(att.name || att.path || '')
+    );
+  };
+
+  const isVideoAttachment = (att: Attachment): boolean => {
+    return (
+      (att.contentType && att.contentType.startsWith('video/')) ||
+      /\.(mp4|webm|ogg|ogv|mov|avi)$/i.test(att.name || att.path || '')
     );
   };
 
@@ -364,7 +371,7 @@ export default function TestCaseDetail({ testCase, showSteps = true }: Props) {
               Test Failures
             </h5>
             <div className="space-y-2">
-              <div className="rounded-md border border-danger-200 dark:border-danger-900/50 bg-canvas overflow-hidden shadow-xs">
+              <div className="rounded-md border border-danger-200 dark:border-danger-900/50 bg-white dark:bg-surface-100/40 overflow-hidden shadow-xs">
                 <div className="flex items-center justify-between border-b border-danger-200 dark:border-danger-900/50 bg-danger-50 dark:bg-danger-500/10 px-3 py-1.5">
                   <div className="flex items-center gap-2">
                     <svg
@@ -453,12 +460,13 @@ export default function TestCaseDetail({ testCase, showSteps = true }: Props) {
                 const url = getAttachmentUrl(att);
                 const isImg = isImageAttachment(att);
                 const isTxt = isTextAttachment(att);
+                const isVid = isVideoAttachment(att);
 
                 if (isImg && url) {
                   return (
                     <div
                       key={`img-${att.path || att.name || 'image'}-${att.contentType || ''}`}
-                      className="flex items-center justify-between gap-3 rounded-md border border-border-default bg-canvas p-2.5 text-sm hover:border-primary-500 transition-colors shadow-xs group"
+                      className="flex items-center justify-between gap-3 rounded-md border border-border-default bg-white dark:bg-surface-100/40 p-2.5 text-sm hover:border-primary-500 transition-colors shadow-xs group"
                     >
                       <button
                         type="button"
@@ -522,6 +530,74 @@ export default function TestCaseDetail({ testCase, showSteps = true }: Props) {
                   );
                 }
 
+                if (isVid && url) {
+                  return (
+                    <div
+                      key={`vid-${att.path || att.name || 'video'}-${att.contentType || ''}`}
+                      className="flex items-center justify-between gap-3 rounded-md border border-border-default bg-surface-100/40 dark:bg-surface-100/30 p-2.5 text-sm hover:border-primary-500 transition-colors shadow-xs group"
+                    >
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setActiveAttachment({
+                            name: att.name || 'Video Attachment',
+                            url,
+                            type: 'video',
+                          })
+                        }
+                        className="flex items-center gap-2.5 min-w-0 flex-1 text-left cursor-pointer"
+                      >
+                        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-surface-100 dark:bg-surface-200/50 text-text-body-mid dark:text-text-muted group-hover:text-primary-600 dark:group-hover:text-primary-400">
+                          <svg
+                            className="h-4 w-4"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                            strokeWidth={2}
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"
+                            />
+                          </svg>
+                        </span>
+                        <div className="min-w-0">
+                          <p className="font-medium text-xs text-text-ink dark:text-text-on-primary truncate group-hover:text-primary-600 dark:group-hover:text-primary-400">
+                            {att.name || 'Video Attachment'}
+                          </p>
+                          <p className="text-[11px] text-text-body-mid dark:text-text-muted">
+                            Click to play video
+                          </p>
+                        </div>
+                      </button>
+
+                      <a
+                        href={url}
+                        download={att.name || 'video'}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="rounded p-1.5 text-text-body-mid dark:text-text-muted hover:bg-surface-200 dark:hover:bg-surface-200/50 hover:text-primary-600 dark:hover:text-primary-400 transition-colors shrink-0"
+                        title="Download video"
+                      >
+                        <svg
+                          className="h-4 w-4"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                          strokeWidth={2}
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
+                          />
+                        </svg>
+                      </a>
+                    </div>
+                  );
+                }
+
                 if (isTxt) {
                   const textContent = getTextContent(att);
                   const mime = att.contentType || 'text/plain';
@@ -532,7 +608,7 @@ export default function TestCaseDetail({ testCase, showSteps = true }: Props) {
                   return (
                     <div
                       key={`txt-${att.path || att.name || 'text'}-${mime}`}
-                      className="flex items-center justify-between gap-3 rounded-md border border-border-default bg-canvas p-2.5 text-sm hover:border-primary-500 transition-colors shadow-xs group"
+                      className="flex items-center justify-between gap-3 rounded-md border border-border-default bg-white dark:bg-surface-100/40 p-2.5 text-sm hover:border-primary-500 transition-colors shadow-xs group"
                     >
                       <button
                         type="button"
@@ -610,7 +686,7 @@ export default function TestCaseDetail({ testCase, showSteps = true }: Props) {
                     download={att.name || 'attachment'}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex items-center gap-3 rounded-md border border-border-default bg-canvas p-2.5 text-sm hover:border-primary-500 transition-colors shadow-xs group"
+                    className="flex items-center gap-3 rounded-md border border-border-default bg-white dark:bg-surface-100/40 p-2.5 text-sm hover:border-primary-500 transition-colors shadow-xs group"
                   >
                     <div className="flex h-8 w-8 items-center justify-center rounded bg-warning-500/10 text-warning-600 dark:text-warning-500 shrink-0">
                       {isZip ? (
@@ -798,7 +874,7 @@ export default function TestCaseDetail({ testCase, showSteps = true }: Props) {
                   download={activeAttachment.name || 'attachment'}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="rounded-md px-3 py-1.5 text-xs font-semibold text-white bg-[#006241] hover:bg-[#00754a] border border-[#004d33] dark:bg-[#00754a] dark:hover:bg-[#008f5a] dark:border-[#009e64] transition-colors flex items-center gap-1.5 shadow-sm"
+                  className="rounded-md px-3 py-1.5 text-xs font-semibold text-text-on-primary bg-ink hover:bg-ink-strong border border-surface-700 dark:bg-success-600 dark:hover:bg-success-500 dark:border-success-700 transition-colors flex items-center gap-1.5 shadow-sm"
                   title="Download file"
                 >
                   <svg
@@ -841,6 +917,15 @@ export default function TestCaseDetail({ testCase, showSteps = true }: Props) {
                   alt={activeAttachment.name}
                   className="max-h-[75vh] w-auto object-contain rounded"
                 />
+              ) : activeAttachment.type === 'video' ? (
+                <video
+                  controls
+                  autoPlay
+                  src={activeAttachment.url}
+                  className="max-h-[75vh] w-auto object-contain rounded"
+                >
+                  Your browser does not support the video tag.
+                </video>
               ) : (
                 <pre className="w-full max-h-[75vh] overflow-y-auto rounded-md bg-surface-950 p-4 text-xs font-mono leading-relaxed text-canvas dark:text-surface-900 border border-border-default dark:border-border-subtle whitespace-pre-wrap wrap-break-word">
                   {activeAttachment.content}

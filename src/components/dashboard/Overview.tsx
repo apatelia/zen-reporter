@@ -1,11 +1,11 @@
 import type { ResultSummary, TestSuite } from '@/lib/types';
-import { computePassRate, formatDate, formatDuration } from '@/lib/utils';
-import FileSummary from './FileSummary';
+import { computePassRate, formatDateRange, formatDuration } from '@/lib/utils';
+import ExecutionEfficiencyCard from './ExecutionEfficiencyCard';
 import PassRateRing from './PassRateRing';
-import ProjectBarCharts from './ProjectBarCharts';
 import QuickStats from './QuickStats';
 import RunInfoCard from './RunInfoCard';
 import SummaryCard from './SummaryCard';
+import TestHealthCard from './TestHealthCard';
 
 interface Props {
   summary: ResultSummary;
@@ -16,41 +16,77 @@ export default function Overview({ summary, suites }: Props) {
   const passRate = computePassRate(summary);
 
   return (
-    <div className="w-full space-y-8">
+    <div className="w-full space-y-5">
       {/* Page Header */}
       <div>
         <h2 className="text-2xl font-bold tracking-tight text-text-ink dark:text-text-on-primary sm:text-3xl">
           Overview
         </h2>
-        <p className="mt-1 text-sm text-text-body-mid dark:text-text-muted">
-          {formatDate(summary.startTime)} — {formatDate(summary.endTime)}
-        </p>
+        <div className="mt-1 flex items-center gap-2 text-xs text-text-body-mid dark:text-text-muted">
+          <svg
+            className="h-4 w-4 text-text-muted shrink-0"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            strokeWidth={1.75}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <rect width="18" height="18" x="3" y="4" rx="2" ry="2" />
+            <line x1="16" x2="16" y1="2" y2="6" />
+            <line x1="8" x2="8" y1="2" y2="6" />
+            <line x1="3" x2="21" y1="10" y2="10" />
+          </svg>
+          <span className="font-medium">{formatDateRange(summary.startTime, summary.endTime)}</span>
+        </div>
       </div>
 
-      {/* Run Info Bar */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-6">
-        <RunInfoCard
-          label={
-            summary.workers && summary.workers > 1
-              ? 'Duration (Parallel Execution)'
-              : 'Duration (Sequential Execution)'
-          }
-          value={formatDuration(summary.duration)}
-          barColorClass="bg-accent-blue"
-        />
-        <RunInfoCard
-          label="Projects / Browsers"
-          value={summary.numberOfProjects}
-          barColorClass="bg-warning-500"
-        />
-        <RunInfoCard label="Suites / Files" value={suites.length} barColorClass="bg-danger-500" />
-        <RunInfoCard label="Test Cases" value={summary.total} barColorClass="bg-success-500" />
-      </div>
+      {/* Section 1: Execution Environment & Metadata */}
+      <section className="space-y-3">
+        <div className="flex items-center gap-2.5">
+          <span className="text-xs font-bold uppercase tracking-wider text-text-muted">
+            Run Environment
+          </span>
+          <div className="flex-1 h-px bg-border-default" />
+        </div>
 
-      {/* Summary Cards + Pass Rate Ring */}
-      <div className="grid grid-cols-1 items-stretch gap-6 lg:grid-cols-12">
+        {/* Run Info Bar (5 Cards Grid) */}
+        <div className="grid grid-cols-2 gap-4 lg:grid-cols-5">
+          <RunInfoCard
+            label="Total Run Duration"
+            value={formatDuration(summary.duration)}
+            barColorClass="bg-accent-blue"
+          />
+          <RunInfoCard
+            label="Projects / Browsers"
+            value={summary.numberOfProjects}
+            barColorClass="bg-warning-500"
+          />
+          <RunInfoCard label="Suites / Files" value={suites.length} barColorClass="bg-danger-500" />
+          <RunInfoCard label="Test Cases" value={summary.total} barColorClass="bg-success-500" />
+          <RunInfoCard
+            label="Worker Threads"
+            value={
+              summary.workers && summary.workers > 1
+                ? `${summary.workers} Workers`
+                : '1 Worker (Serial)'
+            }
+            barColorClass="bg-accent-house"
+          />
+        </div>
+      </section>
+
+      {/* Section 2: Test Results & Breakdown */}
+      <section className="space-y-3 pt-2">
+        <div className="flex items-center gap-2.5">
+          <span className="text-xs font-bold uppercase tracking-wider text-text-muted">
+            Test Results & Status
+          </span>
+          <div className="flex-1 h-px bg-border-default" />
+        </div>
+
         {/* Summary Cards + Quick Stats */}
-        <div className="flex flex-col justify-between lg:col-span-9">
+        <div className="space-y-4">
           <div className="grid grid-cols-2 gap-4 lg:grid-cols-5">
             <SummaryCard
               label="Passed"
@@ -149,24 +185,29 @@ export default function Overview({ summary, suites }: Props) {
 
           <QuickStats summary={summary} suites={suites} />
         </div>
+      </section>
 
-        {/* Pass Rate Ring */}
-        <div className="flex flex-col justify-between rounded-md bg-canvas border border-border-default p-5 text-center shadow-sm lg:col-span-3">
-          <PassRateRing passRate={passRate} />
+      {/* Section 3: Visual Analytics & Insights */}
+      <section className="space-y-3 pt-2">
+        <div className="flex items-center gap-2.5">
+          <span className="text-xs font-bold uppercase tracking-wider text-text-muted">
+            Performance & Health Analytics
+          </span>
+          <div className="flex-1 h-px bg-border-default" />
         </div>
-      </div>
 
-      {/* Project Summary + File Summary */}
-      <div className="mt-8">
-        <div
-          className={`grid grid-cols-1 gap-6 ${
-            suites.length > 0 ? 'lg:grid-cols-2' : 'lg:grid-cols-1'
-          }`}
-        >
-          {suites.length > 0 && <ProjectBarCharts suites={suites} title="Projects Summary" />}
-          <FileSummary suites={suites} />
+        <div className="grid grid-cols-1 items-stretch gap-4 lg:grid-cols-12">
+          <div className="flex flex-col justify-between rounded-md bg-canvas border border-border-default p-4 text-center shadow-sm lg:col-span-4">
+            <PassRateRing passRate={passRate} />
+          </div>
+          <div className="lg:col-span-4 flex flex-col">
+            <ExecutionEfficiencyCard summary={summary} />
+          </div>
+          <div className="lg:col-span-4 flex flex-col">
+            <TestHealthCard suites={suites} />
+          </div>
         </div>
-      </div>
+      </section>
     </div>
   );
 }

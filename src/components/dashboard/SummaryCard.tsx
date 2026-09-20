@@ -31,25 +31,25 @@ const progressBgMap = {
 
 export default function SummaryCard({ label, value, total, icon, color }: Props) {
   return (
-    <div className={`rounded-md p-6 shadow-sm border ${bgMap[color]}`}>
+    <div className={`rounded-md p-4 shadow-sm border ${bgMap[color]}`}>
       <div className="flex items-center justify-between">
         <div>
-          <p className="text-[14px] font-semibold uppercase tracking-wider text-text-body-mid dark:text-text-muted">
+          <p className="text-[13px] font-semibold uppercase tracking-wider text-text-body-mid dark:text-text-muted">
             {label}
           </p>
-          <p className={`mt-2 text-4xl font-extrabold ${textMap[color]}`}>{value}</p>
+          <p className={`mt-1 text-3xl font-extrabold ${textMap[color]}`}>{value}</p>
         </div>
         {icon && <div className={textMap[color]}>{icon}</div>}
       </div>
       {total !== undefined && (
-        <div className="mt-5">
+        <div className="mt-3">
           <div className="h-1.5 w-full rounded-[50px] bg-border-default dark:bg-surface-200">
             <div
               className={`h-1.5 rounded-[50px] ${progressBgMap[color]}`}
               style={{ width: `${(value / total) * 100}%` }}
             />
           </div>
-          <p className="mt-2 text-[10px] font-medium text-text-body-mid dark:text-text-muted">
+          <p className="mt-1 text-[10px] font-medium text-text-body-mid dark:text-text-muted">
             {Math.round((value / total) * 100)}% of total
           </p>
         </div>

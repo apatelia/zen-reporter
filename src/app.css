@@ -27,6 +27,7 @@
   /* ── Border / Hairline ───────────────────────── */
   --color-border-default: #d6dbde;
   --color-border-subtle: #edebe9;
+  --color-border-chart: #b4bcc1;
 
   /* ── Semantic: Success (Starbucks Green) ─────── */
   --color-success: #00754a;
@@ -68,7 +69,6 @@
   --color-accent-green: #00754a;
   --color-accent-house: #1e3932;
   --color-accent-gold: #cba258;
-  --color-accent-purple: #7a3dff;
   --color-accent-pink: #ed52cb;
   --color-accent-blue: #00754a;
   --color-accent-blue-deep: #006241;
@@ -104,6 +104,7 @@
 
   --color-border-default: #2b5148;
   --color-border-subtle: #213e37;
+  --color-border-chart: #385d54;
 
   /* Semantic dark adjustments (AAA ≥ 7.0:1 on House Green) */
   --color-success-50: #112922;
@@ -129,6 +130,13 @@
   --color-info-500: #38bdf8;
   --color-info-600: #0284c7;
   --color-info-700: #0369a1;
+
+  --color-accent-starbucks: #4ade80;
+  --color-accent-green: #22c55e;
+  --color-accent-house: var(--color-warning-500);
+  --color-accent-gold: #fcd34d;
+  --color-accent-pink: #f472b6;
+  --color-accent-orange: #fb923c;
 }
 
 body {
@@ -176,4 +184,17 @@ pre::-webkit-scrollbar-thumb:hover {
 pre,
 code {
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+/* Recharts Hover Cursor (Bar/Line Chart Hover Highlight) */
+.recharts-rectangle.recharts-tooltip-cursor,
+.recharts-tooltip-cursor {
+  fill: rgba(0, 0, 0, 0.05) !important;
+  stroke: transparent !important;
+}
+
+.dark .recharts-rectangle.recharts-tooltip-cursor,
+.dark .recharts-tooltip-cursor {
+  fill: rgba(255, 255, 255, 0.06) !important;
+  stroke: transparent !important;
 }

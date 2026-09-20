@@ -6,7 +6,7 @@ import type {
   TestCase,
   TestResult,
 } from '@playwright/test/reporter';
-import { execSync } from 'child_process';
+import { execFileSync, execSync } from 'child_process';
 import * as fs from 'fs';
 import * as path from 'path';
 import { fileURLToPath } from 'url';
@@ -20,6 +20,7 @@ import type {
   TestSuite,
 } from './types';
 import { buildSuitesFromCases, convertPlaywrightSteps, sanitizeAnsi, setFsModule } from './utils';
+import { buildRunId, flattenRunRows } from './runHistory';
 
 setFsModule(fs);
 
@@ -81,6 +82,84 @@ class ZenReporter implements Reporter {
 
   private buildSuites(): TestSuite[] {
     return buildSuitesFromCases(this.testCases);
+  }
+
+  /**
+   * Persist every run as a self-contained per-run JSONL file under
+   * <outputDir>/runs/ so historic runs survive report rebuilds.
+   * Failure policy: catch-and-log only — history writing must never break
+   * report/HTML generation.
+   */
+  private writeRunHistory(summary: ResultSummary, endedAt: string): void {
+    try {
+      const runId = buildRunId(this.startTime, this.reportConfig.testRunName, this.config.shard);
+      const cwd = process.cwd();
+      const normalizedCwd = cwd.endsWith('/') ? cwd.slice(0, -1) : cwd;
+      const runsDir = path.resolve(normalizedCwd, this.reportConfig.outputDir, 'runs');
+      // Collision guard (two invocations same ms + same name): append -2, -3, ...
+      let finalRunId = runId;
+      let suffix = 2;
+      while (fs.existsSync(path.join(runsDir, `${finalRunId}.jsonl`))) {
+        finalRunId = `${runId}-${suffix}`;
+        suffix += 1;
+      }
+      const rows = flattenRunRows(
+        finalRunId,
+        this.reportConfig.testRunName,
+        this.reportConfig.projectName,
+        summary,
+        endedAt,
+        this.testCases
+      );
+      fs.mkdirSync(runsDir, { recursive: true });
+      fs.writeFileSync(
+        path.join(runsDir, `${finalRunId}.jsonl`),
+        rows.map((r) => JSON.stringify(r)).join('\n') + '\n',
+        'utf8'
+      );
+    } catch (e) {
+      console.error('Run history write failed:', e);
+    }
+  }
+
+  /**
+   * Regenerate `history.json` by running the CLI's `history report`
+   * subcommand (the CLI owns the DuckDB aggregate queries — single source
+   * of truth) and inject the fresh snapshot into `<outputDir>/index.html`.
+   * Runs after the new run's JSONL has been written, so it includes the
+   * just-finished run. Best-effort: any failure (missing @duckdb/node-api,
+   * missing bin, spawn error) is caught and logged; the snapshot that was
+   * re-injected above remains in the report.
+   */
+  private refreshHistory(): void {
+    try {
+      // Locate the shipped CLI: walk up from this module to the directory
+      // containing bin/zen-reporter.js (dist/ → package root in shipped
+      // builds; src/lib → repo root in dev).
+      const moduleFile =
+        typeof __filename !== 'undefined' ? __filename : fileURLToPath(import.meta.url);
+      let dir = path.dirname(moduleFile);
+      let binPath: string | null = null;
+      for (let i = 0; i < 4; i++) {
+        const candidate = path.join(dir, 'bin', 'zen-reporter.js');
+        if (fs.existsSync(candidate)) {
+          binPath = candidate;
+          break;
+        }
+        const parent = path.dirname(dir);
+        if (parent === dir) break;
+        dir = parent;
+      }
+      if (!binPath) return;
+
+      execFileSync(process.execPath, [binPath, 'history', 'report'], {
+        cwd: process.cwd(),
+        stdio: 'inherit',
+        env: { ...process.env, PW_REPORTER_OUTPUT: this.reportConfig.outputDir },
+      });
+    } catch (e) {
+      console.error('History refresh failed, keeping existing history data:', e);
+    }
   }
 
   onBegin(config: FullConfig, suite: Suite): void {
@@ -203,7 +282,10 @@ class ZenReporter implements Reporter {
     const stepDurationSum = attemptSteps
       ? attemptSteps.reduce((sum, step) => sum + (step.duration || 0), 0)
       : 0;
-    const attemptDuration = stepDurationSum > 0 ? stepDurationSum : result.duration;
+    const attemptDuration =
+      typeof result.duration === 'number' && result.duration > 0
+        ? result.duration
+        : stepDurationSum;
 
     testCase.duration = attemptDuration;
 
@@ -367,6 +449,7 @@ class ZenReporter implements Reporter {
     const timedOut = this.testCases.filter((tc) => tc.status === 'timedOut').length;
     const interrupted = this.testCases.filter((tc) => tc.status === 'interrupted').length;
     const numberOfProjects = this.config.projects.length;
+    const totalSequentialDuration = this.testCases.reduce((sum, tc) => sum + (tc.duration || 0), 0);
 
     const summary: ResultSummary = {
       total: this.testCases.length,
@@ -378,11 +461,13 @@ class ZenReporter implements Reporter {
       startTime: this.startTime,
       endTime,
       duration: wallClockDuration,
+      totalSequentialDuration,
       numberOfProjects,
       workers: this.config?.workers,
     };
 
     const suites = this.buildSuites();
+    this.writeRunHistory(summary, endTime);
 
     const testRun: TestRunModel = {
       summary,
@@ -460,12 +545,31 @@ class ZenReporter implements Reporter {
           /<script id="report-data" type="application\/json">[\s\S]*?<\/script>/,
           ''
         );
-        const finalHtml = cleanTemplate.replace('</head>', `${dataScript}\n</head>`);
+        let finalHtml = cleanTemplate.replace('</head>', `${dataScript}\n</head>`);
 
+        // Re-inject history data (computed by `zr history report`) so the
+        // History tab survives the report rebuild on every test run.
+        // summary.html is deliberately left untouched (History unreachable there).
+        const historyPath = path.join(outputDir, 'history.json');
+        if (fs.existsSync(historyPath)) {
+          try {
+            const history = JSON.parse(fs.readFileSync(historyPath, 'utf8'));
+            const historyScript = `<script id="history-data" type="application/json">${JSON.stringify(history).replace(/</g, '\\u003c')}</script>`;
+            finalHtml = finalHtml
+              .replace(/<script id="history-data" type="application\/json">[\s\S]*?<\/script>/, '')
+              .replace('</head>', `${historyScript}\n</head>`);
+          } catch (e) {
+            console.error('History data injection failed:', e);
+          }
+        }
         const destHtml = path.join(outputDir, 'index.html');
         fs.writeFileSync(destHtml, finalHtml, 'utf8');
         console.log(`\n✓ Report generated: ${destHtml}`);
         console.log(`\n💡 Run "${getShowReportCommand(pm)}" to view the report\n`);
+
+        // Auto-refresh: regenerate history.json from all runs via the CLI
+        // and inject the fresh snapshot into the just-written index.html.
+        this.refreshHistory();
 
         if (this.reportConfig.singleSummaryFile) {
           const summaryHtmlPath = path.join(outputDir, 'summary.html');
@@ -490,13 +594,13 @@ export function getShowReportCommand(pm?: string, cwd: string = process.cwd()): 
   const manager = pm || detectPackageManager(cwd);
   switch (manager) {
     case 'pnpm':
-      return 'pnpm zen-reporter show (or pnpm zr show)';
+      return 'pnpm zr show';
     case 'yarn':
-      return 'yarn zen-reporter show (or yarn zr show)';
+      return 'yarn zr show';
     case 'bun':
-      return 'bunx zen-reporter show (or bunx zr show)';
+      return 'bunx zr show';
     default:
-      return 'npx zen-reporter show (or npx zr show)';
+      return 'npx zr show';
   }
 }
 

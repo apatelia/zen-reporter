@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import type { TestSuite, TestCase } from '@/lib/types';
 import { formatDurationVerbose } from '@/lib/utils';
-import TestCaseCard from './TestCaseCard';
+import { TestCaseCard } from '@/components/shared';
 
 interface Props {
   suite: TestSuite;
@@ -9,6 +9,7 @@ interface Props {
   filterProjects: string[];
   filterTags: string[];
   filterFiles: string[];
+  depth?: number;
 }
 
 function filterCases(
@@ -131,6 +132,7 @@ export default function TestSuiteNode({
   filterProjects,
   filterTags,
   filterFiles,
+  depth = 1,
 }: Props) {
   const [isOpen, setIsOpen] = useState(false);
 
@@ -151,12 +153,15 @@ export default function TestSuiteNode({
   );
   const passRate = total > 0 ? Math.round((passed / total) * 100) : 100;
 
+  const bgClass =
+    depth % 2 === 1 ? 'bg-canvas dark:bg-canvas/80' : 'bg-surface-100 dark:bg-surface-100';
+
   return (
     <details
       onToggle={(e) => setIsOpen(e.currentTarget.open)}
-      className="group rounded-md overflow-hidden bg-surface-100 shadow-sm border border-[#9bb0a7] dark:border-[#3b6e62] transition-all"
+      className={`group rounded-md overflow-hidden ${bgClass} shadow-xs border border-border-default dark:border-border-default transition-all`}
     >
-      <summary className="rounded-md group-open:rounded-b-none cursor-pointer select-none p-3 flex flex-col gap-1.5 sm:flex-row sm:items-center sm:justify-between sm:gap-0 hover:bg-surface-50 dark:hover:bg-surface-200/30 transition-colors">
+      <summary className="rounded-md group-open:rounded-b-none cursor-pointer select-none p-3 flex flex-col gap-1.5 sm:flex-row sm:items-center sm:justify-between sm:gap-0 hover:bg-surface-100/50 dark:hover:bg-surface-200/40 transition-colors">
         <div className="flex items-center gap-2">
           <svg
             className={`h-3.5 w-3.5 text-text-body-mid transition-transform duration-200 ${
@@ -216,7 +221,7 @@ export default function TestSuiteNode({
             <p className="mb-2 text-[10px] font-bold uppercase tracking-wider text-text-body-mid dark:text-text-muted">
               Sub-Suites
             </p>
-            <div className="ml-3 border-l-2 border-[#9bb0a7] dark:border-[#3b6e62] pl-3 space-y-2">
+            <div className="ml-3 border-l-2 border-border-default dark:border-border-default pl-3 space-y-2">
               {filteredSuite.subSuites.map((sub) => (
                 <TestSuiteNode
                   key={sub.title}
@@ -225,6 +230,7 @@ export default function TestSuiteNode({
                   filterProjects={filterProjects}
                   filterTags={filterTags}
                   filterFiles={filterFiles}
+                  depth={depth + 1}
                 />
               ))}
             </div>
