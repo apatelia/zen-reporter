@@ -103,7 +103,7 @@ export default function InsightsSection({ history, suites }: Props) {
               </svg>
             </div>
             <h3 className="text-base font-bold text-text-ink dark:text-text-on-primary">
-              No historical history data
+              No history data
             </h3>
             <p className="mt-1.5 text-sm text-text-body-mid dark:text-text-muted">
               Run{' '}

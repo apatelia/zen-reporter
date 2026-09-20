@@ -106,6 +106,19 @@ export const STEP_CATEGORIES: StepCategoryConfig[] = [
   },
 ];
 
+function parseTrendDateParts(valStr: string): [string, string] | null {
+  if (!valStr || valStr === 'Current Run' || valStr.startsWith('Run')) {
+    return null;
+  }
+  if (valStr.includes('T') || (valStr.includes('-') && /\d/.test(valStr))) {
+    const timestamp = Date.parse(valStr);
+    if (!isNaN(timestamp)) {
+      return formatDateParts(valStr);
+    }
+  }
+  return null;
+}
+
 /**
  * Two-line X-axis tick: date on the first line, time on the second.
  * High contrast fill in light and dark mode, matching Pass Rate Trend chart styling.
@@ -123,13 +136,13 @@ const renderTrendTick = ({
   const tickY = Number(y);
   const valStr = String(payload.value);
 
+  const dateParts = parseTrendDateParts(valStr);
   let dateLine = valStr;
   let timeLine = '';
 
-  if (valStr.includes('T') || valStr.includes('-')) {
-    const parts = formatDateParts(valStr);
-    dateLine = parts[0] || valStr;
-    timeLine = parts[1] || '';
+  if (dateParts) {
+    dateLine = dateParts[0] || valStr;
+    timeLine = dateParts[1] || '';
   } else if (valStr.includes(' ')) {
     const spaceIdx = valStr.indexOf(' ');
     dateLine = valStr.substring(0, spaceIdx);
@@ -167,12 +180,12 @@ const renderCategoryTooltip = (props: TooltipContentProps, viewMode: 'percent' |
   const { active, payload, label } = props;
   if (!active || !payload || payload.length === 0) return null;
   const valStr = String(label);
+  const dateParts = parseTrendDateParts(valStr);
   let dateLine = valStr;
   let timeLine = '';
-  if (valStr.includes('T') || valStr.includes('-')) {
-    const parts = formatDateParts(valStr);
-    dateLine = parts[0] || valStr;
-    timeLine = parts[1] || '';
+  if (dateParts) {
+    dateLine = dateParts[0] || valStr;
+    timeLine = dateParts[1] || '';
   }
 
   return (
@@ -322,7 +335,7 @@ export default function StepCategoryTrend({ suites, history }: Props) {
   // Compute percentages for current run
   const currentPercentages = useMemo(() => {
     if (totalCurrentSteps === 0) {
-      return { assertions: 40, actions: 35, network: 10, hooks: 10, waits: 3, others: 2 };
+      return { assertions: 0, actions: 0, network: 0, hooks: 0, waits: 0, others: 0 };
     }
     const res: Record<StepCategoryKey, number> = {
       assertions: 0,
@@ -343,39 +356,16 @@ export default function StepCategoryTrend({ suites, history }: Props) {
     const runsList = history?.runs && history.runs.length > 0 ? history.runs.slice(-15) : [];
 
     if (runsList.length === 0) {
-      const baseline = [
-        { name: 'Run -4', assertions: 38, actions: 36, network: 12, hooks: 8, waits: 4, others: 2 },
-        { name: 'Run -3', assertions: 40, actions: 34, network: 11, hooks: 9, waits: 4, others: 2 },
-        { name: 'Run -2', assertions: 39, actions: 35, network: 12, hooks: 8, waits: 4, others: 2 },
-        { name: 'Run -1', assertions: 41, actions: 34, network: 11, hooks: 8, waits: 4, others: 2 },
-      ];
-
       const currentPoint: Record<string, unknown> = {
         name: 'Current Run',
       };
 
       for (const cat of STEP_CATEGORIES) {
         currentPoint[cat.label] =
-          viewMode === 'percent'
-            ? currentPercentages[cat.key]
-            : totalCurrentSteps > 0
-              ? currentCounts[cat.key]
-              : Math.round((currentPercentages[cat.key] * 120) / 100);
+          viewMode === 'percent' ? currentPercentages[cat.key] : currentCounts[cat.key];
       }
 
-      const formattedBaseline = baseline.map((b) => {
-        const item: Record<string, unknown> = { name: b.name };
-        for (const cat of STEP_CATEGORIES) {
-          const pct = b[cat.key];
-          item[cat.label] =
-            viewMode === 'percent'
-              ? pct
-              : Math.round((pct * (totalCurrentSteps > 0 ? totalCurrentSteps : 120)) / 100);
-        }
-        return item;
-      });
-
-      return [...formattedBaseline, currentPoint];
+      return [currentPoint];
     }
 
     return runsList.map((run, idx) => {
@@ -388,7 +378,7 @@ export default function StepCategoryTrend({ suites, history }: Props) {
         run_total: run.run_total,
       };
 
-      if (isLatest && totalCurrentSteps > 0) {
+      if (isLatest) {
         for (const cat of STEP_CATEGORIES) {
           item[cat.label] =
             viewMode === 'percent' ? currentPercentages[cat.key] : currentCounts[cat.key];
@@ -423,7 +413,7 @@ export default function StepCategoryTrend({ suites, history }: Props) {
 
       return item;
     });
-  }, [history, currentCounts, currentPercentages, totalCurrentSteps, viewMode]);
+  }, [history, currentCounts, currentPercentages, viewMode]);
 
   return (
     <section className="rounded-md border border-border-default bg-surface-50 p-5 shadow-xs space-y-6">
@@ -628,70 +618,100 @@ export default function StepCategoryTrend({ suites, history }: Props) {
       </div>
 
       {/* Primary Stacked Area Chart */}
-      <div className="mt-4">
-        <ResponsiveContainer width="100%" height={280}>
-          <AreaChart data={chartData} margin={{ top: 10, right: 20, left: 10, bottom: 5 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border-chart)" />
-            <XAxis dataKey="name" fontSize={11} height={48} interval={0} tick={renderTrendTick} />
-            <YAxis
-              domain={viewMode === 'percent' ? [0, 100] : [0, 'auto']}
-              ticks={viewMode === 'percent' ? [0, 25, 50, 75, 100] : undefined}
-              allowDataOverflow={viewMode === 'percent'}
-              fontSize={11}
-              fontWeight={500}
-              tick={{ fill: 'var(--color-text-ink)' }}
-              unit={viewMode === 'percent' ? '%' : ''}
-            />
-            <Tooltip
-              content={(props) => renderCategoryTooltip(props, viewMode)}
-              wrapperStyle={{
-                backgroundColor: 'var(--color-surface-100)',
-                border: '1px solid var(--color-border-default)',
-                borderRadius: '0.5rem',
-                boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
-                outline: 'none',
-              }}
-            />
-            <Legend
-              iconType="circle"
-              content={(props) => {
-                const { payload } = props;
-                if (!payload) return null;
-                return (
-                  <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1.5 pt-3 text-xs font-medium">
-                    {payload.map((entry) => {
-                      const catConfig = STEP_CATEGORIES.find((c) => c.label === entry.value);
-                      const color = catConfig ? catConfig.color : entry.color;
-                      return (
-                        <div key={String(entry.value)} className="flex items-center gap-1.5">
-                          <span
-                            className="h-2.5 w-2.5 rounded-full shrink-0"
-                            style={{ backgroundColor: color }}
-                          />
-                          <span className="text-text-ink dark:text-text-on-primary">
-                            {String(entry.value)}
-                          </span>
-                        </div>
-                      );
-                    })}
-                  </div>
-                );
-              }}
-            />
-            {STEP_CATEGORIES.map((cat) => (
-              <Area
-                key={cat.key}
-                type="monotone"
-                dataKey={cat.label}
-                stackId="1"
-                stroke={cat.borderColor}
-                fill={cat.color}
-                fillOpacity={0.85}
+      {chartData.length < 2 ? (
+        <div className="flex flex-col items-center justify-center py-8 text-center rounded-md border border-dashed border-border-default bg-surface-100/50 p-6 space-y-2">
+          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-surface-200 border border-border-default text-text-body-mid dark:text-text-muted">
+            <svg
+              className="h-5 w-5"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={1.75}
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z"
               />
-            ))}
-          </AreaChart>
-        </ResponsiveContainer>
-      </div>
+            </svg>
+          </div>
+          <p className="text-xs font-semibold text-text-ink dark:text-text-on-primary">
+            Historical trend chart requires at least 2 test runs
+          </p>
+          <p className="text-[11px] text-text-body-mid dark:text-text-muted max-w-md">
+            Execute future runs and run{' '}
+            <code className="rounded bg-surface-200 px-1.5 py-0.5 font-mono text-[10px] text-text-ink dark:text-text-on-primary border border-border-default">
+              npx zr history report
+            </code>{' '}
+            to visualize category composition changes across runs over time.
+          </p>
+        </div>
+      ) : (
+        <div className="mt-4">
+          <ResponsiveContainer width="100%" height={280}>
+            <AreaChart data={chartData} margin={{ top: 10, right: 20, left: 10, bottom: 5 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border-chart)" />
+              <XAxis dataKey="name" fontSize={11} height={48} interval={0} tick={renderTrendTick} />
+              <YAxis
+                domain={viewMode === 'percent' ? [0, 100] : [0, 'auto']}
+                ticks={viewMode === 'percent' ? [0, 25, 50, 75, 100] : undefined}
+                allowDataOverflow={viewMode === 'percent'}
+                fontSize={11}
+                fontWeight={500}
+                tick={{ fill: 'var(--color-text-ink)' }}
+                unit={viewMode === 'percent' ? '%' : ''}
+              />
+              <Tooltip
+                content={(props) => renderCategoryTooltip(props, viewMode)}
+                wrapperStyle={{
+                  backgroundColor: 'var(--color-surface-100)',
+                  border: '1px solid var(--color-border-default)',
+                  borderRadius: '0.5rem',
+                  boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+                  outline: 'none',
+                }}
+              />
+              <Legend
+                iconType="circle"
+                content={(props) => {
+                  const { payload } = props;
+                  if (!payload) return null;
+                  return (
+                    <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1.5 pt-3 text-xs font-medium">
+                      {payload.map((entry) => {
+                        const catConfig = STEP_CATEGORIES.find((c) => c.label === entry.value);
+                        const color = catConfig ? catConfig.color : entry.color;
+                        return (
+                          <div key={String(entry.value)} className="flex items-center gap-1.5">
+                            <span
+                              className="h-2.5 w-2.5 rounded-full shrink-0"
+                              style={{ backgroundColor: color }}
+                            />
+                            <span className="text-text-ink dark:text-text-on-primary">
+                              {String(entry.value)}
+                            </span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  );
+                }}
+              />
+              {STEP_CATEGORIES.map((cat) => (
+                <Area
+                  key={cat.key}
+                  type="monotone"
+                  dataKey={cat.label}
+                  stackId="1"
+                  stroke={cat.borderColor}
+                  fill={cat.color}
+                  fillOpacity={0.85}
+                />
+              ))}
+            </AreaChart>
+          </ResponsiveContainer>
+        </div>
+      )}
 
       {/* Interactive Modal: Step Categories & Composition Guide */}
       {isModalOpen && (

@@ -626,8 +626,9 @@ export function computeProjectStats(allCases: TestCase[]): ProjectStats[] {
       }
 
       const isFlaky =
-        (tc.attempts !== undefined && tc.attempts > 1) ||
-        (tc.failedAttempts !== undefined && tc.failedAttempts.length > 0);
+        tc.status === 'passed' &&
+        ((tc.attempts !== undefined && tc.attempts > 1) ||
+          (tc.failedAttempts !== undefined && tc.failedAttempts.length > 0));
       if (isFlaky) {
         flakyCount++;
       }
@@ -841,8 +842,9 @@ export function computeFileStats(allCases: TestCase[]): FileStats[] {
     stats.totalDuration += tc.duration || 0;
 
     const isFlaky =
-      (tc.attempts !== undefined && tc.attempts > 1) ||
-      (tc.failedAttempts !== undefined && tc.failedAttempts.length > 0);
+      tc.status === 'passed' &&
+      ((tc.attempts !== undefined && tc.attempts > 1) ||
+        (tc.failedAttempts !== undefined && tc.failedAttempts.length > 0));
     if (isFlaky) {
       stats.flakyCount++;
     }

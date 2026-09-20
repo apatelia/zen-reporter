@@ -11,6 +11,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { fileURLToPath } from 'url';
 import { detectPackageManager, getViteBuildCommand } from './dataProcessor';
+import { buildRunId, flattenRunRows } from './runHistory';
 import type {
   ReportData,
   ResultSummary,
@@ -20,7 +21,6 @@ import type {
   TestSuite,
 } from './types';
 import { buildSuitesFromCases, convertPlaywrightSteps, sanitizeAnsi, setFsModule } from './utils';
-import { buildRunId, flattenRunRows } from './runHistory';
 
 setFsModule(fs);
 
@@ -566,7 +566,7 @@ class ZenReporter implements Reporter {
         }
         const destHtml = path.join(outputDir, 'index.html');
         fs.writeFileSync(destHtml, finalHtml, 'utf8');
-        console.log(`\n✓ Report generated: ${destHtml}`);
+        console.debug(`\n✓ Report generated: ${destHtml}`);
         console.log(`\n💡 Run "${getShowReportCommand(pm)}" to view the report\n`);
 
         // Auto-refresh: regenerate history.json from all runs via the CLI
@@ -581,7 +581,7 @@ class ZenReporter implements Reporter {
             `${dataScript}\n${summaryScript}\n</head>`
           );
           fs.writeFileSync(summaryHtmlPath, summaryHtml, 'utf8');
-          console.log(`✓ Standalone Summary generated: ${summaryHtmlPath}`);
+          console.debug(`✓ Standalone Summary generated: ${summaryHtmlPath}`);
         }
       } else {
         console.error('Report template not found and build failed.');

@@ -81,6 +81,8 @@ export default function ProjectFlakyRateChart({
     total: p.total,
   }));
 
+  const hasFlakyData = projectStats.length > 0 && data.some((d) => d['Flaky Tests'] > 0);
+
   return (
     <div className="rounded-md bg-surface-50 border border-border-default p-5 shadow-xs flex flex-col justify-between">
       <div className="mb-3 flex items-start justify-between gap-2">
@@ -94,44 +96,70 @@ export default function ProjectFlakyRateChart({
         <LearnMoreButton onClick={() => setShowModal(true)} />
       </div>
 
-      <ResponsiveContainer width="100%" height={260}>
-        <BarChart
-          data={data}
-          layout="vertical"
-          margin={{ top: 5, right: 20, left: 10, bottom: 5 }}
-          barSize={18}
-        >
-          <CartesianGrid
-            strokeDasharray="3 3"
-            stroke="var(--color-border-chart)"
-            horizontal={false}
-          />
-          <XAxis type="number" fontSize={12} tick={{ fill: 'var(--color-text-muted)' }} />
-          <YAxis
-            type="category"
-            dataKey="name"
-            width={yAxisWidth}
-            fontSize={12}
-            tick={{ fill: 'var(--color-text-ink)' }}
-          />
-          <Tooltip
-            content={renderTooltip}
-            wrapperStyle={{
-              backgroundColor: 'var(--color-surface-100)',
-              border: '1px solid var(--color-border-default)',
-              borderRadius: '0.5rem',
-              boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
-              outline: 'none',
-            }}
-          />
-          <Legend
-            verticalAlign="bottom"
-            align="center"
-            wrapperStyle={{ paddingTop: '10px', fontSize: '12px' }}
-          />
-          <Bar dataKey="Flaky Tests" fill="var(--color-warning-500)" radius={[0, 4, 4, 0]} />
-        </BarChart>
-      </ResponsiveContainer>
+      {!hasFlakyData ? (
+        <div className="flex h-65 flex-col items-center justify-center rounded-md border border-dashed border-border-default bg-surface-100/50 p-6 text-center">
+          <div className="mx-auto mb-2 flex h-10 w-10 items-center justify-center rounded-full bg-surface-200 text-text-muted">
+            <svg
+              className="h-5 w-5 text-text-body-mid dark:text-text-muted"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={1.5}
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+              />
+            </svg>
+          </div>
+          <p className="text-sm font-semibold text-text-ink dark:text-text-on-primary">
+            No flaky tests detected
+          </p>
+          <p className="mt-1 text-xs text-text-body-mid dark:text-text-muted">
+            All test cases executed without requiring retries to pass.
+          </p>
+        </div>
+      ) : (
+        <ResponsiveContainer width="100%" height={260}>
+          <BarChart
+            data={data}
+            layout="vertical"
+            margin={{ top: 5, right: 20, left: 10, bottom: 5 }}
+            barSize={18}
+          >
+            <CartesianGrid
+              strokeDasharray="3 3"
+              stroke="var(--color-border-chart)"
+              horizontal={false}
+            />
+            <XAxis type="number" fontSize={12} tick={{ fill: 'var(--color-text-muted)' }} />
+            <YAxis
+              type="category"
+              dataKey="name"
+              width={yAxisWidth}
+              fontSize={12}
+              tick={{ fill: 'var(--color-text-ink)' }}
+            />
+            <Tooltip
+              content={renderTooltip}
+              wrapperStyle={{
+                backgroundColor: 'var(--color-surface-100)',
+                border: '1px solid var(--color-border-default)',
+                borderRadius: '0.5rem',
+                boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+                outline: 'none',
+              }}
+            />
+            <Legend
+              verticalAlign="bottom"
+              align="center"
+              wrapperStyle={{ paddingTop: '10px', fontSize: '12px' }}
+            />
+            <Bar dataKey="Flaky Tests" fill="var(--color-warning-500)" radius={[0, 4, 4, 0]} />
+          </BarChart>
+        </ResponsiveContainer>
+      )}
 
       {/* Guide Modal */}
       {showModal && (

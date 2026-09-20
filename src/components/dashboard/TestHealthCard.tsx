@@ -32,6 +32,23 @@ export default function TestHealthCard({ suites }: Props) {
   const executedCount = totalCases - skippedCount;
   const flakyRate = executedCount > 0 ? Math.round((flakyCount / executedCount) * 100) : 0;
 
+  let badgeClass = 'bg-success-500/10 text-success-600 dark:text-success-500 border-success-500/20';
+  let badgeLabel = '✓ 100% Stable';
+
+  if (hardFailCount > 0) {
+    badgeClass = 'bg-danger-500/10 text-danger-600 dark:text-danger-500 border-danger-500/20';
+    badgeLabel =
+      flakyCount > 0
+        ? `✗ ${hardFailCount} Failed, ${flakyCount} Flaky`
+        : `✗ ${hardFailCount} Failed`;
+  } else if (flakyCount > 0) {
+    badgeClass = 'bg-warning-500/10 text-warning-600 dark:text-warning-500 border-warning-500/20';
+    badgeLabel = `⚠️ ${flakyCount} Flaky`;
+  } else if (executedCount === 0) {
+    badgeClass = 'bg-surface-200/50 text-text-muted border-border-default';
+    badgeLabel = 'No Executed Tests';
+  }
+
   return (
     <div className="flex flex-col justify-between w-full h-full rounded-md bg-canvas border border-border-default p-5 shadow-sm">
       {/* Header */}
@@ -41,13 +58,9 @@ export default function TestHealthCard({ suites }: Props) {
             Test Stability & Flakiness
           </h3>
           <span
-            className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold border ${
-              flakyCount > 0
-                ? 'bg-warning-500/10 text-warning-600 dark:text-warning-500 border-warning-500/20'
-                : 'bg-success-500/10 text-success-600 dark:text-success-500 border-success-500/20'
-            }`}
+            className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold border ${badgeClass}`}
           >
-            {flakyCount > 0 ? `⚠️ ${flakyCount} Flaky` : '✓ 100% Stable'}
+            {badgeLabel}
           </span>
         </div>
         <p className="mt-1 text-xs text-text-body-mid dark:text-text-muted">
