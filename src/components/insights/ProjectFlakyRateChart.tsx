@@ -221,10 +221,11 @@ export default function ProjectFlakyRateChart({
 
             <div className="flex justify-end pt-2 border-t border-border-default">
               <button
+                type="button"
                 onClick={() => setShowModal(false)}
-                className="rounded-md bg-ink px-4 py-1.5 text-xs font-semibold text-text-on-primary hover:bg-ink-strong transition-colors cursor-pointer"
+                className="rounded-md bg-accent-blue px-4 py-2 text-xs font-bold text-text-on-primary hover:bg-accent-blue/90 transition-colors cursor-pointer"
               >
-                Close
+                Close Guide
               </button>
             </div>
           </div>

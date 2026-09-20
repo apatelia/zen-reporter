@@ -874,7 +874,7 @@ export default function TestCaseDetail({ testCase, showSteps = true }: Props) {
                   download={activeAttachment.name || 'attachment'}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="rounded-md px-3 py-1.5 text-xs font-semibold text-text-on-primary bg-ink hover:bg-ink-strong border border-surface-700 dark:bg-success-600 dark:hover:bg-success-500 dark:border-success-700 transition-colors flex items-center gap-1.5 shadow-sm"
+                  className="rounded-md px-3 py-1.5 text-xs font-semibold text-text-on-primary bg-accent-blue hover:bg-accent-blue/90 transition-colors flex items-center gap-1.5 shadow-sm cursor-pointer"
                   title="Download file"
                 >
                   <svg

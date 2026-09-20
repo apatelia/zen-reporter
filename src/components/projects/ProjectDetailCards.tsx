@@ -441,6 +441,17 @@ export default function ProjectDetailCards({ projectStats }: Props) {
                 </ul>
               </div>
             </div>
+
+            {/* Modal Footer */}
+            <div className="flex justify-end border-t border-border-default pt-3.5">
+              <button
+                type="button"
+                onClick={() => setIsModalOpen(false)}
+                className="rounded-md bg-accent-blue px-4 py-2 text-xs font-bold text-text-on-primary hover:bg-accent-blue/90 transition-colors cursor-pointer"
+              >
+                Close Guide
+              </button>
+            </div>
           </div>
         </div>
       )}

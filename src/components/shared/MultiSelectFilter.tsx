@@ -177,20 +177,20 @@ export default function MultiSelectFilter<T extends string>({
                     onClick={() => handleToggle(option)}
                     className={`flex w-full items-center gap-2.5 rounded-md px-2.5 py-2 text-left text-sm font-medium transition-colors ${
                       isSelected
-                        ? 'bg-accent-blue/15 ring-1 ring-accent-blue/40 text-accent-blue dark:bg-accent-blue/25 dark:text-success-500 dark:ring-accent-blue/50'
+                        ? 'bg-accent-blue/15 ring-1 ring-accent-blue/40 text-accent-blue dark:bg-accent-blue/25 dark:text-text-on-primary dark:ring-accent-blue/50'
                         : 'text-text-body-mid hover:bg-surface-50 dark:text-text-body-mid dark:hover:bg-surface-100 dark:hover:text-text-on-primary'
                     }`}
                   >
                     <span
                       className={`flex h-4 w-4 shrink-0 items-center justify-center rounded border transition-all ${
                         isSelected
-                          ? 'border-accent-blue bg-accent-blue dark:border-success-500 dark:bg-success-500'
+                          ? 'border-accent-blue bg-accent-blue dark:border-accent-blue dark:bg-accent-blue'
                           : 'border-border-default bg-surface-50 dark:border-border-default dark:bg-surface-50'
                       }`}
                     >
                       {isSelected && (
                         <svg
-                          className="h-2.5 w-2.5 text-text-on-primary dark:text-surface-950"
+                          className="h-2.5 w-2.5 text-text-on-primary dark:text-text-on-primary"
                           fill="none"
                           viewBox="0 0 24 24"
                           stroke="currentColor"

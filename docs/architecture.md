@@ -54,12 +54,12 @@ zen-reporter/
 │   │       └── TrendsSection.tsx
 │   ├── lib/
 │   │   ├── dataProcessor.ts         # Raw data conversion, wall-clock calculation & package manager detector
-│   │   ├── reporter.ts              # Playwright Reporter implementation with auto history refresh trigger
+│   │   ├── reporter.ts              # Playwright Reporter implementation (theme/darkMode resolution & auto history refresh)
 │   │   ├── tagColors.ts             # Deterministic HSL color generator for tags
-│   │   ├── types.ts                 # TypeScript interfaces (with HistoryRun, HistoryData & project_durations)
+│   │   ├── types.ts                 # TypeScript interfaces (ReportData, TestRun, ReporterConfig, HistoryRun, etc.)
 │   │   └── utils.ts                 # Suite tree builders, fastest/slowest calculators & ANSI cleaner
-│   ├── App.tsx                      # Root component with dynamic version title header & Insights routing
-│   ├── app.css                      # Design system CSS, WCAG contrast tokens & dark mode styles
+│   ├── App.tsx                      # Root component with theme/darkMode initial loading, version title header & tab routing
+│   ├── app.css                      # Design system CSS with theme palettes (Starbucks, Notion, Sentry), WCAG contrast tokens & dark mode styles
 │   ├── main.tsx                     # React application entry point
 │   ├── vite-env.d.ts                # Vite type declarations
 │   └── vite-plugin-inject-data.ts   # Vite plugin to inline report.json & history.json into HTML

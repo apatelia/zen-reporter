@@ -1,5 +1,8 @@
 @import 'tailwindcss';
 
+/* ==========================================================================
+   DEFAULT THEME: STARBUCKS (STARBUCKS INSPIRED COLORS)
+   ========================================================================== */
 @theme {
   /* ── Brand Primary ───────────────────────────── */
   --color-ink: #006241;
@@ -78,10 +81,19 @@
   --color-accent-red: #c82014;
 }
 
-/* ── Dark mode overrides (House Green Atmosphere) ─ */
+/* ── Dark mode variant definition ─ */
 @custom-variant dark (&:where(.dark, .dark *));
 
-.dark {
+/* ==========================================================================
+   THEME 1: STARBUCKS (Default / html[data-theme="starbucks"] or no attribute)
+   ========================================================================== */
+
+/* Starbucks Light Mode default variables are set in @theme above */
+
+/* Starbucks Dark Mode */
+.dark,
+html[data-theme='starbucks'].dark,
+[data-theme='starbucks'] .dark {
   --color-ink: #ffffff;
   --color-ink-strong: #ffffff;
 
@@ -106,25 +118,29 @@
   --color-border-subtle: #213e37;
   --color-border-chart: #385d54;
 
-  /* Semantic dark adjustments (AAA ≥ 7.0:1 on House Green) */
+  /* Semantic dark adjustments */
+  --color-success: #4ade80;
   --color-success-50: #112922;
   --color-success-100: #183a30;
   --color-success-500: #4ade80;
   --color-success-600: #22c55e;
   --color-success-700: #16a34a;
 
+  --color-danger: #fca5a5;
   --color-danger-50: #361210;
   --color-danger-100: #4a1917;
   --color-danger-500: #fca5a5;
   --color-danger-600: #ef4444;
   --color-danger-700: #f87171;
 
+  --color-warning: #fcd34d;
   --color-warning-50: #332714;
   --color-warning-100: #47371c;
   --color-warning-500: #fcd34d;
   --color-warning-600: #fbbf24;
   --color-warning-700: #f59e0b;
 
+  --color-info: #38bdf8;
   --color-info-50: #112922;
   --color-info-100: #183a30;
   --color-info-500: #38bdf8;
@@ -136,7 +152,333 @@
   --color-accent-house: var(--color-warning-500);
   --color-accent-gold: #fcd34d;
   --color-accent-pink: #f472b6;
+  --color-accent-blue: #4ade80;
+  --color-accent-blue-deep: #22c55e;
+  --color-accent-blue-info: #4ade80;
   --color-accent-orange: #fb923c;
+  --color-accent-yellow: #fcd34d;
+  --color-accent-red: #fca5a5;
+}
+
+/* ==========================================================================
+   THEME 2: NOTION (html[data-theme="notion"])
+   ========================================================================== */
+
+/* Notion Light Mode */
+html[data-theme='notion'] {
+  /* ── Brand Primary (Notion Blue #0075de) ─────── */
+  --color-ink: #0075de;
+  --color-ink-strong: #005bab;
+
+  /* ── Surface Palette (Warm Paper & Off-white) ── */
+  --color-canvas: #f6f5f4;
+  --color-surface-50: #ffffff;
+  --color-surface-100: #f0eee9;
+  --color-surface-200: #e6e4df;
+  --color-surface-700: #615d59;
+  --color-surface-800: #31302e;
+  --color-surface-900: #213183;
+  --color-surface-950: #19235d;
+
+  /* ── Text Colors ─────────────────────────────── */
+  --color-text-ink: #000000;
+  --color-text-ink-strong: #000000;
+  --color-text-body: #000000;
+  --color-text-body-mid: #31302e;
+  --color-text-muted: #615d59;
+  --color-text-muted-soft: #a39e98;
+  --color-text-on-primary: #ffffff;
+
+  /* ── Border / Hairline ───────────────────────── */
+  --color-border-default: #e6e6e6;
+  --color-border-subtle: #f0f0f0;
+  --color-border-chart: #d0d0d0;
+
+  /* ── Semantic: Success (Sticker Green #1aae39) ─ */
+  --color-success: #1aae39;
+  --color-success-50: #eaf8ed;
+  --color-success-100: #c9f0d1;
+  --color-success-200: #93e2a2;
+  --color-success-500: #1aae39;
+  --color-success-600: #15932f;
+  --color-success-700: #107524;
+
+  /* ── Semantic: Danger (Sticker Pink / Red) ────── */
+  --color-danger: #e03e3e;
+  --color-danger-50: #fdf2f2;
+  --color-danger-100: #fbe8e8;
+  --color-danger-200: #f7c5c5;
+  --color-danger-500: #e03e3e;
+  --color-danger-600: #c42b2b;
+  --color-danger-700: #9e1c1c;
+
+  /* ── Semantic: Warning (Notion Warm Amber / Gold) ─ */
+  --color-warning: #d97706;
+  --color-warning-50: #fffbeb;
+  --color-warning-100: #fef3c7;
+  --color-warning-200: #fde68a;
+  --color-warning-500: #d97706;
+  --color-warning-600: #b45309;
+  --color-warning-700: #92400e;
+
+  /* ── Semantic: Info (Notion Blue #0075de) ────── */
+  --color-info: #0075de;
+  --color-info-50: #edf6fd;
+  --color-info-100: #d4e8fa;
+  --color-info-500: #0075de;
+  --color-info-600: #005bab;
+  --color-info-700: #004582;
+
+  /* ── Accent Palette (Notion Sticker Palette) ──── */
+  --color-accent-starbucks: #0075de;
+  --color-accent-green: #1aae39;
+  --color-accent-house: #213183;
+  --color-accent-gold: #dd5b00;
+  --color-accent-pink: #ff64c8;
+  --color-accent-blue: #0075de;
+  --color-accent-blue-deep: #005bab;
+  --color-accent-blue-info: #62aef0;
+  --color-accent-orange: #dd5b00;
+  --color-accent-yellow: #dd5b00;
+  --color-accent-red: #e03e3e;
+}
+
+/* Notion Dark Mode */
+html[data-theme='notion'].dark,
+[data-theme='notion'] .dark {
+  /* ── Brand Primary ───────────────────────────── */
+  --color-ink: #62aef0;
+  --color-ink-strong: #ffffff;
+
+  /* ── Surface Palette (Deep Indigo Hero Canvas) ─ */
+  --color-canvas: #191b22;
+  --color-surface-50: #222530;
+  --color-surface-100: #2b2f3d;
+  --color-surface-200: #363b4d;
+  --color-surface-700: #a39e98;
+  --color-surface-800: #f0eee9;
+  --color-surface-900: #f6f5f4;
+  --color-surface-950: #12141a;
+
+  /* ── Text Colors ─────────────────────────────── */
+  --color-text-ink: #ffffff;
+  --color-text-ink-strong: #ffffff;
+  --color-text-body: rgba(255, 255, 255, 0.92);
+  --color-text-body-mid: rgba(255, 255, 255, 0.84);
+  --color-text-muted: rgba(255, 255, 255, 0.75);
+  --color-text-muted-soft: rgba(255, 255, 255, 0.65);
+  --color-text-on-primary: #ffffff;
+
+  /* ── Border / Hairline ───────────────────────── */
+  --color-border-default: #363b4d;
+  --color-border-subtle: #2b2f3d;
+  --color-border-chart: #484f67;
+
+  /* ── Semantic: Success ───────────────────────── */
+  --color-success: #2aae44;
+  --color-success-50: #112918;
+  --color-success-100: #193c23;
+  --color-success-500: #2aae44;
+  --color-success-600: #219337;
+  --color-success-700: #18752b;
+
+  /* ── Semantic: Danger (Sticker Pink/Red) ─────── */
+  --color-danger: #ff64c8;
+  --color-danger-50: #38122c;
+  --color-danger-100: #521841;
+  --color-danger-500: #ff64c8;
+  --color-danger-600: #e04bb0;
+  --color-danger-700: #bf3494;
+
+  /* ── Semantic: Warning (Sticker Orange) ──────── */
+  --color-warning: #f56c18;
+  --color-warning-50: #36190a;
+  --color-warning-100: #4a2410;
+  --color-warning-500: #f56c18;
+  --color-warning-600: #d4560b;
+  --color-warning-700: #b04305;
+
+  /* ── Semantic: Info ──────────────────────────── */
+  --color-info: #62aef0;
+  --color-info-50: #132438;
+  --color-info-100: #1a324d;
+  --color-info-500: #62aef0;
+  --color-info-600: #3b95e6;
+  --color-info-700: #1d7bcf;
+
+  /* ── Accent Palette ──────────────────────────── */
+  --color-accent-starbucks: #62aef0;
+  --color-accent-green: #2aae44;
+  --color-accent-house: #d6b6f6;
+  --color-accent-gold: #f56c18;
+  --color-accent-pink: #ff64c8;
+  --color-accent-blue: #62aef0;
+  --color-accent-blue-deep: #3b95e6;
+  --color-accent-blue-info: #62aef0;
+  --color-accent-orange: #f56c18;
+  --color-accent-yellow: #f56c18;
+  --color-accent-red: #ff64c8;
+}
+
+/* ==========================================================================
+   THEME 5: SENTRY (SENTRY INSPIRED COLORS: ELECTRIC LIME & MIDNIGHT VIOLET)
+   ========================================================================== */
+
+/* Sentry Light Mode */
+html[data-theme='sentry'],
+[data-theme='sentry'] {
+  /* ── Brand Primary ───────────────────────────── */
+  --color-ink: #150f23;
+  --color-ink-strong: #1f1633;
+
+  /* ── Surface Palette (Sentry Light Canvas) ───── */
+  --color-canvas: #ffffff;
+  --color-surface-50: #f8f7fa;
+  --color-surface-100: #f0edf5;
+  --color-surface-200: #e5e1eb;
+  --color-surface-700: #422082;
+  --color-surface-800: #1f1633;
+  --color-surface-900: #150f23;
+  --color-surface-950: #0e0918;
+
+  /* ── Text Colors ─────────────────────────────── */
+  --color-text-ink: #1f1633;
+  --color-text-ink-strong: #150f23;
+  --color-text-body: rgba(31, 22, 51, 0.92);
+  --color-text-body-mid: rgba(31, 22, 51, 0.75);
+  --color-text-muted: rgba(31, 22, 51, 0.65);
+  --color-text-muted-soft: rgba(31, 22, 51, 0.55);
+  --color-text-on-primary: #ffffff;
+
+  /* ── Border / Hairline ───────────────────────── */
+  --color-border-default: #cfcfdb;
+  --color-border-subtle: #e5e7eb;
+  --color-border-chart: #b2b2c4;
+
+  /* ── Semantic: Success (Electric Lime / Sentry Green) ── */
+  --color-success: #709600;
+  --color-success-50: #f4fce8;
+  --color-success-100: #e6f7c6;
+  --color-success-200: #c2ef4e;
+  --color-success-500: #709600;
+  --color-success-600: #587700;
+  --color-success-700: #425a00;
+
+  /* ── Semantic: Danger (Hot Pink / Error) ─────── */
+  --color-danger: #d93d75;
+  --color-danger-50: #fef0f5;
+  --color-danger-100: #fce0ec;
+  --color-danger-200: #fa7faa;
+  --color-danger-500: #d93d75;
+  --color-danger-600: #b82b5c;
+  --color-danger-700: #941d46;
+
+  /* ── Semantic: Warning (Amber / Gold Accent) ──── */
+  --color-warning: #d97706;
+  --color-warning-50: #fffbe6;
+  --color-warning-100: #fef3c7;
+  --color-warning-200: #fde68a;
+  --color-warning-500: #d97706;
+  --color-warning-600: #b45309;
+  --color-warning-700: #78350f;
+
+  /* ── Semantic: Info (Violet Link) ─────────────── */
+  --color-info: #6a5fc1;
+  --color-info-50: #f3f2fa;
+  --color-info-100: #e4e1f5;
+  --color-info-500: #6a5fc1;
+  --color-info-600: #5449aa;
+  --color-info-700: #422082;
+
+  /* ── Accent Palette ──────────────────────────── */
+  --color-accent-starbucks: #150f23;
+  --color-accent-green: #709600;
+  --color-accent-house: #1f1633;
+  --color-accent-gold: #d97706;
+  --color-accent-pink: #fa7faa;
+  --color-accent-blue: #6a5fc1;
+  --color-accent-blue-deep: #422082;
+  --color-accent-blue-info: #6a5fc1;
+  --color-accent-orange: #d97706;
+  --color-accent-yellow: #c2ef4e;
+  --color-accent-red: #d93d75;
+}
+
+/* Sentry Dark Mode */
+html[data-theme='sentry'].dark,
+[data-theme='sentry'] .dark {
+  /* ── Brand Primary ───────────────────────────── */
+  --color-ink: #c2ef4e;
+  --color-ink-strong: #ffffff;
+
+  /* ── Surface Palette (Midnight Violet Canvas) ── */
+  --color-canvas: #1f1633;
+  --color-surface-50: #150f23;
+  --color-surface-100: #2a1f42;
+  --color-surface-200: #362d59;
+  --color-surface-700: #79628c;
+  --color-surface-800: #a89bb8;
+  --color-surface-900: #e5e1eb;
+  --color-surface-950: #0f0a1a;
+
+  /* ── Text Colors ─────────────────────────────── */
+  --color-text-ink: #ffffff;
+  --color-text-ink-strong: #ffffff;
+  --color-text-body: rgba(255, 255, 255, 0.92);
+  --color-text-body-mid: rgba(255, 255, 255, 0.78);
+  --color-text-muted: rgba(255, 255, 255, 0.72);
+  --color-text-muted-soft: rgba(255, 255, 255, 0.55);
+  --color-text-on-primary: #ffffff;
+
+  /* ── Border / Hairline ───────────────────────── */
+  --color-border-default: #362d59;
+  --color-border-subtle: #2a1f42;
+  --color-border-chart: #544975;
+
+  /* ── Semantic: Success (Electric Lime) ────────── */
+  --color-success: #c2ef4e;
+  --color-success-50: #182206;
+  --color-success-100: #26380a;
+  --color-success-500: #c2ef4e;
+  --color-success-600: #a9d936;
+  --color-success-700: #8ec41f;
+
+  /* ── Semantic: Danger (Hot Pink) ──────────────── */
+  --color-danger: #fa7faa;
+  --color-danger-50: #380f20;
+  --color-danger-100: #521730;
+  --color-danger-500: #fa7faa;
+  --color-danger-600: #f85590;
+  --color-danger-700: #f52b75;
+
+  /* ── Semantic: Warning ────────────────────────── */
+  --color-warning: #fbbf24;
+  --color-warning-50: #382707;
+  --color-warning-100: #523a0b;
+  --color-warning-500: #fbbf24;
+  --color-warning-600: #f59e0b;
+  --color-warning-700: #d97706;
+
+  /* ── Semantic: Info (Violet / Bright Lavender) ─ */
+  --color-info: #9d93eb;
+  --color-info-50: #1c173d;
+  --color-info-100: #292257;
+  --color-info-500: #9d93eb;
+  --color-info-600: #8174e5;
+  --color-info-700: #6a5fc1;
+
+  /* ── Accent Palette ──────────────────────────── */
+  --color-accent-starbucks: #c2ef4e;
+  --color-accent-green: #c2ef4e;
+  --color-accent-house: #79628c;
+  --color-accent-gold: #fbbf24;
+  --color-accent-pink: #fa7faa;
+  --color-accent-blue: #9d93eb;
+  --color-accent-blue-deep: #6a5fc1;
+  --color-accent-blue-info: #9d93eb;
+  --color-accent-orange: #fbbf24;
+  --color-accent-yellow: #c2ef4e;
+  --color-accent-red: #fa7faa;
 }
 
 body {

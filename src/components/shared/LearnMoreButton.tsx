@@ -16,7 +16,7 @@ export default function LearnMoreButton({
       type="button"
       onClick={onClick}
       title={title}
-      className={`inline-flex items-center gap-1 rounded border border-border-default bg-surface-100 px-2 py-0.5 text-xs font-semibold text-accent-blue hover:bg-surface-200 dark:text-success-500 transition-colors cursor-pointer shrink-0 ${className}`}
+      className={`inline-flex items-center gap-1 rounded border border-border-default bg-surface-100 px-2 py-0.5 text-xs font-semibold text-accent-blue hover:bg-surface-200 transition-colors cursor-pointer shrink-0 ${className}`}
     >
       <svg
         className="h-3.5 w-3.5"

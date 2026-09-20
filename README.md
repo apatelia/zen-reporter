@@ -34,7 +34,7 @@ Dark mode:
      - **P95 Duration & Latency**: Analyzes 95th percentile completion thresholds per project profile.
 
 - **Cross-Cutting Capabilities**:
-  - **Starbucks Design System & Dark Mode**: Light and dark themes built with WCAG-compliant Starbucks design tokens, soft-lift shadows, and warm canvas palette.
+  - **Themes & Dark Mode**: Multiple design system themes (`Starbucks`, `Notion`, `Sentry`) with light and dark mode toggles, built with WCAG-compliant color tokens, soft-lift shadows, and warm canvas palettes. Configurable initial theme and dark mode defaults.
   - **Single-File Standalone HTML & Summary Output**: Generates a self-contained single-file HTML report (`index.html`) with embedded datasets for easy sharing and CI/CD artifact storage. Optionally creates a lightweight standalone `summary.html` (via `singleSummaryFile: true`) dedicated to executive overview dashboards without full trace trees.
 
 ---
@@ -76,6 +76,8 @@ export default defineConfig({
         outputDir: 'zen-report', // Optional: Output directory where report files will be generated (default: "zen-report")
         projectName: 'My E2E Project', // Optional: Project name displayed in the top bar header
         testRunName: 'Nightly Build #42', // Optional: Test run / build name displayed in the top bar header
+        theme: 'Starbucks', // Optional: Theme applied on initial load ("Starbucks" | "Notion" | "Sentry", default: "Starbucks")
+        darkMode: false, // Optional: Initial dark mode state (default: false)
         singleSummaryFile: true, // Optional: Generates a standalone summary.html file alongside index.html
       },
     ],
@@ -85,12 +87,14 @@ export default defineConfig({
 
 ### Options Reference
 
-| Option              | Type      | Default                     | Description                                                         |
-| :------------------ | :-------- | :-------------------------- | :------------------------------------------------------------------ |
-| `outputDir`         | `string`  | `"zen-report"`              | Directory where final report files are saved.                       |
-| `projectName`       | `string`  | `"Test Automation Project"` | Project name displayed prominently in the top bar of the dashboard. |
-| `testRunName`       | `string`  | `"Test Run #1"`             | Test run or build name displayed in the top bar of the dashboard.   |
-| `singleSummaryFile` | `boolean` | `false`                     | Generates a standalone `summary.html` for executive summary views.  |
+| Option              | Type      | Default                     | Description                                                          |
+| :------------------ | :-------- | :-------------------------- | :------------------------------------------------------------------- |
+| `outputDir`         | `string`  | `"zen-report"`              | Directory where final report files are saved.                        |
+| `projectName`       | `string`  | `"Test Automation Project"` | Project name displayed prominently in the top bar of the dashboard.  |
+| `testRunName`       | `string`  | `"Test Run #1"`             | Test run or build name displayed in the top bar of the dashboard.    |
+| `theme`             | `string`  | `"Starbucks"`               | Theme applied on first load (`"Starbucks"`, `"Notion"`, `"Sentry"`). |
+| `darkMode`          | `boolean` | `false`                     | When set to `true`, the report loads in dark mode on first load.     |
+| `singleSummaryFile` | `boolean` | `false`                     | Generates a standalone `summary.html` for executive summary views.   |
 
 ---
 

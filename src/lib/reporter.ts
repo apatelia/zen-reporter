@@ -45,6 +45,8 @@ export interface ReporterConfig {
   projectName: string;
   testRunName: string;
   singleSummaryFile?: boolean;
+  theme?: string;
+  darkMode?: boolean;
 }
 
 export function resolveConfig(
@@ -58,6 +60,8 @@ export function resolveConfig(
     : 'Test Automation Project';
   const testRunName = rawConfig?.testRunName ? String(rawConfig.testRunName) : 'Test Run #1';
   const singleSummaryFile = Boolean(rawConfig?.singleSummaryFile);
+  const theme = rawConfig?.theme !== undefined ? String(rawConfig.theme) : 'Starbucks';
+  const darkMode = Boolean(rawConfig?.darkMode);
 
   return {
     outputDir,
@@ -65,6 +69,8 @@ export function resolveConfig(
     projectName,
     testRunName,
     singleSummaryFile,
+    theme,
+    darkMode,
   };
 }
 
@@ -476,6 +482,8 @@ class ZenReporter implements Reporter {
       suites,
       projectName: this.reportConfig.projectName,
       testRunName: this.reportConfig.testRunName,
+      theme: this.reportConfig.theme,
+      darkMode: this.reportConfig.darkMode,
     };
 
     const reportData: ReportData = { testRun };

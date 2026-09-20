@@ -862,7 +862,7 @@ export default function StepCategoryTrend({ suites, history }: Props) {
               <button
                 type="button"
                 onClick={() => setIsModalOpen(false)}
-                className="rounded-md bg-ink px-4 py-2 text-xs font-bold text-text-on-primary hover:bg-ink-strong transition-colors cursor-pointer"
+                className="rounded-md bg-accent-blue px-4 py-2 text-xs font-bold text-text-on-primary hover:bg-accent-blue/90 transition-colors cursor-pointer"
               >
                 Close Guide
               </button>

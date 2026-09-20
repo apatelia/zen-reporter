@@ -66,6 +66,8 @@ export interface TestRun {
   suites: TestSuite[];
   projectName?: string;
   testRunName?: string;
+  theme?: string;
+  darkMode?: boolean;
 }
 
 export interface ReportData {
@@ -107,6 +109,8 @@ export interface ReporterConfig {
   projectName?: string;
   testRunName?: string;
   singleSummaryFile?: boolean;
+  theme?: string;
+  darkMode?: boolean;
 }
 
 // ── Run-history data (computed by `zr history report`; snake_case fields

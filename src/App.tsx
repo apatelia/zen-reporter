@@ -8,7 +8,7 @@ import ProjectsSection from '@/components/projects/ProjectsSection';
 import InsightsSection from '@/components/insights/InsightsSection';
 import TrendsSection from '@/components/trends/TrendsSection';
 import HistorySection from '@/components/history/HistorySection';
-import type { HistoryData, ReportData, TestSuite } from '@/lib/types';
+import type { HistoryData, ReportData, TestRun, TestSuite } from '@/lib/types';
 import { useEffect, useMemo, useState } from 'react';
 
 const logo = `data:image/svg+xml;utf8,${encodeURIComponent(logoRaw)}`;
@@ -194,17 +194,17 @@ function SidebarItem({
         isCollapsed ? 'justify-center px-2 py-2.5' : 'gap-3 px-3 py-2.5'
       } rounded-md text-sm font-semibold transition-all duration-150 ${
         isActive
-          ? 'bg-accent-blue/10 text-accent-blue shadow-sm dark:bg-accent-blue/20 dark:text-success-500'
+          ? 'bg-accent-blue/15 text-accent-blue shadow-sm dark:bg-accent-blue/25 dark:text-accent-blue'
           : 'text-text-body-mid hover:bg-surface-100 hover:text-text-ink dark:text-text-body-mid dark:hover:bg-surface-100 dark:hover:text-text-on-primary font-medium'
       }`}
     >
       {isActive && (
-        <span className="absolute left-0 top-1.5 bottom-1.5 w-1 rounded-r-full bg-accent-blue dark:bg-success-500" />
+        <span className="absolute left-0 top-1.5 bottom-1.5 w-1 rounded-r-full bg-accent-blue dark:bg-accent-blue" />
       )}
       <span
         className={`shrink-0 transition-colors ${
           isActive
-            ? 'text-accent-blue dark:text-success-500'
+            ? 'text-accent-blue dark:text-accent-blue'
             : 'text-text-body-mid group-hover:text-text-ink dark:text-text-body-mid dark:group-hover:text-text-on-primary'
         }`}
       >
@@ -215,8 +215,8 @@ function SidebarItem({
         <span
           className={
             isCollapsed
-              ? 'absolute -top-1 -right-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-accent-red px-1 text-[10px] font-bold text-text-on-primary shadow-sm'
-              : 'ml-auto flex h-5 min-w-5 items-center justify-center rounded-full bg-accent-red px-1.5 text-[11px] font-semibold text-text-on-primary'
+              ? 'absolute -top-1 -right-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-accent-red px-1 text-[10px] font-bold text-text-on-primary dark:text-surface-950 shadow-sm'
+              : 'ml-auto flex h-5 min-w-5 items-center justify-center rounded-full bg-accent-red px-1.5 text-[11px] font-bold text-text-on-primary dark:text-surface-950'
           }
         >
           {badge}
@@ -241,7 +241,48 @@ export default function App() {
   const [isLoading, setIsLoading] = useState(true);
   const [historyData, setHistoryData] = useState<HistoryData | null>(null);
   const [isCollapsed, setIsCollapsed] = useState(false);
+
+  const initialReportData = useMemo(() => {
+    if (typeof document === 'undefined') return null;
+    const inlineEl = document.getElementById('report-data');
+    if (inlineEl) {
+      const text = inlineEl.textContent?.trim();
+      if (text) {
+        try {
+          return JSON.parse(text) as ReportData;
+        } catch {
+          return null;
+        }
+      }
+    }
+    return null;
+  }, []);
+
+  const [theme, setTheme] = useState<'starbucks' | 'notion' | 'sentry'>(() => {
+    const testRun = initialReportData?.testRun as
+      (TestRun & { theme?: string; darkMode?: boolean }) | undefined;
+    const configuredTheme = testRun?.theme;
+    if (configuredTheme) {
+      const lower = configuredTheme.toLowerCase();
+      if (lower === 'starbucks' || lower === 'notion' || lower === 'sentry') {
+        return lower;
+      }
+    }
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('zen-theme');
+      if (saved === 'starbucks' || saved === 'notion' || saved === 'sentry') {
+        return saved;
+      }
+    }
+    return 'starbucks';
+  });
+
   const [darkMode, setDarkMode] = useState<'light' | 'dark'>(() => {
+    const testRun = initialReportData?.testRun as
+      (TestRun & { theme?: string; darkMode?: boolean }) | undefined;
+    if (testRun?.darkMode !== undefined) {
+      return testRun.darkMode ? 'dark' : 'light';
+    }
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem('zen-dark-mode');
       if (saved === 'dark' || saved === 'light') {
@@ -250,6 +291,26 @@ export default function App() {
     }
     return 'light';
   });
+
+  const applyThemeAndDarkMode = (data: ReportData) => {
+    const testRun = data?.testRun as (TestRun & { theme?: string; darkMode?: boolean }) | undefined;
+    if (testRun) {
+      if (testRun.theme) {
+        const lower = testRun.theme.toLowerCase();
+        if (lower === 'starbucks' || lower === 'notion' || lower === 'sentry') {
+          setTheme(lower as 'starbucks' | 'notion' | 'sentry');
+        }
+      }
+      if (testRun.darkMode !== undefined) {
+        setDarkMode(testRun.darkMode ? 'dark' : 'light');
+      }
+    }
+  };
+
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem('zen-theme', theme);
+  }, [theme]);
 
   useEffect(() => {
     if (darkMode === 'dark') {
@@ -285,6 +346,7 @@ export default function App() {
             try {
               const data = JSON.parse(text);
               setReportData(data);
+              applyThemeAndDarkMode(data);
               return;
             } catch {
               // ignore parse errors and proceed
@@ -298,6 +360,7 @@ export default function App() {
           if (resp.ok) {
             const data = await resp.json();
             setReportData(data);
+            applyThemeAndDarkMode(data);
             return;
           }
         }
@@ -491,6 +554,27 @@ export default function App() {
                   Zen Reporter
                 </span>
               </span>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <label
+                htmlFor="theme-select"
+                className="text-xs text-text-body-mid dark:text-text-muted shrink-0 font-medium"
+              >
+                Theme:
+              </label>
+              <select
+                id="theme-select"
+                value={theme}
+                onChange={(e) => setTheme(e.target.value as 'starbucks' | 'notion' | 'sentry')}
+                className="rounded-md border border-border-default bg-surface-50 px-2.5 py-1.5 text-xs text-text-ink focus:border-accent-blue focus:outline-none dark:bg-surface-50 dark:text-text-on-primary font-medium"
+                aria-label="Select Theme"
+                title="Select Theme"
+              >
+                <option value="starbucks">Starbucks</option>
+                <option value="notion">Notion</option>
+                <option value="sentry">Sentry</option>
+              </select>
             </div>
 
             <button
