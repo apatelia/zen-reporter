@@ -157,8 +157,10 @@ class ZenReporter implements Reporter {
         stdio: 'inherit',
         env: { ...process.env, PW_REPORTER_OUTPUT: this.reportConfig.outputDir },
       });
-    } catch (e) {
-      console.error('History refresh failed, keeping existing history data:', e);
+    } catch {
+      // stdio: 'inherit' already output any user-facing CLI error (such as missing optional @duckdb/node-api package).
+      // Avoid printing raw ExecFileSyncError stack traces in consumer test output.
+      console.warn('History refresh skipped (keeping existing history data).');
     }
   }
 

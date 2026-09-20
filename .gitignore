@@ -37,3 +37,6 @@ Thumbs.db
 
 # Log files
 logs/*.log
+
+# Package build output
+zen-reporter-*.tgz
