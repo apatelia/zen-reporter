@@ -68,6 +68,7 @@ export interface TestRun {
   testRunName?: string;
   theme?: string;
   darkMode?: boolean;
+  enableHistory?: 'auto' | boolean;
 }
 
 export interface ReportData {
@@ -111,6 +112,7 @@ export interface ReporterConfig {
   singleSummaryFile?: boolean;
   theme?: string;
   darkMode?: boolean;
+  enableHistory?: 'auto' | boolean;
 }
 
 // ── Run-history data (computed by `zr history report`; snake_case fields
@@ -160,8 +162,10 @@ export interface HistorySlowRow {
   file: string;
   title: string;
   project: string;
-  avg_ms: number;
-  max_ms: number;
+  avg_duration_ms?: number;
+  max_duration_ms?: number;
+  avg_ms?: number;
+  max_ms?: number;
   runs: number;
 }
 

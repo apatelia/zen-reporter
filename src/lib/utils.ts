@@ -403,7 +403,8 @@ export function formatDuration(ms: number): string {
   return `${secs}s`;
 }
 
-export function formatDurationVerbose(ms: number): string {
+export function formatDurationVerbose(ms?: number | null): string {
+  if (ms === null || ms === undefined || isNaN(ms)) return '0ms';
   if (ms >= 1000) return `${(ms / 1000).toFixed(1)}s`;
   return `${ms}ms`;
 }

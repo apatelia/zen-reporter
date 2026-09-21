@@ -93,20 +93,209 @@ async function runQuery(conn, sql, params) {
   return { columns, rows };
 }
 
-function printTable({ columns, rows }) {
-  const data = rows.map((r) => columns.map((c) => (r && c in r ? r[c] : null)));
-  const str = (v) => {
-    if (v instanceof Date) return v.toISOString();
-    const s = String(v);
-    return s.length > 48 ? `${s.slice(0, 48)}…` : s;
-  };
-  const widths = columns.map((c, i) =>
-    Math.max(c.length, ...data.map((row) => str(row[i]).length))
+function formatDuration(ms) {
+  if (ms === null || ms === undefined || isNaN(ms)) return '';
+  const totalSeconds = Math.round(Number(ms) / 1000);
+  if (totalSeconds < 60) {
+    return `${totalSeconds}s`;
+  }
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  return `${minutes}m ${seconds}s`;
+}
+
+function toProperCase(str) {
+  return str
+    .split('_')
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+    .join(' ');
+}
+
+function isNumericValue(val) {
+  if (val === null || val === undefined) return false;
+  if (typeof val === 'number') return true;
+  if (typeof val === 'string' && val.trim() !== '') {
+    // Check for numbers or formatted duration strings like "5s" or "1m 20s" or percentages "70.6%"
+    if (!isNaN(Number(val))) return true;
+    if (/^\d+s$/.test(val) || /^\d+m \d+s$/.test(val) || /^\d+(\.\d+)?%$/.test(val)) return true;
+  }
+  return false;
+}
+
+function formatDate(val) {
+  if (val === null || val === undefined || val === '') return '';
+  const d = val instanceof Date ? val : new Date(val);
+  if (isNaN(d.getTime())) return String(val);
+  const pad = (n) => String(n).padStart(2, '0');
+  const year = d.getFullYear();
+  const month = pad(d.getMonth() + 1);
+  const day = pad(d.getDate());
+  const hours = pad(d.getHours());
+  const mins = pad(d.getMinutes());
+  const secs = pad(d.getSeconds());
+  return `${year}-${month}-${day} ${hours}:${mins}:${secs}`;
+}
+
+function printTable({ columns, rows }, emptyMessage = 'No records found.') {
+  if (!columns || columns.length === 0) return;
+
+  // Header mapping: Proper Case without 'ms'
+  const displayHeaders = columns.map((c) => {
+    let header = c;
+    if (header.endsWith('_ms')) {
+      header = header.slice(0, -3);
+    } else {
+      header = header.replace('_ms_', '_');
+    }
+    return toProperCase(header);
+  });
+
+  const formattedRows = rows.map((r) =>
+    columns.map((c) => {
+      const val = r && c in r ? r[c] : null;
+      if (val === null || val === undefined) return '';
+      if (c.includes('ms')) {
+        return formatDuration(val);
+      }
+      if (c.endsWith('_at') || val instanceof Date) {
+        return formatDate(val);
+      }
+      return val;
+    })
   );
-  const fmt = (vals) => vals.map((v, i) => str(v).padEnd(widths[i])).join('  ');
-  console.log(fmt(columns));
-  console.log(fmt(widths.map((w) => '-'.repeat(w))));
-  for (const row of data) console.log(fmt(row));
+
+  let stringRows = formattedRows.map((row) =>
+    row.map((cell) => {
+      if (cell instanceof Date) return formatDate(cell);
+      return String(cell);
+    })
+  );
+
+  // Determine if column is predominantly numeric for right-alignment
+  const isNumericColumn = columns.map((_, colIdx) => {
+    return formattedRows.some((row) => isNumericValue(row[colIdx]));
+  });
+
+  const naturalWidths = displayHeaders.map((header, colIdx) =>
+    Math.max(header.length, ...stringRows.map((row) => row[colIdx].length))
+  );
+
+  // Responsive column width calculation to prevent line-wrapping in terminals
+  const termWidth =
+    process.stdout.columns && process.stdout.columns > 20 ? process.stdout.columns : 0;
+  let widths = [...naturalWidths];
+
+  if (termWidth > 0) {
+    // Total overhead = (|  ) per column + starting | = columns * 3 + 1
+    const overhead = columns.length * 3 + 1;
+    const availableWidth = termWidth - overhead;
+    let totalNaturalWidth = naturalWidths.reduce((a, b) => a + b, 0);
+
+    if (totalNaturalWidth > availableWidth && availableWidth > columns.length * 5) {
+      const flexIndices = [];
+      let fixedWidthSum = 0;
+
+      columns.forEach((col, idx) => {
+        const isFlex = !isNumericColumn[idx] && !col.endsWith('_at') && naturalWidths[idx] > 15;
+        if (isFlex) {
+          flexIndices.push(idx);
+        } else {
+          fixedWidthSum += naturalWidths[idx];
+        }
+      });
+
+      if (flexIndices.length > 0) {
+        const flexAvailable = Math.max(flexIndices.length * 8, availableWidth - fixedWidthSum);
+        const flexNaturalSum = flexIndices.reduce((sum, i) => sum + naturalWidths[i], 0);
+
+        flexIndices.forEach((idx) => {
+          const share = Math.floor((naturalWidths[idx] / flexNaturalSum) * flexAvailable);
+          const minW = Math.max(displayHeaders[idx].length, 8);
+          widths[idx] = Math.max(minW, share);
+        });
+      }
+    }
+  }
+
+  // Split a cell string into up to 2 lines matching the column width.
+  // If the string exceeds 2 * width, line 2 gets elided with '...'.
+  const wrapCell2Lines = (cellStr, width) => {
+    const s = String(cellStr).trim();
+    if (s.length <= width) {
+      return [s, ''];
+    }
+
+    // Try to find last space before width limit
+    let splitIdx = s.lastIndexOf(' ', width);
+    if (splitIdx <= Math.floor(width / 3)) {
+      splitIdx = width; // fall back to hard cut if no suitable space
+    }
+
+    const line1 = s.slice(0, splitIdx).trimEnd();
+    const remainder = s.slice(splitIdx).trimStart();
+
+    if (remainder.length <= width) {
+      return [line1, remainder];
+    }
+
+    const line2 = width > 3 ? `${remainder.slice(0, width - 3)}...` : remainder.slice(0, width);
+    return [line1, line2];
+  };
+
+  const truncatedHeaders = displayHeaders.map((h, i) => {
+    const [l1] = wrapCell2Lines(h, widths[i]);
+    return l1;
+  });
+
+  const formatRow = (cells) => {
+    const formattedCells = cells.map((cell, i) => {
+      const s = String(cell);
+      const w = widths[i];
+      if (isNumericColumn[i]) {
+        return s.padStart(w);
+      }
+      return s.padEnd(w);
+    });
+    return `| ${formattedCells.join(' | ')} |`;
+  };
+
+  const border = `+${widths.map((w) => '-'.repeat(w + 2)).join('+')}+`;
+
+  console.log(border);
+  console.log(formatRow(truncatedHeaders));
+  console.log(border);
+
+  if (stringRows.length === 0) {
+    const totalInnerWidth = widths.reduce((sum, w) => sum + w + 3, 0) - 1;
+    const msg =
+      emptyMessage.length > totalInnerWidth - 2
+        ? emptyMessage.slice(0, totalInnerWidth - 5) + '...'
+        : emptyMessage;
+    const padTotal = totalInnerWidth - msg.length;
+    const padLeft = Math.floor(padTotal / 2);
+    const padRight = padTotal - padLeft;
+    console.log(`|${' '.repeat(padLeft)}${msg}${' '.repeat(padRight)}|`);
+  } else {
+    let isFirst = true;
+    for (const row of stringRows) {
+      if (!isFirst) {
+        console.log(border);
+      }
+      isFirst = false;
+
+      const wrappedCells = row.map((cell, i) => wrapCell2Lines(cell, widths[i]));
+      const hasLine2 = wrappedCells.some((lines) => lines[1].length > 0);
+
+      const line1Cells = wrappedCells.map((lines) => lines[0]);
+      console.log(formatRow(line1Cells));
+
+      if (hasLine2) {
+        const line2Cells = wrappedCells.map((lines) => lines[1]);
+        console.log(formatRow(line2Cells));
+      }
+    }
+  }
+  console.log(border);
 }
 
 function printHelp() {
@@ -126,15 +315,15 @@ Usage:
 `);
 }
 
-const RUNS_SQL = `SELECT DISTINCT run_id, run_name, started_at, run_duration_ms, run_total, run_passed, run_failed, run_timed_out, run_skipped, run_interrupted FROM ${SRC} ORDER BY started_at DESC`;
+const RUNS_SQL = `SELECT DISTINCT run_name, started_at, run_duration_ms, run_total, run_passed, run_failed, run_timed_out, run_skipped, run_interrupted FROM ${SRC} ORDER BY started_at DESC`;
 
 const FLAKY_SQL = `SELECT suite, file, title, project, count(*) FILTER (status IN ('failed', 'timedOut')) AS failed_runs, count(*) FILTER (status = 'passed') AS passed_runs, sum(passed_on_retry) AS recovered_by_retry, count(*) AS total_runs FROM ${SRC} GROUP BY suite, file, title, project HAVING failed_runs > 0 AND passed_runs > 0 ORDER BY failed_runs DESC, passed_runs DESC`;
 
-const REGRESSIONS_SQL = `WITH run_tests AS (SELECT run_id, suite, file, title, project, max(started_at) AS started_at, CASE WHEN count(*) FILTER (status = 'failed') > 0 THEN 'failed' WHEN count(*) FILTER (status = 'timedOut') > 0 THEN 'timedOut' WHEN count(*) FILTER (status = 'interrupted') > 0 THEN 'interrupted' WHEN count(*) FILTER (status = 'skipped') > 0 THEN 'skipped' ELSE 'passed' END AS status FROM ${SRC} GROUP BY run_id, suite, file, title, project), ordered AS (SELECT run_id, started_at, suite, file, title, project, status, row_number() OVER (PARTITION BY suite, file, title, project ORDER BY started_at, run_id) AS seq FROM run_tests), regressions AS (SELECT b.run_id AS regressed_in, b.started_at AS regressed_at, b.suite AS suite, b.file AS file, b.title AS title, b.project AS project FROM ordered b JOIN ordered a ON a.suite = b.suite AND a.file = b.file AND a.title = b.title AND a.project = b.project AND b.seq = a.seq + 1 WHERE a.status = 'passed' AND b.status IN ('failed', 'timedOut', 'interrupted')), latest AS (SELECT run_id, started_at, status, suite, file, title, project, row_number() OVER (PARTITION BY suite, file, title, project ORDER BY started_at DESC, run_id DESC) AS rn FROM run_tests) SELECT r.suite, r.file, r.title, r.project, r.regressed_in, r.regressed_at, l.status AS last_status, l.started_at AS last_run_at FROM (SELECT r.*, row_number() OVER (PARTITION BY suite, file, title, project ORDER BY regressed_at DESC, regressed_in DESC) AS rn FROM regressions r) r JOIN latest l ON l.suite = r.suite AND l.file = r.file AND l.title = r.title AND l.project = r.project AND l.rn = 1 WHERE r.rn = 1 ORDER BY l.started_at DESC`;
+const REGRESSIONS_SQL = `WITH run_tests AS (SELECT run_id, run_name, suite, file, title, project, max(started_at) AS started_at, CASE WHEN count(*) FILTER (status = 'failed') > 0 THEN 'failed' WHEN count(*) FILTER (status = 'timedOut') > 0 THEN 'timedOut' WHEN count(*) FILTER (status = 'interrupted') > 0 THEN 'interrupted' WHEN count(*) FILTER (status = 'skipped') > 0 THEN 'skipped' ELSE 'passed' END AS status FROM ${SRC} GROUP BY run_id, run_name, suite, file, title, project), ordered AS (SELECT run_id, run_name, started_at, suite, file, title, project, status, row_number() OVER (PARTITION BY suite, file, title, project ORDER BY started_at, run_id) AS seq FROM run_tests), regressions AS (SELECT b.run_name AS regressed_in, b.started_at AS regressed_at, b.suite AS suite, b.file AS file, b.title AS title, b.project AS project FROM ordered b JOIN ordered a ON a.suite = b.suite AND a.file = b.file AND a.title = b.title AND a.project = b.project AND b.seq = a.seq + 1 WHERE a.status = 'passed' AND b.status IN ('failed', 'timedOut', 'interrupted')), latest AS (SELECT run_id, run_name, started_at, status, suite, file, title, project, row_number() OVER (PARTITION BY suite, file, title, project ORDER BY started_at DESC, run_id DESC) AS rn FROM run_tests) SELECT r.suite, r.file, r.title, r.project, r.regressed_in, r.regressed_at, l.status AS last_status, l.started_at AS last_run_at FROM (SELECT r.*, row_number() OVER (PARTITION BY suite, file, title, project ORDER BY regressed_at DESC) AS rn FROM regressions r) r JOIN latest l ON l.suite = r.suite AND l.file = r.file AND l.title = r.title AND l.project = r.project AND l.rn = 1 WHERE r.rn = 1 ORDER BY l.started_at DESC`;
 
-const SLOW_SQL = `SELECT suite, file, title, project, round(avg(duration_ms), 1) AS avg_ms, max(duration_ms) AS max_ms, count(*) AS runs FROM ${SRC} GROUP BY suite, file, title, project ORDER BY avg(duration_ms) DESC LIMIT ?`;
+const SLOW_SQL = `SELECT suite, file, title, project, round(avg(duration_ms), 1) AS avg_duration_ms, max(duration_ms) AS max_duration_ms, count(*) AS runs FROM ${SRC} GROUP BY suite, file, title, project ORDER BY avg(duration_ms) DESC LIMIT ?`;
 
-const TREND_SQL = `SELECT run_id, started_at, run_total, run_passed, run_failed, round(100.0 * run_passed / nullif(run_total, 0), 1) AS pass_rate FROM ${SRC} GROUP BY run_id, started_at, run_total, run_passed, run_failed ORDER BY started_at`;
+const TREND_SQL = `SELECT run_name, started_at, run_total, run_passed, run_failed, round(100.0 * run_passed / nullif(run_total, 0), 1) AS pass_rate FROM ${SRC} GROUP BY run_id, run_name, started_at, run_total, run_passed, run_failed ORDER BY started_at`;
 
 const PROJECT_DURATIONS_SQL = `SELECT run_id, started_at, project, round(sum(duration_ms) / 1000.0, 2) AS duration_sec FROM ${SRC} WHERE project IS NOT NULL AND project != '' GROUP BY run_id, started_at, project ORDER BY started_at ASC`;
 
@@ -199,15 +388,15 @@ async function handleHistory(subArgs) {
   try {
     switch (sub) {
       case 'runs':
-        printTable(await runQuery(conn, RUNS_SQL, [runsGlob]));
+        printTable(await runQuery(conn, RUNS_SQL, [runsGlob]), 'No historic test runs found.');
         break;
 
       case 'flaky':
-        printTable(await runQuery(conn, FLAKY_SQL, [runsGlob]));
+        printTable(await runQuery(conn, FLAKY_SQL, [runsGlob]), 'No flaky tests found.');
         break;
 
       case 'regressions':
-        printTable(await runQuery(conn, REGRESSIONS_SQL, [runsGlob]));
+        printTable(await runQuery(conn, REGRESSIONS_SQL, [runsGlob]), 'No test regressions found.');
         break;
 
       case 'slow': {
@@ -215,12 +404,12 @@ async function handleHistory(subArgs) {
         const rawLimit =
           idx >= 0 ? subArgs[idx + 1] : /^\d+$/.test(subArgs[1] || '') ? subArgs[1] : '10';
         const limit = Math.max(1, parseInt(rawLimit, 10) || 10);
-        printTable(await runQuery(conn, SLOW_SQL, [runsGlob, limit]));
+        printTable(await runQuery(conn, SLOW_SQL, [runsGlob, limit]), 'No slow tests found.');
         break;
       }
 
       case 'trend':
-        printTable(await runQuery(conn, TREND_SQL, [runsGlob]));
+        printTable(await runQuery(conn, TREND_SQL, [runsGlob]), 'No trend data found.');
         break;
 
       case 'report':
@@ -239,7 +428,7 @@ async function handleHistory(subArgs) {
           : `WITH runs AS (SELECT * FROM read_json(?, format='newline_delimited')) ${sqlText}`;
         const params = usesReadJson ? [] : [runsGlob];
         try {
-          printTable(await runQuery(conn, sql, params));
+          printTable(await runQuery(conn, sql, params), 'No matching records found.');
         } catch (e) {
           console.error('✗ Query failed:', e?.message || e);
           process.exit(1);

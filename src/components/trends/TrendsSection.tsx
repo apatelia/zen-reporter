@@ -2,16 +2,19 @@ import type { HistoryData, TestSuite } from '@/lib/types';
 import PassRateTrend from '@/components/trends/PassRateTrend';
 import DurationTrend from '@/components/trends/DurationTrend';
 import StepCategoryTrend from '@/components/trends/StepCategoryTrend';
+import { HistoryDisabledBanner } from '@/components/shared';
 
 interface Props {
   history: HistoryData | null;
   suites: TestSuite[];
+  isHistoryDisabled?: boolean;
 }
 
-export default function TrendsSection({ history, suites }: Props) {
+export default function TrendsSection({ history, suites, isHistoryDisabled }: Props) {
   if (!history) {
     return (
       <div className="space-y-6">
+        {isHistoryDisabled && <HistoryDisabledBanner />}
         <h2 className="mb-4 text-2xl font-bold tracking-tight text-text-ink dark:text-text-on-primary sm:text-3xl">
           Historical Trends
         </h2>
@@ -52,6 +55,7 @@ export default function TrendsSection({ history, suites }: Props) {
 
   return (
     <div className="space-y-6">
+      {isHistoryDisabled && <HistoryDisabledBanner />}
       <h2 className="mb-4 text-2xl font-bold tracking-tight text-text-ink dark:text-text-on-primary sm:text-3xl">
         Historical Trends
       </h2>

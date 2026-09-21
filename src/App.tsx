@@ -177,6 +177,7 @@ function SidebarItem({
   isActive,
   onClick,
   badge,
+  disabledBadge,
   isCollapsed,
 }: {
   icon: React.ReactNode;
@@ -184,12 +185,15 @@ function SidebarItem({
   isActive: boolean;
   onClick: () => void;
   badge?: number;
+  disabledBadge?: boolean;
   isCollapsed?: boolean;
 }) {
   return (
     <button
       onClick={onClick}
-      title={isCollapsed ? label : undefined}
+      title={
+        isCollapsed ? (disabledBadge ? `${label} (History recording disabled)` : label) : undefined
+      }
       className={`group relative flex w-full items-center ${
         isCollapsed ? 'justify-center px-2 py-2.5' : 'gap-3 px-3 py-2.5'
       } rounded-md text-sm font-semibold transition-all duration-150 ${
@@ -220,6 +224,37 @@ function SidebarItem({
           }
         >
           {badge}
+        </span>
+      )}
+      {disabledBadge && (
+        <span
+          title="History recording disabled"
+          className={
+            isCollapsed
+              ? 'absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-amber-500 text-text-on-primary shadow-sm'
+              : 'ml-auto flex items-center gap-1 rounded bg-amber-500/15 px-1.5 py-0.5 text-[10px] font-semibold text-amber-700 dark:text-amber-300 border border-amber-500/30'
+          }
+        >
+          {isCollapsed ? (
+            '!'
+          ) : (
+            <>
+              <svg
+                className="h-3 w-3 shrink-0"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={2}
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z"
+                />
+              </svg>
+              <span>Disabled</span>
+            </>
+          )}
         </span>
       )}
     </button>
@@ -415,6 +450,10 @@ export default function App() {
   const timedOutCount = summary ? summary.timedOut : 0;
   const interruptedCount = summary ? summary.interrupted || 0 : 0;
 
+  const isHistoryDisabled = useMemo(() => {
+    return reportData?.testRun?.enableHistory === false;
+  }, [reportData]);
+
   /** Single root element for the app layout */
   return (
     <div className="flex h-screen overflow-hidden bg-canvas">
@@ -522,6 +561,10 @@ export default function App() {
                   tab.key === 'failures'
                     ? failedCount + timedOutCount + interruptedCount
                     : undefined
+                }
+                disabledBadge={
+                  isHistoryDisabled &&
+                  (tab.key === 'history' || tab.key === 'trends' || tab.key === 'insights')
                 }
                 isCollapsed={isCollapsed}
               />
@@ -688,15 +731,23 @@ export default function App() {
             )}
 
             {!isLoading && !isSummaryView && activeTab === 'trends' && (
-              <TrendsSection history={historyData} suites={suites} />
+              <TrendsSection
+                history={historyData}
+                suites={suites}
+                isHistoryDisabled={isHistoryDisabled}
+              />
             )}
 
             {!isLoading && !isSummaryView && activeTab === 'insights' && (
-              <InsightsSection history={historyData} suites={suites} />
+              <InsightsSection
+                history={historyData}
+                suites={suites}
+                isHistoryDisabled={isHistoryDisabled}
+              />
             )}
 
             {!isLoading && !isSummaryView && activeTab === 'history' && (
-              <HistorySection history={historyData} />
+              <HistorySection history={historyData} isHistoryDisabled={isHistoryDisabled} />
             )}
           </div>
         </div>

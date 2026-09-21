@@ -37,6 +37,7 @@ zen-reporter/
 │   │   │   ├── ProjectsOverviewCards.tsx
 │   │   │   └── ProjectsSection.tsx
 │   │   ├── shared/                # Shared cross-tab components
+│   │   │   ├── HistoryDisabledBanner.tsx # Alert banner shown when history recording is disabled
 │   │   │   ├── LearnMoreButton.tsx
 │   │   │   ├── MultiSelectFilter.tsx
 │   │   │   ├── StatCard.tsx

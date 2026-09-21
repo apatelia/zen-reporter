@@ -79,6 +79,7 @@ export default defineConfig({
         theme: 'Starbucks', // Optional: Theme applied on initial load ("Starbucks" | "Notion" | "Sentry", default: "Starbucks")
         darkMode: false, // Optional: Initial dark mode state (default: false)
         singleSummaryFile: true, // Optional: Generates a standalone summary.html file alongside index.html
+        enableHistory: 'auto', // Optional: History recording mode ("auto" | boolean, default: "auto")
       },
     ],
   ],
@@ -87,14 +88,15 @@ export default defineConfig({
 
 ### Options Reference
 
-| Option              | Type      | Default                     | Description                                                          |
-| :------------------ | :-------- | :-------------------------- | :------------------------------------------------------------------- |
-| `outputDir`         | `string`  | `"zen-report"`              | Directory where final report files are saved.                        |
-| `projectName`       | `string`  | `"Test Automation Project"` | Project name displayed prominently in the top bar of the dashboard.  |
-| `testRunName`       | `string`  | `"Test Run #1"`             | Test run or build name displayed in the top bar of the dashboard.    |
-| `theme`             | `string`  | `"Starbucks"`               | Theme applied on first load (`"Starbucks"`, `"Notion"`, `"Sentry"`). |
-| `darkMode`          | `boolean` | `false`                     | When set to `true`, the report loads in dark mode on first load.     |
-| `singleSummaryFile` | `boolean` | `false`                     | Generates a standalone `summary.html` for executive summary views.   |
+| Option              | Type                | Default                     | Description                                                          |
+| :------------------ | :------------------ | :-------------------------- | :------------------------------------------------------------------- |
+| `outputDir`         | `string`            | `"zen-report"`              | Directory where final report files are saved.                        |
+| `projectName`       | `string`            | `"Test Automation Project"` | Project name displayed prominently in the top bar of the dashboard.  |
+| `testRunName`       | `string`            | `"Test Run #1"`             | Test run or build name displayed in the top bar of the dashboard.    |
+| `theme`             | `string`            | `"Starbucks"`               | Theme applied on first load (`"Starbucks"`, `"Notion"`, `"Sentry"`). |
+| `darkMode`          | `boolean`           | `false`                     | When set to `true`, the report loads in dark mode on first load.     |
+| `singleSummaryFile` | `boolean`           | `false`                     | Generates a standalone `summary.html` for executive summary views.   |
+| `enableHistory`     | `'auto' \| boolean` | `"auto"`                    | Controls history execution archiving (`"auto"`, `true`, `false`).    |
 
 ---
 

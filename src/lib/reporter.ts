@@ -47,6 +47,7 @@ export interface ReporterConfig {
   singleSummaryFile?: boolean;
   theme?: string;
   darkMode?: boolean;
+  enableHistory: 'auto' | boolean;
 }
 
 export function resolveConfig(
@@ -63,6 +64,15 @@ export function resolveConfig(
   const theme = rawConfig?.theme !== undefined ? String(rawConfig.theme) : 'Starbucks';
   const darkMode = Boolean(rawConfig?.darkMode);
 
+  let enableHistory: 'auto' | boolean = 'auto';
+  if (rawConfig?.enableHistory !== undefined) {
+    if (typeof rawConfig.enableHistory === 'boolean') {
+      enableHistory = rawConfig.enableHistory;
+    } else if (rawConfig.enableHistory === 'auto') {
+      enableHistory = 'auto';
+    }
+  }
+
   return {
     outputDir,
     packageManager,
@@ -71,6 +81,7 @@ export function resolveConfig(
     singleSummaryFile,
     theme,
     darkMode,
+    enableHistory,
   };
 }
 
@@ -176,6 +187,17 @@ class ZenReporter implements Reporter {
       this.options ||
         (config as FullConfig & { reporterConfig?: Record<string, unknown> }).reporterConfig
     );
+
+    if (this.reportConfig.enableHistory === true) {
+      try {
+        require.resolve('@duckdb/node-api');
+      } catch {
+        throw new Error(
+          'Zen Reporter: history is explicitly enabled (enableHistory: true), but "@duckdb/node-api" is not installed. Please install "@duckdb/node-api" or set enableHistory to "auto" or false.'
+        );
+      }
+    }
+
     this.startTime = new Date().toISOString();
     this.testCaseMap.clear();
     this.testCases = [];
@@ -475,7 +497,9 @@ class ZenReporter implements Reporter {
     };
 
     const suites = this.buildSuites();
-    this.writeRunHistory(summary, endTime);
+    if (this.reportConfig.enableHistory !== false) {
+      this.writeRunHistory(summary, endTime);
+    }
 
     const testRun: TestRunModel = {
       summary,
@@ -484,6 +508,7 @@ class ZenReporter implements Reporter {
       testRunName: this.reportConfig.testRunName,
       theme: this.reportConfig.theme,
       darkMode: this.reportConfig.darkMode,
+      enableHistory: this.reportConfig.enableHistory,
     };
 
     const reportData: ReportData = { testRun };
@@ -579,7 +604,9 @@ class ZenReporter implements Reporter {
 
         // Auto-refresh: regenerate history.json from all runs via the CLI
         // and inject the fresh snapshot into the just-written index.html.
-        this.refreshHistory();
+        if (this.reportConfig.enableHistory !== false) {
+          this.refreshHistory();
+        }
 
         if (this.reportConfig.singleSummaryFile) {
           const summaryHtmlPath = path.join(outputDir, 'summary.html');

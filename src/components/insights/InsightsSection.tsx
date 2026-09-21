@@ -9,11 +9,12 @@ import {
 import ProjectFlakyRateChart from './ProjectFlakyRateChart';
 import ProjectDurationChart from '@/components/insights/ProjectDurationChart';
 import { usePagination, PageSizeControl, PaginationFooter } from '@/components/pagination';
-import { LearnMoreButton } from '@/components/shared';
+import { LearnMoreButton, HistoryDisabledBanner } from '@/components/shared';
 
 interface Props {
   history: HistoryData | null;
   suites: TestSuite[];
+  isHistoryDisabled?: boolean;
 }
 
 type InsightModalType = 'flaky-tests' | 'regressions' | 'slowest-tests' | null;
@@ -55,7 +56,7 @@ const lastStatusStyles: Record<string, { label: string; pillClass: string; toolt
   },
 };
 
-export default function InsightsSection({ history, suites }: Props) {
+export default function InsightsSection({ history, suites, isHistoryDisabled }: Props) {
   const [activeModal, setActiveModal] = useState<InsightModalType>(null);
   const flakyPag = usePagination(history?.flaky.length ?? 0, 10);
   const regressionsPag = usePagination(history?.regressions.length ?? 0, 10);
@@ -70,6 +71,7 @@ export default function InsightsSection({ history, suites }: Props) {
 
   return (
     <div className="space-y-6">
+      {isHistoryDisabled && <HistoryDisabledBanner />}
       <h2 className="mb-4 text-2xl font-bold tracking-tight text-text-ink dark:text-text-on-primary sm:text-3xl">
         Analytical Insights
       </h2>
@@ -313,9 +315,11 @@ export default function InsightsSection({ history, suites }: Props) {
                         <td className={`${td} font-bold`}>{row.title}</td>
                         <td className={td}>{row.project}</td>
                         <td className={`${tdNum} font-bold text-accent-blue dark:text-success-500`}>
-                          {formatDurationVerbose(row.avg_ms)}
+                          {formatDurationVerbose(row.avg_duration_ms ?? row.avg_ms)}
                         </td>
-                        <td className={tdNum}>{formatDurationVerbose(row.max_ms)}</td>
+                        <td className={tdNum}>
+                          {formatDurationVerbose(row.max_duration_ms ?? row.max_ms)}
+                        </td>
                         <td className={tdNum}>{row.runs}</td>
                       </tr>
                     ))}
