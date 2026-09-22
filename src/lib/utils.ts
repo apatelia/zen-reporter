@@ -1,6 +1,14 @@
-import type { existsSync as fsExistsSync, readFileSync as fsReadFileSync } from 'fs';
 import type { TestStep as PwTestStep } from '@playwright/test/reporter';
-import type { Location, ResultSummary, TestCase, TestError, TestStep, TestSuite } from './types';
+import type { existsSync as fsExistsSync, readFileSync as fsReadFileSync } from 'fs';
+import type {
+  Attachment,
+  Location,
+  ResultSummary,
+  TestCase,
+  TestError,
+  TestStep,
+  TestSuite,
+} from './types';
 
 export interface FsModule {
   existsSync: typeof fsExistsSync;
@@ -108,15 +116,15 @@ export function highlightJsTokens(code: string): string {
     const [fullMatch, comment, str, keyword, numBool, method] = match;
 
     if (comment) {
-      result += `<span class="text-slate-500 dark:text-slate-400 italic">${escapeHTML(comment)}</span>`;
+      result += `<span class="text-slate-400 italic">${escapeHTML(comment)}</span>`;
     } else if (str) {
-      result += `<span class="text-emerald-700 dark:text-emerald-300 font-medium">${escapeHTML(str)}</span>`;
+      result += `<span class="text-emerald-300 font-medium">${escapeHTML(str)}</span>`;
     } else if (keyword) {
-      result += `<span class="text-success-700 dark:text-success-500 font-semibold">${escapeHTML(keyword)}</span>`;
+      result += `<span class="text-purple-400 font-semibold">${escapeHTML(keyword)}</span>`;
     } else if (numBool) {
-      result += `<span class="text-amber-700 dark:text-amber-300 font-mono">${escapeHTML(numBool)}</span>`;
+      result += `<span class="text-amber-300 font-mono">${escapeHTML(numBool)}</span>`;
     } else if (method) {
-      result += `<span class="text-sky-700 dark:text-sky-300 font-medium">${escapeHTML(method)}</span>`;
+      result += `<span class="text-sky-300 font-medium">${escapeHTML(method)}</span>`;
     } else {
       result += escapeHTML(fullMatch);
     }
@@ -141,10 +149,10 @@ export function highlightCodeLine(codeLine: string): string {
 
     if (isTarget) {
       const lineNo = rawPrefix.slice(1, pipeIdx).trim();
-      prefixHtml = `<span class="inline-flex items-center gap-1 font-bold text-emerald-700 dark:text-emerald-400"><span class="flex h-3.5 w-3.5 items-center justify-center rounded bg-emerald-600 dark:bg-emerald-500 text-[9px] text-white font-black shadow-xs">▶</span>${lineNo.padStart(4, ' ')} |</span>`;
+      prefixHtml = `<span class="inline-flex items-center gap-1 font-bold text-danger-400"><span class="text-danger-500 font-black">▶</span>${lineNo.padStart(4, ' ')} |</span>`;
     } else {
       const lineNo = rawPrefix.slice(0, pipeIdx).trim();
-      prefixHtml = `<span class="text-slate-500/70 dark:text-text-muted/60 font-mono">${lineNo.padStart(5, ' ')} |</span>`;
+      prefixHtml = `<span class="text-slate-500 font-mono">${lineNo.padStart(5, ' ')} |</span>`;
     }
   } else {
     codePart = codeLine;
@@ -153,7 +161,7 @@ export function highlightCodeLine(codeLine: string): string {
   const highlightedCode = highlightJsTokens(codePart);
 
   if (isTarget) {
-    return `<div class="flex items-center gap-2 bg-emerald-500/10 dark:bg-emerald-500/20 border-l-3 border-emerald-600 dark:border-emerald-500 px-2 py-1 rounded-r shadow-xs font-mono text-[11px] leading-relaxed my-0.5">${prefixHtml} <span>${highlightedCode}</span></div>`;
+    return `<div class="flex items-center gap-2 bg-danger-500/15 border-l-2 border-danger-500 px-2 py-0.5 rounded-r font-mono text-[11px] leading-relaxed my-0.5">${prefixHtml} <span>${highlightedCode}</span></div>`;
   }
 
   return `<div class="flex items-center gap-2 px-2 py-0.5 font-mono text-[11px] leading-relaxed">${prefixHtml} <span>${highlightedCode}</span></div>`;
@@ -266,22 +274,22 @@ export function parseAnsiToHtml(str: string): string {
   if (!str) return '';
 
   const ansiColorMap: Record<number, string> = {
-    30: 'color: var(--color-text-body-mid)', // dark gray / ink
-    31: 'color: var(--color-danger-500)', // red
-    32: 'color: var(--color-success-500)', // green
-    33: 'color: var(--color-warning-500)', // yellow
-    34: 'color: var(--color-info-500)', // blue
-    35: 'color: var(--color-accent-gold)', // magenta / gold
-    36: 'color: var(--color-info-500)', // cyan
-    37: 'color: var(--color-text-muted-soft)', // white / soft text
-    90: 'color: var(--color-text-muted)', // bright black / gray
-    91: 'color: var(--color-danger-500)', // bright red
-    92: 'color: var(--color-success-500)', // bright green
-    93: 'color: var(--color-warning-500)', // bright yellow
-    94: 'color: var(--color-info-500)', // bright blue
-    95: 'color: var(--color-accent-gold)', // bright magenta / gold
-    96: 'color: var(--color-info-500)', // bright cyan
-    97: 'color: var(--color-text-ink)', // bright white
+    30: 'color: #94a3b8', // gray / slate-400
+    31: 'color: #f87171', // red-400
+    32: 'color: #4ade80', // green-400
+    33: 'color: #fbbf24', // yellow/amber-400
+    34: 'color: #60a5fa', // blue-400
+    35: 'color: #c084fc', // magenta/purple-400
+    36: 'color: #38bdf8', // cyan/sky-400
+    37: 'color: #f8fafc', // white / soft text
+    90: 'color: #94a3b8', // bright black / gray
+    91: 'color: #f87171', // bright red
+    92: 'color: #4ade80', // bright green
+    93: 'color: #fbbf24', // bright yellow
+    94: 'color: #60a5fa', // bright blue
+    95: 'color: #c084fc', // bright magenta / gold
+    96: 'color: #38bdf8', // bright cyan
+    97: 'color: #ffffff', // bright white
   };
 
   const styleMap: Record<number, string> = {
@@ -893,6 +901,26 @@ export function truncateFileName(fileName: string, maxLength: number = 40): stri
   return `${start}...${end}${extension}`;
 }
 
+export function truncateMiddlePath(filePath: string): string {
+  if (!filePath) return '';
+  const parts = filePath.split('/');
+  if (parts.length <= 2) return filePath;
+
+  const fileName = parts[parts.length - 1];
+  const rootDir = parts[0] ? parts[0] : parts[1] ? `/${parts[1]}` : '';
+
+  if (parts.length > 3) {
+    return `${rootDir}/.../${fileName}`;
+  }
+
+  // If parts.length === 3, e.g. /tests/file.spec.ts or tests/sub/file.spec.ts
+  if (parts[0] === '') {
+    // Leading slash e.g. /tests/file.spec.ts -> no middle dirs to shrink, return filePath
+    return filePath;
+  }
+  return `${parts[0]}/.../${fileName}`;
+}
+
 /**
  * Normalizes error messages and stack traces by masking dynamic tokens (timestamps,
  * pointers, line numbers, ports, durations) so identical failure causes yield the same signature.
@@ -1026,4 +1054,88 @@ export function getErrorSignature(test: FailedTest): ErrorSignatureDetails {
     shortHash: `sha256:${hash.slice(0, 8)}`,
     representativeMessage: msg.split('\n')[0],
   };
+}
+
+export interface VisualDiffPair {
+  actualUrl: string;
+  expectedUrl: string;
+  diffUrl?: string;
+  name?: string;
+}
+
+export function extractVisualDiffPairs(
+  attachments: Attachment[],
+  getAttachmentUrl: (att: Attachment) => string | null
+): VisualDiffPair[] {
+  if (!attachments || attachments.length === 0) return [];
+
+  const pairs: VisualDiffPair[] = [];
+  const imageAttachments = attachments.filter((att) => {
+    const url = getAttachmentUrl(att);
+    if (!url) return false;
+    return (
+      (att.contentType && att.contentType.startsWith('image/')) ||
+      /\.(png|jpe?g|gif|webp|svg)$/i.test(att.name || att.path || '')
+    );
+  });
+
+  // Group by snapshot base name
+  // Playwright attachment naming conventions:
+  // name-actual.png / name-expected.png / name-diff.png
+  // or name-received.png / name-baseline.png
+  const groups = new Map<
+    string,
+    { actualUrl?: string; expectedUrl?: string; diffUrl?: string; name: string }
+  >();
+
+  for (const att of imageAttachments) {
+    const url = getAttachmentUrl(att);
+    if (!url) continue;
+
+    const name = att.name || '';
+    let baseName = name;
+    let type: 'actual' | 'expected' | 'diff' | null = null;
+
+    if (
+      /-actual(\.png)?$/i.test(name) ||
+      /-received(\.png)?$/i.test(name) ||
+      /actual/i.test(name)
+    ) {
+      type = 'actual';
+      baseName = name.replace(/-(actual|received)(\.png)?$/i, '');
+    } else if (
+      /-expected(\.png)?$/i.test(name) ||
+      /-baseline(\.png)?$/i.test(name) ||
+      /expected|baseline/i.test(name)
+    ) {
+      type = 'expected';
+      baseName = name.replace(/-(expected|baseline)(\.png)?$/i, '');
+    } else if (/-diff(\.png)?$/i.test(name) || /diff/i.test(name)) {
+      type = 'diff';
+      baseName = name.replace(/-diff(\.png)?$/i, '');
+    }
+
+    if (type) {
+      if (!groups.has(baseName)) {
+        groups.set(baseName, { name: baseName });
+      }
+      const g = groups.get(baseName)!;
+      if (type === 'actual') g.actualUrl = url;
+      if (type === 'expected') g.expectedUrl = url;
+      if (type === 'diff') g.diffUrl = url;
+    }
+  }
+
+  for (const g of groups.values()) {
+    if (g.actualUrl && g.expectedUrl) {
+      pairs.push({
+        actualUrl: g.actualUrl,
+        expectedUrl: g.expectedUrl,
+        diffUrl: g.diffUrl,
+        name: g.name,
+      });
+    }
+  }
+
+  return pairs;
 }

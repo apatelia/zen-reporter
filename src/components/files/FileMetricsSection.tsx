@@ -6,7 +6,7 @@ import {
   collectAllCases,
   computeFileStats,
   formatDuration,
-  truncateFileName,
+  truncateMiddlePath,
   FileStats,
 } from '@/lib/utils';
 
@@ -129,7 +129,7 @@ export default function FileMetricsSection({ suites }: Props) {
       label: 'Failure Concentration',
       value: failureHotspot ? `${failureHotspot.pct}%` : '0%',
       subtext: failureHotspot
-        ? `${truncateFileName(failureHotspot.file.fileName, 20)}`
+        ? truncateMiddlePath(failureHotspot.file.fileName)
         : 'No failure concentration',
       title: failureHotspot?.file.fileName,
       description: 'Highest percentage of overall suite failures originating from a single file',
@@ -306,7 +306,7 @@ export default function FileMetricsSection({ suites }: Props) {
                     </div>
                     <div className="h-1.5 w-full rounded-full bg-surface-200 overflow-hidden">
                       <div
-                        className="h-full rounded-full bg-accent-starbucks dark:bg-success-500 transition-all duration-300"
+                        className="h-full rounded-full bg-accent-cafe dark:bg-success-500 transition-all duration-300"
                         style={{ width: `${Math.max(barPercentage, 4)}%` }}
                       />
                     </div>

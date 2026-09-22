@@ -28,7 +28,7 @@ const PROJECT_BRAND_COLORS: Record<string, string> = {
   'desktop chrome': 'var(--color-accent-green)',
   'desktop firefox': 'var(--color-warning-500)',
   'desktop safari': 'var(--color-accent-gold)',
-  'mobile chrome': 'var(--color-accent-starbucks)',
+  'mobile chrome': 'var(--color-accent-cafe)',
   'mobile safari': 'var(--color-warning-600)',
 };
 

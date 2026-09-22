@@ -16,26 +16,21 @@ Dark mode:
 
 ## Features
 
-- **Interactive 8-Tab Dashboard Navigation**:
-  1. **Overview** — High-level summary metrics, radial pass rate ring, execution efficiency indicators, test health breakdown, calculation tooltips, and run environment stats (duration, projects, suites, test count, worker threads).
-  2. **Projects** — Per-project execution status bar charts (including interrupted task breakdowns), volume & coverage distribution, and project detail cards comparing Playwright project profiles.
-  3. **Suites** — Interactive, searchable tree view container for nested `describe` suites with collapsible nodes (`TestSuiteNode`), bulk expand/collapse controls, retry badges, and test case cards.
-  4. **Files** — Spec file summary tables detailing per-file test counts and status distributions (passed, failed, skipped, interrupted), paired with paginated table navigation.
-  5. **Failures** — Deep-dive failure analysis with two grouping modes:
-     - **File Grouping**: Collapsible spec file lists with failure summaries.
-     - **Error Signature Clustering**: Normalizes dynamic tokens (timestamps, UUIDs, memory addresses, line numbers) to group identical root causes into deterministic **Shared Issue** clusters.
-     - **Execution Traces & Step Snippets**: Step-by-step execution steps with target indicators (`▶`), source code snippets, syntax highlighting, step parameters, nested sub-steps, diff stack traces (`Expected` vs `Received`), retry attempt tabs (`Run`, `Retry #1`), and attachment previews (images, videos, traces).
-  6. **History** — Historical test runs table detailing run metadata, execution mode (`Parallel, N workers` vs `Serial`), wall-clock duration, pass/fail ratios, and automated quality rating tooltips (`Excellent`, `Needs improvement`, `Critical`).
-  7. **Trends** — Visual quality trend charts tracking pass rate percentage over time, multi-project execution duration trends (multi-line tracking per Playwright project across runs), and step category trends.
-  8. **Insights** — Advanced test intelligence powered by an embedded DuckDB analytics pipeline:
-     - **Flaky Intelligence**: Detects tests fluctuating between pass and fail across historical runs.
-     - **Regression Tracking**: Identifies tests that previously passed but regressed to failed in the latest run.
-     - **Slowest Tests Analysis**: Ranks top 5 slowest test cases by average execution duration across runs.
-     - **P95 Duration & Latency**: Analyzes 95th percentile completion thresholds per project profile.
-
-- **Cross-Cutting Capabilities**:
-  - **Themes & Dark Mode**: Multiple design system themes (`Starbucks`, `Notion`, `Sentry`) with light and dark mode toggles, built with WCAG-compliant color tokens, soft-lift shadows, and warm canvas palettes. Configurable initial theme and dark mode defaults.
-  - **Single-File Standalone HTML & Summary Output**: Generates a self-contained single-file HTML report (`index.html`) with embedded datasets for easy sharing and CI/CD artifact storage. Optionally creates a lightweight standalone `summary.html` (via `singleSummaryFile: true`) dedicated to executive overview dashboards without full trace trees.
+- **High-Level Test Dashboard**: Visual summary metrics featuring pass rate radial indicators, execution efficiency, health breakdowns, run environment details (duration, projects, suites, test counts, worker threads), and calculation tooltips.
+- **Per-Project Execution Analytics**: Detailed status bar charts, volume and coverage distribution, and project detail cards comparing Playwright project profiles.
+- **Suite & Spec File Explorer**: Interactive, searchable tree view container for nested `describe` suites with collapsible nodes, bulk expand/collapse controls, retry badges, test case cards, and paginated spec file summary tables.
+- **Deep-Dive Failure Analysis**: Detailed root cause analysis with two grouping modes (file grouping and error signature clustering to group identical root causes into Shared Issue clusters), step-by-step execution traces with target indicators (`▶`), source code snippets with syntax highlighting, diff stack traces (`Expected` vs `Received`), and retry attempt tabs (`Run`, `Retry #1`).
+- **Visual Regression Diff Viewer**: Built-in side-by-side snapshot comparison for visual regression testing, allowing interactive comparison of `actual`, `expected` (baseline), and overlay `diff` image attachments.
+- **Execution History Archiving**: Archive historical test runs with details on run metadata, execution modes (`Parallel, N workers` vs `Serial`), wall-clock duration, pass/fail ratios, and automated quality ratings (`Excellent`, `Needs improvement`, `Critical`).
+- **Visual Quality Trends**: Track pass rate percentages over time, multi-project execution duration trends per project profile, and step category trends across historical runs.
+- **DuckDB-Powered Test Intelligence**: Embedded analytics engine for advanced test suite intelligence:
+  - **Flaky Intelligence**: Detect tests fluctuating between pass and fail across historical runs.
+  - **Regression Tracking**: Identify tests that previously passed but regressed to failed in the latest run.
+  - **Slowest Tests Analysis**: Rank top slowest test cases by average execution duration across runs.
+  - **P95 Duration & Latency**: Analyze 95th percentile completion thresholds per project profile.
+- **Core Platform Capabilities**:
+  - **Themes & Dark Mode**: Multiple design themes (`Cafe`, `Concept`, `Sentinel`) with light and dark mode toggles, built with WCAG-compliant color tokens and configurable default states.
+  - **Single-File Standalone Output**: Generates a self-contained single-file HTML report (`index.html`) with embedded datasets for easy sharing and CI/CD artifact storage. Optionally creates a lightweight standalone `summary.html` dedicated to executive dashboards.
 
 ---
 
@@ -76,7 +71,7 @@ export default defineConfig({
         outputDir: 'zen-report', // Optional: Output directory where report files will be generated (default: "zen-report")
         projectName: 'My E2E Project', // Optional: Project name displayed in the top bar header
         testRunName: 'Nightly Build #42', // Optional: Test run / build name displayed in the top bar header
-        theme: 'Starbucks', // Optional: Theme applied on initial load ("Starbucks" | "Notion" | "Sentry", default: "Starbucks")
+        theme: 'Cafe', // Optional: Theme applied on initial load ("Cafe" | "Concept" | "Sentinel", default: "Cafe")
         darkMode: false, // Optional: Initial dark mode state (default: false)
         singleSummaryFile: true, // Optional: Generates a standalone summary.html file alongside index.html
         enableHistory: 'auto', // Optional: History recording mode ("auto" | boolean, default: "auto")
@@ -88,15 +83,15 @@ export default defineConfig({
 
 ### Options Reference
 
-| Option              | Type                | Default                     | Description                                                          |
-| :------------------ | :------------------ | :-------------------------- | :------------------------------------------------------------------- |
-| `outputDir`         | `string`            | `"zen-report"`              | Directory where final report files are saved.                        |
-| `projectName`       | `string`            | `"Test Automation Project"` | Project name displayed prominently in the top bar of the dashboard.  |
-| `testRunName`       | `string`            | `"Test Run #1"`             | Test run or build name displayed in the top bar of the dashboard.    |
-| `theme`             | `string`            | `"Starbucks"`               | Theme applied on first load (`"Starbucks"`, `"Notion"`, `"Sentry"`). |
-| `darkMode`          | `boolean`           | `false`                     | When set to `true`, the report loads in dark mode on first load.     |
-| `singleSummaryFile` | `boolean`           | `false`                     | Generates a standalone `summary.html` for executive summary views.   |
-| `enableHistory`     | `'auto' \| boolean` | `"auto"`                    | Controls history execution archiving (`"auto"`, `true`, `false`).    |
+| Option              | Type                | Default                     | Description                                                         |
+| :------------------ | :------------------ | :-------------------------- | :------------------------------------------------------------------ |
+| `outputDir`         | `string`            | `"zen-report"`              | Directory where final report files are saved.                       |
+| `projectName`       | `string`            | `"Test Automation Project"` | Project name displayed prominently in the top bar of the dashboard. |
+| `testRunName`       | `string`            | `"Test Run #1"`             | Test run or build name displayed in the top bar of the dashboard.   |
+| `theme`             | `string`            | `"Cafe"`                    | Theme applied on first load (`"Cafe"`, `"Concept"`, `"Sentinel"`).  |
+| `darkMode`          | `boolean`           | `false`                     | When set to `true`, the report loads in dark mode on first load.    |
+| `singleSummaryFile` | `boolean`           | `false`                     | Generates a standalone `summary.html` for executive summary views.  |
+| `enableHistory`     | `'auto' \| boolean` | `"auto"`                    | Controls history execution archiving (`"auto"`, `true`, `false`).   |
 
 ---
 

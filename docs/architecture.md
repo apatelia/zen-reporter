@@ -48,19 +48,25 @@ zen-reporter/
 │   │   │   ├── SuiteView.tsx      # Tree view container for test suites
 │   │   │   ├── SuitesSection.tsx  # Suites tab container
 │   │   │   └── TestSuiteNode.tsx  # Collapsible suite node
-│   │   └── trends/                # Quality & duration trends tab
-│   │       ├── DurationTrend.tsx
-│   │       ├── PassRateTrend.tsx
-│   │       ├── StepCategoryTrend.tsx
-│   │       └── TrendsSection.tsx
+│   │   ├── trends/                # Quality & duration trends tab
+│   │   │   ├── DurationTrend.tsx
+│   │   │   ├── PassRateTrend.tsx
+│   │   │   ├── StepCategoryTrend.tsx
+│   │   │   └── TrendsSection.tsx
+│   │   └── visual-regression/     # Visual regression diff viewer components
+│   │       ├── DiffHighlightViewer.tsx # Overlay & difference highlight viewer
+│   │       ├── ImageSliderViewer.tsx   # Interactive split-screen slider viewer
+│   │       ├── SideBySideViewer.tsx    # Side-by-side snapshot comparison view
+│   │       ├── ViewModeSelector.tsx    # Toggle controls for diff comparison modes
+│   │       └── VisualDiffViewer.tsx    # Main visual diff modal / container component
 │   ├── lib/
 │   │   ├── dataProcessor.ts         # Raw data conversion, wall-clock calculation & package manager detector
 │   │   ├── reporter.ts              # Playwright Reporter implementation (theme/darkMode resolution & auto history refresh)
 │   │   ├── tagColors.ts             # Deterministic HSL color generator for tags
 │   │   ├── types.ts                 # TypeScript interfaces (ReportData, TestRun, ReporterConfig, HistoryRun, etc.)
-│   │   └── utils.ts                 # Suite tree builders, fastest/slowest calculators & ANSI cleaner
+│   │   └── utils.ts                 # Suite tree builders, fastest/slowest calculators, ANSI cleaner & visual diff extractor (`extractVisualDiffPairs`)
 │   ├── App.tsx                      # Root component with theme/darkMode initial loading, version title header & tab routing
-│   ├── app.css                      # Design system CSS with theme palettes (Starbucks, Notion, Sentry), WCAG contrast tokens & dark mode styles
+│   ├── app.css                      # Design system CSS with theme palettes (Cafe, Concept, Sentinel), WCAG contrast tokens & dark mode styles
 │   ├── main.tsx                     # React application entry point
 │   ├── vite-env.d.ts                # Vite type declarations
 │   └── vite-plugin-inject-data.ts   # Vite plugin to inline report.json & history.json into HTML
@@ -74,6 +80,7 @@ zen-reporter/
 │   ├── report.json                  # Processed test execution JSON data
 │   └── attachments/                 # Copied test assets (screenshots, videos, traces)
 ├── tests/                           # Playwright test files
+│   └── visual-regression.spec.ts    # Visual regression snapshot test suites
 ├── playwright.config.ts             # Playwright test configuration with retries & dynamic testRunName
 ├── vite.config.ts                   # Vite single-file bundling configuration
 └── package.json

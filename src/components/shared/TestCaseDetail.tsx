@@ -2,11 +2,13 @@ import { useState } from 'react';
 import type { Attachment, TestCase, TestError, TestStep } from '@/lib/types';
 import {
   formatDurationVerbose,
-  parseAnsiToHtml,
+  sanitizeAnsi,
   highlightExpectedReceived,
   getStepCodeSnippet,
   highlightCodeSnippet,
+  extractVisualDiffPairs,
 } from '@/lib/utils';
+import { VisualDiffViewer } from '../visual-regression/VisualDiffViewer';
 
 interface Props {
   testCase: TestCase;
@@ -343,6 +345,7 @@ export default function TestCaseDetail({ testCase, showSteps = true }: Props) {
   // the per-attempt tabs.
   const renderAttemptSections = (attempt: AttemptView) => {
     const attachments = collectAttemptAttachments(attempt);
+    const visualDiffPairs = extractVisualDiffPairs(attachments, getAttachmentUrl);
 
     return (
       <>
@@ -421,10 +424,12 @@ export default function TestCaseDetail({ testCase, showSteps = true }: Props) {
                       <p className="text-xs font-semibold text-text-body-mid dark:text-text-muted mb-1">
                         Code Snippet:
                       </p>
-                      <pre
+                      <div
                         className="rounded-md bg-surface-950 p-2.5 text-xs font-mono leading-relaxed text-canvas dark:text-surface-900 border border-border-default dark:border-border-subtle overflow-x-auto"
                         /* eslint-disable-next-line @eslint-react/dom-no-dangerously-set-innerhtml */
-                        dangerouslySetInnerHTML={{ __html: parseAnsiToHtml(attempt.error.snippet) }}
+                        dangerouslySetInnerHTML={{
+                          __html: highlightCodeSnippet(sanitizeAnsi(attempt.error.snippet)),
+                        }}
                       />
                     </div>
                   )}
@@ -449,7 +454,19 @@ export default function TestCaseDetail({ testCase, showSteps = true }: Props) {
           </div>
         )}
 
-        {/* Attachments Section */}
+        {/* Visual Regression Diff Section */}
+        {visualDiffPairs.length > 0 && (
+          <div className="mb-4 space-y-3">
+            <h5 className="text-xs font-bold uppercase tracking-wider text-text-body-mid dark:text-text-muted">
+              Visual Regression Comparison
+            </h5>
+            {visualDiffPairs.map((pair, idx) => (
+              <VisualDiffViewer key={`visual-diff-${pair.name || idx}`} pair={pair} />
+            ))}
+          </div>
+        )}
+
+        {/* Execution Steps */}
         {attachments.length > 0 && (
           <div className="mb-4">
             <h5 className="mb-2 text-xs font-bold uppercase tracking-wider text-text-body-mid dark:text-text-muted">

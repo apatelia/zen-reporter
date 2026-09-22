@@ -293,23 +293,23 @@ export default function App() {
     return null;
   }, []);
 
-  const [theme, setTheme] = useState<'starbucks' | 'notion' | 'sentry'>(() => {
+  const [theme, setTheme] = useState<'cafe' | 'concept' | 'sentinel'>(() => {
     const testRun = initialReportData?.testRun as
       (TestRun & { theme?: string; darkMode?: boolean }) | undefined;
     const configuredTheme = testRun?.theme;
     if (configuredTheme) {
       const lower = configuredTheme.toLowerCase();
-      if (lower === 'starbucks' || lower === 'notion' || lower === 'sentry') {
+      if (lower === 'cafe' || lower === 'concept' || lower === 'sentinel') {
         return lower;
       }
     }
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem('zen-theme');
-      if (saved === 'starbucks' || saved === 'notion' || saved === 'sentry') {
+      if (saved === 'cafe' || saved === 'concept' || saved === 'sentinel') {
         return saved;
       }
     }
-    return 'starbucks';
+    return 'cafe';
   });
 
   const [darkMode, setDarkMode] = useState<'light' | 'dark'>(() => {
@@ -332,8 +332,8 @@ export default function App() {
     if (testRun) {
       if (testRun.theme) {
         const lower = testRun.theme.toLowerCase();
-        if (lower === 'starbucks' || lower === 'notion' || lower === 'sentry') {
-          setTheme(lower as 'starbucks' | 'notion' | 'sentry');
+        if (lower === 'cafe' || lower === 'concept' || lower === 'sentinel') {
+          setTheme(lower as 'cafe' | 'concept' | 'sentinel');
         }
       }
       if (testRun.darkMode !== undefined) {
@@ -609,14 +609,14 @@ export default function App() {
               <select
                 id="theme-select"
                 value={theme}
-                onChange={(e) => setTheme(e.target.value as 'starbucks' | 'notion' | 'sentry')}
+                onChange={(e) => setTheme(e.target.value as 'cafe' | 'concept' | 'sentinel')}
                 className="rounded-md border border-border-default bg-surface-50 px-2.5 py-1.5 text-xs text-text-ink focus:border-accent-blue focus:outline-none dark:bg-surface-50 dark:text-text-on-primary font-medium"
                 aria-label="Select Theme"
                 title="Select Theme"
               >
-                <option value="starbucks">Starbucks</option>
-                <option value="notion">Notion</option>
-                <option value="sentry">Sentry</option>
+                <option value="cafe">Cafe</option>
+                <option value="concept">Concept</option>
+                <option value="sentinel">Sentinel</option>
               </select>
             </div>
 

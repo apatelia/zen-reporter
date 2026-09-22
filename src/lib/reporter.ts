@@ -61,7 +61,7 @@ export function resolveConfig(
     : 'Test Automation Project';
   const testRunName = rawConfig?.testRunName ? String(rawConfig.testRunName) : 'Test Run #1';
   const singleSummaryFile = Boolean(rawConfig?.singleSummaryFile);
-  const theme = rawConfig?.theme !== undefined ? String(rawConfig.theme) : 'Starbucks';
+  const theme = rawConfig?.theme !== undefined ? String(rawConfig.theme) : 'Cafe';
   const darkMode = Boolean(rawConfig?.darkMode);
 
   let enableHistory: 'auto' | boolean = 'auto';
