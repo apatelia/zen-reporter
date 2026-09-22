@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import {
-  AreaChart,
-  Area,
+  BarChart,
+  Bar,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -649,7 +649,7 @@ export default function StepCategoryTrend({ suites, history }: Props) {
       ) : (
         <div className="mt-4">
           <ResponsiveContainer width="100%" height={280}>
-            <AreaChart data={chartData} margin={{ top: 10, right: 20, left: 10, bottom: 5 }}>
+            <BarChart data={chartData} margin={{ top: 10, right: 20, left: 10, bottom: 5 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border-chart)" />
               <XAxis dataKey="name" fontSize={11} height={48} interval={0} tick={renderTrendTick} />
               <YAxis
@@ -698,17 +698,16 @@ export default function StepCategoryTrend({ suites, history }: Props) {
                 }}
               />
               {STEP_CATEGORIES.map((cat) => (
-                <Area
+                <Bar
                   key={cat.key}
-                  type="monotone"
                   dataKey={cat.label}
                   stackId="1"
-                  stroke={cat.borderColor}
                   fill={cat.color}
-                  fillOpacity={0.85}
+                  stroke={cat.borderColor}
+                  strokeWidth={1}
                 />
               ))}
-            </AreaChart>
+            </BarChart>
           </ResponsiveContainer>
         </div>
       )}
