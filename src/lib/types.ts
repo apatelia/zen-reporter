@@ -169,10 +169,40 @@ export interface HistorySlowRow {
   runs: number;
 }
 
+export interface HistoryFileRow {
+  run_id?: string;
+  started_at: string;
+  file: string;
+  total: number;
+  passed: number;
+  failed: number;
+  timed_out: number;
+  interrupted: number;
+  skipped: number;
+}
+
+export interface HistoryTestRow {
+  run_id?: string;
+  started_at: string;
+  suite: string;
+  file: string;
+  title: string;
+  project: string;
+  total: number;
+  passed: number;
+  failed: number;
+  timed_out: number;
+  interrupted: number;
+  skipped: number;
+  avg_duration_ms?: number;
+}
+
 export interface HistoryData {
   generated_at: string;
   runs: HistoryRun[];
   flaky: HistoryFlakyRow[];
   regressions: HistoryRegressionRow[];
   slowest: HistorySlowRow[];
+  files?: HistoryFileRow[];
+  tests?: HistoryTestRow[];
 }

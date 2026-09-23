@@ -327,17 +327,34 @@ const TREND_SQL = `SELECT run_name, started_at, run_total, run_passed, run_faile
 
 const PROJECT_DURATIONS_SQL = `SELECT run_id, started_at, project, round(sum(duration_ms) / 1000.0, 2) AS duration_sec FROM ${SRC} WHERE project IS NOT NULL AND project != '' GROUP BY run_id, started_at, project ORDER BY started_at ASC`;
 
+const FILES_SQL = `SELECT run_id, started_at, file, count(*) AS total, count(*) FILTER (status = 'passed') AS passed, count(*) FILTER (status = 'failed') AS failed, count(*) FILTER (status = 'timedOut') AS timed_out, count(*) FILTER (status = 'interrupted') AS interrupted, count(*) FILTER (status = 'skipped') AS skipped FROM ${SRC} WHERE file IS NOT NULL AND file != '' GROUP BY run_id, started_at, file ORDER BY started_at ASC, file ASC`;
+
+const FILES_SUMMARY_SQL = `SELECT file, count(DISTINCT run_id) AS runs, count(*) AS total_tests, count(*) FILTER (status = 'passed') AS passed, count(*) FILTER (status = 'failed') AS failed, count(*) FILTER (status = 'timedOut') AS timed_out, count(*) FILTER (status = 'interrupted') AS interrupted, count(*) FILTER (status = 'skipped') AS skipped, round(100.0 * count(*) FILTER (status = 'passed') / nullif(count(*), 0), 1) AS pass_rate FROM ${SRC} WHERE file IS NOT NULL AND file != '' GROUP BY file ORDER BY total_tests DESC`;
+
+const TESTS_SQL = `SELECT run_id, started_at, suite, file, title, project, count(*) AS total, count(*) FILTER (status = 'passed') AS passed, count(*) FILTER (status = 'failed') AS failed, count(*) FILTER (status = 'timedOut') AS timed_out, count(*) FILTER (status = 'interrupted') AS interrupted, count(*) FILTER (status = 'skipped') AS skipped, round(avg(duration_ms), 1) AS avg_duration_ms FROM ${SRC} WHERE title IS NOT NULL AND title != '' GROUP BY run_id, started_at, suite, file, title, project ORDER BY started_at ASC, file ASC, title ASC`;
+
+const TESTS_SUMMARY_SQL = `SELECT suite, file, title, project, count(DISTINCT run_id) AS runs, count(*) AS total_executions, count(*) FILTER (status = 'passed') AS passed, count(*) FILTER (status = 'failed') AS failed, count(*) FILTER (status = 'timedOut') AS timed_out, count(*) FILTER (status = 'interrupted') AS interrupted, count(*) FILTER (status = 'skipped') AS skipped, round(avg(duration_ms), 1) AS avg_duration_ms, round(100.0 * count(*) FILTER (status = 'passed') / nullif(count(*), 0), 1) AS pass_rate FROM ${SRC} WHERE title IS NOT NULL AND title != '' GROUP BY suite, file, title, project ORDER BY total_executions DESC`;
+
 async function generateHistoryReport(conn) {
   const runsSql = `SELECT DISTINCT run_id, run_name, started_at, run_duration_ms, coalesce(max(run_sequential_duration_ms), sum(duration_ms)) AS run_sequential_duration_ms, max(run_workers) AS run_workers, run_total, run_passed, run_failed, run_timed_out, run_skipped, run_interrupted, round(100.0 * run_passed / nullif(run_total, 0), 1) AS pass_rate FROM ${SRC} GROUP BY run_id, run_name, started_at, run_duration_ms, run_total, run_passed, run_failed, run_timed_out, run_skipped, run_interrupted ORDER BY started_at ASC`;
 
-  const [runsResult, flakyResult, regressionsResult, slowResult, projectDurationsResult] =
-    await Promise.all([
-      runQuery(conn, runsSql, [runsGlob]),
-      runQuery(conn, FLAKY_SQL, [runsGlob]),
-      runQuery(conn, REGRESSIONS_SQL, [runsGlob]),
-      runQuery(conn, SLOW_SQL, [runsGlob, 10]),
-      runQuery(conn, PROJECT_DURATIONS_SQL, [runsGlob]),
-    ]);
+  const [
+    runsResult,
+    flakyResult,
+    regressionsResult,
+    slowResult,
+    projectDurationsResult,
+    filesResult,
+    testsResult,
+  ] = await Promise.all([
+    runQuery(conn, runsSql, [runsGlob]),
+    runQuery(conn, FLAKY_SQL, [runsGlob]),
+    runQuery(conn, REGRESSIONS_SQL, [runsGlob]),
+    runQuery(conn, SLOW_SQL, [runsGlob, 10]),
+    runQuery(conn, PROJECT_DURATIONS_SQL, [runsGlob]),
+    runQuery(conn, FILES_SQL, [runsGlob]),
+    runQuery(conn, TESTS_SQL, [runsGlob]),
+  ]);
 
   const projectDurationsByRun = {};
   for (const row of projectDurationsResult.rows) {
@@ -358,6 +375,8 @@ async function generateHistoryReport(conn) {
     flaky: flakyResult.rows,
     regressions: regressionsResult.rows,
     slowest: slowResult.rows,
+    files: filesResult.rows,
+    tests: testsResult.rows,
     project_trends: projectDurationsResult.rows,
   };
 
@@ -410,6 +429,17 @@ async function handleHistory(subArgs) {
 
       case 'trend':
         printTable(await runQuery(conn, TREND_SQL, [runsGlob]), 'No trend data found.');
+        break;
+
+      case 'files':
+        printTable(
+          await runQuery(conn, FILES_SUMMARY_SQL, [runsGlob]),
+          'No spec files history found.'
+        );
+        break;
+
+      case 'tests':
+        printTable(await runQuery(conn, TESTS_SUMMARY_SQL, [runsGlob]), 'No test history found.');
         break;
 
       case 'report':

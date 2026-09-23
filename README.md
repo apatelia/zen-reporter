@@ -22,6 +22,7 @@ Dark mode:
 - **Deep-Dive Failure Analysis**: Detailed root cause analysis with two grouping modes (file grouping and error signature clustering to group identical root causes into Shared Issue clusters), step-by-step execution traces with target indicators (`▶`), source code snippets with syntax highlighting, diff stack traces (`Expected` vs `Received`), and retry attempt tabs (`Run`, `Retry #1`).
 - **Visual Regression Diff Viewer**: Built-in side-by-side snapshot comparison for visual regression testing, allowing interactive comparison of `actual`, `expected` (baseline), and overlay `diff` image attachments.
 - **Execution History Archiving**: Archive historical test runs with details on run metadata, execution modes (`Parallel, N workers` vs `Serial`), wall-clock duration, pass/fail ratios, and automated quality ratings (`Excellent`, `Needs improvement`, `Critical`).
+- **File & Test Case History**: Dedicated **File History** and **Test History** views to analyze long-term spec file stability, individual test case pass/fail rates, run counts, average execution durations, date-range filtering, and text search across historical runs.
 - **Visual Quality Trends**: Track pass rate percentages over time, multi-project execution duration trends per project profile, and step category trends across historical runs.
 - **DuckDB-Powered Test Intelligence**: Embedded analytics engine for advanced test suite intelligence:
   - **Flaky Intelligence**: Detect tests fluctuating between pass and fail across historical runs.
@@ -83,15 +84,15 @@ export default defineConfig({
 
 ### Options Reference
 
-| Option              | Type                | Default                     | Description                                                         |
-| :------------------ | :------------------ | :-------------------------- | :------------------------------------------------------------------ |
-| `outputDir`         | `string`            | `"zen-report"`              | Directory where final report files are saved.                       |
-| `projectName`       | `string`            | `"Test Automation Project"` | Project name displayed prominently in the top bar of the dashboard. |
-| `testRunName`       | `string`            | `"Test Run #1"`             | Test run or build name displayed in the top bar of the dashboard.   |
-| `theme`             | `string`            | `"Cafe"`                    | Theme applied on first load (`"Cafe"`, `"Concept"`, `"Sentinel"`).  |
-| `darkMode`          | `boolean`           | `false`                     | When set to `true`, the report loads in dark mode on first load.    |
-| `singleSummaryFile` | `boolean`           | `false`                     | Generates a standalone `summary.html` for executive summary views.  |
-| `enableHistory`     | `'auto' \| boolean` | `"auto"`                    | Controls history execution archiving (`"auto"`, `true`, `false`).   |
+| Option              | Type                | Default                     | Description                                                                               |
+| :------------------ | :------------------ | :-------------------------- | :---------------------------------------------------------------------------------------- |
+| `outputDir`         | `string`            | `"zen-report"`              | Directory where final report files are saved.                                             |
+| `projectName`       | `string`            | `"Test Automation Project"` | Project name displayed prominently in the top bar of the dashboard.                       |
+| `testRunName`       | `string`            | `"Test Run #{N}"`           | Test run or build name displayed in top bar. `{N}` is replaced dynamically by run number. |
+| `theme`             | `string`            | `"Cafe"`                    | Theme applied on first load (`"Cafe"`, `"Concept"`, `"Sentinel"`).                        |
+| `darkMode`          | `boolean`           | `false`                     | When set to `true`, the report loads in dark mode on first load.                          |
+| `singleSummaryFile` | `boolean`           | `false`                     | Generates a standalone `summary.html` for executive summary views.                        |
+| `enableHistory`     | `'auto' \| boolean` | `"auto"`                    | Controls history execution archiving (`"auto"`, `true`, `false`).                         |
 
 ---
 

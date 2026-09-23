@@ -12,7 +12,7 @@ import {
 } from 'recharts';
 import type { HistoryData, TestSuite, TestStep } from '@/lib/types';
 import { collectAllCases, formatDateParts } from '@/lib/utils';
-import { LearnMoreButton } from '@/components/shared';
+import { LearnMoreButton, GuideModal } from '@/components/shared';
 
 export type StepCategoryKey = 'assertions' | 'actions' | 'network' | 'hooks' | 'waits' | 'others';
 
@@ -439,8 +439,8 @@ export default function StepCategoryTrend({ suites, history }: Props) {
             onClick={() => setViewMode('percent')}
             className={`px-3 py-1 rounded transition-colors cursor-pointer ${
               viewMode === 'percent'
-                ? 'bg-canvas text-text-ink dark:text-text-on-primary shadow-xs font-bold'
-                : 'text-text-body-mid hover:text-text-ink dark:text-text-muted dark:hover:text-text-on-primary'
+                ? 'bg-canvas dark:bg-surface-200 border border-border-active text-text-ink dark:text-text-on-primary shadow-xs font-bold'
+                : 'border border-transparent text-text-body-mid hover:text-text-ink dark:text-text-muted dark:hover:text-text-on-primary font-medium'
             }`}
           >
             % Normalized
@@ -450,8 +450,8 @@ export default function StepCategoryTrend({ suites, history }: Props) {
             onClick={() => setViewMode('count')}
             className={`px-3 py-1 rounded transition-colors cursor-pointer ${
               viewMode === 'count'
-                ? 'bg-canvas text-text-ink dark:text-text-on-primary shadow-xs font-bold'
-                : 'text-text-body-mid hover:text-text-ink dark:text-text-muted dark:hover:text-text-on-primary'
+                ? 'bg-canvas dark:bg-surface-200 border border-border-active text-text-ink dark:text-text-on-primary shadow-xs font-bold'
+                : 'border border-transparent text-text-body-mid hover:text-text-ink dark:text-text-muted dark:hover:text-text-on-primary font-medium'
             }`}
           >
             Step Count
@@ -713,162 +713,123 @@ export default function StepCategoryTrend({ suites, history }: Props) {
       )}
 
       {/* Interactive Modal: Step Categories & Composition Guide */}
-      {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 overflow-y-auto">
-          <div className="relative w-full max-w-3xl rounded-lg border border-border-default bg-canvas p-6 shadow-2xl space-y-6 max-h-[90vh] overflow-y-auto">
-            {/* Modal Header */}
-            <div className="flex items-start justify-between border-b border-border-default pb-4">
-              <div>
-                <h3 className="text-xl font-bold text-text-ink dark:text-text-on-primary">
-                  Step Category Composition & Trend Guide
-                </h3>
-                <p className="mt-1 text-xs text-text-body-mid dark:text-text-muted">
-                  Understanding step categories, code patterns, and diagnostic value in Zen Reporter
+      <GuideModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        title="Step Category Composition & Trend Guide"
+        subtitle="Understanding step categories, code patterns, and diagnostic value in Zen Reporter"
+      >
+        {/* Modal Body: Categories & Examples */}
+        <div className="space-y-4">
+          <h4 className="font-bold tracking-tight text-text-ink dark:text-text-on-primary uppercase text-xs">
+            1. Step Categories & Code Examples
+          </h4>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {STEP_CATEGORIES.map((cat) => (
+              <div
+                key={cat.key}
+                className="rounded-md border border-border-default bg-surface-50 p-4 space-y-2.5"
+              >
+                <div className="flex items-center gap-2">
+                  <span
+                    className="h-3 w-3 rounded-full shrink-0"
+                    style={{ backgroundColor: cat.color }}
+                  />
+                  <h5 className="font-bold text-sm text-text-ink dark:text-text-on-primary">
+                    {cat.label}
+                  </h5>
+                </div>
+                <p className="text-xs text-text-body-mid dark:text-text-muted leading-relaxed">
+                  {cat.description}
                 </p>
-              </div>
-              <button
-                type="button"
-                onClick={() => setIsModalOpen(false)}
-                className="rounded-md p-1.5 text-text-body-mid hover:bg-surface-100 hover:text-text-ink dark:text-text-muted dark:hover:text-text-on-primary transition-colors cursor-pointer"
-                title="Close guide"
-              >
-                <svg
-                  className="h-5 w-5"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                  strokeWidth={2}
-                >
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-
-            {/* Modal Body: Categories & Examples */}
-            <div className="space-y-4">
-              <h4 className="font-bold tracking-tight text-text-ink dark:text-text-on-primary uppercase text-xs">
-                1. Step Categories & Code Examples
-              </h4>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {STEP_CATEGORIES.map((cat) => (
-                  <div
-                    key={cat.key}
-                    className="rounded-md border border-border-default bg-surface-50 p-4 space-y-2.5"
-                  >
-                    <div className="flex items-center gap-2">
-                      <span
-                        className="h-3 w-3 rounded-full shrink-0"
-                        style={{ backgroundColor: cat.color }}
-                      />
-                      <h5 className="font-bold text-sm text-text-ink dark:text-text-on-primary">
-                        {cat.label}
-                      </h5>
+                <div className="rounded bg-surface-100 p-2 text-[11px] font-mono border border-border-default space-y-1">
+                  <div className="text-[10px] font-bold text-text-body-mid dark:text-text-muted uppercase tracking-wider">
+                    Examples:
+                  </div>
+                  {cat.examples.map((ex) => (
+                    <div key={ex} className="text-text-ink dark:text-text-on-primary truncate">
+                      • {ex}
                     </div>
-                    <p className="text-xs text-text-body-mid dark:text-text-muted leading-relaxed">
-                      {cat.description}
-                    </p>
-                    <div className="rounded bg-surface-100 p-2 text-[11px] font-mono border border-border-default space-y-1">
-                      <div className="text-[10px] font-bold text-text-body-mid dark:text-text-muted uppercase tracking-wider">
-                        Examples:
-                      </div>
-                      {cat.examples.map((ex) => (
-                        <div key={ex} className="text-text-ink dark:text-text-on-primary truncate">
-                          • {ex}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Modal Body: View Modes Explanation */}
-            <div className="space-y-3 border-t border-border-default pt-4">
-              <h4 className="font-bold tracking-tight text-text-ink dark:text-text-on-primary uppercase text-xs">
-                2. View Modes (% Normalized vs. Step Count)
-              </h4>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="rounded-md border border-border-default bg-surface-50 p-4 space-y-2">
-                  <div className="flex items-center gap-2">
-                    <span className="rounded bg-surface-200 px-2 py-0.5 text-xs font-bold text-text-ink dark:text-text-on-primary border border-border-default">
-                      % Normalized View
-                    </span>
-                  </div>
-                  <p className="text-xs text-text-body-mid dark:text-text-muted leading-relaxed">
-                    Displays the <strong>relative percentage (0%–100%)</strong> contribution of each
-                    step category for every run. This normalizes for changes in test suite size so
-                    you can compare relative test composition, assertion density, and wait overhead
-                    consistently over time.
-                  </p>
-                </div>
-
-                <div className="rounded-md border border-border-default bg-surface-50 p-4 space-y-2">
-                  <div className="flex items-center gap-2">
-                    <span className="rounded bg-surface-200 px-2 py-0.5 text-xs font-bold text-text-ink dark:text-text-on-primary border border-border-default">
-                      Step Count View
-                    </span>
-                  </div>
-                  <p className="text-xs text-text-body-mid dark:text-text-muted leading-relaxed">
-                    Displays the <strong>absolute number of steps</strong> executed per category in
-                    each run. This helps track total step volume expansion, category growth, and
-                    absolute execution scale across test runs.
-                  </p>
+                  ))}
                 </div>
               </div>
-            </div>
+            ))}
+          </div>
+        </div>
 
-            {/* Modal Body: Why & How This Trend Chart Is Useful */}
-            <div className="space-y-3 border-t border-border-default pt-4">
-              <h4 className="font-bold tracking-tight text-text-ink dark:text-text-on-primary uppercase text-xs">
-                3. Why & How This Trend Chart Is Useful
-              </h4>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <div className="rounded-md border border-border-default bg-surface-50 p-3.5 space-y-1.5">
-                  <div className="flex items-center gap-1.5 font-bold text-xs text-warning-600 dark:text-warning-500">
-                    <span>⚡ Flakiness & Overhead</span>
-                  </div>
-                  <p className="text-xs text-text-body-mid dark:text-text-muted leading-relaxed">
-                    Spikes in <strong>Waits & Sync</strong> steps (`waitForTimeout`,
-                    `waitForSelector`) highlight dynamic wait patching, slow backends, or flaky test
-                    practices.
-                  </p>
-                </div>
-
-                <div className="rounded-md border border-border-default bg-surface-50 p-3.5 space-y-1.5">
-                  <div className="flex items-center gap-1.5 font-bold text-xs text-success-600 dark:text-success-500">
-                    <span>🎯 Assertion Rigor</span>
-                  </div>
-                  <p className="text-xs text-text-body-mid dark:text-text-muted leading-relaxed">
-                    Tracks whether new tests actually validate application state or spend excessive
-                    time navigating without assertion density.
-                  </p>
-                </div>
-
-                <div className="rounded-md border border-border-default bg-surface-50 p-3.5 space-y-1.5">
-                  <div className="flex items-center gap-1.5 font-bold text-xs text-text-ink dark:text-text-on-primary">
-                    <span>🛠️ Fixture Maintenance</span>
-                  </div>
-                  <p className="text-xs text-text-body-mid dark:text-text-muted leading-relaxed">
-                    Ensures setup hooks (`beforeEach`, auth setup) remain lightweight over time
-                    without consuming execution runtime.
-                  </p>
-                </div>
+        {/* Modal Body: View Modes Explanation */}
+        <div className="space-y-3 border-t border-border-default pt-4">
+          <h4 className="font-bold tracking-tight text-text-ink dark:text-text-on-primary uppercase text-xs">
+            2. View Modes (% Normalized vs. Step Count)
+          </h4>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="rounded-md border border-border-default bg-surface-50 p-4 space-y-2">
+              <div className="flex items-center gap-2">
+                <span className="rounded bg-surface-200 px-2 py-0.5 text-xs font-bold text-text-ink dark:text-text-on-primary border border-border-default">
+                  % Normalized View
+                </span>
               </div>
+              <p className="text-xs text-text-body-mid dark:text-text-muted leading-relaxed">
+                Displays the <strong>relative percentage (0%–100%)</strong> contribution of each
+                step category for every run. This normalizes for changes in test suite size so you
+                can compare relative test composition, assertion density, and wait overhead
+                consistently over time.
+              </p>
             </div>
 
-            {/* Modal Footer */}
-            <div className="flex justify-end border-t border-border-default pt-4">
-              <button
-                type="button"
-                onClick={() => setIsModalOpen(false)}
-                className="rounded-md bg-accent-blue px-4 py-2 text-xs font-bold text-text-on-primary hover:bg-accent-blue/90 transition-colors cursor-pointer"
-              >
-                Close Guide
-              </button>
+            <div className="rounded-md border border-border-default bg-surface-50 p-4 space-y-2">
+              <div className="flex items-center gap-2">
+                <span className="rounded bg-surface-200 px-2 py-0.5 text-xs font-bold text-text-ink dark:text-text-on-primary border border-border-default">
+                  Step Count View
+                </span>
+              </div>
+              <p className="text-xs text-text-body-mid dark:text-text-muted leading-relaxed">
+                Displays the <strong>absolute number of steps</strong> executed per category in each
+                run. This helps track total step volume expansion, category growth, and absolute
+                execution scale across test runs.
+              </p>
             </div>
           </div>
         </div>
-      )}
+
+        {/* Modal Body: Why & How This Trend Chart Is Useful */}
+        <div className="space-y-3 border-t border-border-default pt-4">
+          <h4 className="font-bold tracking-tight text-text-ink dark:text-text-on-primary uppercase text-xs">
+            3. Why & How This Trend Chart Is Useful
+          </h4>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="rounded-md border border-border-default bg-surface-50 p-3.5 space-y-1.5">
+              <div className="flex items-center gap-1.5 font-bold text-xs text-warning-600 dark:text-warning-500">
+                <span>⚡ Flakiness & Overhead</span>
+              </div>
+              <p className="text-xs text-text-body-mid dark:text-text-muted leading-relaxed">
+                Spikes in <strong>Waits & Sync</strong> steps (`waitForTimeout`, `waitForSelector`)
+                highlight dynamic wait patching, slow backends, or flaky test practices.
+              </p>
+            </div>
+
+            <div className="rounded-md border border-border-default bg-surface-50 p-3.5 space-y-1.5">
+              <div className="flex items-center gap-1.5 font-bold text-xs text-success-600 dark:text-success-500">
+                <span>🎯 Assertion Rigor</span>
+              </div>
+              <p className="text-xs text-text-body-mid dark:text-text-muted leading-relaxed">
+                Tracks whether new tests actually validate application state or spend excessive time
+                navigating without assertion density.
+              </p>
+            </div>
+
+            <div className="rounded-md border border-border-default bg-surface-50 p-3.5 space-y-1.5">
+              <div className="flex items-center gap-1.5 font-bold text-xs text-text-ink dark:text-text-on-primary">
+                <span>🛠️ Fixture Maintenance</span>
+              </div>
+              <p className="text-xs text-text-body-mid dark:text-text-muted leading-relaxed">
+                Ensures setup hooks (`beforeEach`, auth setup) remain lightweight over time without
+                consuming execution runtime.
+              </p>
+            </div>
+          </div>
+        </div>
+      </GuideModal>
     </section>
   );
 }

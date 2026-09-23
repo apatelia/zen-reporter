@@ -1,5 +1,5 @@
 import type { ResultSummary, TestSuite } from '@/lib/types';
-import { computePassRate, formatDateRange, formatDuration } from '@/lib/utils';
+import { computePassRate, formatDuration } from '@/lib/utils';
 import ExecutionEfficiencyCard from './ExecutionEfficiencyCard';
 import PassRateRing from './PassRateRing';
 import QuickStats from './QuickStats';
@@ -22,23 +22,6 @@ export default function Overview({ summary, suites }: Props) {
         <h2 className="text-2xl font-bold tracking-tight text-text-ink dark:text-text-on-primary sm:text-3xl">
           Overview
         </h2>
-        <div className="mt-1 flex items-center gap-2 text-xs text-text-body-mid dark:text-text-muted">
-          <svg
-            className="h-4 w-4 text-text-muted shrink-0"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-            strokeWidth={1.75}
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <rect width="18" height="18" x="3" y="4" rx="2" ry="2" />
-            <line x1="16" x2="16" y1="2" y2="6" />
-            <line x1="8" x2="8" y1="2" y2="6" />
-            <line x1="3" x2="21" y1="10" y2="10" />
-          </svg>
-          <span className="font-medium">{formatDateRange(summary.startTime, summary.endTime)}</span>
-        </div>
       </div>
 
       {/* Section 1: Execution Environment & Metadata */}

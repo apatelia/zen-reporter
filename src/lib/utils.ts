@@ -116,15 +116,15 @@ export function highlightJsTokens(code: string): string {
     const [fullMatch, comment, str, keyword, numBool, method] = match;
 
     if (comment) {
-      result += `<span class="text-slate-400 italic">${escapeHTML(comment)}</span>`;
+      result += `<span class="text-slate-500 dark:text-slate-400 italic">${escapeHTML(comment)}</span>`;
     } else if (str) {
-      result += `<span class="text-emerald-300 font-medium">${escapeHTML(str)}</span>`;
+      result += `<span class="text-emerald-700 dark:text-emerald-300 font-medium">${escapeHTML(str)}</span>`;
     } else if (keyword) {
-      result += `<span class="text-purple-400 font-semibold">${escapeHTML(keyword)}</span>`;
+      result += `<span class="text-purple-700 dark:text-purple-400 font-semibold">${escapeHTML(keyword)}</span>`;
     } else if (numBool) {
-      result += `<span class="text-amber-300 font-mono">${escapeHTML(numBool)}</span>`;
+      result += `<span class="text-amber-700 dark:text-amber-300 font-mono">${escapeHTML(numBool)}</span>`;
     } else if (method) {
-      result += `<span class="text-sky-300 font-medium">${escapeHTML(method)}</span>`;
+      result += `<span class="text-sky-700 dark:text-sky-300 font-medium">${escapeHTML(method)}</span>`;
     } else {
       result += escapeHTML(fullMatch);
     }
@@ -134,7 +134,7 @@ export function highlightJsTokens(code: string): string {
   return result;
 }
 
-export function highlightCodeLine(codeLine: string): string {
+export function highlightCodeLine(codeLine: string, status?: string): string {
   if (!codeLine) return '';
 
   const isTarget = codeLine.startsWith('>');
@@ -143,16 +143,21 @@ export function highlightCodeLine(codeLine: string): string {
   let prefixHtml = '';
   let codePart: string;
 
+  const isFailedStatus = status === 'failed' || status === 'timedOut' || status === 'interrupted';
+
   if (pipeIdx !== -1) {
     const rawPrefix = codeLine.slice(0, pipeIdx + 1);
     codePart = codeLine.slice(pipeIdx + 1);
 
     if (isTarget) {
       const lineNo = rawPrefix.slice(1, pipeIdx).trim();
-      prefixHtml = `<span class="inline-flex items-center gap-1 font-bold text-danger-400"><span class="text-danger-500 font-black">▶</span>${lineNo.padStart(4, ' ')} |</span>`;
+      const indicatorColorClass = isFailedStatus
+        ? 'text-danger-600 dark:text-danger-400'
+        : 'text-success-600 dark:text-success-400';
+      prefixHtml = `<span class="inline-flex items-center gap-1 font-bold ${indicatorColorClass}"><span class="font-black">▶</span>${lineNo.padStart(4, ' ')} |</span>`;
     } else {
       const lineNo = rawPrefix.slice(0, pipeIdx).trim();
-      prefixHtml = `<span class="text-slate-500 font-mono">${lineNo.padStart(5, ' ')} |</span>`;
+      prefixHtml = `<span class="text-text-muted/70 dark:text-slate-500 font-mono">${lineNo.padStart(5, ' ')} |</span>`;
     }
   } else {
     codePart = codeLine;
@@ -160,18 +165,14 @@ export function highlightCodeLine(codeLine: string): string {
 
   const highlightedCode = highlightJsTokens(codePart);
 
-  if (isTarget) {
-    return `<div class="flex items-center gap-2 bg-danger-500/15 border-l-2 border-danger-500 px-2 py-0.5 rounded-r font-mono text-[11px] leading-relaxed my-0.5">${prefixHtml} <span>${highlightedCode}</span></div>`;
-  }
-
   return `<div class="flex items-center gap-2 px-2 py-0.5 font-mono text-[11px] leading-relaxed">${prefixHtml} <span>${highlightedCode}</span></div>`;
 }
 
-export function highlightCodeSnippet(snippet: string): string {
+export function highlightCodeSnippet(snippet: string, status?: string): string {
   if (!snippet) return '';
   return snippet
     .split(/\r?\n/)
-    .map((line) => highlightCodeLine(line))
+    .map((line) => highlightCodeLine(line, status))
     .join('');
 }
 

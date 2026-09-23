@@ -98,8 +98,8 @@ export const ViewModeSelector: React.FC<ViewModeSelectorProps> = ({
             onClick={() => onModeChange(m.id)}
             className={`flex items-center gap-1.5 px-3 py-1 rounded transition-colors ${
               active
-                ? 'bg-canvas text-text-ink dark:text-text-on-primary shadow-xs font-bold'
-                : 'text-text-body-mid hover:text-text-ink dark:text-text-muted dark:hover:text-text-on-primary font-medium'
+                ? 'bg-canvas dark:bg-surface-200 border border-border-active text-text-ink dark:text-text-on-primary shadow-xs font-bold'
+                : 'border border-transparent text-text-body-mid hover:text-text-ink dark:text-text-muted dark:hover:text-text-on-primary font-medium'
             } ${m.disabled ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer'}`}
             title={m.id === 'diff' && !hasDiffImage ? 'Uses CSS difference blend mode' : m.label}
           >

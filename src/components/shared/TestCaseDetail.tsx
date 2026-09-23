@@ -171,10 +171,10 @@ function StepItem({ step, idx }: StepItemProps) {
           {snippetContent ? (
             <div className="mt-1 mb-1.5">
               <div
-                className="rounded-md bg-surface-100 dark:bg-surface-950 text-text-ink dark:text-surface-900 p-2.5 border border-border-default dark:border-border-subtle overflow-x-auto shadow-xs"
+                className="rounded-md bg-surface-100 dark:bg-surface-950 text-text-ink dark:text-slate-200 p-2.5 border border-border-default dark:border-border-subtle overflow-x-auto shadow-xs"
                 /* eslint-disable-next-line @eslint-react/dom-no-dangerously-set-innerhtml */
                 dangerouslySetInnerHTML={{
-                  __html: highlightCodeSnippet(snippetContent),
+                  __html: highlightCodeSnippet(snippetContent, step.status),
                 }}
               />
             </div>
@@ -220,10 +220,10 @@ function StepItem({ step, idx }: StepItemProps) {
                     {subSnippet && (
                       <div className="mt-1 ml-3">
                         <div
-                          className="rounded-md bg-surface-100 dark:bg-surface-950 text-text-ink dark:text-surface-900 p-2 border border-border-default dark:border-border-subtle overflow-x-auto shadow-xs"
+                          className="rounded-md bg-surface-100 dark:bg-surface-950 text-text-ink dark:text-slate-200 p-2 border border-border-default dark:border-border-subtle overflow-x-auto shadow-xs"
                           /* eslint-disable-next-line @eslint-react/dom-no-dangerously-set-innerhtml */
                           dangerouslySetInnerHTML={{
-                            __html: highlightCodeSnippet(subSnippet),
+                            __html: highlightCodeSnippet(subSnippet, sub.status),
                           }}
                         />
                       </div>
@@ -425,10 +425,13 @@ export default function TestCaseDetail({ testCase, showSteps = true }: Props) {
                         Code Snippet:
                       </p>
                       <div
-                        className="rounded-md bg-surface-950 p-2.5 text-xs font-mono leading-relaxed text-canvas dark:text-surface-900 border border-border-default dark:border-border-subtle overflow-x-auto"
+                        className="rounded-md bg-surface-100 dark:bg-surface-950 p-2.5 text-xs font-mono leading-relaxed text-text-ink dark:text-slate-200 border border-border-default dark:border-border-subtle overflow-x-auto"
                         /* eslint-disable-next-line @eslint-react/dom-no-dangerously-set-innerhtml */
                         dangerouslySetInnerHTML={{
-                          __html: highlightCodeSnippet(sanitizeAnsi(attempt.error.snippet)),
+                          __html: highlightCodeSnippet(
+                            sanitizeAnsi(attempt.error.snippet),
+                            attempt.status
+                          ),
                         }}
                       />
                     </div>
@@ -440,7 +443,7 @@ export default function TestCaseDetail({ testCase, showSteps = true }: Props) {
                         Stack Trace:
                       </p>
                       <pre
-                        className="rounded-md bg-surface-950 p-3 text-xs font-mono leading-relaxed text-canvas dark:text-surface-900 border border-border-default dark:border-border-subtle overflow-x-auto"
+                        className="rounded-md bg-surface-100 dark:bg-surface-950 p-3 text-xs font-mono leading-relaxed text-text-ink dark:text-slate-200 border border-border-default dark:border-border-subtle overflow-x-auto"
                         /* eslint-disable-next-line @eslint-react/dom-no-dangerously-set-innerhtml */
                         dangerouslySetInnerHTML={{
                           __html: highlightExpectedReceived(attempt.error.stack),

@@ -1,25 +1,630 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
+import HistoryGuides from './HistoryGuides';
 import type { HistoryData } from '@/lib/types';
-import { formatDate, formatDuration } from '@/lib/utils';
+import { formatDate, formatDuration, truncateFileName } from '@/lib/utils';
 import { usePagination, PageSizeControl, PaginationFooter } from '@/components/pagination';
-import { LearnMoreButton, HistoryDisabledBanner } from '@/components/shared';
+import {
+  LearnMoreButton,
+  HistoryDisabledBanner,
+  DateFilterControl,
+  DataTable,
+  PassRateBadge,
+  type ColumnDef,
+  type DateFilterRange,
+} from '@/components/shared';
 
 interface Props {
   history: HistoryData | null;
   isHistoryDisabled?: boolean;
 }
 
-const th = 'px-3 py-3 text-left font-bold text-text-ink dark:text-text-on-primary';
-const thNum = 'px-3 py-3 text-right font-bold text-text-ink dark:text-text-on-primary';
-const td = 'px-3 py-3 text-text-ink dark:text-text-on-primary tabular-nums';
-const tdNum = 'px-3 py-3 text-right text-text-ink dark:text-text-on-primary tabular-nums';
-
 const sectionClass = 'rounded-md border border-border-default bg-surface-50 p-6 shadow-xs';
 const headingClass = 'text-xl font-bold text-text-ink dark:text-text-on-primary';
 
 export default function HistorySection({ history, isHistoryDisabled }: Props) {
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const runsPag = usePagination(history?.runs.length ?? 0);
+  const [isFileModalOpen, setIsFileModalOpen] = useState(false);
+  const [filterRange, setFilterRange] = useState<DateFilterRange>({
+    fromTimestamp: null,
+    toTimestamp: null,
+    label: null,
+  });
+  const [fileFilterRange, setFileFilterRange] = useState<DateFilterRange>({
+    fromTimestamp: null,
+    toTimestamp: null,
+    label: null,
+  });
+  const [fileNameSearchTerm, setFileNameSearchTerm] = useState('');
+  const [isTestModalOpen, setIsTestModalOpen] = useState(false);
+  const [testFilterRange, setTestFilterRange] = useState<DateFilterRange>({
+    fromTimestamp: null,
+    toTimestamp: null,
+    label: null,
+  });
+  const [testSearchTerm, setTestSearchTerm] = useState('');
+
+  const availableTimestamps = useMemo(
+    () => history?.runs.map((r) => r.started_at) ?? [],
+    [history]
+  );
+
+  const filteredRuns = useMemo(() => {
+    if (!history) return [];
+    if (!filterRange.fromTimestamp && !filterRange.toTimestamp) return history.runs;
+
+    return history.runs.filter((run) => {
+      const runTime = new Date(run.started_at).getTime();
+      if (filterRange.fromTimestamp && runTime < filterRange.fromTimestamp) return false;
+      if (filterRange.toTimestamp && runTime > filterRange.toTimestamp) return false;
+      return true;
+    });
+  }, [history, filterRange]);
+
+  const runs = useMemo(() => [...filteredRuns].reverse(), [filteredRuns]);
+  const runsPag = usePagination(runs.length, 10);
+
+  const aggregatedFiles = useMemo(() => {
+    if (!history) return [];
+    const rawFiles = history.files ?? [];
+
+    const filtered = rawFiles.filter((row) => {
+      const rowTime = new Date(row.started_at).getTime();
+      if (fileFilterRange.fromTimestamp && rowTime < fileFilterRange.fromTimestamp) return false;
+      if (fileFilterRange.toTimestamp && rowTime > fileFilterRange.toTimestamp) return false;
+      if (
+        fileNameSearchTerm.trim() &&
+        !row.file.toLowerCase().includes(fileNameSearchTerm.trim().toLowerCase())
+      ) {
+        return false;
+      }
+      return true;
+    });
+
+    const map = new Map<
+      string,
+      {
+        file: string;
+        total: number;
+        passed: number;
+        failed: number;
+        timedOut: number;
+        interrupted: number;
+        skipped: number;
+        runIds: Set<string>;
+      }
+    >();
+
+    for (const row of filtered) {
+      let item = map.get(row.file);
+      if (!item) {
+        item = {
+          file: row.file,
+          total: 0,
+          passed: 0,
+          failed: 0,
+          timedOut: 0,
+          interrupted: 0,
+          skipped: 0,
+          runIds: new Set<string>(),
+        };
+        map.set(row.file, item);
+      }
+      item.total += row.total;
+      item.passed += row.passed;
+      item.failed += row.failed;
+      item.timedOut += row.timed_out;
+      item.interrupted += row.interrupted;
+      item.skipped += row.skipped;
+      if (row.run_id) {
+        item.runIds.add(row.run_id);
+      }
+    }
+
+    return Array.from(map.values())
+      .map((item) => {
+        const total = item.total;
+        const passRate = total > 0 ? Math.round((item.passed / total) * 100) : null;
+        return {
+          file: item.file,
+          runsCount: item.runIds.size || 1,
+          total,
+          passed: item.passed,
+          failed: item.failed,
+          timedOut: item.timedOut,
+          interrupted: item.interrupted,
+          skipped: item.skipped,
+          passRate,
+        };
+      })
+      .sort((a, b) => b.total - a.total || a.file.localeCompare(b.file));
+  }, [history, fileFilterRange, fileNameSearchTerm]);
+
+  const filesPag = usePagination(aggregatedFiles.length, 10);
+
+  const aggregatedTests = useMemo(() => {
+    if (!history) return [];
+    let rawTests = history.tests;
+    if (!rawTests || rawTests.length === 0) {
+      rawTests = [
+        ...(history.flaky ?? []).map((f) => ({
+          started_at: history.generated_at,
+          suite: f.suite,
+          file: f.file,
+          title: f.title,
+          project: f.project,
+          total: f.total_runs,
+          passed: f.passed_runs,
+          failed: f.failed_runs,
+          timed_out: 0,
+          interrupted: 0,
+          skipped: 0,
+        })),
+        ...(history.slowest ?? []).map((s) => ({
+          started_at: history.generated_at,
+          suite: s.suite,
+          file: s.file,
+          title: s.title,
+          project: s.project,
+          total: s.runs,
+          passed: s.runs,
+          failed: 0,
+          timed_out: 0,
+          interrupted: 0,
+          skipped: 0,
+          avg_duration_ms: s.avg_duration_ms ?? s.avg_ms,
+        })),
+      ];
+    }
+
+    const filtered = rawTests.filter((row) => {
+      const rowTime = new Date(row.started_at).getTime();
+      if (testFilterRange.fromTimestamp && rowTime < testFilterRange.fromTimestamp) return false;
+      if (testFilterRange.toTimestamp && rowTime > testFilterRange.toTimestamp) return false;
+
+      if (testSearchTerm.trim()) {
+        const query = testSearchTerm.trim().toLowerCase();
+        const matchesVisibleColumns =
+          (row.title && row.title.toLowerCase().includes(query)) ||
+          (row.suite && row.suite.toLowerCase().includes(query)) ||
+          (row.file && row.file.toLowerCase().includes(query)) ||
+          (row.project && row.project.toLowerCase().includes(query));
+        if (!matchesVisibleColumns) return false;
+      }
+
+      return true;
+    });
+
+    const map = new Map<
+      string,
+      {
+        key: string;
+        title: string;
+        suite: string;
+        file: string;
+        project: string;
+        total: number;
+        passed: number;
+        failed: number;
+        timedOut: number;
+        interrupted: number;
+        skipped: number;
+        totalDurationMs: number;
+        durationCount: number;
+        runIds: Set<string>;
+      }
+    >();
+
+    for (const row of filtered) {
+      const key = `${row.project || ''}:::${row.file || ''}:::${row.suite || ''}:::${row.title || ''}`;
+      let item = map.get(key);
+      if (!item) {
+        item = {
+          key,
+          title: row.title,
+          suite: row.suite || '',
+          file: row.file || '',
+          project: row.project || '',
+          total: 0,
+          passed: 0,
+          failed: 0,
+          timedOut: 0,
+          interrupted: 0,
+          skipped: 0,
+          totalDurationMs: 0,
+          durationCount: 0,
+          runIds: new Set<string>(),
+        };
+        map.set(key, item);
+      }
+      item.total += row.total ?? 1;
+      item.passed += row.passed ?? 0;
+      item.failed += row.failed ?? 0;
+      item.timedOut += row.timed_out ?? 0;
+      item.interrupted += row.interrupted ?? 0;
+      item.skipped += row.skipped ?? 0;
+      if (row.avg_duration_ms != null) {
+        item.totalDurationMs += row.avg_duration_ms;
+        item.durationCount += 1;
+      }
+      if (row.run_id) {
+        item.runIds.add(row.run_id);
+      }
+    }
+
+    return Array.from(map.values())
+      .map((item) => {
+        const total = item.total;
+        const passRate = total > 0 ? Math.round((item.passed / total) * 100) : null;
+        const avgDurationMs =
+          item.durationCount > 0 ? Math.round(item.totalDurationMs / item.durationCount) : null;
+        return {
+          key: item.key,
+          title: item.title,
+          suite: item.suite,
+          file: item.file,
+          project: item.project,
+          runsCount: item.runIds.size || 1,
+          total,
+          passed: item.passed,
+          failed: item.failed,
+          timedOut: item.timedOut,
+          interrupted: item.interrupted,
+          skipped: item.skipped,
+          avgDurationMs,
+          passRate,
+        };
+      })
+      .sort((a, b) => b.total - a.total || a.title.localeCompare(b.title));
+  }, [history, testFilterRange, testSearchTerm]);
+
+  const testsPag = usePagination(aggregatedTests.length, 10);
+
+  const runColumns: ColumnDef<(typeof runs)[0]>[] = useMemo(
+    () => [
+      {
+        key: 'run_name',
+        header: 'Run Name',
+        className: 'font-bold text-text-ink dark:text-text-on-primary',
+        cell: (run) => run.run_name,
+      },
+      {
+        key: 'mode',
+        header: 'Mode',
+        className: 'font-medium text-text-body-mid dark:text-text-muted',
+        cell: (run) =>
+          !run.run_workers || run.run_workers <= 1
+            ? 'Serial'
+            : `Parallel, ${run.run_workers} workers`,
+      },
+      {
+        key: 'started_at',
+        header: 'Started',
+        cell: (run) => formatDate(run.started_at),
+      },
+      {
+        key: 'duration',
+        header: 'Duration',
+        align: 'right',
+        cell: (run) => formatDuration(run.run_duration_ms),
+      },
+      {
+        key: 'time_saved',
+        header: 'Time Saved',
+        align: 'right',
+        cell: (run) => {
+          const isParallel = Boolean(run.run_workers && run.run_workers > 1);
+          const seqMs = run.run_sequential_duration_ms;
+          const hasSeqData = seqMs != null;
+          const savedMs =
+            isParallel && hasSeqData && seqMs > run.run_duration_ms
+              ? seqMs - run.run_duration_ms
+              : 0;
+          const speedup =
+            isParallel && hasSeqData && savedMs > 0
+              ? (seqMs / Math.max(1, run.run_duration_ms)).toFixed(1)
+              : null;
+
+          if (!isParallel)
+            return <span className="text-text-body-mid dark:text-text-muted">0s</span>;
+          if (!hasSeqData)
+            return (
+              <span
+                title="Sequential duration data not available for this run"
+                className="text-text-body-mid dark:text-text-muted"
+              >
+                —
+              </span>
+            );
+          if (savedMs > 0 && speedup)
+            return (
+              <span className="font-bold text-success-600 dark:text-success-500 whitespace-nowrap">
+                ⚡ {formatDuration(savedMs)} ({speedup}x)
+              </span>
+            );
+          return <span className="text-text-body-mid dark:text-text-muted">0s</span>;
+        },
+      },
+      {
+        key: 'total',
+        header: 'Total',
+        align: 'right',
+        className: 'font-medium',
+        cell: (run) => run.run_total,
+      },
+      {
+        key: 'passed',
+        header: 'Passed',
+        align: 'right',
+        cell: (run) => (
+          <span
+            className={run.run_passed > 0 ? 'text-success-600 dark:text-success-500 font-bold' : ''}
+          >
+            {run.run_passed}
+          </span>
+        ),
+      },
+      {
+        key: 'failed',
+        header: 'Failed',
+        align: 'right',
+        cell: (run) => (
+          <span
+            className={run.run_failed > 0 ? 'text-danger-600 dark:text-danger-500 font-bold' : ''}
+          >
+            {run.run_failed}
+          </span>
+        ),
+      },
+      {
+        key: 'skipped',
+        header: 'Skipped',
+        align: 'right',
+        cell: (run) => (
+          <span
+            className={
+              run.run_skipped > 0 ? 'text-text-body-mid dark:text-text-muted font-medium' : ''
+            }
+          >
+            {run.run_skipped}
+          </span>
+        ),
+      },
+      {
+        key: 'timed_out',
+        header: 'Timed Out',
+        align: 'right',
+        cell: (run) => (
+          <span
+            className={
+              run.run_timed_out > 0 ? 'text-danger-600 dark:text-danger-500 font-bold' : ''
+            }
+          >
+            {run.run_timed_out}
+          </span>
+        ),
+      },
+      {
+        key: 'interrupted',
+        header: 'Interrupted',
+        align: 'right',
+        cell: (run) => (
+          <span
+            className={
+              run.run_interrupted > 0 ? 'text-warning-600 dark:text-warning-500 font-bold' : ''
+            }
+          >
+            {run.run_interrupted}
+          </span>
+        ),
+      },
+      {
+        key: 'pass_rate',
+        header: 'Pass Rate',
+        align: 'right',
+        cell: (run) => <PassRateBadge passRate={run.pass_rate} />,
+      },
+    ],
+    []
+  );
+
+  const fileColumns: ColumnDef<(typeof aggregatedFiles)[0]>[] = useMemo(
+    () => [
+      {
+        key: 'file',
+        header: 'Spec File',
+        cell: (f) => (
+          <div
+            className="max-w-xs sm:max-w-md overflow-hidden text-ellipsis whitespace-nowrap font-medium text-text-ink dark:text-text-on-primary"
+            title={f.file}
+          >
+            {truncateFileName(f.file)}
+          </div>
+        ),
+      },
+      {
+        key: 'runs',
+        header: 'Runs',
+        align: 'right',
+        className: 'text-text-body-mid dark:text-text-muted',
+        cell: (f) => f.runsCount,
+      },
+      {
+        key: 'total',
+        header: 'Total Tests',
+        align: 'right',
+        className: 'font-medium',
+        cell: (f) => f.total,
+      },
+      {
+        key: 'passed',
+        header: 'Passed',
+        align: 'right',
+        cell: (f) => (
+          <span className={f.passed > 0 ? 'text-success-600 dark:text-success-500 font-bold' : ''}>
+            {f.passed}
+          </span>
+        ),
+      },
+      {
+        key: 'failed',
+        header: 'Failed',
+        align: 'right',
+        cell: (f) => (
+          <span className={f.failed > 0 ? 'text-danger-600 dark:text-danger-500 font-bold' : ''}>
+            {f.failed}
+          </span>
+        ),
+      },
+      {
+        key: 'timed_out',
+        header: 'Timed Out',
+        align: 'right',
+        cell: (f) => (
+          <span className={f.timedOut > 0 ? 'text-danger-600 dark:text-danger-500 font-bold' : ''}>
+            {f.timedOut}
+          </span>
+        ),
+      },
+      {
+        key: 'interrupted',
+        header: 'Interrupted',
+        align: 'right',
+        cell: (f) => (
+          <span
+            className={f.interrupted > 0 ? 'text-warning-600 dark:text-warning-500 font-bold' : ''}
+          >
+            {f.interrupted}
+          </span>
+        ),
+      },
+      {
+        key: 'skipped',
+        header: 'Skipped',
+        align: 'right',
+        cell: (f) => (
+          <span
+            className={f.skipped > 0 ? 'text-text-body-mid dark:text-text-muted font-medium' : ''}
+          >
+            {f.skipped}
+          </span>
+        ),
+      },
+      {
+        key: 'pass_rate',
+        header: 'Pass Rate',
+        align: 'right',
+        cell: (f) => <PassRateBadge passRate={f.passRate} />,
+      },
+    ],
+    []
+  );
+
+  const testColumns: ColumnDef<(typeof aggregatedTests)[0]>[] = useMemo(
+    () => [
+      {
+        key: 'test',
+        header: 'Test',
+        className: 'font-bold text-text-ink dark:text-text-on-primary',
+        cell: (t) => t.title,
+      },
+      {
+        key: 'suite',
+        header: 'Suite',
+        cell: (t) => t.suite || '-',
+      },
+      {
+        key: 'file',
+        header: 'Spec File',
+        cell: (t) => (
+          <div
+            className="max-w-xs overflow-hidden text-ellipsis whitespace-nowrap font-medium text-text-ink dark:text-text-on-primary"
+            title={t.file}
+          >
+            {truncateFileName(t.file)}
+          </div>
+        ),
+      },
+      {
+        key: 'project',
+        header: 'Project',
+        cell: (t) => t.project || '-',
+      },
+      {
+        key: 'runs',
+        header: 'Runs',
+        align: 'right',
+        className: 'text-text-body-mid dark:text-text-muted',
+        cell: (t) => t.runsCount,
+      },
+      {
+        key: 'passed',
+        header: 'Passed',
+        align: 'right',
+        cell: (t) => (
+          <span className={t.passed > 0 ? 'text-success-600 dark:text-success-500 font-bold' : ''}>
+            {t.passed}
+          </span>
+        ),
+      },
+      {
+        key: 'failed',
+        header: 'Failed',
+        align: 'right',
+        cell: (t) => (
+          <span className={t.failed > 0 ? 'text-danger-600 dark:text-danger-500 font-bold' : ''}>
+            {t.failed}
+          </span>
+        ),
+      },
+      {
+        key: 'timed_out',
+        header: 'Timed Out',
+        align: 'right',
+        cell: (t) => (
+          <span className={t.timedOut > 0 ? 'text-danger-600 dark:text-danger-500 font-bold' : ''}>
+            {t.timedOut}
+          </span>
+        ),
+      },
+      {
+        key: 'interrupted',
+        header: 'Interrupted',
+        align: 'right',
+        cell: (t) => (
+          <span
+            className={t.interrupted > 0 ? 'text-warning-600 dark:text-warning-500 font-bold' : ''}
+          >
+            {t.interrupted}
+          </span>
+        ),
+      },
+      {
+        key: 'skipped',
+        header: 'Skipped',
+        align: 'right',
+        cell: (t) => (
+          <span
+            className={t.skipped > 0 ? 'text-text-body-mid dark:text-text-muted font-medium' : ''}
+          >
+            {t.skipped}
+          </span>
+        ),
+      },
+      {
+        key: 'avg_duration',
+        header: 'Avg Duration',
+        align: 'right',
+        cell: (t) => (t.avgDurationMs != null ? formatDuration(t.avgDurationMs) : '-'),
+      },
+      {
+        key: 'pass_rate',
+        header: 'Pass Rate',
+        align: 'right',
+        cell: (t) => <PassRateBadge passRate={t.passRate} />,
+      },
+    ],
+    []
+  );
 
   if (!history) {
     return (
@@ -58,8 +663,9 @@ export default function HistorySection({ history, isHistoryDisabled }: Props) {
     );
   }
 
-  const runs = [...history.runs].reverse();
   const pageRuns = runs.slice(runsPag.start, runsPag.start + runsPag.pageSize);
+  const pageFiles = aggregatedFiles.slice(filesPag.start, filesPag.start + filesPag.pageSize);
+  const pageTests = aggregatedTests.slice(testsPag.start, testsPag.start + testsPag.pageSize);
 
   return (
     <div className="space-y-6">
@@ -76,7 +682,8 @@ export default function HistorySection({ history, isHistoryDisabled }: Props) {
       </div>
 
       <section className={sectionClass}>
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-border-default pb-4">
+        {/* Row 1: Section Title & Page Size Control */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-3 border-b border-border-default">
           <div className="flex items-center gap-3">
             <h2 className={headingClass}>Test runs audit log</h2>
             <LearnMoreButton onClick={() => setIsModalOpen(true)} />
@@ -88,120 +695,31 @@ export default function HistorySection({ history, isHistoryDisabled }: Props) {
           />
         </div>
 
-        <div className="mt-4 overflow-x-auto">
-          <table className="w-full text-xs">
-            <thead>
-              <tr className="border-b-2 border-border-default bg-surface-100/50 dark:bg-surface-100/30">
-                <th className={th}>Run Name</th>
-                <th className={th}>Mode</th>
-                <th className={th}>Started</th>
-                <th className={thNum}>Duration</th>
-                <th className={thNum}>Time Saved</th>
-                <th className={thNum}>Total</th>
-                <th className={thNum}>Passed</th>
-                <th className={thNum}>Failed</th>
-                <th className={thNum}>Skipped</th>
-                <th className={thNum}>Timed Out</th>
-                <th className={thNum}>Interrupted</th>
-                <th className={thNum}>Pass Rate</th>
-              </tr>
-            </thead>
-            <tbody>
-              {pageRuns.map((run) => {
-                const isParallel = Boolean(run.run_workers && run.run_workers > 1);
-                const seqMs = run.run_sequential_duration_ms;
-                const hasSeqData = seqMs != null;
-                const savedMs =
-                  isParallel && hasSeqData && seqMs > run.run_duration_ms
-                    ? seqMs - run.run_duration_ms
-                    : 0;
-                const speedup =
-                  isParallel && hasSeqData && savedMs > 0
-                    ? (seqMs / Math.max(1, run.run_duration_ms)).toFixed(1)
-                    : null;
-
-                return (
-                  <tr
-                    key={run.run_id}
-                    className="border-b border-border-default hover:bg-surface-100/60 dark:hover:bg-surface-200/40 transition-colors"
-                  >
-                    <td className={`${td} font-bold text-text-ink dark:text-text-on-primary`}>
-                      {run.run_name}
-                    </td>
-                    <td className={`${td} font-medium text-text-body-mid dark:text-text-muted`}>
-                      {!run.run_workers || run.run_workers <= 1
-                        ? 'Serial'
-                        : `Parallel, ${run.run_workers} workers`}
-                    </td>
-                    <td className={td}>{formatDate(run.started_at)}</td>
-                    <td className={tdNum}>{formatDuration(run.run_duration_ms)}</td>
-                    <td className={tdNum}>
-                      {!isParallel ? (
-                        <span className="text-text-body-mid dark:text-text-muted">0s</span>
-                      ) : !hasSeqData ? (
-                        <span
-                          title="Sequential duration data not available for this run"
-                          className="text-text-body-mid dark:text-text-muted"
-                        >
-                          —
-                        </span>
-                      ) : savedMs > 0 && speedup ? (
-                        <span className="font-bold text-success-600 dark:text-success-500 whitespace-nowrap">
-                          ⚡ {formatDuration(savedMs)} ({speedup}x)
-                        </span>
-                      ) : (
-                        <span className="text-text-body-mid dark:text-text-muted">0s</span>
-                      )}
-                    </td>
-                    <td className={`${tdNum} font-medium`}>{run.run_total}</td>
-                    <td
-                      className={`${tdNum} ${run.run_passed > 0 ? 'text-success-600 dark:text-success-500 font-bold' : ''}`}
-                    >
-                      {run.run_passed}
-                    </td>
-                    <td
-                      className={`${tdNum} ${run.run_failed > 0 ? 'text-danger-600 dark:text-danger-500 font-bold' : ''}`}
-                    >
-                      {run.run_failed}
-                    </td>
-                    <td
-                      className={`${tdNum} ${run.run_skipped > 0 ? 'text-text-body-mid dark:text-text-muted font-medium' : ''}`}
-                    >
-                      {run.run_skipped}
-                    </td>
-                    <td
-                      className={`${tdNum} ${run.run_timed_out > 0 ? 'text-danger-600 dark:text-danger-500 font-bold' : ''}`}
-                    >
-                      {run.run_timed_out}
-                    </td>
-                    <td
-                      className={`${tdNum} ${run.run_interrupted > 0 ? 'text-warning-600 dark:text-warning-500 font-bold' : ''}`}
-                    >
-                      {run.run_interrupted}
-                    </td>
-                    <td className={tdNum}>
-                      {run.pass_rate === null ? (
-                        '-'
-                      ) : (
-                        <span
-                          className={`inline-block px-2 py-0.5 rounded font-bold ${
-                            run.pass_rate >= 90
-                              ? 'bg-success-50 text-success-700 dark:bg-success-500/20 dark:text-success-500'
-                              : run.pass_rate >= 60
-                                ? 'bg-warning-50 text-warning-700 dark:bg-warning-500/20 dark:text-warning-500'
-                                : 'bg-danger-50 text-danger-700 dark:bg-danger-500/20 dark:text-danger-500'
-                          }`}
-                        >
-                          {run.pass_rate}%
-                        </span>
-                      )}
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+        {/* Row 2: Dedicated Date Filter Toolbar */}
+        <div className="pt-3 pb-1 border-b border-border-default/50">
+          <DateFilterControl
+            onFilterChange={(range) => {
+              setFilterRange(range);
+              runsPag.setPage(1);
+            }}
+            availableTimestamps={availableTimestamps}
+          />
         </div>
+
+        <DataTable
+          data={pageRuns}
+          columns={runColumns}
+          getRowKey={(run) => run.run_id}
+          className="mt-4"
+          emptyMessage={
+            <div className="py-16 text-center text-text-body-mid dark:text-text-muted">
+              <p className="text-base font-semibold">No matching test runs found</p>
+              <p className="mt-1 text-xs text-text-muted-soft">
+                Try adjusting or clearing your date range filter criteria.
+              </p>
+            </div>
+          }
+        />
 
         <PaginationFooter
           label="runs"
@@ -214,107 +732,179 @@ export default function HistorySection({ history, isHistoryDisabled }: Props) {
         />
       </section>
 
-      {/* Interactive Modal Guide */}
-      {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 overflow-y-auto">
-          <div className="relative w-full max-w-2xl rounded-lg border border-border-default bg-canvas p-6 shadow-2xl space-y-5 max-h-[90vh] overflow-y-auto">
-            {/* Modal Header */}
-            <div className="flex items-start justify-between border-b border-border-default pb-3.5">
-              <div>
-                <h3 className="text-xl font-bold text-text-ink dark:text-text-on-primary">
-                  Historical Test Runs Guide
-                </h3>
-                <p className="mt-1 text-xs text-text-body-mid dark:text-text-muted">
-                  Column definitions, worker execution modes, and quality health thresholds
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={() => setIsModalOpen(false)}
-                className="rounded-md p-1.5 text-text-body-mid hover:bg-surface-100 hover:text-text-ink dark:text-text-muted dark:hover:text-text-on-primary transition-colors cursor-pointer"
-                title="Close guide"
-              >
-                <svg
-                  className="h-5 w-5"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                  strokeWidth={2}
-                >
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
+      {/* Spec Files Breakdown / File History Section */}
+      <section className={sectionClass}>
+        {/* Row 1: Section Title & Page Size Control */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-3 border-b border-border-default">
+          <div>
+            <div className="flex items-center gap-3">
+              <h2 className={headingClass}>File History</h2>
+              <LearnMoreButton onClick={() => setIsFileModalOpen(true)} />
             </div>
+            <p className="mt-1 text-xs text-text-body-mid dark:text-text-muted">
+              Spec files test execution breakdown across test runs
+            </p>
+          </div>
+          <PageSizeControl
+            id="files-history-page-size"
+            pageSize={filesPag.pageSize}
+            onPageSizeChange={filesPag.changePageSize}
+          />
+        </div>
 
-            {/* Modal Content */}
-            <div className="space-y-4 text-xs text-text-body-mid dark:text-text-muted leading-relaxed">
-              <p>
-                The{' '}
-                <strong className="text-text-ink dark:text-text-on-primary">
-                  Test Runs Audit Log
-                </strong>{' '}
-                provides a complete historical record of every test suite execution processed and
-                saved in Zen Reporter's run store.
-              </p>
-              <div className="rounded-md border border-border-default bg-surface-50 p-4 space-y-2">
-                <div className="font-bold text-text-ink dark:text-text-on-primary text-xs uppercase tracking-wider">
-                  Table Column Definitions:
-                </div>
-                <ul className="list-disc list-inside space-y-1">
-                  <li>
-                    <strong>Mode:</strong> Indicates whether the run executed sequentially (Serial)
-                    or concurrently across multiple worker processes (`--workers`).
-                  </li>
-                  <li>
-                    <strong>Duration:</strong> Total wall-clock execution time elapsed for the test
-                    run.
-                  </li>
-                  <li>
-                    <strong>Time Saved:</strong> Difference between cumulative test execution time
-                    (sequential effort) and actual wall-clock duration when running in parallel mode
-                    (e.g. ⚡ 3m 45s saved with 4x speedup).
-                  </li>
-                  <li>
-                    <strong>Status Breakdown:</strong> Counts for Passed, Failed, Skipped, Timed
-                    Out, and Interrupted test outcomes.
-                  </li>
-                </ul>
-              </div>
-
-              <div className="rounded-md border border-border-default bg-surface-50 p-4 space-y-2">
-                <div className="font-bold text-text-ink dark:text-text-on-primary text-xs uppercase tracking-wider">
-                  Pass Rate Health Categories & Status Badges:
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-1">
-                  <div className="rounded bg-success-50 p-2.5 text-success-700 dark:bg-success-500/20 dark:text-success-400 font-medium">
-                    <div className="font-bold text-xs mb-1">🟢 ≥90% (Excellent)</div>
-                    Suite is healthy and meets quality target for automated CI/CD deployment gates.
-                  </div>
-                  <div className="rounded bg-warning-50 p-2.5 text-warning-700 dark:bg-warning-500/20 dark:text-warning-400 font-medium">
-                    <div className="font-bold text-xs mb-1">🟡 60–89% (Needs Improvement)</div>
-                    Elevated failure volume or flakiness present. Developer triage recommended.
-                  </div>
-                  <div className="rounded bg-danger-50 p-2.5 text-danger-700 dark:bg-danger-500/20 dark:text-danger-400 font-medium">
-                    <div className="font-bold text-xs mb-1">🔴 &lt;60% (Critical)</div>
-                    Severe test suite breakage or infrastructure outage requiring immediate fix.
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Modal Footer */}
-            <div className="flex justify-end border-t border-border-default pt-3.5">
-              <button
-                type="button"
-                onClick={() => setIsModalOpen(false)}
-                className="rounded-md bg-accent-blue px-4 py-2 text-xs font-bold text-text-on-primary hover:bg-accent-blue/90 transition-colors cursor-pointer"
-              >
-                Close Guide
-              </button>
-            </div>
+        {/* Row 2: Dedicated Date Filter Toolbar & Search Filter */}
+        <div className="pt-3 pb-1 border-b border-border-default/50 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <DateFilterControl
+            onFilterChange={(range) => {
+              setFileFilterRange(range);
+              filesPag.setPage(1);
+            }}
+            availableTimestamps={availableTimestamps}
+          />
+          <div className="relative w-44 sm:w-48 shrink-0">
+            <svg
+              className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-text-muted"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={1.5}
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"
+              />
+            </svg>
+            <input
+              type="text"
+              placeholder="Search spec files..."
+              value={fileNameSearchTerm}
+              onChange={(e) => {
+                setFileNameSearchTerm(e.target.value);
+                filesPag.setPage(1);
+              }}
+              className="w-full rounded-md border border-border-default bg-surface-50 pl-9 pr-3 py-1.5 text-xs text-text-ink placeholder:text-text-muted focus:border-accent-blue focus:outline-none dark:bg-surface-50 dark:text-text-on-primary"
+            />
           </div>
         </div>
-      )}
+
+        <DataTable
+          data={pageFiles}
+          columns={fileColumns}
+          getRowKey={(f) => f.file}
+          className="mt-4"
+          emptyMessage={
+            <div className="py-16 text-center text-text-body-mid dark:text-text-muted">
+              <p className="text-base font-semibold">No matching file history found</p>
+              <p className="mt-1 text-xs text-text-muted-soft">
+                Try adjusting or clearing your date range filter criteria.
+              </p>
+            </div>
+          }
+        />
+
+        <PaginationFooter
+          label="spec files"
+          total={aggregatedFiles.length}
+          start={filesPag.start}
+          pageLength={pageFiles.length}
+          currentPage={filesPag.currentPage}
+          totalPages={filesPag.totalPages}
+          onPageChange={filesPag.setPage}
+        />
+      </section>
+
+      {/* Test History Section */}
+      <section className={sectionClass}>
+        {/* Row 1: Section Title & Page Size Control */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-3 border-b border-border-default">
+          <div>
+            <div className="flex items-center gap-3">
+              <h2 className={headingClass}>Test History</h2>
+              <LearnMoreButton onClick={() => setIsTestModalOpen(true)} />
+            </div>
+            <p className="mt-1 text-xs text-text-body-mid dark:text-text-muted">
+              Individual test execution breakdown across test runs
+            </p>
+          </div>
+          <PageSizeControl
+            id="tests-history-page-size"
+            pageSize={testsPag.pageSize}
+            onPageSizeChange={testsPag.changePageSize}
+          />
+        </div>
+
+        {/* Row 2: Dedicated Date Filter Toolbar & Search Filter */}
+        <div className="pt-3 pb-1 border-b border-border-default/50 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <DateFilterControl
+            onFilterChange={(range) => {
+              setTestFilterRange(range);
+              testsPag.setPage(1);
+            }}
+            availableTimestamps={availableTimestamps}
+          />
+          <div className="relative w-44 sm:w-48 shrink-0">
+            <svg
+              className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-text-muted"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={1.5}
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"
+              />
+            </svg>
+            <input
+              type="text"
+              placeholder="Search tests..."
+              value={testSearchTerm}
+              onChange={(e) => {
+                setTestSearchTerm(e.target.value);
+                testsPag.setPage(1);
+              }}
+              className="w-full rounded-md border border-border-default bg-surface-50 pl-9 pr-3 py-1.5 text-xs text-text-ink placeholder:text-text-muted focus:border-accent-blue focus:outline-none dark:bg-surface-50 dark:text-text-on-primary"
+            />
+          </div>
+        </div>
+
+        <DataTable
+          data={pageTests}
+          columns={testColumns}
+          getRowKey={(t) => t.key}
+          className="mt-4"
+          emptyMessage={
+            <div className="py-16 text-center text-text-body-mid dark:text-text-muted">
+              <p className="text-base font-semibold">No matching test history found</p>
+              <p className="mt-1 text-xs text-text-muted-soft">
+                Try adjusting or clearing your date range or search filter criteria.
+              </p>
+            </div>
+          }
+        />
+
+        <PaginationFooter
+          label="tests"
+          total={aggregatedTests.length}
+          start={testsPag.start}
+          pageLength={pageTests.length}
+          currentPage={testsPag.currentPage}
+          totalPages={testsPag.totalPages}
+          onPageChange={testsPag.setPage}
+        />
+      </section>
+
+      {/* Interactive Modal Guides */}
+      <HistoryGuides
+        isRunsModalOpen={isModalOpen}
+        onCloseRunsModal={() => setIsModalOpen(false)}
+        isFileModalOpen={isFileModalOpen}
+        onCloseFileModal={() => setIsFileModalOpen(false)}
+        isTestModalOpen={isTestModalOpen}
+        onCloseTestModal={() => setIsTestModalOpen(false)}
+      />
     </div>
   );
 }

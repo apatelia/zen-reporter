@@ -31,6 +31,7 @@
   --color-border-default: #d6dbde;
   --color-border-subtle: #edebe9;
   --color-border-chart: #b4bcc1;
+  --color-border-active: #1e3932;
 
   /* ── Semantic: Success (Cafe Green) ─────── */
   --color-success: #00754a;
@@ -81,6 +82,14 @@
   --color-accent-red: #c82014;
 }
 
+:root {
+  color-scheme: light;
+}
+
+html.dark {
+  color-scheme: dark;
+}
+
 /* ── Dark mode variant definition ─ */
 @custom-variant dark (&:where(.dark, .dark *));
 
@@ -91,9 +100,8 @@
 /* Cafe Light Mode default variables are set in @theme above */
 
 /* Cafe Dark Mode */
-.dark,
-html[data-theme='cafe'].dark,
-[data-theme='cafe'] .dark {
+html.dark,
+html[data-theme='cafe'].dark {
   --color-ink: #ffffff;
   --color-ink-strong: #ffffff;
 
@@ -117,6 +125,7 @@ html[data-theme='cafe'].dark,
   --color-border-default: #2b5148;
   --color-border-subtle: #213e37;
   --color-border-chart: #385d54;
+  --color-border-active: #d4e9e2;
 
   /* Semantic dark adjustments */
   --color-success: #4ade80;
@@ -193,6 +202,7 @@ html[data-theme='concept'] {
   --color-border-default: #e6e6e6;
   --color-border-subtle: #f0f0f0;
   --color-border-chart: #d0d0d0;
+  --color-border-active: #31302e;
 
   /* ── Semantic: Success ─ */
   --color-success: #1aae39;
@@ -273,6 +283,7 @@ html[data-theme='concept'].dark,
   --color-border-default: #363b4d;
   --color-border-subtle: #2b2f3d;
   --color-border-chart: #484f67;
+  --color-border-active: #f0eee9;
 
   /* ── Semantic: Success ───────────────────────── */
   --color-success: #2aae44;
@@ -354,6 +365,7 @@ html[data-theme='sentinel'],
   --color-border-default: #cfcfdb;
   --color-border-subtle: #e5e7eb;
   --color-border-chart: #b2b2c4;
+  --color-border-active: #1f1633;
 
   /* ── Semantic: Success ── */
   --color-success: #709600;
@@ -434,6 +446,7 @@ html[data-theme='sentinel'].dark,
   --color-border-default: #362d59;
   --color-border-subtle: #2a1f42;
   --color-border-chart: #544975;
+  --color-border-active: #e5e1eb;
 
   /* ── Semantic: Success ────────── */
   --color-success: #c2ef4e;
@@ -568,4 +581,30 @@ input[type='range'].onion-opacity-slider::-moz-range-track {
 
 input[type='range'].onion-opacity-slider::-webkit-slider-thumb {
   margin-top: -5px;
+}
+
+/* Custom date picker styling: Uppercase MM/DD/YYYY placeholder & dark mode calendar icon visibility */
+input[type='date']::-webkit-datetime-edit,
+input[type='date']::-webkit-datetime-edit-fields-wrapper,
+input[type='date']::-webkit-datetime-edit-text,
+input[type='date']::-webkit-datetime-edit-month-field,
+input[type='date']::-webkit-datetime-edit-day-field,
+input[type='date']::-webkit-datetime-edit-year-field {
+  text-transform: uppercase;
+}
+
+input[type='date']::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+  opacity: 0.85;
+  transition: opacity 0.2s;
+}
+
+input[type='date']::-webkit-calendar-picker-indicator:hover {
+  opacity: 1;
+}
+
+.dark input[type='date']::-webkit-calendar-picker-indicator,
+html.dark input[type='date']::-webkit-calendar-picker-indicator,
+[data-theme] .dark input[type='date']::-webkit-calendar-picker-indicator {
+  filter: invert(0.9) brightness(1.2);
 }

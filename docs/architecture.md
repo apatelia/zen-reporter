@@ -20,11 +20,15 @@ zen-reporter/
 │   │   │   ├── FileSummary.tsx
 │   │   │   └── FilesSection.tsx
 │   │   ├── history/               # History tab components
-│   │   │   └── HistorySection.tsx # Historical run execution table
+│   │   │   ├── HistoryGuides.tsx  # Guide modal for History tab
+│   │   │   └── HistorySection.tsx # Historical run execution, File History & Test History views
 │   │   ├── insights/              # Insights tab components
+│   │   │   ├── InsightsGuides.tsx # Guide modal for Insights tab
 │   │   │   ├── InsightsSection.tsx
 │   │   │   ├── ProjectDurationChart.tsx
 │   │   │   └── ProjectFlakyRateChart.tsx
+│   │   ├── layout/                # Layout & navigation components
+│   │   │   └── Sidebar.tsx        # Navigation sidebar layout component
 │   │   ├── pagination/            # Centralized pagination components & hooks
 │   │   │   ├── PageSizeControl.tsx
 │   │   │   ├── PaginationFooter.tsx
@@ -34,9 +38,13 @@ zen-reporter/
 │   │   │   ├── ProjectBarCharts.tsx
 │   │   │   ├── ProjectDetailCards.tsx
 │   │   │   ├── ProjectVolumeCoverageChart.tsx
+│   │   │   ├── ProjectsGuides.tsx  # Guide modal for Projects tab
 │   │   │   ├── ProjectsOverviewCards.tsx
 │   │   │   └── ProjectsSection.tsx
 │   │   ├── shared/                # Shared cross-tab components
+│   │   │   ├── DataTable.tsx      # Reusable styled data table component
+│   │   │   ├── DateFilterControl.tsx # Date-range filter selector control
+│   │   │   ├── GuideModal.tsx     # Reusable modal for feature documentation
 │   │   │   ├── HistoryDisabledBanner.tsx # Alert banner shown when history recording is disabled
 │   │   │   ├── LearnMoreButton.tsx
 │   │   │   ├── MultiSelectFilter.tsx
@@ -52,6 +60,7 @@ zen-reporter/
 │   │   │   ├── DurationTrend.tsx
 │   │   │   ├── PassRateTrend.tsx
 │   │   │   ├── StepCategoryTrend.tsx
+│   │   │   ├── TrendsGuides.tsx   # Guide modal for Trends tab
 │   │   │   └── TrendsSection.tsx
 │   │   └── visual-regression/     # Visual regression diff viewer components
 │   │       ├── DiffHighlightViewer.tsx # Overlay & difference highlight viewer

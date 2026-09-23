@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import type { ProjectStats } from '@/lib/utils';
 import { formatDuration } from '@/lib/utils';
-import { LearnMoreButton, TestCaseCard } from '@/components/shared';
+import { LearnMoreButton, TestCaseCard, GuideModal } from '@/components/shared';
 
 interface Props {
   projectStats: ProjectStats[];
@@ -97,18 +97,33 @@ export default function ProjectDetailCards({ projectStats }: Props) {
             >
               Sort by:
             </label>
-            <select
-              id="project-sort-select"
-              value={sortBy}
-              onChange={(e) => setSortBy(e.target.value as SortOption)}
-              className="rounded-md border border-border-default bg-surface-50 px-2.5 py-1.5 text-xs text-text-ink focus:border-accent-blue focus:outline-none dark:bg-surface-50 dark:text-text-on-primary font-medium"
-            >
-              <option value="passRate">Highest Pass Rate</option>
-              <option value="duration">Longest Duration</option>
-              <option value="flakiness">Most Flaky Tests</option>
-              <option value="total">Most Tests</option>
-              <option value="name">Project Name</option>
-            </select>
+            <div className="relative inline-flex items-center">
+              <select
+                id="project-sort-select"
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value as SortOption)}
+                className="appearance-none rounded-md border border-border-default bg-surface-50 pl-3 pr-8 py-1.5 text-xs text-text-ink focus:border-accent-blue focus:outline-none dark:bg-surface-50 dark:text-text-on-primary font-medium cursor-pointer"
+              >
+                <option value="passRate">Highest Pass Rate</option>
+                <option value="duration">Longest Duration</option>
+                <option value="flakiness">Most Flaky Tests</option>
+                <option value="total">Most Tests</option>
+                <option value="name">Project Name</option>
+              </select>
+              <svg
+                className="pointer-events-none absolute right-2.5 h-3.5 w-3.5 text-text-body-mid dark:text-text-muted shrink-0"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={2}
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M19.5 8.25l-7.5 7.5-7.5-7.5"
+                />
+              </svg>
+            </div>
           </div>
         </div>
       </div>
@@ -356,105 +371,63 @@ export default function ProjectDetailCards({ projectStats }: Props) {
         })}
       </div>
 
-      {/* Learn More Modal */}
-      {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 overflow-y-auto">
-          <div className="relative w-full max-w-2xl rounded-lg border border-border-default bg-canvas p-6 shadow-2xl space-y-5 max-h-[90vh] overflow-y-auto">
-            {/* Modal Header */}
-            <div className="flex items-start justify-between border-b border-border-default pb-3.5">
-              <div>
-                <h3 className="text-xl font-bold text-text-ink dark:text-text-on-primary">
-                  Project Health & Breakdown Guide
-                </h3>
-                <p className="mt-1 text-xs text-text-body-mid dark:text-text-muted">
-                  Understanding project metrics, performance distributions, and diagnostic controls
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={() => setIsModalOpen(false)}
-                className="rounded-md p-1.5 text-text-body-mid hover:bg-surface-100 hover:text-text-ink dark:text-text-muted dark:hover:text-text-on-primary transition-colors cursor-pointer"
-                title="Close guide"
-              >
-                <svg
-                  className="h-5 w-5"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                  strokeWidth={2}
-                >
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
+      <GuideModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        title="Project Health & Breakdown Guide"
+        subtitle="Understanding project metrics, performance distributions, and diagnostic controls"
+      >
+        <p>
+          The{' '}
+          <strong className="text-text-ink dark:text-text-on-primary">
+            Project Health & Breakdown
+          </strong>{' '}
+          panel provides granular execution metrics scoped to each configured Playwright project
+          profile (e.g., cross-browser targets like Chromium, Firefox, WebKit, or custom test
+          configurations).
+        </p>
 
-            {/* Modal Body */}
-            <div className="space-y-4 text-xs text-text-body-mid dark:text-text-muted leading-relaxed">
-              <p>
-                The{' '}
-                <strong className="text-text-ink dark:text-text-on-primary">
-                  Project Health & Breakdown
-                </strong>{' '}
-                panel provides granular execution metrics scoped to each configured Playwright
-                project profile (e.g., cross-browser targets like Chromium, Firefox, WebKit, or
-                custom test configurations).
-              </p>
-
-              <div className="rounded-md border border-border-default bg-surface-50 p-4 space-y-2.5">
-                <div className="font-bold text-text-ink dark:text-text-on-primary text-xs uppercase tracking-wider">
-                  Key Metrics & Health Indicators:
-                </div>
-                <ul className="list-disc list-inside space-y-1.5">
-                  <li>
-                    <strong>Pass Rate:</strong> Percentage of test cases in the project profile that
-                    executed cleanly to completion.
-                  </li>
-                  <li>
-                    <strong>Execution Duration:</strong> Cumulative runtime and average duration per
-                    test case within the project target.
-                  </li>
-                  <li>
-                    <strong>Duration Percentiles (p95, Median, Min, Max):</strong> Detailed timing
-                    stats to identify long-tail execution bottlenecks across specs.
-                  </li>
-                  <li>
-                    <strong>Retries & In-Run Flakiness:</strong> Count and percentage of test cases
-                    that failed on initial attempt but succeeded after automatic retries.
-                  </li>
-                </ul>
-              </div>
-
-              <div className="rounded-md border border-border-default bg-surface-50 p-4 space-y-2.5">
-                <div className="font-bold text-text-ink dark:text-text-on-primary text-xs uppercase tracking-wider">
-                  Diagnostic Controls & Deep Dives:
-                </div>
-                <ul className="list-disc list-inside space-y-1.5">
-                  <li>
-                    <strong>Search & Sort:</strong> Quickly filter project profiles by name or sort
-                    by Pass Rate, Cumulative Duration, Retry Count, or Total Test Volume.
-                  </li>
-                  <li>
-                    <strong>Expandable Failure Details:</strong> Click any project card with errors
-                    to expand and inspect step-by-step logs, stack traces, snippets, and attachments
-                    scoped strictly to that project target.
-                  </li>
-                </ul>
-              </div>
-            </div>
-
-            {/* Modal Footer */}
-            <div className="flex justify-end border-t border-border-default pt-3.5">
-              <button
-                type="button"
-                onClick={() => setIsModalOpen(false)}
-                className="rounded-md bg-accent-blue px-4 py-2 text-xs font-bold text-text-on-primary hover:bg-accent-blue/90 transition-colors cursor-pointer"
-              >
-                Close Guide
-              </button>
-            </div>
+        <div className="rounded-md border border-border-default bg-surface-50 p-4 space-y-2.5">
+          <div className="font-bold text-text-ink dark:text-text-on-primary text-xs uppercase tracking-wider">
+            Key Metrics & Health Indicators:
           </div>
+          <ul className="list-disc list-inside space-y-1.5">
+            <li>
+              <strong>Pass Rate:</strong> Percentage of test cases in the project profile that
+              executed cleanly to completion.
+            </li>
+            <li>
+              <strong>Execution Duration:</strong> Cumulative runtime and average duration per test
+              case within the project target.
+            </li>
+            <li>
+              <strong>Duration Percentiles (p95, Median, Min, Max):</strong> Detailed timing stats
+              to identify long-tail execution bottlenecks across specs.
+            </li>
+            <li>
+              <strong>Retries & In-Run Flakiness:</strong> Count and percentage of test cases that
+              failed on initial attempt but succeeded after automatic retries.
+            </li>
+          </ul>
         </div>
-      )}
+
+        <div className="rounded-md border border-border-default bg-surface-50 p-4 space-y-2.5">
+          <div className="font-bold text-text-ink dark:text-text-on-primary text-xs uppercase tracking-wider">
+            Diagnostic Controls & Deep Dives:
+          </div>
+          <ul className="list-disc list-inside space-y-1.5">
+            <li>
+              <strong>Search & Sort:</strong> Quickly filter project profiles by name or sort by
+              Pass Rate, Cumulative Duration, Retry Count, or Total Test Volume.
+            </li>
+            <li>
+              <strong>Expandable Failure Details:</strong> Click any project card with errors to
+              expand and inspect step-by-step logs, stack traces, snippets, and attachments scoped
+              strictly to that project target.
+            </li>
+          </ul>
+        </div>
+      </GuideModal>
     </div>
   );
 }

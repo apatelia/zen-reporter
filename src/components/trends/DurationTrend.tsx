@@ -12,7 +12,7 @@ import {
 } from 'recharts';
 import type { HistoryData } from '@/lib/types';
 import { formatDateParts, formatDuration } from '@/lib/utils';
-import { LearnMoreButton } from '@/components/shared';
+import { LearnMoreButton, GuideModal } from '@/components/shared';
 
 interface DurationTrendProps {
   history: HistoryData;
@@ -287,63 +287,24 @@ export default function DurationTrend({ history }: DurationTrendProps) {
       )}
 
       {/* Dynamic Modal Guide Component */}
-      {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 overflow-y-auto">
-          <div className="relative w-full max-w-2xl rounded-lg border border-border-default bg-canvas p-6 shadow-2xl space-y-5 max-h-[90vh] overflow-y-auto">
-            {/* Modal Header */}
-            <div className="flex items-start justify-between border-b border-border-default pb-3.5">
-              <div>
-                <h3 className="text-xl font-bold text-text-ink dark:text-text-on-primary">
-                  Project Duration Trend Guide
-                </h3>
-                <p className="mt-1 text-xs text-text-body-mid dark:text-text-muted">
-                  Metric definitions, targets, and diagnostic guidelines for Zen Reporter
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={() => setIsModalOpen(false)}
-                className="rounded-md p-1.5 text-text-body-mid hover:bg-surface-100 hover:text-text-ink dark:text-text-muted dark:hover:text-text-on-primary transition-colors cursor-pointer"
-                title="Close guide"
-              >
-                <svg
-                  className="h-5 w-5"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                  strokeWidth={2}
-                >
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-
-            {/* Duration Guide Content */}
-            <div className="space-y-4 text-xs text-text-body-mid dark:text-text-muted leading-relaxed">
-              <div className="rounded-md border border-border-default bg-surface-50 p-4 space-y-2">
-                <h4 className="font-bold text-sm text-text-ink dark:text-text-on-primary">
-                  Project Duration Diagnostics
-                </h4>
-                <p>
-                  Tracks run execution times by project across recent historical runs to identify
-                  performance degradation and bottlenecks over time.
-                </p>
-              </div>
-            </div>
-
-            {/* Modal Footer */}
-            <div className="flex justify-end border-t border-border-default pt-4">
-              <button
-                type="button"
-                onClick={() => setIsModalOpen(false)}
-                className="rounded-md bg-accent-blue px-4 py-2 text-xs font-bold text-text-on-primary hover:bg-accent-blue/90 transition-colors cursor-pointer"
-              >
-                Close Guide
-              </button>
-            </div>
+      <GuideModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        title="Project Duration Trend Guide"
+        subtitle="Metric definitions, targets, and diagnostic guidelines for Zen Reporter"
+      >
+        <div className="space-y-4 text-xs text-text-body-mid dark:text-text-muted leading-relaxed">
+          <div className="rounded-md border border-border-default bg-surface-50 p-4 space-y-2">
+            <h4 className="font-bold text-sm text-text-ink dark:text-text-on-primary">
+              Project Duration Diagnostics
+            </h4>
+            <p>
+              Tracks run execution times by project across recent historical runs to identify
+              performance degradation and bottlenecks over time.
+            </p>
           </div>
         </div>
-      )}
+      </GuideModal>
     </section>
   );
 }

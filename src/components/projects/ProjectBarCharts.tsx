@@ -12,7 +12,7 @@ import {
 } from 'recharts';
 import { computeProjectStats, collectAllCases } from '@/lib/utils';
 import type { ResultSummary, TestSuite } from '@/lib/types';
-import { LearnMoreButton } from '@/components/shared';
+import { LearnMoreButton, GuideModal } from '@/components/shared';
 
 const colorMap: Record<string, string> = {
   Passed: 'var(--color-success-500)',
@@ -189,98 +189,60 @@ export default function ProjectBarCharts({ suites, title = 'Projects Summary' }:
         </BarChart>
       </ResponsiveContainer>
 
-      {/* Learn More Modal */}
-      {showModal && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-xs"
-          onClick={() => setShowModal(false)}
-        >
-          <div
-            className="relative w-full max-w-lg rounded-lg bg-canvas border border-border-default p-6 shadow-xl space-y-4"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex items-start justify-between border-b border-border-default pb-3">
-              <h4 className="text-base font-bold text-text-ink dark:text-text-on-primary">
-                About Status Breakdown by Project
-              </h4>
-              <button
-                onClick={() => setShowModal(false)}
-                className="rounded-md p-1 text-text-muted hover:bg-surface-100 hover:text-text-ink transition-colors cursor-pointer"
-              >
-                <svg
-                  className="h-5 w-5"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                  strokeWidth={2}
-                >
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
+      <GuideModal
+        isOpen={showModal}
+        onClose={() => setShowModal(false)}
+        title="About Status Breakdown by Project"
+        subtitle="Stacked status breakdown across project profiles"
+      >
+        <p>
+          This horizontal stacked bar chart displays the distribution of test execution outcomes for
+          each configured Playwright project profile (e.g., Chromium, Firefox, WebKit, Mobile
+          Chrome).
+        </p>
 
-            <div className="space-y-3 text-xs text-text-body-mid dark:text-text-muted leading-relaxed">
-              <p>
-                This horizontal stacked bar chart displays the distribution of test execution
-                outcomes for each configured Playwright project profile (e.g., Chromium, Firefox,
-                WebKit, Mobile Chrome).
-              </p>
-
-              <div>
-                <h5 className="font-semibold text-text-ink dark:text-text-on-primary mb-1">
-                  Status Categories:
-                </h5>
-                <ul className="list-disc pl-4 space-y-1">
-                  <li>
-                    <strong className="text-success-600 dark:text-success-500">Passed:</strong>{' '}
-                    Tests that executed and satisfied all assertion checks within timeout limits.
-                  </li>
-                  <li>
-                    <strong className="text-danger-600 dark:text-danger-500">Failed:</strong> Hard
-                    assertion failures or unhandled runtime exceptions.
-                  </li>
-                  <li>
-                    <strong className="text-warning-600 dark:text-warning-500">Timed Out:</strong>{' '}
-                    Tests exceeding the configured Playwright project timeout limit.
-                  </li>
-                  <li>
-                    <strong className="text-danger-700 dark:text-danger-400">Interrupted:</strong>{' '}
-                    Tests cancelled due to worker signals or parent run aborts.
-                  </li>
-                  <li>
-                    <strong className="text-text-muted">Skipped:</strong> Tests conditionally
-                    bypassed (
-                    <code className="font-mono bg-surface-100 px-1 py-0.5 rounded text-[10px]">
-                      test.skip()
-                    </code>
-                    ).
-                  </li>
-                </ul>
-              </div>
-
-              <div>
-                <h5 className="font-semibold text-text-ink dark:text-text-on-primary mb-1">
-                  Diagnostic Insights:
-                </h5>
-                <p>
-                  Comparing status stacks across projects allows you to immediately pinpoint
-                  browser-specific regressions. If failures concentrate in WebKit while Chromium
-                  passes, focus debugging on Safari rendering standards or engine differences.
-                </p>
-              </div>
-            </div>
-
-            <div className="pt-2 flex justify-end">
-              <button
-                onClick={() => setShowModal(false)}
-                className="rounded-md bg-accent-blue px-4 py-1.5 text-xs font-semibold text-white shadow-xs hover:bg-accent-blue/90 cursor-pointer"
-              >
-                Got it
-              </button>
-            </div>
-          </div>
+        <div>
+          <h5 className="font-semibold text-text-ink dark:text-text-on-primary mb-1">
+            Status Categories:
+          </h5>
+          <ul className="list-disc pl-4 space-y-1">
+            <li>
+              <strong className="text-success-600 dark:text-success-500">Passed:</strong> Tests that
+              executed and satisfied all assertion checks within timeout limits.
+            </li>
+            <li>
+              <strong className="text-danger-600 dark:text-danger-500">Failed:</strong> Hard
+              assertion failures or unhandled runtime exceptions.
+            </li>
+            <li>
+              <strong className="text-warning-600 dark:text-warning-500">Timed Out:</strong> Tests
+              exceeding the configured Playwright project timeout limit.
+            </li>
+            <li>
+              <strong className="text-danger-700 dark:text-danger-400">Interrupted:</strong> Tests
+              cancelled due to worker signals or parent run aborts.
+            </li>
+            <li>
+              <strong className="text-text-muted">Skipped:</strong> Tests conditionally bypassed (
+              <code className="font-mono bg-surface-100 px-1 py-0.5 rounded text-[10px]">
+                test.skip()
+              </code>
+              ).
+            </li>
+          </ul>
         </div>
-      )}
+
+        <div>
+          <h5 className="font-semibold text-text-ink dark:text-text-on-primary mb-1">
+            Diagnostic Insights:
+          </h5>
+          <p>
+            Comparing status stacks across projects allows you to immediately pinpoint
+            browser-specific regressions. If failures concentrate in WebKit while Chromium passes,
+            focus debugging on Safari rendering standards or engine differences.
+          </p>
+        </div>
+      </GuideModal>
     </div>
   );
 }

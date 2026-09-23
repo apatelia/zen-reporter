@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
+import InsightsGuides, { type InsightModalType } from './InsightsGuides';
 import type { HistoryData, TestSuite } from '@/lib/types';
 import {
   formatDate,
@@ -9,20 +10,20 @@ import {
 import ProjectFlakyRateChart from './ProjectFlakyRateChart';
 import ProjectDurationChart from '@/components/insights/ProjectDurationChart';
 import { usePagination, PageSizeControl, PaginationFooter } from '@/components/pagination';
-import { LearnMoreButton, HistoryDisabledBanner } from '@/components/shared';
+import {
+  LearnMoreButton,
+  HistoryDisabledBanner,
+  DateFilterControl,
+  DataTable,
+  type ColumnDef,
+  type DateFilterRange,
+} from '@/components/shared';
 
 interface Props {
   history: HistoryData | null;
   suites: TestSuite[];
   isHistoryDisabled?: boolean;
 }
-
-type InsightModalType = 'flaky-tests' | 'regressions' | 'slowest-tests' | null;
-
-const th = 'px-2 py-2.5 text-left font-bold text-text-ink dark:text-text-on-primary';
-const thNum = 'px-2 py-2.5 text-right font-bold text-text-ink dark:text-text-on-primary';
-const td = 'px-2 py-2.5 text-text-ink dark:text-text-on-primary tabular-nums';
-const tdNum = 'px-2 py-2.5 text-right text-text-ink dark:text-text-on-primary tabular-nums';
 
 const sectionClass = 'rounded-md border border-border-default bg-surface-50 p-5 shadow-xs';
 const headingClass = 'text-lg font-bold text-text-ink dark:text-text-on-primary';
@@ -58,16 +59,262 @@ const lastStatusStyles: Record<string, { label: string; pillClass: string; toolt
 
 export default function InsightsSection({ history, suites, isHistoryDisabled }: Props) {
   const [activeModal, setActiveModal] = useState<InsightModalType>(null);
-  const flakyPag = usePagination(history?.flaky.length ?? 0, 10);
-  const regressionsPag = usePagination(history?.regressions.length ?? 0, 10);
+  const [flakyFilterRange, setFlakyFilterRange] = useState<DateFilterRange>({
+    fromTimestamp: null,
+    toTimestamp: null,
+    label: null,
+  });
+  const [flakySearchTerm, setFlakySearchTerm] = useState('');
 
-  const flakyRows = history?.flaky.slice(flakyPag.start, flakyPag.start + flakyPag.pageSize) ?? [];
-  const regressionRows =
-    history?.regressions.slice(
-      regressionsPag.start,
-      regressionsPag.start + regressionsPag.pageSize
-    ) ?? [];
+  const [regressionFilterRange, setRegressionFilterRange] = useState<DateFilterRange>({
+    fromTimestamp: null,
+    toTimestamp: null,
+    label: null,
+  });
+  const [regressionSearchTerm, setRegressionSearchTerm] = useState('');
+
+  const availableTimestamps = useMemo(
+    () => history?.runs.map((r) => r.started_at) ?? [],
+    [history]
+  );
+
+  const filteredFlakyRuns = useMemo(() => {
+    if (!history?.runs) return [];
+    if (!flakyFilterRange.fromTimestamp && !flakyFilterRange.toTimestamp) return history.runs;
+
+    return history.runs.filter((run) => {
+      const runTime = new Date(run.started_at).getTime();
+      if (flakyFilterRange.fromTimestamp && runTime < flakyFilterRange.fromTimestamp) return false;
+      if (flakyFilterRange.toTimestamp && runTime > flakyFilterRange.toTimestamp) return false;
+      return true;
+    });
+  }, [history, flakyFilterRange]);
+
+  const filteredFlaky = useMemo(() => {
+    if (!history?.flaky) return [];
+    let list = history.flaky;
+
+    if (
+      (flakyFilterRange.fromTimestamp || flakyFilterRange.toTimestamp) &&
+      filteredFlakyRuns.length === 0
+    ) {
+      list = [];
+    }
+
+    if (flakySearchTerm.trim()) {
+      const query = flakySearchTerm.trim().toLowerCase();
+      list = list.filter(
+        (row) =>
+          row.title.toLowerCase().includes(query) ||
+          row.suite.toLowerCase().includes(query) ||
+          (row.project && row.project.toLowerCase().includes(query))
+      );
+    }
+
+    return list;
+  }, [history, flakyFilterRange, filteredFlakyRuns, flakySearchTerm]);
+
+  const filteredRegressions = useMemo(() => {
+    if (!history?.regressions) return [];
+    let list = history.regressions;
+
+    if (regressionFilterRange.fromTimestamp || regressionFilterRange.toTimestamp) {
+      list = list.filter((row) => {
+        const regDate = row.last_run_at || row.regressed_at;
+        if (!regDate) return true;
+        const time = new Date(regDate).getTime();
+        if (regressionFilterRange.fromTimestamp && time < regressionFilterRange.fromTimestamp)
+          return false;
+        if (regressionFilterRange.toTimestamp && time > regressionFilterRange.toTimestamp)
+          return false;
+        return true;
+      });
+    }
+
+    if (regressionSearchTerm.trim()) {
+      const query = regressionSearchTerm.trim().toLowerCase();
+      list = list.filter(
+        (row) =>
+          row.title.toLowerCase().includes(query) ||
+          row.suite.toLowerCase().includes(query) ||
+          (row.project && row.project.toLowerCase().includes(query))
+      );
+    }
+
+    return list;
+  }, [history, regressionFilterRange, regressionSearchTerm]);
+
+  const flakyPag = usePagination(filteredFlaky.length, 10);
+  const regressionsPag = usePagination(filteredRegressions.length, 10);
+
+  const flakyRows = filteredFlaky.slice(flakyPag.start, flakyPag.start + flakyPag.pageSize);
+  const regressionRows = filteredRegressions.slice(
+    regressionsPag.start,
+    regressionsPag.start + regressionsPag.pageSize
+  );
   const slowestRows = history?.slowest.slice(0, 5) ?? [];
+
+  const flakyColumns: ColumnDef<(typeof flakyRows)[0]>[] = useMemo(
+    () => [
+      {
+        key: 'suite',
+        header: 'Suite',
+        cell: (row) => row.suite || '-',
+      },
+      {
+        key: 'title',
+        header: 'Test',
+        className: 'font-bold',
+        cell: (row) => row.title,
+      },
+      {
+        key: 'project',
+        header: 'Project',
+        cell: (row) => row.project,
+      },
+      {
+        key: 'failed_runs',
+        header: 'Failed Runs',
+        align: 'right',
+        cell: (row) => (
+          <span
+            className={row.failed_runs > 0 ? 'text-danger-600 dark:text-danger-500 font-bold' : ''}
+          >
+            {row.failed_runs}
+          </span>
+        ),
+      },
+      {
+        key: 'passed_runs',
+        header: 'Passed Runs',
+        align: 'right',
+        cell: (row) => (
+          <span
+            className={
+              row.passed_runs > 0 ? 'text-success-600 dark:text-success-500 font-bold' : ''
+            }
+          >
+            {row.passed_runs}
+          </span>
+        ),
+      },
+      {
+        key: 'recovered_by_retry',
+        header: 'Recovered by Retry',
+        align: 'right',
+        cell: (row) => (
+          <span
+            className={
+              row.recovered_by_retry > 0 ? 'text-warning-600 dark:text-warning-500 font-bold' : ''
+            }
+          >
+            {row.recovered_by_retry}
+          </span>
+        ),
+      },
+      {
+        key: 'total_runs',
+        header: 'Total Runs',
+        align: 'right',
+        className: 'font-bold',
+        cell: (row) => row.total_runs,
+      },
+    ],
+    []
+  );
+
+  const regressionColumns: ColumnDef<(typeof regressionRows)[0]>[] = useMemo(
+    () => [
+      {
+        key: 'title',
+        header: 'Test',
+        className: 'font-bold',
+        cell: (row) => row.title,
+      },
+      {
+        key: 'suite',
+        header: 'Suite',
+        cell: (row) => row.suite || '-',
+      },
+      {
+        key: 'project',
+        header: 'Project',
+        cell: (row) => row.project,
+      },
+      {
+        key: 'regressed_in',
+        header: 'Regressed In',
+        className: 'text-danger-600 dark:text-danger-500 font-bold',
+        cell: (row) => formatDate(row.regressed_at),
+      },
+      {
+        key: 'last_run',
+        header: 'Last Run',
+        cell: (row) => formatDate(row.last_run_at),
+      },
+      {
+        key: 'last_status',
+        header: 'Last Run Status',
+        cell: (row) => {
+          const status = lastStatusStyles[row.last_status] ?? {
+            label: row.last_status,
+            pillClass:
+              'bg-slate-200/80 text-slate-800 ring-1 ring-slate-300 dark:bg-slate-700/60 dark:text-slate-200 dark:ring-slate-600',
+            tooltip: 'Try to re-run the test to verify status.',
+          };
+          return (
+            <span
+              className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${status.pillClass}`}
+            >
+              {status.label}
+            </span>
+          );
+        },
+      },
+    ],
+    []
+  );
+
+  const slowestColumns: ColumnDef<(typeof slowestRows)[0]>[] = useMemo(
+    () => [
+      {
+        key: 'suite',
+        header: 'Suite',
+        cell: (row) => row.suite || '-',
+      },
+      {
+        key: 'title',
+        header: 'Test',
+        className: 'font-bold',
+        cell: (row) => row.title,
+      },
+      {
+        key: 'project',
+        header: 'Project',
+        cell: (row) => row.project,
+      },
+      {
+        key: 'avg_duration',
+        header: 'Average Duration',
+        align: 'right',
+        className: 'font-bold text-accent-blue dark:text-success-500',
+        cell: (row) => formatDurationVerbose(row.avg_duration_ms ?? row.avg_ms),
+      },
+      {
+        key: 'max_duration',
+        header: 'Max Duration',
+        align: 'right',
+        cell: (row) => formatDurationVerbose(row.max_duration_ms ?? row.max_ms),
+      },
+      {
+        key: 'runs',
+        header: 'Runs Count',
+        align: 'right',
+        cell: (row) => row.runs,
+      },
+    ],
+    []
+  );
 
   return (
     <div className="space-y-6">
@@ -120,7 +367,7 @@ export default function InsightsSection({ history, suites, isHistoryDisabled }: 
         <>
           {/* 2. Flaky Tests Section */}
           <section className={sectionClass}>
-            <div className="flex items-center justify-between gap-4">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-3 border-b border-border-default">
               <div>
                 <div className="flex items-center gap-2">
                   <h2 className={headingClass}>Flaky tests</h2>
@@ -137,59 +384,60 @@ export default function InsightsSection({ history, suites, isHistoryDisabled }: 
                 onPageSizeChange={flakyPag.changePageSize}
               />
             </div>
-            {history.flaky.length === 0 ? (
+
+            <div className="pt-3 pb-1 border-b border-border-default/50 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+              <DateFilterControl
+                onFilterChange={(range) => {
+                  setFlakyFilterRange(range);
+                  flakyPag.setPage(1);
+                }}
+                availableTimestamps={availableTimestamps}
+              />
+              <div className="relative w-44 sm:w-48 shrink-0">
+                <svg
+                  className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-text-muted"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={1.5}
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"
+                  />
+                </svg>
+                <input
+                  type="text"
+                  placeholder="Search tests..."
+                  value={flakySearchTerm}
+                  onChange={(e) => {
+                    setFlakySearchTerm(e.target.value);
+                    flakyPag.setPage(1);
+                  }}
+                  className="w-full rounded-md border border-border-default bg-surface-50 pl-9 pr-3 py-1.5 text-xs text-text-ink placeholder:text-text-muted focus:border-accent-blue focus:outline-none dark:bg-surface-50 dark:text-text-on-primary"
+                />
+              </div>
+            </div>
+
+            {filteredFlaky.length === 0 ? (
               <p className="mt-3 text-xs font-medium text-text-body-mid dark:text-text-muted">
-                No flaky tests detected.
+                {flakyFilterRange.fromTimestamp || flakyFilterRange.toTimestamp
+                  ? 'No flaky tests detected in the selected date range.'
+                  : 'No flaky tests detected.'}
               </p>
             ) : (
               <>
-                <div className="mt-3 overflow-x-auto">
-                  <table className="w-full text-xs">
-                    <thead>
-                      <tr className="border-b-2 border-border-default bg-surface-100/50 dark:bg-surface-100/30">
-                        <th className={th}>Suite</th>
-                        <th className={th}>Test</th>
-                        <th className={th}>Project</th>
-                        <th className={thNum}>Failed Runs</th>
-                        <th className={thNum}>Passed Runs</th>
-                        <th className={thNum}>Recovered by Retry</th>
-                        <th className={thNum}>Total Runs</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {flakyRows.map((row, i) => (
-                        <tr
-                          // eslint-disable-next-line @eslint-react/no-array-index-key
-                          key={`${row.project}/${row.file}/${row.title}/${i}`}
-                          className="border-b border-border-default hover:bg-surface-100/60 dark:hover:bg-surface-200/40 transition-colors"
-                        >
-                          <td className={td}>{row.suite || '-'}</td>
-                          <td className={`${td} font-bold`}>{row.title}</td>
-                          <td className={td}>{row.project}</td>
-                          <td
-                            className={`${tdNum} ${row.failed_runs > 0 ? 'text-danger-600 dark:text-danger-500 font-bold' : ''}`}
-                          >
-                            {row.failed_runs}
-                          </td>
-                          <td
-                            className={`${tdNum} ${row.passed_runs > 0 ? 'text-success-600 dark:text-success-500 font-bold' : ''}`}
-                          >
-                            {row.passed_runs}
-                          </td>
-                          <td
-                            className={`${tdNum} ${row.recovered_by_retry > 0 ? 'text-warning-600 dark:text-warning-500 font-bold' : ''}`}
-                          >
-                            {row.recovered_by_retry}
-                          </td>
-                          <td className={`${tdNum} font-bold`}>{row.total_runs}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+                <DataTable
+                  data={flakyRows}
+                  columns={flakyColumns}
+                  getRowKey={(row, i) => `${row.project}/${row.file}/${row.title}/${i}`}
+                  compact
+                  className="mt-3"
+                />
                 <PaginationFooter
                   label="flaky tests"
-                  total={history.flaky.length}
+                  total={filteredFlaky.length}
                   start={flakyPag.start}
                   pageLength={flakyRows.length}
                   currentPage={flakyPag.currentPage}
@@ -202,7 +450,7 @@ export default function InsightsSection({ history, suites, isHistoryDisabled }: 
 
           {/* 3. Regressions Section */}
           <section className={sectionClass}>
-            <div className="flex items-center justify-between gap-4">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-3 border-b border-border-default">
               <div>
                 <div className="flex items-center gap-2">
                   <h2 className={headingClass}>Regressions</h2>
@@ -218,60 +466,60 @@ export default function InsightsSection({ history, suites, isHistoryDisabled }: 
                 onPageSizeChange={regressionsPag.changePageSize}
               />
             </div>
-            {history.regressions.length === 0 ? (
+
+            <div className="pt-3 pb-1 border-b border-border-default/50 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+              <DateFilterControl
+                onFilterChange={(range) => {
+                  setRegressionFilterRange(range);
+                  regressionsPag.setPage(1);
+                }}
+                availableTimestamps={availableTimestamps}
+              />
+              <div className="relative w-44 sm:w-48 shrink-0">
+                <svg
+                  className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-text-muted"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={1.5}
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"
+                  />
+                </svg>
+                <input
+                  type="text"
+                  placeholder="Search tests..."
+                  value={regressionSearchTerm}
+                  onChange={(e) => {
+                    setRegressionSearchTerm(e.target.value);
+                    regressionsPag.setPage(1);
+                  }}
+                  className="w-full rounded-md border border-border-default bg-surface-50 pl-9 pr-3 py-1.5 text-xs text-text-ink placeholder:text-text-muted focus:border-accent-blue focus:outline-none dark:bg-surface-50 dark:text-text-on-primary"
+                />
+              </div>
+            </div>
+
+            {filteredRegressions.length === 0 ? (
               <p className="mt-3 text-xs font-medium text-text-body-mid dark:text-text-muted">
-                No regressions detected.
+                {regressionFilterRange.fromTimestamp || regressionFilterRange.toTimestamp
+                  ? 'No regressions detected in the selected date range.'
+                  : 'No regressions detected.'}
               </p>
             ) : (
               <>
-                <div className="mt-3 overflow-x-auto">
-                  <table className="w-full text-xs">
-                    <thead>
-                      <tr className="border-b-2 border-border-default bg-surface-100/50 dark:bg-surface-100/30">
-                        <th className={th}>Test</th>
-                        <th className={th}>Suite</th>
-                        <th className={th}>Project</th>
-                        <th className={th}>Regressed In</th>
-                        <th className={th}>Last Run</th>
-                        <th className={th}>Last Run Status</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {regressionRows.map((row) => {
-                        const status = lastStatusStyles[row.last_status] ?? {
-                          label: row.last_status,
-                          pillClass:
-                            'bg-slate-200/80 text-slate-800 ring-1 ring-slate-300 dark:bg-slate-700/60 dark:text-slate-200 dark:ring-slate-600',
-                          tooltip: 'Try to re-run the test to verify status.',
-                        };
-                        return (
-                          <tr
-                            key={`${row.project}/${row.file}/${row.title}`}
-                            className="border-b border-border-default hover:bg-surface-100/60 dark:hover:bg-surface-200/40 transition-colors"
-                          >
-                            <td className={`${td} font-bold`}>{row.title}</td>
-                            <td className={td}>{row.suite || '-'}</td>
-                            <td className={td}>{row.project}</td>
-                            <td className={`${td} text-danger-600 dark:text-danger-500 font-bold`}>
-                              {formatDate(row.regressed_at)}
-                            </td>
-                            <td className={td}>{formatDate(row.last_run_at)}</td>
-                            <td className={td}>
-                              <span
-                                className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${status.pillClass}`}
-                              >
-                                {status.label}
-                              </span>
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
+                <DataTable
+                  data={regressionRows}
+                  columns={regressionColumns}
+                  getRowKey={(row) => `${row.project}/${row.file}/${row.title}`}
+                  compact
+                  className="mt-3"
+                />
                 <PaginationFooter
                   label="regressions"
-                  total={history.regressions.length}
+                  total={filteredRegressions.length}
                   start={regressionsPag.start}
                   pageLength={regressionRows.length}
                   currentPage={regressionsPag.currentPage}
@@ -293,283 +541,20 @@ export default function InsightsSection({ history, suites, isHistoryDisabled }: 
                 No test duration data.
               </p>
             ) : (
-              <div className="mt-3 overflow-x-auto">
-                <table className="w-full text-xs">
-                  <thead>
-                    <tr className="border-b-2 border-border-default bg-surface-100/50 dark:bg-surface-100/30">
-                      <th className={th}>Suite</th>
-                      <th className={th}>Test</th>
-                      <th className={th}>Project</th>
-                      <th className={thNum}>Average Duration</th>
-                      <th className={thNum}>Max Duration</th>
-                      <th className={thNum}>Runs Count</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {slowestRows.map((row) => (
-                      <tr
-                        key={`${row.project}/${row.file}/${row.title}`}
-                        className="border-b border-border-default hover:bg-surface-100/60 dark:hover:bg-surface-200/40 transition-colors"
-                      >
-                        <td className={td}>{row.suite || '-'}</td>
-                        <td className={`${td} font-bold`}>{row.title}</td>
-                        <td className={td}>{row.project}</td>
-                        <td className={`${tdNum} font-bold text-accent-blue dark:text-success-500`}>
-                          {formatDurationVerbose(row.avg_duration_ms ?? row.avg_ms)}
-                        </td>
-                        <td className={tdNum}>
-                          {formatDurationVerbose(row.max_duration_ms ?? row.max_ms)}
-                        </td>
-                        <td className={tdNum}>{row.runs}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+              <DataTable
+                data={slowestRows}
+                columns={slowestColumns}
+                getRowKey={(row) => `${row.project}/${row.file}/${row.title}`}
+                compact
+                className="mt-3"
+              />
             )}
           </section>
         </>
       )}
 
       {/* Dynamic Modal Guide Component */}
-      {activeModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 overflow-y-auto">
-          <div className="relative w-full max-w-2xl rounded-lg border border-border-default bg-canvas p-6 shadow-2xl space-y-5 max-h-[90vh] overflow-y-auto">
-            {/* Modal Header */}
-            <div className="flex items-start justify-between border-b border-border-default pb-3.5">
-              <div>
-                <h3 className="text-xl font-bold text-text-ink dark:text-text-on-primary">
-                  {activeModal === 'flaky-tests' && 'Flaky Test Analytics Guide'}
-                  {activeModal === 'regressions' && 'Test Regressions Guide'}
-                  {activeModal === 'slowest-tests' && 'Slowest Tests Guide'}
-                </h3>
-                <p className="mt-1 text-xs text-text-body-mid dark:text-text-muted">
-                  Metric definitions, targets, and diagnostic guidelines for Zen Reporter
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={() => setActiveModal(null)}
-                className="rounded-md p-1.5 text-text-body-mid hover:bg-surface-100 hover:text-text-ink dark:text-text-muted dark:hover:text-text-on-primary transition-colors cursor-pointer"
-                title="Close guide"
-              >
-                <svg
-                  className="h-5 w-5"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                  strokeWidth={2}
-                >
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-
-            {activeModal === 'flaky-tests' && (
-              <div className="space-y-4 text-xs text-text-body-mid dark:text-text-muted leading-relaxed">
-                <p>
-                  The{' '}
-                  <strong className="text-text-ink dark:text-text-on-primary">
-                    Flaky Tests Analytics
-                  </strong>{' '}
-                  table identifies non-deterministic tests that recorded BOTH passed and failed
-                  outcomes across historical test runs (minimum 1 failure and 1 success).
-                </p>
-
-                <div className="rounded-md border border-primary-500/20 bg-primary-500/5 p-3.5 space-y-1.5">
-                  <div className="font-bold text-text-ink dark:text-text-on-primary text-xs flex items-center gap-1.5">
-                    <span className="text-primary-600 dark:text-primary-400 font-bold">
-                      ℹ Note on Flakiness & Retry Definitions:
-                    </span>
-                  </div>
-                  <p className="text-xs text-text-body-mid dark:text-text-muted">
-                    <strong>Insights Tab (Historical Instability):</strong> Evaluates
-                    non-deterministic test behavior aggregated across multiple historical runs over
-                    time.
-                    <br />
-                    <strong>Files, Projects & Overview Tabs (In-Run Retries):</strong> Measures
-                    Playwright&apos;s official in-run retry status (test cases that failed initial
-                    execution but passed upon automatic retry within the single run).
-                  </p>
-                </div>
-
-                <div className="rounded-md border border-border-default bg-surface-50 p-4 space-y-2">
-                  <div className="font-bold text-text-ink dark:text-text-on-primary text-xs uppercase tracking-wider">
-                    Remediation Guidelines:
-                  </div>
-                  <ul className="list-disc list-inside space-y-1">
-                    <li>
-                      <strong>Recovered by Retry:</strong> Tracks tests that failed on attempt #1
-                      but passed on automatic retry.
-                    </li>
-                    <li>
-                      <strong>Eliminate Pauses:</strong> Replace explicit `page.waitForTimeout()`
-                      delays with web-first assertions like `expect(locator).toBeVisible()`.
-                    </li>
-                    <li>
-                      <strong>State Isolation:</strong> Ensure test cases do not share global
-                      mutable state or session tokens.
-                    </li>
-                  </ul>
-                </div>
-              </div>
-            )}
-
-            {activeModal === 'regressions' && (
-              <div className="space-y-4 text-xs text-text-body-mid dark:text-text-muted leading-relaxed">
-                <p>
-                  The{' '}
-                  <strong className="text-text-ink dark:text-text-on-primary">
-                    Test Regressions
-                  </strong>{' '}
-                  table tracks test cases that previously succeeded in an earlier run but broke and
-                  failed in a subsequent execution.
-                </p>
-                <div className="rounded-md border border-border-default bg-surface-50 p-4 space-y-2.5">
-                  <div className="font-bold text-text-ink dark:text-text-on-primary text-xs uppercase tracking-wider">
-                    Last Run Status Meanings & Next Actions Required:
-                  </div>
-                  <div className="space-y-2">
-                    <div className="grid grid-cols-[100px_1fr] items-start gap-3 rounded bg-surface-100 p-2.5 border border-border-default">
-                      <div className="shrink-0 pt-0.5">
-                        <span className="inline-flex w-full items-center justify-center rounded-full px-2.5 py-0.5 text-xs font-semibold bg-success-50 text-success-600 dark:bg-success-500/10 dark:text-success-500 text-center">
-                          Passed
-                        </span>
-                      </div>
-                      <div>
-                        <div className="font-bold text-text-ink dark:text-text-on-primary text-xs">
-                          Regression Resolved
-                        </div>
-                        <p className="text-xs text-text-body-mid dark:text-text-muted mt-0.5">
-                          The test regressed in a prior run, but passed cleanly in the most recent
-                          run.
-                          <span className="block font-semibold text-success-600 dark:text-success-400 mt-1">
-                            ✓ Next Action: None required. The regression has been resolved.
-                          </span>
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-[100px_1fr] items-start gap-3 rounded bg-surface-100 p-2.5 border border-border-default">
-                      <div className="shrink-0 pt-0.5">
-                        <span className="inline-flex w-full items-center justify-center rounded-full px-2.5 py-0.5 text-xs font-semibold bg-danger-50 text-danger-600 dark:bg-danger-500/10 dark:text-danger-500 text-center">
-                          Failed
-                        </span>
-                      </div>
-                      <div>
-                        <div className="font-bold text-text-ink dark:text-text-on-primary text-xs">
-                          Active Test Failure
-                        </div>
-                        <p className="text-xs text-text-body-mid dark:text-text-muted mt-0.5">
-                          The test failed during the most recent run due to an assertion failure or
-                          uncaught exception.
-                          <span className="block font-semibold text-danger-600 dark:text-danger-400 mt-1">
-                            ⚠️ Next Action: Priority fix required. Inspect stack trace in Failures
-                            tab.
-                          </span>
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-[100px_1fr] items-start gap-3 rounded bg-surface-100 p-2.5 border border-border-default">
-                      <div className="shrink-0 pt-0.5">
-                        <span className="inline-flex w-full items-center justify-center rounded-full px-2.5 py-0.5 text-xs font-semibold bg-warning-50 text-warning-600 dark:bg-warning-500/10 dark:text-warning-500 text-center">
-                          Timed Out
-                        </span>
-                      </div>
-                      <div>
-                        <div className="font-bold text-text-ink dark:text-text-on-primary text-xs">
-                          Execution Timeout
-                        </div>
-                        <p className="text-xs text-text-body-mid dark:text-text-muted mt-0.5">
-                          The test exceeded its maximum allocated runtime (e.g. 30,000ms) without
-                          completing.
-                          <span className="block font-semibold text-warning-600 dark:text-warning-400 mt-1">
-                            ⏱️ Next Action: Check for hanging promises, unhandled dynamic waits, or
-                            backend latency.
-                          </span>
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-[100px_1fr] items-start gap-3 rounded bg-surface-100 p-2.5 border border-border-default">
-                      <div className="shrink-0 pt-0.5">
-                        <span className="inline-flex w-full items-center justify-center rounded-full px-2.5 py-0.5 text-xs font-semibold bg-danger-50 text-danger-600 dark:bg-danger-500/10 dark:text-danger-500 text-center">
-                          Interrupted
-                        </span>
-                      </div>
-                      <div>
-                        <div className="font-bold text-text-ink dark:text-text-on-primary text-xs">
-                          Run Cancelled / Interrupted
-                        </div>
-                        <p className="text-xs text-text-body-mid dark:text-text-muted mt-0.5">
-                          The test run was terminated early (e.g. SIGINT or CI worker cancellation)
-                          before completion.
-                          <span className="block font-semibold text-text-body-mid dark:text-text-muted mt-1">
-                            🔄 Next Action: Re-run the test suite to establish current status.
-                          </span>
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-[100px_1fr] items-start gap-3 rounded bg-surface-100 p-2.5 border border-border-default">
-                      <div className="shrink-0 pt-0.5">
-                        <span className="inline-flex w-full items-center justify-center rounded-full px-2.5 py-0.5 text-xs font-semibold bg-slate-200 text-slate-800 dark:bg-slate-700 dark:text-slate-200 text-center">
-                          Skipped
-                        </span>
-                      </div>
-                      <div>
-                        <div className="font-bold text-text-ink dark:text-text-on-primary text-xs">
-                          Test Skipped
-                        </div>
-                        <p className="text-xs text-text-body-mid dark:text-text-muted mt-0.5">
-                          The test was explicitly skipped via `test.skip()` or conditional tags in
-                          the last run.
-                          <span className="block font-semibold text-text-body-mid dark:text-text-muted mt-1">
-                            🔍 Next Action: Verify if test skip condition is still required or ready
-                            to re-enable.
-                          </span>
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {activeModal === 'slowest-tests' && (
-              <div className="space-y-4 text-xs text-text-body-mid dark:text-text-muted leading-relaxed">
-                <p>
-                  The{' '}
-                  <strong className="text-text-ink dark:text-text-on-primary">Slowest Tests</strong>{' '}
-                  table lists the top 5 test cases with the highest average execution duration
-                  across history.
-                </p>
-                <div className="rounded-md border border-border-default bg-surface-50 p-4 space-y-2">
-                  <div className="font-bold text-text-ink dark:text-text-on-primary text-xs uppercase tracking-wider">
-                    Optimization Strategy:
-                  </div>
-                  <p>
-                    Focusing refactoring efforts on these top 5 bottleneck tests yields the largest
-                    reduction in overall CI execution pipeline duration.
-                  </p>
-                </div>
-              </div>
-            )}
-
-            {/* Modal Footer */}
-            <div className="flex justify-end border-t border-border-default pt-3.5">
-              <button
-                type="button"
-                onClick={() => setActiveModal(null)}
-                className="rounded-md bg-accent-blue px-4 py-2 text-xs font-bold text-text-on-primary hover:bg-accent-blue/90 transition-colors cursor-pointer"
-              >
-                Close Guide
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <InsightsGuides activeModal={activeModal} onClose={() => setActiveModal(null)} />
     </div>
   );
 }

@@ -141,8 +141,8 @@ export default function FailureList({ failedTests, hasSuites = true }: Props) {
               }}
               className={`flex items-center gap-1.5 px-3 py-1 rounded transition-colors cursor-pointer ${
                 groupBy === 'file'
-                  ? 'bg-canvas text-text-ink dark:text-text-on-primary shadow-xs font-bold'
-                  : 'text-text-body-mid hover:text-text-ink dark:text-text-muted dark:hover:text-text-on-primary font-medium'
+                  ? 'bg-canvas dark:bg-surface-200 border border-border-active text-text-ink dark:text-text-on-primary shadow-xs font-bold'
+                  : 'border border-transparent text-text-body-mid hover:text-text-ink dark:text-text-muted dark:hover:text-text-on-primary font-medium'
               }`}
             >
               <svg
@@ -168,8 +168,8 @@ export default function FailureList({ failedTests, hasSuites = true }: Props) {
               }}
               className={`flex items-center gap-1.5 px-3 py-1 rounded transition-colors cursor-pointer ${
                 groupBy === 'signature'
-                  ? 'bg-canvas text-text-ink dark:text-text-on-primary shadow-xs font-bold'
-                  : 'text-text-body-mid hover:text-text-ink dark:text-text-muted dark:hover:text-text-on-primary font-medium'
+                  ? 'bg-canvas dark:bg-surface-200 border border-border-active text-text-ink dark:text-text-on-primary shadow-xs font-bold'
+                  : 'border border-transparent text-text-body-mid hover:text-text-ink dark:text-text-muted dark:hover:text-text-on-primary font-medium'
               }`}
             >
               <svg

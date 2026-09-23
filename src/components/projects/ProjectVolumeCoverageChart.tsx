@@ -11,7 +11,7 @@ import {
   TooltipContentProps,
 } from 'recharts';
 import type { ProjectStats } from '@/lib/utils';
-import { LearnMoreButton } from '@/components/shared';
+import { LearnMoreButton, GuideModal } from '@/components/shared';
 
 interface Props {
   projectStats: ProjectStats[];
@@ -169,93 +169,54 @@ export default function ProjectVolumeCoverageChart({
         </BarChart>
       </ResponsiveContainer>
 
-      {/* Guide Modal */}
-      {showModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 overflow-y-auto">
-          <div className="relative w-full max-w-xl rounded-lg border border-border-default bg-canvas p-6 shadow-2xl space-y-4">
-            <div className="flex items-start justify-between border-b border-border-default pb-3">
-              <div>
-                <h3 className="text-lg font-bold text-text-ink dark:text-text-on-primary">
-                  About Test Volume & Coverage Density
-                </h3>
-                <p className="text-xs text-text-body-mid dark:text-text-muted mt-0.5">
-                  Understanding test suite distribution and active execution coverage
-                </p>
-              </div>
-              <button
-                onClick={() => setShowModal(false)}
-                className="rounded-md p-1 text-text-body-mid hover:bg-surface-100 hover:text-text-ink dark:text-text-muted dark:hover:text-text-on-primary transition-colors cursor-pointer"
-              >
-                <svg
-                  className="h-5 w-5"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                  strokeWidth={2}
-                >
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
+      <GuideModal
+        isOpen={showModal}
+        onClose={() => setShowModal(false)}
+        title="About Test Volume & Coverage Density"
+        subtitle="Understanding test suite distribution and active execution coverage"
+      >
+        <p>
+          This chart benchmarks the total test case load and execution density across configured
+          target project profiles (browsers and platforms).
+        </p>
 
-            <div className="space-y-3 text-xs text-text-body-mid dark:text-text-muted leading-relaxed">
-              <p>
-                This chart benchmarks the total test case load and execution density across
-                configured target project profiles (browsers and platforms).
-              </p>
-
-              <div className="rounded-md border border-border-default bg-surface-50 p-3 space-y-2">
-                <div className="font-bold text-text-ink dark:text-text-on-primary text-xs uppercase tracking-wider">
-                  Key Metrics:
-                </div>
-                <ul className="list-disc list-inside space-y-1.5">
-                  <li>
-                    <strong className="text-sky-600 dark:text-sky-400">Executed Tests:</strong>{' '}
-                    Active test cases that ran to completion (Passed, Failed, Timed Out, or
-                    Interrupted).
-                  </li>
-                  <li>
-                    <strong className="text-slate-600 dark:text-slate-400">Skipped Tests:</strong>{' '}
-                    Test cases bypassed via{' '}
-                    <code className="bg-surface-200 px-1 rounded">test.skip()</code> or conditional
-                    tags.
-                  </li>
-                  <li>
-                    <strong className="text-emerald-600 dark:text-emerald-400">
-                      Coverage Density (%):
-                    </strong>{' '}
-                    The ratio of executed tests over total tests (
-                    <code className="bg-surface-200 px-1 rounded">Executed / Total * 100</code>).
-                  </li>
-                </ul>
-              </div>
-
-              <div className="rounded-md border border-border-default bg-surface-50 p-3 space-y-2">
-                <div className="font-bold text-text-ink dark:text-text-on-primary text-xs uppercase tracking-wider">
-                  Operational Guidelines:
-                </div>
-                <ul className="list-disc list-inside space-y-1">
-                  <li>Ensure all target environments maintain high coverage density (≥95%).</li>
-                  <li>
-                    Unintended gaps between environments reveal browser-specific skips or
-                    conditional test exclusions.
-                  </li>
-                </ul>
-              </div>
-            </div>
-
-            <div className="flex justify-end pt-2 border-t border-border-default">
-              <button
-                type="button"
-                onClick={() => setShowModal(false)}
-                className="rounded-md bg-accent-blue px-4 py-2 text-xs font-bold text-text-on-primary hover:bg-accent-blue/90 transition-colors cursor-pointer"
-              >
-                Close Guide
-              </button>
-            </div>
+        <div className="rounded-md border border-border-default bg-surface-50 p-3 space-y-2">
+          <div className="font-bold text-text-ink dark:text-text-on-primary text-xs uppercase tracking-wider">
+            Key Metrics:
           </div>
+          <ul className="list-disc list-inside space-y-1.5">
+            <li>
+              <strong className="text-sky-600 dark:text-sky-400">Executed Tests:</strong> Active
+              test cases that ran to completion (Passed, Failed, Timed Out, or Interrupted).
+            </li>
+            <li>
+              <strong className="text-slate-600 dark:text-slate-400">Skipped Tests:</strong> Test
+              cases bypassed via <code className="bg-surface-200 px-1 rounded">test.skip()</code> or
+              conditional tags.
+            </li>
+            <li>
+              <strong className="text-emerald-600 dark:text-emerald-400">
+                Coverage Density (%):
+              </strong>{' '}
+              The ratio of executed tests over total tests (
+              <code className="bg-surface-200 px-1 rounded">Executed / Total * 100</code>).
+            </li>
+          </ul>
         </div>
-      )}
+
+        <div className="rounded-md border border-border-default bg-surface-50 p-3 space-y-2">
+          <div className="font-bold text-text-ink dark:text-text-on-primary text-xs uppercase tracking-wider">
+            Operational Guidelines:
+          </div>
+          <ul className="list-disc list-inside space-y-1">
+            <li>Ensure all target environments maintain high coverage density (≥95%).</li>
+            <li>
+              Unintended gaps between environments reveal browser-specific skips or conditional test
+              exclusions.
+            </li>
+          </ul>
+        </div>
+      </GuideModal>
     </div>
   );
 }

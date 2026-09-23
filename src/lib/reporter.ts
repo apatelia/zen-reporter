@@ -59,7 +59,19 @@ export function resolveConfig(
   const projectName = rawConfig?.projectName
     ? String(rawConfig.projectName)
     : 'Test Automation Project';
-  const testRunName = rawConfig?.testRunName ? String(rawConfig.testRunName) : 'Test Run #1';
+  let runNumber = 1;
+  try {
+    const runsDir = path.resolve(cwd, outputDir, 'runs');
+    if (fs.existsSync(runsDir)) {
+      const files = fs.readdirSync(runsDir);
+      const runFiles = files.filter((f) => f.endsWith('.jsonl'));
+      runNumber = runFiles.length + 1;
+    }
+  } catch {
+    runNumber = 1;
+  }
+  const rawTestRunName = rawConfig?.testRunName ? String(rawConfig.testRunName) : 'Test Run #{N}';
+  const testRunName = rawTestRunName.replaceAll('{N}', String(runNumber));
   const singleSummaryFile = Boolean(rawConfig?.singleSummaryFile);
   const theme = rawConfig?.theme !== undefined ? String(rawConfig.theme) : 'Cafe';
   const darkMode = Boolean(rawConfig?.darkMode);
