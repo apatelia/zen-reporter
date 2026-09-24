@@ -79,12 +79,16 @@ export default function HistoryGuides({
 
         <div className="rounded-md border border-border-default bg-surface-50 p-4 space-y-2">
           <div className="font-bold text-text-ink dark:text-text-on-primary text-xs uppercase tracking-wider">
-            Filtering Capabilities:
+            Filtering & Export Capabilities:
           </div>
           <ul className="list-disc list-inside space-y-1">
             <li>
               <strong>Date Range Filter:</strong> Filter test runs for All Time, specific calendar
               months, or custom date ranges.
+            </li>
+            <li>
+              <strong>Export CSV:</strong> Download the complete filtered dataset of test runs to an
+              RFC 4180-compliant CSV file, ignoring pagination limits.
             </li>
           </ul>
         </div>
@@ -131,7 +135,7 @@ export default function HistoryGuides({
 
         <div className="rounded-md border border-border-default bg-surface-50 p-4 space-y-2">
           <div className="font-bold text-text-ink dark:text-text-on-primary text-xs uppercase tracking-wider">
-            Filtering Capabilities:
+            Filtering & Export Capabilities:
           </div>
           <ul className="list-disc list-inside space-y-1">
             <li>
@@ -141,6 +145,10 @@ export default function HistoryGuides({
             <li>
               <strong>Spec File Search:</strong> Instantly filter spec files by filename or path
               substring without clearing active date filters.
+            </li>
+            <li>
+              <strong>Export CSV:</strong> Download the complete set of filtered spec file
+              performance metrics to an RFC 4180-compliant CSV file (un-paginated).
             </li>
           </ul>
         </div>
@@ -193,7 +201,7 @@ export default function HistoryGuides({
 
         <div className="rounded-md border border-border-default bg-surface-50 p-4 space-y-2">
           <div className="font-bold text-text-ink dark:text-text-on-primary text-xs uppercase tracking-wider">
-            Filtering Capabilities:
+            Filtering & Export Capabilities:
           </div>
           <ul className="list-disc list-inside space-y-1">
             <li>
@@ -204,6 +212,10 @@ export default function HistoryGuides({
               <strong>Text Search Filter (Visible Columns):</strong> Dynamically search visible
               columns (Test Title, Suite, Spec File, and Project) without resetting active date
               filters.
+            </li>
+            <li>
+              <strong>Export CSV:</strong> Download all filtered test case history rows to an RFC
+              4180-compliant CSV file, including un-paginated items.
             </li>
           </ul>
         </div>

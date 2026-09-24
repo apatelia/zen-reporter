@@ -9,6 +9,7 @@ interface Props {
   filterProjects: string[];
   filterTags: string[];
   filterFiles: string[];
+  fileSearchTerm?: string;
   depth?: number;
 }
 
@@ -17,14 +18,18 @@ function filterCases(
   filterStatuses: string[],
   filterProjects: string[],
   filterTags: string[],
-  filterFiles: string[]
+  filterFiles: string[],
+  fileSearchTerm?: string
 ): TestCase[] {
+  const query = fileSearchTerm?.trim().toLowerCase();
   return cases.filter((c) => {
     const statusMatch = filterStatuses.length === 0 || filterStatuses.includes(c.status);
     const projectMatch = filterProjects.length === 0 || filterProjects.includes(c.project);
     const tagMatch =
       filterTags.length === 0 || (c.tags || []).some((tag) => filterTags.includes(tag));
-    const fileMatch = filterFiles.length === 0 || filterFiles.includes(c.fileName);
+    const fileMatch = query
+      ? Boolean(c.fileName && c.fileName.toLowerCase().includes(query))
+      : filterFiles.length === 0 || filterFiles.includes(c.fileName);
 
     return statusMatch && projectMatch && tagMatch && fileMatch;
   });
@@ -35,18 +40,24 @@ function filterSuite(
   filterStatuses: string[],
   filterProjects: string[],
   filterTags: string[],
-  filterFiles: string[]
+  filterFiles: string[],
+  fileSearchTerm?: string
 ): TestSuite {
   const filteredCases = filterCases(
     suite.cases,
     filterStatuses,
     filterProjects,
     filterTags,
-    filterFiles
+    filterFiles,
+    fileSearchTerm
   );
   const filteredSubSuites = (suite.subSuites || [])
-    .map((sub) => filterSuite(sub, filterStatuses, filterProjects, filterTags, filterFiles))
-    .filter((sub) => hasTestCases(sub, filterStatuses, filterProjects, filterTags, filterFiles));
+    .map((sub) =>
+      filterSuite(sub, filterStatuses, filterProjects, filterTags, filterFiles, fileSearchTerm)
+    )
+    .filter((sub) =>
+      hasTestCases(sub, filterStatuses, filterProjects, filterTags, filterFiles, fileSearchTerm)
+    );
 
   return {
     title: suite.title,
@@ -60,14 +71,18 @@ function hasTestCases(
   filterStatuses: string[],
   filterProjects: string[],
   filterTags: string[],
-  filterFiles: string[]
+  filterFiles: string[],
+  fileSearchTerm?: string
 ): boolean {
+  const query = fileSearchTerm?.trim().toLowerCase();
   const hasMatchingCases = suite.cases.some((c) => {
     const statusMatch = filterStatuses.length === 0 || filterStatuses.includes(c.status);
     const projectMatch = filterProjects.length === 0 || filterProjects.includes(c.project);
     const tagMatch =
       filterTags.length === 0 || (c.tags || []).some((tag) => filterTags.includes(tag));
-    const fileMatch = filterFiles.length === 0 || filterFiles.includes(c.fileName);
+    const fileMatch = query
+      ? Boolean(c.fileName && c.fileName.toLowerCase().includes(query))
+      : filterFiles.length === 0 || filterFiles.includes(c.fileName);
 
     return statusMatch && projectMatch && tagMatch && fileMatch;
   });
@@ -75,7 +90,8 @@ function hasTestCases(
   if (hasMatchingCases) return true;
 
   for (const sub of suite.subSuites || []) {
-    if (hasTestCases(sub, filterStatuses, filterProjects, filterTags, filterFiles)) return true;
+    if (hasTestCases(sub, filterStatuses, filterProjects, filterTags, filterFiles, fileSearchTerm))
+      return true;
   }
 
   return false;
@@ -86,7 +102,8 @@ function countCases(
   filterStatuses: string[],
   filterProjects: string[],
   filterTags: string[],
-  filterFiles: string[]
+  filterFiles: string[],
+  fileSearchTerm?: string
 ): {
   total: number;
   passed: number;
@@ -96,7 +113,14 @@ function countCases(
   interrupted: number;
   duration: number;
 } {
-  const cases = filterCases(suite.cases, filterStatuses, filterProjects, filterTags, filterFiles);
+  const cases = filterCases(
+    suite.cases,
+    filterStatuses,
+    filterProjects,
+    filterTags,
+    filterFiles,
+    fileSearchTerm
+  );
   let total = cases.length;
   let passed = cases.filter((c) => c.status === 'passed').length;
   let failed = cases.filter((c) => c.status === 'failed').length;
@@ -113,7 +137,14 @@ function countCases(
   );
 
   for (const sub of suite.subSuites || []) {
-    const subCount = countCases(sub, filterStatuses, filterProjects, filterTags, filterFiles);
+    const subCount = countCases(
+      sub,
+      filterStatuses,
+      filterProjects,
+      filterTags,
+      filterFiles,
+      fileSearchTerm
+    );
     total += subCount.total;
     passed += subCount.passed;
     failed += subCount.failed;
@@ -132,6 +163,7 @@ export default function TestSuiteNode({
   filterProjects,
   filterTags,
   filterFiles,
+  fileSearchTerm,
   depth = 1,
 }: Props) {
   const [isOpen, setIsOpen] = useState(false);
@@ -140,8 +172,9 @@ export default function TestSuiteNode({
     filterStatuses.length > 0 ||
     filterProjects.length > 0 ||
     filterTags.length > 0 ||
-    filterFiles.length > 0
-      ? filterSuite(suite, filterStatuses, filterProjects, filterTags, filterFiles)
+    filterFiles.length > 0 ||
+    Boolean(fileSearchTerm?.trim())
+      ? filterSuite(suite, filterStatuses, filterProjects, filterTags, filterFiles, fileSearchTerm)
       : suite;
 
   const { total, passed, failed, skipped, timedOut, interrupted, duration } = countCases(
@@ -149,7 +182,8 @@ export default function TestSuiteNode({
     filterStatuses,
     filterProjects,
     filterTags,
-    filterFiles
+    filterFiles,
+    fileSearchTerm
   );
   const passRate = total > 0 ? Math.round((passed / total) * 100) : 100;
 
@@ -230,6 +264,7 @@ export default function TestSuiteNode({
                   filterProjects={filterProjects}
                   filterTags={filterTags}
                   filterFiles={filterFiles}
+                  fileSearchTerm={fileSearchTerm}
                   depth={depth + 1}
                 />
               ))}

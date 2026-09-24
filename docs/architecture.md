@@ -48,7 +48,9 @@ zen-reporter/
 │   │   │   ├── HistoryDisabledBanner.tsx # Alert banner shown when history recording is disabled
 │   │   │   ├── LearnMoreButton.tsx
 │   │   │   ├── MultiSelectFilter.tsx
+│   │   │   ├── SearchInput.tsx    # Shared real-time text search filter input component
 │   │   │   ├── StatCard.tsx
+│   │   │   ├── TagCloudModal.tsx  # Searchable tag cloud & multi-select modal dialog
 │   │   │   ├── TestCaseCard.tsx
 │   │   │   ├── TestCaseDetail.tsx
 │   │   │   └── index.ts
@@ -70,7 +72,9 @@ zen-reporter/
 │   │       └── VisualDiffViewer.tsx    # Main visual diff modal / container component
 │   ├── lib/
 │   │   ├── dataProcessor.ts         # Raw data conversion, wall-clock calculation & package manager detector
+│   │   ├── exportToCsv.ts           # Zero-dependency RFC 4180 CSV export utility with UTF-8 BOM
 │   │   ├── reporter.ts              # Playwright Reporter implementation (theme/darkMode resolution & auto history refresh)
+│   │   ├── runHistory.ts            # JSONL run execution logger & history archiver
 │   │   ├── tagColors.ts             # Deterministic HSL color generator for tags
 │   │   ├── types.ts                 # TypeScript interfaces (ReportData, TestRun, ReporterConfig, HistoryRun, etc.)
 │   │   └── utils.ts                 # Suite tree builders, fastest/slowest calculators, ANSI cleaner & visual diff extractor (`extractVisualDiffPairs`)
@@ -80,7 +84,7 @@ zen-reporter/
 │   ├── vite-env.d.ts                # Vite type declarations
 │   └── vite-plugin-inject-data.ts   # Vite plugin to inline report.json & history.json into HTML
 ├── bin/
-│   └── zen-reporter.js              # CLI executable & DuckDB history aggregation engine (history report/runs/flaky/regressions/slow)
+│   └── zen-reporter.js              # CLI executable & DuckDB history aggregation engine (history report/runs/files/tests/flaky/regressions/slow)
 ├── zen-report/
 │   ├── index.html                   # Standalone single-file HTML report
 │   ├── history.json                 # Historical test analytics & trend data

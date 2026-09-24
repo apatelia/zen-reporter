@@ -1,7 +1,13 @@
 import { useState, useMemo } from 'react';
 import type { TestSuite } from '@/lib/types';
 import { extractFailedTests } from '@/lib/utils';
-import { MultiSelectFilter, StatCard } from '@/components/shared';
+import {
+  MultiSelectFilter,
+  StatCard,
+  SearchInput,
+  TagCloudModal,
+  type TagCloudOption,
+} from '@/components/shared';
 import FailureList from './FailureList';
 
 type FailureType = 'Failed' | 'Timed Out' | 'Interrupted';
@@ -39,13 +45,14 @@ function getAllFailureTypes(suites: TestSuite[]): FailureType[] {
   );
 }
 
-function getAllFailureTags(suites: TestSuite[]): string[] {
-  const tagSet = new Set<string>();
+function getAllFailureTagsWithCounts(suites: TestSuite[]): TagCloudOption[] {
+  const countsMap = new Map<string, number>();
   function collect(suite: TestSuite) {
     for (const c of suite.cases) {
       if (c.status === 'failed' || c.status === 'timedOut' || c.status === 'interrupted') {
         for (const tag of c.tags || []) {
-          tagSet.add(tag.replace('@', ''));
+          const clean = tag.replace(/^@/, '');
+          countsMap.set(clean, (countsMap.get(clean) || 0) + 1);
         }
       }
     }
@@ -56,7 +63,7 @@ function getAllFailureTags(suites: TestSuite[]): string[] {
   for (const suite of suites) {
     collect(suite);
   }
-  return Array.from(tagSet).sort();
+  return Array.from(countsMap.entries()).map(([tag, count]) => ({ tag, count }));
 }
 
 function getAllFailureProjects(suites: TestSuite[]): string[] {
@@ -79,24 +86,6 @@ function getAllFailureProjects(suites: TestSuite[]): string[] {
   return Array.from(projectSet).sort();
 }
 
-function getAllFailureFiles(suites: TestSuite[]): string[] {
-  const fileSet = new Set<string>();
-  function collect(suite: TestSuite) {
-    for (const c of suite.cases) {
-      if (c.status === 'failed' || c.status === 'timedOut' || c.status === 'interrupted') {
-        fileSet.add(c.fileName);
-      }
-    }
-    for (const sub of suite.subSuites || []) {
-      collect(sub);
-    }
-  }
-  for (const suite of suites) {
-    collect(suite);
-  }
-  return Array.from(fileSet).sort();
-}
-
 export default function FailuresSection({
   suites,
   failedCount,
@@ -106,12 +95,16 @@ export default function FailuresSection({
   const [filterTypes, setFilterTypes] = useState<FailureType[]>([]);
   const [filterProjects, setFilterProjects] = useState<string[]>([]);
   const [filterTags, setFilterTags] = useState<string[]>([]);
-  const [filterFiles, setFilterFiles] = useState<string[]>([]);
+  const [fileSearchTerm, setFileSearchTerm] = useState<string>('');
+  const [isTagModalOpen, setIsTagModalOpen] = useState(false);
 
   const availableTypes = useMemo(() => getAllFailureTypes(suites), [suites]);
   const availableProjects = useMemo(() => getAllFailureProjects(suites), [suites]);
-  const availableTags = useMemo(() => getAllFailureTags(suites), [suites]);
-  const availableFiles = useMemo(() => getAllFailureFiles(suites), [suites]);
+  const availableTagsWithCounts = useMemo(() => getAllFailureTagsWithCounts(suites), [suites]);
+  const tagList = useMemo(
+    () => availableTagsWithCounts.map((t) => t.tag),
+    [availableTagsWithCounts]
+  );
 
   const filteredFailedTests = useMemo(() => {
     const all = extractFailedTests(suites);
@@ -119,26 +112,27 @@ export default function FailuresSection({
       filterTypes.length === 0 &&
       filterProjects.length === 0 &&
       filterTags.length === 0 &&
-      filterFiles.length === 0
+      !fileSearchTerm.trim()
     ) {
       return all;
     }
+    const query = fileSearchTerm.trim().toLowerCase();
     return all.filter((t) => {
       const typeMatch = filterTypes.length === 0 || filterTypes.includes(t.type as FailureType);
       const projectMatch =
         filterProjects.length === 0 || filterProjects.includes(t.testCase?.project || '');
       const tagMatch =
         filterTags.length === 0 || (t.tags || []).some((tag) => filterTags.includes(tag));
-      const fileMatch = filterFiles.length === 0 || filterFiles.includes(t.fileName);
+      const fileMatch = !query || (t.fileName && t.fileName.toLowerCase().includes(query));
       return typeMatch && projectMatch && tagMatch && fileMatch;
     });
-  }, [suites, filterTypes, filterProjects, filterTags, filterFiles]);
+  }, [suites, filterTypes, filterProjects, filterTags, fileSearchTerm]);
 
   const hasActiveFilters =
     filterTypes.length > 0 ||
     filterProjects.length > 0 ||
     filterTags.length > 0 ||
-    filterFiles.length > 0;
+    fileSearchTerm.trim().length > 0;
 
   const noFailures = failedCount + timedOutCount + interruptedCount === 0;
 
@@ -146,7 +140,7 @@ export default function FailuresSection({
     setFilterTypes([]);
     setFilterProjects([]);
     setFilterTags([]);
-    setFilterFiles([]);
+    setFileSearchTerm('');
   };
 
   return (
@@ -246,17 +240,44 @@ export default function FailuresSection({
                 </svg>
               }
             />
-            <MultiSelectFilter
-              label="Tags"
-              options={availableTags}
-              selectedOptions={filterTags}
-              onApply={setFilterTags}
-              showSearch={true}
-              getDisplayValue={() => 'Tags'}
-              disabled={noFailures}
-              icon={
+            {availableTagsWithCounts.length <= 5 ? (
+              <MultiSelectFilter
+                label="Tags"
+                options={tagList}
+                selectedOptions={filterTags}
+                onApply={setFilterTags}
+                showSearch={true}
+                getDisplayValue={() => 'Tags'}
+                disabled={noFailures}
+                icon={
+                  <svg
+                    className="h-4 w-4"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    strokeWidth={2}
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"
+                    />
+                  </svg>
+                }
+              />
+            ) : (
+              <button
+                type="button"
+                disabled={noFailures}
+                onClick={() => setIsTagModalOpen(true)}
+                className={`inline-flex items-center gap-2.5 rounded-lg border border-border-default bg-surface-100 px-4 py-2 text-sm font-semibold text-text-body-mid shadow-xs transition-all duration-200 ${
+                  noFailures
+                    ? 'opacity-50 cursor-not-allowed pointer-events-none'
+                    : 'hover:border-primary-500 hover:text-text-ink dark:border-border-default dark:bg-surface-100 dark:text-text-body-mid dark:hover:border-primary-400 dark:hover:text-text-on-primary cursor-pointer'
+                }`}
+              >
                 <svg
-                  className="h-4 w-4"
+                  className="h-4 w-4 shrink-0"
                   fill="none"
                   viewBox="0 0 24 24"
                   stroke="currentColor"
@@ -268,31 +289,19 @@ export default function FailuresSection({
                     d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"
                   />
                 </svg>
-              }
-            />
-            <MultiSelectFilter
-              label="Files"
-              options={availableFiles}
-              selectedOptions={filterFiles}
-              onApply={setFilterFiles}
-              showSearch={true}
-              getDisplayValue={() => 'Files'}
+                <span>{filterTags.length > 0 ? `Tags (${filterTags.length})` : 'Tags'}</span>
+                {filterTags.length > 0 && (
+                  <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-accent-blue text-xs font-bold text-text-on-primary shadow-xs">
+                    {filterTags.length}
+                  </span>
+                )}
+              </button>
+            )}
+            <SearchInput
+              value={fileSearchTerm}
+              onChange={setFileSearchTerm}
               disabled={noFailures}
-              icon={
-                <svg
-                  className="h-4 w-4"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                  strokeWidth={2}
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                  />
-                </svg>
-              }
+              placeholder="Filter by file name..."
             />
             {hasActiveFilters && (
               <button
@@ -321,6 +330,14 @@ export default function FailuresSection({
       )}
 
       <FailureList failedTests={filteredFailedTests} hasSuites={suites.length > 0} />
+
+      <TagCloudModal
+        isOpen={isTagModalOpen}
+        onClose={() => setIsTagModalOpen(false)}
+        tagsWithCounts={availableTagsWithCounts}
+        selectedTags={filterTags}
+        onApply={setFilterTags}
+      />
     </div>
   );
 }

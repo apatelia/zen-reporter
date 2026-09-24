@@ -1,4 +1,3 @@
-import React from 'react';
 import GuideModal from '@/components/shared/GuideModal';
 
 export type InsightModalType = 'flaky-tests' | 'regressions' | 'slowest-tests' | null;
@@ -62,7 +61,7 @@ export default function InsightsGuides({ activeModal, onClose }: InsightsGuidesP
 
         <div className="rounded-md border border-border-default bg-surface-50 p-4 space-y-2">
           <div className="font-bold text-text-ink dark:text-text-on-primary text-xs uppercase tracking-wider">
-            Filtering Capabilities:
+            Filtering & Export Capabilities:
           </div>
           <ul className="list-disc list-inside space-y-1">
             <li>
@@ -72,6 +71,10 @@ export default function InsightsGuides({ activeModal, onClose }: InsightsGuidesP
             <li>
               <strong>Test Search:</strong> Dynamically search tests by title, suite, or project
               without clearing active date filters.
+            </li>
+            <li>
+              <strong>Export CSV:</strong> Download all filtered flaky test records into an RFC
+              4180-compliant CSV file (un-paginated).
             </li>
           </ul>
         </div>
@@ -198,7 +201,7 @@ export default function InsightsGuides({ activeModal, onClose }: InsightsGuidesP
 
         <div className="rounded-md border border-border-default bg-surface-50 p-4 space-y-2">
           <div className="font-bold text-text-ink dark:text-text-on-primary text-xs uppercase tracking-wider">
-            Filtering Capabilities:
+            Filtering & Export Capabilities:
           </div>
           <ul className="list-disc list-inside space-y-1">
             <li>
@@ -208,6 +211,10 @@ export default function InsightsGuides({ activeModal, onClose }: InsightsGuidesP
             <li>
               <strong>Test Search:</strong> Dynamically search tests by title, suite, or project
               without clearing active date filters.
+            </li>
+            <li>
+              <strong>Export CSV:</strong> Download all detected regression items to an RFC
+              4180-compliant CSV file (un-paginated).
             </li>
           </ul>
         </div>
@@ -224,14 +231,63 @@ export default function InsightsGuides({ activeModal, onClose }: InsightsGuidesP
           table lists the top 5 test cases with the highest average execution duration across
           history.
         </p>
+
+        <div className="rounded-md border border-border-default bg-surface-50 p-4 space-y-2.5">
+          <div className="font-bold text-text-ink dark:text-text-on-primary text-xs uppercase tracking-wider">
+            Key Metrics Explained:
+          </div>
+          <ul className="list-disc list-inside space-y-1.5 text-xs text-text-body-mid dark:text-text-muted">
+            <li>
+              <strong className="text-text-ink dark:text-text-on-primary">Average Duration:</strong>{' '}
+              The cumulative baseline execution duration across recorded historical runs.
+            </li>
+            <li>
+              <strong className="text-text-ink dark:text-text-on-primary">Max Duration:</strong> The
+              single worst-case peak runtime encountered (useful for spotting transient spikes or CI
+              throttling).
+            </li>
+            <li>
+              <strong className="text-text-ink dark:text-text-on-primary">
+                Last Run Duration:
+              </strong>{' '}
+              The exact runtime recorded during the most recent test run execution.
+            </li>
+          </ul>
+        </div>
+
         <div className="rounded-md border border-border-default bg-surface-50 p-4 space-y-2">
           <div className="font-bold text-text-ink dark:text-text-on-primary text-xs uppercase tracking-wider">
-            Optimization Strategy:
+            Export Capabilities:
           </div>
-          <p>
-            Focusing refactoring efforts on these top 5 bottleneck tests yields the largest
-            reduction in overall CI execution pipeline duration.
-          </p>
+          <ul className="list-disc list-inside space-y-1">
+            <li>
+              <strong>Export CSV:</strong> Download the slowest tests list to an RFC 4180-compliant
+              CSV file.
+            </li>
+          </ul>
+        </div>
+
+        <div className="rounded-md border border-border-default bg-surface-50 p-4 space-y-2">
+          <div className="font-bold text-text-ink dark:text-text-on-primary text-xs uppercase tracking-wider">
+            Diagnostic & Optimization Strategy:
+          </div>
+          <ul className="list-disc list-inside space-y-1.5 text-xs text-text-body-mid dark:text-text-muted">
+            <li>
+              <strong>Active Regression Detection:</strong> If <em>Last Run Duration</em> is
+              significantly higher than <em>Average Duration</em>, recent code or test script
+              updates introduced a execution bottleneck.
+            </li>
+            <li>
+              <strong>Optimization Verification:</strong> Compare <em>Last Run Duration</em> against{' '}
+              <em>Average Duration</em> after refactoring to immediately verify if performance
+              improvements took effect without waiting for long-term historical averages to drift
+              down.
+            </li>
+            <li>
+              <strong>CI Pipeline Impact:</strong> Refactoring these top bottleneck tests yields the
+              highest overall reduction in suite execution time.
+            </li>
+          </ul>
         </div>
       </GuideModal>
     </>

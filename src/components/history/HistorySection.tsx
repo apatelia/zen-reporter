@@ -9,6 +9,7 @@ import {
   DateFilterControl,
   DataTable,
   PassRateBadge,
+  SearchInput,
   type ColumnDef,
   type DateFilterRange,
 } from '@/components/shared';
@@ -286,6 +287,7 @@ export default function HistorySection({ history, isHistoryDisabled }: Props) {
         header: 'Run Name',
         className: 'font-bold text-text-ink dark:text-text-on-primary',
         cell: (run) => run.run_name,
+        csvValue: (run) => run.run_name,
       },
       {
         key: 'mode',
@@ -295,17 +297,23 @@ export default function HistorySection({ history, isHistoryDisabled }: Props) {
           !run.run_workers || run.run_workers <= 1
             ? 'Serial'
             : `Parallel, ${run.run_workers} workers`,
+        csvValue: (run) =>
+          !run.run_workers || run.run_workers <= 1
+            ? 'Serial'
+            : `Parallel, ${run.run_workers} workers`,
       },
       {
         key: 'started_at',
         header: 'Started',
         cell: (run) => formatDate(run.started_at),
+        csvValue: (run) => formatDate(run.started_at),
       },
       {
         key: 'duration',
         header: 'Duration',
         align: 'right',
         cell: (run) => formatDuration(run.run_duration_ms),
+        csvValue: (run) => formatDuration(run.run_duration_ms),
       },
       {
         key: 'time_saved',
@@ -343,6 +351,24 @@ export default function HistorySection({ history, isHistoryDisabled }: Props) {
             );
           return <span className="text-text-body-mid dark:text-text-muted">0s</span>;
         },
+        csvValue: (run) => {
+          const isParallel = Boolean(run.run_workers && run.run_workers > 1);
+          const seqMs = run.run_sequential_duration_ms;
+          const hasSeqData = seqMs != null;
+          const savedMs =
+            isParallel && hasSeqData && seqMs > run.run_duration_ms
+              ? seqMs - run.run_duration_ms
+              : 0;
+          const speedup =
+            isParallel && hasSeqData && savedMs > 0
+              ? (seqMs / Math.max(1, run.run_duration_ms)).toFixed(1)
+              : null;
+
+          if (!isParallel) return '0s';
+          if (!hasSeqData) return '-';
+          if (savedMs > 0 && speedup) return `${formatDuration(savedMs)} (${speedup}x)`;
+          return '0s';
+        },
       },
       {
         key: 'total',
@@ -350,6 +376,7 @@ export default function HistorySection({ history, isHistoryDisabled }: Props) {
         align: 'right',
         className: 'font-medium',
         cell: (run) => run.run_total,
+        csvValue: (run) => run.run_total,
       },
       {
         key: 'passed',
@@ -362,6 +389,7 @@ export default function HistorySection({ history, isHistoryDisabled }: Props) {
             {run.run_passed}
           </span>
         ),
+        csvValue: (run) => run.run_passed,
       },
       {
         key: 'failed',
@@ -374,6 +402,7 @@ export default function HistorySection({ history, isHistoryDisabled }: Props) {
             {run.run_failed}
           </span>
         ),
+        csvValue: (run) => run.run_failed,
       },
       {
         key: 'skipped',
@@ -388,6 +417,7 @@ export default function HistorySection({ history, isHistoryDisabled }: Props) {
             {run.run_skipped}
           </span>
         ),
+        csvValue: (run) => run.run_skipped,
       },
       {
         key: 'timed_out',
@@ -402,6 +432,7 @@ export default function HistorySection({ history, isHistoryDisabled }: Props) {
             {run.run_timed_out}
           </span>
         ),
+        csvValue: (run) => run.run_timed_out,
       },
       {
         key: 'interrupted',
@@ -416,12 +447,14 @@ export default function HistorySection({ history, isHistoryDisabled }: Props) {
             {run.run_interrupted}
           </span>
         ),
+        csvValue: (run) => run.run_interrupted,
       },
       {
         key: 'pass_rate',
         header: 'Pass Rate',
         align: 'right',
         cell: (run) => <PassRateBadge passRate={run.pass_rate} />,
+        csvValue: (run) => (run.pass_rate != null ? `${run.pass_rate}%` : '-'),
       },
     ],
     []
@@ -440,6 +473,7 @@ export default function HistorySection({ history, isHistoryDisabled }: Props) {
             {truncateFileName(f.file)}
           </div>
         ),
+        csvValue: (f) => f.file,
       },
       {
         key: 'runs',
@@ -447,6 +481,7 @@ export default function HistorySection({ history, isHistoryDisabled }: Props) {
         align: 'right',
         className: 'text-text-body-mid dark:text-text-muted',
         cell: (f) => f.runsCount,
+        csvValue: (f) => f.runsCount,
       },
       {
         key: 'total',
@@ -454,6 +489,7 @@ export default function HistorySection({ history, isHistoryDisabled }: Props) {
         align: 'right',
         className: 'font-medium',
         cell: (f) => f.total,
+        csvValue: (f) => f.total,
       },
       {
         key: 'passed',
@@ -464,6 +500,7 @@ export default function HistorySection({ history, isHistoryDisabled }: Props) {
             {f.passed}
           </span>
         ),
+        csvValue: (f) => f.passed,
       },
       {
         key: 'failed',
@@ -474,6 +511,7 @@ export default function HistorySection({ history, isHistoryDisabled }: Props) {
             {f.failed}
           </span>
         ),
+        csvValue: (f) => f.failed,
       },
       {
         key: 'timed_out',
@@ -484,6 +522,7 @@ export default function HistorySection({ history, isHistoryDisabled }: Props) {
             {f.timedOut}
           </span>
         ),
+        csvValue: (f) => f.timedOut,
       },
       {
         key: 'interrupted',
@@ -496,6 +535,7 @@ export default function HistorySection({ history, isHistoryDisabled }: Props) {
             {f.interrupted}
           </span>
         ),
+        csvValue: (f) => f.interrupted,
       },
       {
         key: 'skipped',
@@ -508,12 +548,14 @@ export default function HistorySection({ history, isHistoryDisabled }: Props) {
             {f.skipped}
           </span>
         ),
+        csvValue: (f) => f.skipped,
       },
       {
         key: 'pass_rate',
         header: 'Pass Rate',
         align: 'right',
         cell: (f) => <PassRateBadge passRate={f.passRate} />,
+        csvValue: (f) => (f.passRate != null ? `${f.passRate}%` : '-'),
       },
     ],
     []
@@ -526,11 +568,13 @@ export default function HistorySection({ history, isHistoryDisabled }: Props) {
         header: 'Test',
         className: 'font-bold text-text-ink dark:text-text-on-primary',
         cell: (t) => t.title,
+        csvValue: (t) => t.title,
       },
       {
         key: 'suite',
         header: 'Suite',
         cell: (t) => t.suite || '-',
+        csvValue: (t) => t.suite || '',
       },
       {
         key: 'file',
@@ -543,11 +587,13 @@ export default function HistorySection({ history, isHistoryDisabled }: Props) {
             {truncateFileName(t.file)}
           </div>
         ),
+        csvValue: (t) => t.file,
       },
       {
         key: 'project',
         header: 'Project',
         cell: (t) => t.project || '-',
+        csvValue: (t) => t.project || '',
       },
       {
         key: 'runs',
@@ -555,6 +601,7 @@ export default function HistorySection({ history, isHistoryDisabled }: Props) {
         align: 'right',
         className: 'text-text-body-mid dark:text-text-muted',
         cell: (t) => t.runsCount,
+        csvValue: (t) => t.runsCount,
       },
       {
         key: 'passed',
@@ -565,6 +612,7 @@ export default function HistorySection({ history, isHistoryDisabled }: Props) {
             {t.passed}
           </span>
         ),
+        csvValue: (t) => t.passed,
       },
       {
         key: 'failed',
@@ -575,6 +623,7 @@ export default function HistorySection({ history, isHistoryDisabled }: Props) {
             {t.failed}
           </span>
         ),
+        csvValue: (t) => t.failed,
       },
       {
         key: 'timed_out',
@@ -585,6 +634,7 @@ export default function HistorySection({ history, isHistoryDisabled }: Props) {
             {t.timedOut}
           </span>
         ),
+        csvValue: (t) => t.timedOut,
       },
       {
         key: 'interrupted',
@@ -597,6 +647,7 @@ export default function HistorySection({ history, isHistoryDisabled }: Props) {
             {t.interrupted}
           </span>
         ),
+        csvValue: (t) => t.interrupted,
       },
       {
         key: 'skipped',
@@ -609,18 +660,21 @@ export default function HistorySection({ history, isHistoryDisabled }: Props) {
             {t.skipped}
           </span>
         ),
+        csvValue: (t) => t.skipped,
       },
       {
         key: 'avg_duration',
         header: 'Avg Duration',
         align: 'right',
         cell: (t) => (t.avgDurationMs != null ? formatDuration(t.avgDurationMs) : '-'),
+        csvValue: (t) => (t.avgDurationMs != null ? formatDuration(t.avgDurationMs) : '-'),
       },
       {
         key: 'pass_rate',
         header: 'Pass Rate',
         align: 'right',
         cell: (t) => <PassRateBadge passRate={t.passRate} />,
+        csvValue: (t) => (t.passRate != null ? `${t.passRate}%` : '-'),
       },
     ],
     []
@@ -710,6 +764,8 @@ export default function HistorySection({ history, isHistoryDisabled }: Props) {
           data={pageRuns}
           columns={runColumns}
           getRowKey={(run) => run.run_id}
+          exportFilename="test_runs_history.csv"
+          fullData={runs}
           className="mt-4"
           emptyMessage={
             <div className="py-16 text-center text-text-body-mid dark:text-text-muted">
@@ -753,7 +809,7 @@ export default function HistorySection({ history, isHistoryDisabled }: Props) {
         </div>
 
         {/* Row 2: Dedicated Date Filter Toolbar & Search Filter */}
-        <div className="pt-3 pb-1 border-b border-border-default/50 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div className="pt-3 pb-1 border-b border-border-default/50 flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
           <DateFilterControl
             onFilterChange={(range) => {
               setFileFilterRange(range);
@@ -761,37 +817,24 @@ export default function HistorySection({ history, isHistoryDisabled }: Props) {
             }}
             availableTimestamps={availableTimestamps}
           />
-          <div className="relative w-44 sm:w-48 shrink-0">
-            <svg
-              className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-text-muted"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              strokeWidth={1.5}
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"
-              />
-            </svg>
-            <input
-              type="text"
-              placeholder="Search spec files..."
-              value={fileNameSearchTerm}
-              onChange={(e) => {
-                setFileNameSearchTerm(e.target.value);
-                filesPag.setPage(1);
-              }}
-              className="w-full rounded-md border border-border-default bg-surface-50 pl-9 pr-3 py-1.5 text-xs text-text-ink placeholder:text-text-muted focus:border-accent-blue focus:outline-none dark:bg-surface-50 dark:text-text-on-primary"
-            />
-          </div>
+          <SearchInput
+            value={fileNameSearchTerm}
+            onChange={(val) => {
+              setFileNameSearchTerm(val);
+              filesPag.setPage(1);
+            }}
+            placeholder="Search spec files..."
+            className="w-44 sm:w-48 shrink-0"
+            inputClassName="w-full rounded-md border border-border-default bg-surface-50 pl-9 pr-7 py-1.5 text-xs text-text-ink placeholder:text-text-muted focus:border-accent-blue focus:outline-none dark:bg-surface-50 dark:text-text-on-primary"
+          />
         </div>
 
         <DataTable
           data={pageFiles}
           columns={fileColumns}
           getRowKey={(f) => f.file}
+          exportFilename="spec_file_history.csv"
+          fullData={aggregatedFiles}
           className="mt-4"
           emptyMessage={
             <div className="py-16 text-center text-text-body-mid dark:text-text-muted">
@@ -835,7 +878,7 @@ export default function HistorySection({ history, isHistoryDisabled }: Props) {
         </div>
 
         {/* Row 2: Dedicated Date Filter Toolbar & Search Filter */}
-        <div className="pt-3 pb-1 border-b border-border-default/50 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div className="pt-3 pb-1 border-b border-border-default/50 flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
           <DateFilterControl
             onFilterChange={(range) => {
               setTestFilterRange(range);
@@ -843,37 +886,24 @@ export default function HistorySection({ history, isHistoryDisabled }: Props) {
             }}
             availableTimestamps={availableTimestamps}
           />
-          <div className="relative w-44 sm:w-48 shrink-0">
-            <svg
-              className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-text-muted"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              strokeWidth={1.5}
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"
-              />
-            </svg>
-            <input
-              type="text"
-              placeholder="Search tests..."
-              value={testSearchTerm}
-              onChange={(e) => {
-                setTestSearchTerm(e.target.value);
-                testsPag.setPage(1);
-              }}
-              className="w-full rounded-md border border-border-default bg-surface-50 pl-9 pr-3 py-1.5 text-xs text-text-ink placeholder:text-text-muted focus:border-accent-blue focus:outline-none dark:bg-surface-50 dark:text-text-on-primary"
-            />
-          </div>
+          <SearchInput
+            value={testSearchTerm}
+            onChange={(val) => {
+              setTestSearchTerm(val);
+              testsPag.setPage(1);
+            }}
+            placeholder="Search tests..."
+            className="w-44 sm:w-48 shrink-0"
+            inputClassName="w-full rounded-md border border-border-default bg-surface-50 pl-9 pr-7 py-1.5 text-xs text-text-ink placeholder:text-text-muted focus:border-accent-blue focus:outline-none dark:bg-surface-50 dark:text-text-on-primary"
+          />
         </div>
 
         <DataTable
           data={pageTests}
           columns={testColumns}
           getRowKey={(t) => t.key}
+          exportFilename="test_case_history.csv"
+          fullData={aggregatedTests}
           className="mt-4"
           emptyMessage={
             <div className="py-16 text-center text-text-body-mid dark:text-text-muted">

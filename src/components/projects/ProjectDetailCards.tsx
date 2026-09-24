@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import type { ProjectStats } from '@/lib/utils';
 import { formatDuration } from '@/lib/utils';
-import { LearnMoreButton, TestCaseCard, GuideModal } from '@/components/shared';
+import { LearnMoreButton, TestCaseCard, GuideModal, SearchInput } from '@/components/shared';
 
 interface Props {
   projectStats: ProjectStats[];
@@ -65,29 +65,13 @@ export default function ProjectDetailCards({ projectStats }: Props) {
         </div>
 
         <div className="flex flex-wrap items-center gap-3">
-          {/* Search Input */}
-          <div className="relative min-w-50 flex-1 sm:flex-initial">
-            <svg
-              className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-text-muted"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              strokeWidth={1.5}
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"
-              />
-            </svg>
-            <input
-              type="text"
-              placeholder="Search projects..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full rounded-md border border-border-default bg-surface-50 pl-9 pr-3 py-1.5 text-xs text-text-ink placeholder:text-text-muted focus:border-accent-blue focus:outline-none dark:bg-surface-50 dark:text-text-on-primary"
-            />
-          </div>
+          <SearchInput
+            value={searchTerm}
+            onChange={setSearchTerm}
+            placeholder="Search projects..."
+            className="min-w-50 flex-1 sm:flex-initial"
+            inputClassName="w-full rounded-md border border-border-default bg-surface-50 pl-9 pr-7 py-1.5 text-xs text-text-ink placeholder:text-text-muted focus:border-accent-blue focus:outline-none dark:bg-surface-50 dark:text-text-on-primary"
+          />
 
           {/* Sort Dropdown */}
           <div className="flex items-center gap-2">

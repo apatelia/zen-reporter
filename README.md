@@ -23,6 +23,7 @@ Dark mode:
 - **Visual Regression Diff Viewer**: Built-in side-by-side snapshot comparison for visual regression testing, allowing interactive comparison of `actual`, `expected` (baseline), and overlay `diff` image attachments.
 - **Execution History Archiving**: Archive historical test runs with details on run metadata, execution modes (`Parallel, N workers` vs `Serial`), wall-clock duration, pass/fail ratios, and automated quality ratings (`Excellent`, `Needs improvement`, `Critical`).
 - **File & Test Case History**: Dedicated **File History** and **Test History** views to analyze long-term spec file stability, individual test case pass/fail rates, run counts, average execution durations, date-range filtering, and text search across historical runs.
+- **Export to CSV**: Lightweight, RFC 4180-compliant UTF-8 CSV exporter for all report tables (Files, History, Insights). Respects active filters/date ranges and exports un-paginated full datasets for easy data sharing and external analysis.
 - **Visual Quality Trends**: Track pass rate percentages over time, multi-project execution duration trends per project profile, and step category trends across historical runs.
 - **DuckDB-Powered Test Intelligence**: Embedded analytics engine for advanced test suite intelligence:
   - **Flaky Intelligence**: Detect tests fluctuating between pass and fail across historical runs.
@@ -133,6 +134,8 @@ Zen Reporter includes a built-in CLI executable (`npx zr`) for serving reports a
 | :-------------------------------- | :------------------------------------------------------------------------------------------------- |
 | `npx zr history`                  | List all historical test runs with start time, duration, and pass/fail/skip counts.                |
 | `npx zr history runs`             | Same as above. List all historical test runs with start time, duration, and pass/fail/skip counts. |
+| `npx zr history files`            | Summarize historical test execution metrics grouped by spec file.                                  |
+| `npx zr history tests`            | Summarize granular historical execution metrics and average durations per test case.               |
 | `npx zr history flaky`            | Identify flaky tests that passed in some runs and failed in others.                                |
 | `npx zr history regressions`      | List tests that passed in a previous run but failed in the latest run.                             |
 | `npx zr history slow [--limit N]` | Rank the top $N$ slowest tests by average execution duration across runs (default: 10).            |

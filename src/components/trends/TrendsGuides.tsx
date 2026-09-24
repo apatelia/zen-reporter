@@ -1,4 +1,3 @@
-import React from 'react';
 import GuideModal from '@/components/shared/GuideModal';
 
 interface TrendsGuidesProps {

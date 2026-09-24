@@ -7,3 +7,5 @@ export { default as HistoryDisabledBanner } from './HistoryDisabledBanner';
 export { default as DateFilterControl, type DateFilterRange } from './DateFilterControl';
 export { DataTable, PassRateBadge, type ColumnDef } from './DataTable';
 export { default as GuideModal } from './GuideModal';
+export { default as SearchInput } from './SearchInput';
+export { default as TagCloudModal, type TagCloudOption } from './TagCloudModal';

@@ -15,6 +15,7 @@ import {
   HistoryDisabledBanner,
   DateFilterControl,
   DataTable,
+  SearchInput,
   type ColumnDef,
   type DateFilterRange,
 } from '@/components/shared';
@@ -160,17 +161,20 @@ export default function InsightsSection({ history, suites, isHistoryDisabled }: 
         key: 'suite',
         header: 'Suite',
         cell: (row) => row.suite || '-',
+        csvValue: (row) => row.suite || '',
       },
       {
         key: 'title',
         header: 'Test',
         className: 'font-bold',
         cell: (row) => row.title,
+        csvValue: (row) => row.title,
       },
       {
         key: 'project',
         header: 'Project',
         cell: (row) => row.project,
+        csvValue: (row) => row.project,
       },
       {
         key: 'failed_runs',
@@ -183,6 +187,7 @@ export default function InsightsSection({ history, suites, isHistoryDisabled }: 
             {row.failed_runs}
           </span>
         ),
+        csvValue: (row) => row.failed_runs,
       },
       {
         key: 'passed_runs',
@@ -197,6 +202,7 @@ export default function InsightsSection({ history, suites, isHistoryDisabled }: 
             {row.passed_runs}
           </span>
         ),
+        csvValue: (row) => row.passed_runs,
       },
       {
         key: 'recovered_by_retry',
@@ -211,6 +217,7 @@ export default function InsightsSection({ history, suites, isHistoryDisabled }: 
             {row.recovered_by_retry}
           </span>
         ),
+        csvValue: (row) => row.recovered_by_retry,
       },
       {
         key: 'total_runs',
@@ -218,6 +225,7 @@ export default function InsightsSection({ history, suites, isHistoryDisabled }: 
         align: 'right',
         className: 'font-bold',
         cell: (row) => row.total_runs,
+        csvValue: (row) => row.total_runs,
       },
     ],
     []
@@ -230,27 +238,32 @@ export default function InsightsSection({ history, suites, isHistoryDisabled }: 
         header: 'Test',
         className: 'font-bold',
         cell: (row) => row.title,
+        csvValue: (row) => row.title,
       },
       {
         key: 'suite',
         header: 'Suite',
         cell: (row) => row.suite || '-',
+        csvValue: (row) => row.suite || '',
       },
       {
         key: 'project',
         header: 'Project',
         cell: (row) => row.project,
+        csvValue: (row) => row.project,
       },
       {
         key: 'regressed_in',
         header: 'Regressed In',
         className: 'text-danger-600 dark:text-danger-500 font-bold',
         cell: (row) => formatDate(row.regressed_at),
+        csvValue: (row) => formatDate(row.regressed_at),
       },
       {
         key: 'last_run',
         header: 'Last Run',
         cell: (row) => formatDate(row.last_run_at),
+        csvValue: (row) => formatDate(row.last_run_at),
       },
       {
         key: 'last_status',
@@ -270,6 +283,7 @@ export default function InsightsSection({ history, suites, isHistoryDisabled }: 
             </span>
           );
         },
+        csvValue: (row) => row.last_status,
       },
     ],
     []
@@ -281,17 +295,20 @@ export default function InsightsSection({ history, suites, isHistoryDisabled }: 
         key: 'suite',
         header: 'Suite',
         cell: (row) => row.suite || '-',
+        csvValue: (row) => row.suite || '',
       },
       {
         key: 'title',
         header: 'Test',
         className: 'font-bold',
         cell: (row) => row.title,
+        csvValue: (row) => row.title,
       },
       {
         key: 'project',
         header: 'Project',
         cell: (row) => row.project,
+        csvValue: (row) => row.project,
       },
       {
         key: 'avg_duration',
@@ -299,18 +316,28 @@ export default function InsightsSection({ history, suites, isHistoryDisabled }: 
         align: 'right',
         className: 'font-bold text-accent-blue dark:text-success-500',
         cell: (row) => formatDurationVerbose(row.avg_duration_ms ?? row.avg_ms),
+        csvValue: (row) => formatDurationVerbose(row.avg_duration_ms ?? row.avg_ms),
       },
       {
         key: 'max_duration',
         header: 'Max Duration',
         align: 'right',
         cell: (row) => formatDurationVerbose(row.max_duration_ms ?? row.max_ms),
+        csvValue: (row) => formatDurationVerbose(row.max_duration_ms ?? row.max_ms),
+      },
+      {
+        key: 'last_run_duration',
+        header: 'Last Run Duration',
+        align: 'right',
+        cell: (row) => formatDurationVerbose(row.last_duration_ms ?? row.last_ms),
+        csvValue: (row) => formatDurationVerbose(row.last_duration_ms ?? row.last_ms),
       },
       {
         key: 'runs',
         header: 'Runs Count',
         align: 'right',
         cell: (row) => row.runs,
+        csvValue: (row) => row.runs,
       },
     ],
     []
@@ -385,7 +412,7 @@ export default function InsightsSection({ history, suites, isHistoryDisabled }: 
               />
             </div>
 
-            <div className="pt-3 pb-1 border-b border-border-default/50 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div className="pt-3 pb-1 border-b border-border-default/50 flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
               <DateFilterControl
                 onFilterChange={(range) => {
                   setFlakyFilterRange(range);
@@ -393,31 +420,16 @@ export default function InsightsSection({ history, suites, isHistoryDisabled }: 
                 }}
                 availableTimestamps={availableTimestamps}
               />
-              <div className="relative w-44 sm:w-48 shrink-0">
-                <svg
-                  className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-text-muted"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                  strokeWidth={1.5}
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"
-                  />
-                </svg>
-                <input
-                  type="text"
-                  placeholder="Search tests..."
-                  value={flakySearchTerm}
-                  onChange={(e) => {
-                    setFlakySearchTerm(e.target.value);
-                    flakyPag.setPage(1);
-                  }}
-                  className="w-full rounded-md border border-border-default bg-surface-50 pl-9 pr-3 py-1.5 text-xs text-text-ink placeholder:text-text-muted focus:border-accent-blue focus:outline-none dark:bg-surface-50 dark:text-text-on-primary"
-                />
-              </div>
+              <SearchInput
+                value={flakySearchTerm}
+                onChange={(val) => {
+                  setFlakySearchTerm(val);
+                  flakyPag.setPage(1);
+                }}
+                placeholder="Search tests..."
+                className="w-44 sm:w-48 shrink-0"
+                inputClassName="w-full rounded-md border border-border-default bg-surface-50 pl-9 pr-7 py-1.5 text-xs text-text-ink placeholder:text-text-muted focus:border-accent-blue focus:outline-none dark:bg-surface-50 dark:text-text-on-primary"
+              />
             </div>
 
             {filteredFlaky.length === 0 ? (
@@ -430,9 +442,11 @@ export default function InsightsSection({ history, suites, isHistoryDisabled }: 
               <>
                 <DataTable
                   data={flakyRows}
+                  fullData={filteredFlaky}
                   columns={flakyColumns}
                   getRowKey={(row, i) => `${row.project}/${row.file}/${row.title}/${i}`}
                   compact
+                  exportFilename="flaky_tests.csv"
                   className="mt-3"
                 />
                 <PaginationFooter
@@ -467,7 +481,7 @@ export default function InsightsSection({ history, suites, isHistoryDisabled }: 
               />
             </div>
 
-            <div className="pt-3 pb-1 border-b border-border-default/50 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div className="pt-3 pb-1 border-b border-border-default/50 flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
               <DateFilterControl
                 onFilterChange={(range) => {
                   setRegressionFilterRange(range);
@@ -475,31 +489,16 @@ export default function InsightsSection({ history, suites, isHistoryDisabled }: 
                 }}
                 availableTimestamps={availableTimestamps}
               />
-              <div className="relative w-44 sm:w-48 shrink-0">
-                <svg
-                  className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-text-muted"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                  strokeWidth={1.5}
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"
-                  />
-                </svg>
-                <input
-                  type="text"
-                  placeholder="Search tests..."
-                  value={regressionSearchTerm}
-                  onChange={(e) => {
-                    setRegressionSearchTerm(e.target.value);
-                    regressionsPag.setPage(1);
-                  }}
-                  className="w-full rounded-md border border-border-default bg-surface-50 pl-9 pr-3 py-1.5 text-xs text-text-ink placeholder:text-text-muted focus:border-accent-blue focus:outline-none dark:bg-surface-50 dark:text-text-on-primary"
-                />
-              </div>
+              <SearchInput
+                value={regressionSearchTerm}
+                onChange={(val) => {
+                  setRegressionSearchTerm(val);
+                  regressionsPag.setPage(1);
+                }}
+                placeholder="Search tests..."
+                className="w-44 sm:w-48 shrink-0"
+                inputClassName="w-full rounded-md border border-border-default bg-surface-50 pl-9 pr-7 py-1.5 text-xs text-text-ink placeholder:text-text-muted focus:border-accent-blue focus:outline-none dark:bg-surface-50 dark:text-text-on-primary"
+              />
             </div>
 
             {filteredRegressions.length === 0 ? (
@@ -512,9 +511,11 @@ export default function InsightsSection({ history, suites, isHistoryDisabled }: 
               <>
                 <DataTable
                   data={regressionRows}
+                  fullData={filteredRegressions}
                   columns={regressionColumns}
                   getRowKey={(row) => `${row.project}/${row.file}/${row.title}`}
                   compact
+                  exportFilename="test_regressions.csv"
                   className="mt-3"
                 />
                 <PaginationFooter
@@ -543,9 +544,11 @@ export default function InsightsSection({ history, suites, isHistoryDisabled }: 
             ) : (
               <DataTable
                 data={slowestRows}
+                fullData={history.slowest}
                 columns={slowestColumns}
                 getRowKey={(row) => `${row.project}/${row.file}/${row.title}`}
                 compact
+                exportFilename="slowest_tests.csv"
                 className="mt-3"
               />
             )}

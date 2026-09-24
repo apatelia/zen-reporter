@@ -1,6 +1,12 @@
 import type { TestSuite } from '@/lib/types';
 import { useMemo, useState } from 'react';
-import { MultiSelectFilter, StatCard } from '@/components/shared';
+import {
+  MultiSelectFilter,
+  StatCard,
+  SearchInput,
+  TagCloudModal,
+  type TagCloudOption,
+} from '@/components/shared';
 import SuiteView from './SuiteView';
 
 type TestCaseStatus = 'passed' | 'failed' | 'skipped' | 'timedOut' | 'interrupted';
@@ -65,13 +71,13 @@ function countTotalCases(suites: TestSuite[]): number {
   return count;
 }
 
-function getAllTags(suites: TestSuite[]): string[] {
-  const tagSet = new Set<string>();
+function getAllTagsWithCounts(suites: TestSuite[]): TagCloudOption[] {
+  const countsMap = new Map<string, number>();
 
   function collect(suite: TestSuite) {
     for (const c of suite.cases) {
       for (const tag of c.tags || []) {
-        tagSet.add(tag);
+        countsMap.set(tag, (countsMap.get(tag) || 0) + 1);
       }
     }
     for (const sub of suite.subSuites || []) {
@@ -83,26 +89,7 @@ function getAllTags(suites: TestSuite[]): string[] {
     collect(suite);
   }
 
-  return Array.from(tagSet).sort();
-}
-
-function getAllFiles(suites: TestSuite[]): string[] {
-  const fileSet = new Set<string>();
-
-  function collect(suite: TestSuite) {
-    for (const c of suite.cases) {
-      fileSet.add(c.fileName);
-    }
-    for (const sub of suite.subSuites || []) {
-      collect(sub);
-    }
-  }
-
-  for (const suite of suites) {
-    collect(suite);
-  }
-
-  return Array.from(fileSet).sort();
+  return Array.from(countsMap.entries()).map(([tag, count]) => ({ tag, count }));
 }
 
 function hasTestCases(
@@ -110,22 +97,24 @@ function hasTestCases(
   filterStatuses: TestCaseStatus[],
   filterProjects: string[],
   filterTags: string[],
-  filterFiles: string[]
+  fileSearchTerm: string
 ): boolean {
   if (
     filterStatuses.length === 0 &&
     filterProjects.length === 0 &&
     filterTags.length === 0 &&
-    filterFiles.length === 0
+    !fileSearchTerm.trim()
   )
     return true;
+
+  const query = fileSearchTerm.trim().toLowerCase();
 
   const hasMatchingCases = suite.cases.some((c) => {
     const statusMatch = filterStatuses.length === 0 || filterStatuses.includes(c.status);
     const projectMatch = filterProjects.length === 0 || filterProjects.includes(c.project);
     const tagMatch =
       filterTags.length === 0 || (c.tags || []).some((tag) => filterTags.includes(tag));
-    const fileMatch = filterFiles.length === 0 || filterFiles.includes(c.fileName);
+    const fileMatch = !query || (c.fileName && c.fileName.toLowerCase().includes(query));
 
     return statusMatch && projectMatch && tagMatch && fileMatch;
   });
@@ -133,7 +122,7 @@ function hasTestCases(
   if (hasMatchingCases) return true;
 
   for (const sub of suite.subSuites || []) {
-    if (hasTestCases(sub, filterStatuses, filterProjects, filterTags, filterFiles)) return true;
+    if (hasTestCases(sub, filterStatuses, filterProjects, filterTags, fileSearchTerm)) return true;
   }
 
   return false;
@@ -144,17 +133,17 @@ function filterSuites(
   filterStatuses: TestCaseStatus[],
   filterProjects: string[],
   filterTags: string[],
-  filterFiles: string[]
+  fileSearchTerm: string
 ): TestSuite[] {
   if (
     filterStatuses.length === 0 &&
     filterProjects.length === 0 &&
     filterTags.length === 0 &&
-    filterFiles.length === 0
+    !fileSearchTerm.trim()
   )
     return suites;
   return suites.filter((suite) =>
-    hasTestCases(suite, filterStatuses, filterProjects, filterTags, filterFiles)
+    hasTestCases(suite, filterStatuses, filterProjects, filterTags, fileSearchTerm)
   );
 }
 
@@ -162,13 +151,17 @@ export default function SuitesSection({ suites }: Props) {
   const [filterStatuses, setFilterStatuses] = useState<TestCaseStatus[]>([]);
   const [filterProjects, setFilterProjects] = useState<string[]>([]);
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
-  const [selectedFiles, setSelectedFiles] = useState<string[]>([]);
+  const [fileSearchTerm, setFileSearchTerm] = useState<string>('');
 
   const availableStatuses = useMemo(() => getAllStatuses(suites), [suites]);
   const availableProjects = useMemo(() => getAllProjects(suites), [suites]);
   const totalTestCases = useMemo(() => countTotalCases(suites), [suites]);
-  const availableTags = useMemo(() => getAllTags(suites), [suites]);
-  const availableFiles = useMemo(() => getAllFiles(suites), [suites]);
+  const [isTagModalOpen, setIsTagModalOpen] = useState(false);
+  const availableTagsWithCounts = useMemo(() => getAllTagsWithCounts(suites), [suites]);
+  const tagList = useMemo(
+    () => availableTagsWithCounts.map((t) => t.tag),
+    [availableTagsWithCounts]
+  );
 
   const handleStatusApply = (statuses: TestCaseStatus[]) => {
     setFilterStatuses(statuses);
@@ -182,21 +175,17 @@ export default function SuitesSection({ suites }: Props) {
     setSelectedTags(tags);
   };
 
-  const handleFilesApply = (files: string[]) => {
-    setSelectedFiles(files);
-  };
-
   const hasActiveFilters =
     filterStatuses.length > 0 ||
     filterProjects.length > 0 ||
     selectedTags.length > 0 ||
-    selectedFiles.length > 0;
+    fileSearchTerm.trim().length > 0;
 
   const handleResetFilters = () => {
     setFilterStatuses([]);
     setFilterProjects([]);
     setSelectedTags([]);
-    setSelectedFiles([]);
+    setFileSearchTerm('');
   };
 
   return (
@@ -277,16 +266,38 @@ export default function SuitesSection({ suites }: Props) {
                 </svg>
               }
             />
-            <MultiSelectFilter
-              label="Tags"
-              options={availableTags}
-              selectedOptions={selectedTags}
-              onApply={handleTagsApply}
-              showSearch={true}
-              getDisplayValue={() => 'Tags'}
-              icon={
+            {availableTagsWithCounts.length <= 5 ? (
+              <MultiSelectFilter
+                label="Tags"
+                options={tagList}
+                selectedOptions={selectedTags}
+                onApply={handleTagsApply}
+                showSearch={true}
+                getDisplayValue={() => 'Tags'}
+                icon={
+                  <svg
+                    className="h-4 w-4"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    strokeWidth={2}
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"
+                    />
+                  </svg>
+                }
+              />
+            ) : (
+              <button
+                type="button"
+                onClick={() => setIsTagModalOpen(true)}
+                className="inline-flex items-center gap-2.5 rounded-lg border border-border-default bg-surface-100 px-4 py-2 text-sm font-semibold text-text-body-mid shadow-xs transition-all duration-200 hover:border-primary-500 hover:text-text-ink dark:border-border-default dark:bg-surface-100 dark:text-text-body-mid dark:hover:border-primary-400 dark:hover:text-text-on-primary cursor-pointer"
+              >
                 <svg
-                  className="h-4 w-4"
+                  className="h-4 w-4 shrink-0"
                   fill="none"
                   viewBox="0 0 24 24"
                   stroke="currentColor"
@@ -298,30 +309,18 @@ export default function SuitesSection({ suites }: Props) {
                     d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"
                   />
                 </svg>
-              }
-            />
-            <MultiSelectFilter
-              label="Files"
-              options={availableFiles}
-              selectedOptions={selectedFiles}
-              onApply={handleFilesApply}
-              showSearch={true}
-              getDisplayValue={() => 'Files'}
-              icon={
-                <svg
-                  className="h-4 w-4"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                  strokeWidth={2}
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                  />
-                </svg>
-              }
+                <span>{selectedTags.length > 0 ? `Tags (${selectedTags.length})` : 'Tags'}</span>
+                {selectedTags.length > 0 && (
+                  <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-accent-blue text-xs font-bold text-text-on-primary shadow-xs">
+                    {selectedTags.length}
+                  </span>
+                )}
+              </button>
+            )}
+            <SearchInput
+              value={fileSearchTerm}
+              onChange={setFileSearchTerm}
+              placeholder="Filter by file name..."
             />
             {hasActiveFilters && (
               <button
@@ -357,7 +356,7 @@ export default function SuitesSection({ suites }: Props) {
             filterStatuses,
             filterProjects,
             selectedTags,
-            selectedFiles
+            fileSearchTerm
           );
           if (filteredSuites.length === 0) {
             return (
@@ -395,11 +394,20 @@ export default function SuitesSection({ suites }: Props) {
               filterStatuses={filterStatuses}
               filterProjects={filterProjects}
               filterTags={selectedTags}
-              filterFiles={selectedFiles}
+              filterFiles={fileSearchTerm ? [fileSearchTerm] : []}
+              fileSearchTerm={fileSearchTerm}
             />
           ));
         })()}
       </div>
+
+      <TagCloudModal
+        isOpen={isTagModalOpen}
+        onClose={() => setIsTagModalOpen(false)}
+        tagsWithCounts={availableTagsWithCounts}
+        selectedTags={selectedTags}
+        onApply={setSelectedTags}
+      />
     </div>
   );
 }
