@@ -10,9 +10,10 @@ import TestHealthCard from './TestHealthCard';
 interface Props {
   summary: ResultSummary;
   suites: TestSuite[];
+  isMinimalReport?: boolean;
 }
 
-export default function Overview({ summary, suites }: Props) {
+export default function Overview({ summary, suites, isMinimalReport }: Props) {
   const passRate = computePassRate(summary);
 
   return (
@@ -171,26 +172,28 @@ export default function Overview({ summary, suites }: Props) {
       </section>
 
       {/* Section 3: Visual Analytics & Insights */}
-      <section className="space-y-3 pt-2">
-        <div className="flex items-center gap-2.5">
-          <span className="text-xs font-bold uppercase tracking-wider text-text-muted">
-            Performance & Health Analytics
-          </span>
-          <div className="flex-1 h-px bg-border-default" />
-        </div>
+      {!isMinimalReport && (
+        <section className="space-y-3 pt-2">
+          <div className="flex items-center gap-2.5">
+            <span className="text-xs font-bold uppercase tracking-wider text-text-muted">
+              Performance & Health Analytics
+            </span>
+            <div className="flex-1 h-px bg-border-default" />
+          </div>
 
-        <div className="grid grid-cols-1 items-stretch gap-4 lg:grid-cols-12">
-          <div className="flex flex-col justify-between rounded-md bg-canvas border border-border-default p-4 text-center shadow-sm lg:col-span-4">
-            <PassRateRing passRate={passRate} />
+          <div className="grid grid-cols-1 items-stretch gap-4 lg:grid-cols-12">
+            <div className="flex flex-col justify-between rounded-md bg-canvas border border-border-default p-4 text-center shadow-sm lg:col-span-4">
+              <PassRateRing passRate={passRate} />
+            </div>
+            <div className="lg:col-span-4 flex flex-col">
+              <ExecutionEfficiencyCard summary={summary} />
+            </div>
+            <div className="lg:col-span-4 flex flex-col">
+              <TestHealthCard suites={suites} />
+            </div>
           </div>
-          <div className="lg:col-span-4 flex flex-col">
-            <ExecutionEfficiencyCard summary={summary} />
-          </div>
-          <div className="lg:col-span-4 flex flex-col">
-            <TestHealthCard suites={suites} />
-          </div>
-        </div>
-      </section>
+        </section>
+      )}
     </div>
   );
 }

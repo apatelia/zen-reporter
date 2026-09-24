@@ -69,6 +69,7 @@ export interface TestRun {
   theme?: string;
   darkMode?: boolean;
   enableHistory?: 'auto' | boolean;
+  minimalReport?: boolean;
 }
 
 export interface ReportData {
@@ -113,6 +114,7 @@ export interface ReporterConfig {
   theme?: string;
   darkMode?: boolean;
   enableHistory?: 'auto' | boolean;
+  minimalReport?: boolean;
 }
 
 // ── Run-history data (computed by `zr history report`; snake_case fields

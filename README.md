@@ -76,6 +76,7 @@ export default defineConfig({
         theme: 'Cafe', // Optional: Theme applied on initial load ("Cafe" | "Concept" | "Sentinel", default: "Cafe")
         darkMode: false, // Optional: Initial dark mode state (default: false)
         singleSummaryFile: true, // Optional: Generates a standalone summary.html file alongside index.html
+        minimalReport: false, // Optional: Produces a lightweight, basic report (disables history, hides analytical charts & secondary tabs, default: false)
         enableHistory: 'auto', // Optional: History recording mode ("auto" | boolean, default: "auto")
         consoleProgress: 'auto', // Optional: Console execution progress output ("auto" | "line" | "dot" | false, default: "auto")
       },
@@ -86,16 +87,17 @@ export default defineConfig({
 
 ### Options Reference
 
-| Option              | Type                                   | Default                     | Description                                                                               |
-| :------------------ | :------------------------------------- | :-------------------------- | :---------------------------------------------------------------------------------------- |
-| `outputDir`         | `string`                               | `"zen-report"`              | Directory where final report files are saved.                                             |
-| `projectName`       | `string`                               | `"Test Automation Project"` | Project name displayed prominently in the top bar of the dashboard.                       |
-| `testRunName`       | `string`                               | `"Test Run #{N}"`           | Test run or build name displayed in top bar. `{N}` is replaced dynamically by run number. |
-| `theme`             | `string`                               | `"Cafe"`                    | Theme applied on first load (`"Cafe"`, `"Concept"`, `"Sentinel"`).                        |
-| `darkMode`          | `boolean`                              | `false`                     | When set to `true`, the report loads in dark mode on first load.                          |
-| `singleSummaryFile` | `boolean`                              | `false`                     | Generates a standalone `summary.html` for executive summary views.                        |
-| `enableHistory`     | `'auto' \| boolean`                    | `"auto"`                    | Controls history execution archiving (`"auto"`, `true`, `false`).                         |
-| `consoleProgress`   | `'auto' \| 'line' \| 'dot' \| boolean` | `"auto"`                    | Controls terminal execution output (`"auto"` selects `line` in TTY and `dot` in non-TTY). |
+| Option              | Type                                   | Default                     | Description                                                                                                                                 |
+| :------------------ | :------------------------------------- | :-------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------ |
+| `outputDir`         | `string`                               | `"zen-report"`              | Directory where final report files are saved.                                                                                               |
+| `projectName`       | `string`                               | `"Test Automation Project"` | Project name displayed prominently in the top bar of the dashboard.                                                                         |
+| `testRunName`       | `string`                               | `"Test Run #{N}"`           | Test run or build name displayed in top bar. `{N}` is replaced dynamically by run number.                                                   |
+| `theme`             | `string`                               | `"Cafe"`                    | Theme applied on first load (`"Cafe"`, `"Concept"`, `"Sentinel"`).                                                                          |
+| `darkMode`          | `boolean`                              | `false`                     | When set to `true`, the report loads in dark mode on first load.                                                                            |
+| `singleSummaryFile` | `boolean`                              | `false`                     | Generates a standalone `summary.html` for executive summary views.                                                                          |
+| `minimalReport`     | `boolean`                              | `false`                     | When `true`, disables history recording and hides analytical charts/secondary tabs (Projects, History, Trends, Insights) for a lean report. |
+| `enableHistory`     | `'auto' \| boolean`                    | `"auto"`                    | Controls history execution archiving (`"auto"`, `true`, `false`). Forced to `false` when `minimalReport` is `true`.                         |
+| `consoleProgress`   | `'auto' \| 'line' \| 'dot' \| boolean` | `"auto"`                    | Controls terminal execution output (`"auto"` selects `line` in TTY and `dot` in non-TTY).                                                   |
 
 ---
 

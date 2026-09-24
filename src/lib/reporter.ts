@@ -55,6 +55,7 @@ export interface ReporterConfig {
   theme?: string;
   darkMode?: boolean;
   enableHistory: 'auto' | boolean;
+  minimalReport?: boolean;
   consoleProgress: 'auto' | 'line' | 'dot' | boolean;
 }
 
@@ -83,9 +84,12 @@ export function resolveConfig(
   const singleSummaryFile = Boolean(rawConfig?.singleSummaryFile);
   const theme = rawConfig?.theme !== undefined ? String(rawConfig.theme) : 'Cafe';
   const darkMode = Boolean(rawConfig?.darkMode);
+  const minimalReport = Boolean(rawConfig?.minimalReport);
 
   let enableHistory: 'auto' | boolean = 'auto';
-  if (rawConfig?.enableHistory !== undefined) {
+  if (minimalReport) {
+    enableHistory = false;
+  } else if (rawConfig?.enableHistory !== undefined) {
     if (typeof rawConfig.enableHistory === 'boolean') {
       enableHistory = rawConfig.enableHistory;
     } else if (rawConfig.enableHistory === 'auto') {
@@ -115,6 +119,7 @@ export function resolveConfig(
     theme,
     darkMode,
     enableHistory,
+    minimalReport,
     consoleProgress,
   };
 }
@@ -689,6 +694,7 @@ class ZenReporter implements Reporter {
       theme: this.reportConfig.theme,
       darkMode: this.reportConfig.darkMode,
       enableHistory: this.reportConfig.enableHistory,
+      minimalReport: this.reportConfig.minimalReport,
     };
 
     const reportData: ReportData = { testRun };

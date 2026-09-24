@@ -4,9 +4,10 @@ import FileMetricsSection from '@/components/files/FileMetricsSection';
 
 interface Props {
   suites: TestSuite[];
+  isMinimalReport?: boolean;
 }
 
-export default function FilesSection({ suites }: Props) {
+export default function FilesSection({ suites, isMinimalReport }: Props) {
   return (
     <div className="w-full space-y-6">
       <div>
@@ -18,7 +19,7 @@ export default function FilesSection({ suites }: Props) {
         </p>
       </div>
 
-      <FileMetricsSection suites={suites} />
+      <FileMetricsSection suites={suites} isMinimalReport={isMinimalReport} />
 
       <FileSummary suites={suites} title="File Breakdown Summary" />
     </div>

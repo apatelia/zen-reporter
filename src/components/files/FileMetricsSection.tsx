@@ -12,9 +12,10 @@ import {
 
 interface Props {
   suites: TestSuite[];
+  isMinimalReport?: boolean;
 }
 
-export default function FileMetricsSection({ suites }: Props) {
+export default function FileMetricsSection({ suites, isMinimalReport }: Props) {
   const allCases = useMemo(() => collectAllCases(suites), [suites]);
   const fileStats = useMemo(() => computeFileStats(allCases), [allCases]);
 
@@ -189,134 +190,138 @@ export default function FileMetricsSection({ suites }: Props) {
       </div>
 
       {/* Secondary Metrics & Bottlenecks Grid */}
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-        {/* Spec File Density & Distribution */}
-        <div className="rounded-md bg-canvas border border-border-default p-4 shadow-sm flex flex-col justify-between">
-          <div>
-            <h3 className="text-sm font-semibold uppercase tracking-wider text-text-body-mid dark:text-text-muted mb-3">
-              File Density & Distribution
-            </h3>
-
-            <div className="grid grid-cols-2 gap-3">
-              {distributionSubCards.map((card, index) => {
-                const isRightCol = index % 2 === 1;
-                const subTooltipPosClass = isRightCol
-                  ? 'right-0 translate-x-0'
-                  : 'left-1/2 -translate-x-1/2';
-                const subArrowPosClass = isRightCol
-                  ? 'right-2.5 translate-x-0'
-                  : 'left-1/2 -translate-x-1/2';
-
-                return (
-                  <div
-                    key={card.title}
-                    className="rounded border border-border-default dark:border-border-subtle bg-canvas-subtle p-3 flex flex-col justify-between"
-                  >
-                    <div className="flex items-center justify-between gap-1">
-                      <p className="text-xs font-medium text-text-body-mid dark:text-text-muted">
-                        {card.title}
-                      </p>
-                      <div className="group relative inline-flex items-center">
-                        <svg
-                          className="h-3.5 w-3.5 cursor-help text-text-body-mid opacity-60 hover:opacity-100 dark:text-text-muted transition-opacity shrink-0"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          stroke="currentColor"
-                          strokeWidth={2}
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z"
-                          />
-                        </svg>
-                        <div
-                          className={`pointer-events-none absolute bottom-full mb-2 hidden group-hover:block z-50 w-48 rounded bg-slate-900 dark:bg-slate-800 p-2 text-center text-xs text-white shadow-lg ring-1 ring-slate-700 ${subTooltipPosClass}`}
-                        >
-                          {card.description}
-                          <div
-                            className={`absolute top-full -mt-1 border-4 border-transparent border-t-slate-900 dark:border-t-slate-800 ${subArrowPosClass}`}
-                          />
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="mt-1.5">
-                      {card.isFileName ? (
-                        <div>
-                          <p
-                            className="text-sm font-bold text-text-ink dark:text-text-on-primary truncate"
-                            title={card.value}
-                          >
-                            {card.value}
-                          </p>
-                          {card.subValue && (
-                            <p className="text-xs text-text-muted font-medium mt-0.5">
-                              {card.subValue}
-                            </p>
-                          )}
-                        </div>
-                      ) : (
-                        <p className="text-lg font-bold text-text-ink dark:text-text-on-primary">
-                          {card.value}{' '}
-                          {card.unit && (
-                            <span className="text-xs font-normal text-text-muted">{card.unit}</span>
-                          )}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        </div>
-
-        {/* Top Bottleneck Spec Files */}
-        <div className="rounded-md bg-canvas border border-border-default p-4 shadow-sm flex flex-col justify-between">
-          <div>
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="text-sm font-semibold uppercase tracking-wider text-text-body-mid dark:text-text-muted">
-                Longest Execution Spec Files
+      {!isMinimalReport && (
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          {/* Spec File Density & Distribution */}
+          <div className="rounded-md bg-canvas border border-border-default p-4 shadow-sm flex flex-col justify-between">
+            <div>
+              <h3 className="text-sm font-semibold uppercase tracking-wider text-text-body-mid dark:text-text-muted mb-3">
+                File Density & Distribution
               </h3>
-              <span className="text-xs text-text-muted font-mono">Top 5 by Duration</span>
-            </div>
 
-            <div className="space-y-2.5">
-              {topBottlenecks.map((file) => {
-                const barPercentage =
-                  maxDuration > 0 ? Math.round((file.totalDuration / maxDuration) * 100) : 0;
-                return (
-                  <div key={file.fileName} className="space-y-1">
-                    <div className="flex items-center justify-between text-xs">
-                      <span
-                        className="font-medium text-text-ink dark:text-text-on-primary truncate max-w-50 sm:max-w-65"
-                        title={file.fileName}
-                      >
-                        {file.fileName}
-                      </span>
-                      <div className="flex items-center gap-2 shrink-0">
-                        <span className="text-text-muted font-mono text-[11px]">
-                          {file.total} {file.total === 1 ? 'test' : 'tests'}
-                        </span>
-                        <span className="font-semibold text-text-ink dark:text-text-on-primary font-mono text-[11px]">
-                          {formatDuration(file.totalDuration)}
-                        </span>
+              <div className="grid grid-cols-2 gap-3">
+                {distributionSubCards.map((card, index) => {
+                  const isRightCol = index % 2 === 1;
+                  const subTooltipPosClass = isRightCol
+                    ? 'right-0 translate-x-0'
+                    : 'left-1/2 -translate-x-1/2';
+                  const subArrowPosClass = isRightCol
+                    ? 'right-2.5 translate-x-0'
+                    : 'left-1/2 -translate-x-1/2';
+
+                  return (
+                    <div
+                      key={card.title}
+                      className="rounded border border-border-default dark:border-border-subtle bg-canvas-subtle p-3 flex flex-col justify-between"
+                    >
+                      <div className="flex items-center justify-between gap-1">
+                        <p className="text-xs font-medium text-text-body-mid dark:text-text-muted">
+                          {card.title}
+                        </p>
+                        <div className="group relative inline-flex items-center">
+                          <svg
+                            className="h-3.5 w-3.5 cursor-help text-text-body-mid opacity-60 hover:opacity-100 dark:text-text-muted transition-opacity shrink-0"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                            strokeWidth={2}
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z"
+                            />
+                          </svg>
+                          <div
+                            className={`pointer-events-none absolute bottom-full mb-2 hidden group-hover:block z-50 w-48 rounded bg-slate-900 dark:bg-slate-800 p-2 text-center text-xs text-white shadow-lg ring-1 ring-slate-700 ${subTooltipPosClass}`}
+                          >
+                            {card.description}
+                            <div
+                              className={`absolute top-full -mt-1 border-4 border-transparent border-t-slate-900 dark:border-t-slate-800 ${subArrowPosClass}`}
+                            />
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="mt-1.5">
+                        {card.isFileName ? (
+                          <div>
+                            <p
+                              className="text-sm font-bold text-text-ink dark:text-text-on-primary truncate"
+                              title={card.value}
+                            >
+                              {card.value}
+                            </p>
+                            {card.subValue && (
+                              <p className="text-xs text-text-muted font-medium mt-0.5">
+                                {card.subValue}
+                              </p>
+                            )}
+                          </div>
+                        ) : (
+                          <p className="text-lg font-bold text-text-ink dark:text-text-on-primary">
+                            {card.value}{' '}
+                            {card.unit && (
+                              <span className="text-xs font-normal text-text-muted">
+                                {card.unit}
+                              </span>
+                            )}
+                          </p>
+                        )}
                       </div>
                     </div>
-                    <div className="h-1.5 w-full rounded-full bg-surface-200 overflow-hidden">
-                      <div
-                        className="h-full rounded-full bg-accent-cafe dark:bg-success-500 transition-all duration-300"
-                        style={{ width: `${Math.max(barPercentage, 4)}%` }}
-                      />
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+
+          {/* Top Bottleneck Spec Files */}
+          <div className="rounded-md bg-canvas border border-border-default p-4 shadow-sm flex flex-col justify-between">
+            <div>
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-sm font-semibold uppercase tracking-wider text-text-body-mid dark:text-text-muted">
+                  Longest Execution Spec Files
+                </h3>
+                <span className="text-xs text-text-muted font-mono">Top 5 by Duration</span>
+              </div>
+
+              <div className="space-y-2.5">
+                {topBottlenecks.map((file) => {
+                  const barPercentage =
+                    maxDuration > 0 ? Math.round((file.totalDuration / maxDuration) * 100) : 0;
+                  return (
+                    <div key={file.fileName} className="space-y-1">
+                      <div className="flex items-center justify-between text-xs">
+                        <span
+                          className="font-medium text-text-ink dark:text-text-on-primary truncate max-w-50 sm:max-w-65"
+                          title={file.fileName}
+                        >
+                          {file.fileName}
+                        </span>
+                        <div className="flex items-center gap-2 shrink-0">
+                          <span className="text-text-muted font-mono text-[11px]">
+                            {file.total} {file.total === 1 ? 'test' : 'tests'}
+                          </span>
+                          <span className="font-semibold text-text-ink dark:text-text-on-primary font-mono text-[11px]">
+                            {formatDuration(file.totalDuration)}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="h-1.5 w-full rounded-full bg-surface-200 overflow-hidden">
+                        <div
+                          className="h-full rounded-full bg-accent-cafe dark:bg-success-500 transition-all duration-300"
+                          style={{ width: `${Math.max(barPercentage, 4)}%` }}
+                        />
+                      </div>
                     </div>
-                  </div>
-                );
-              })}
+                  );
+                })}
+              </div>
             </div>
           </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }

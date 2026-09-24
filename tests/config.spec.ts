@@ -62,4 +62,17 @@ test.describe('Zen Reporter Configuration Tests', () => {
     expect(config.theme).toBe('Concept');
     expect(config.darkMode).toBe(true);
   });
+
+  test('resolves minimalReport option and forces enableHistory to false when enabled', () => {
+    const defaultConfig = resolveConfig();
+    expect(defaultConfig.minimalReport).toBe(false);
+    expect(defaultConfig.enableHistory).toBe('auto');
+
+    const minimalConfig = resolveConfig({
+      minimalReport: true,
+      enableHistory: true, // Should be overridden to false by minimalReport
+    });
+    expect(minimalConfig.minimalReport).toBe(true);
+    expect(minimalConfig.enableHistory).toBe(false);
+  });
 });

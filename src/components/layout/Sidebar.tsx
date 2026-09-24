@@ -260,6 +260,7 @@ interface SidebarProps {
   timedOutCount: number;
   interruptedCount: number;
   isHistoryDisabled: boolean;
+  isMinimalReport?: boolean;
 }
 
 export default function Sidebar({
@@ -271,7 +272,15 @@ export default function Sidebar({
   timedOutCount,
   interruptedCount,
   isHistoryDisabled,
+  isMinimalReport,
 }: SidebarProps) {
+  const visibleTabs = isMinimalReport
+    ? TABS.filter(
+        (t) =>
+          t.key !== 'projects' && t.key !== 'history' && t.key !== 'trends' && t.key !== 'insights'
+      )
+    : TABS;
+
   return (
     <aside
       className={`flex flex-col border-r border-border-default bg-surface-50 transition-all duration-200 ${
@@ -360,7 +369,7 @@ export default function Sidebar({
 
       {/* Nav */}
       <nav className={`flex-1 space-y-1 ${isCollapsed ? 'px-2' : 'px-3'} py-2`}>
-        {TABS.map((tab) => (
+        {visibleTabs.map((tab) => (
           <SidebarItem
             key={tab.key}
             icon={tab.icon}

@@ -24,7 +24,7 @@ export default function App() {
     );
   }, []);
 
-  const [activeTab, setActiveTab] = useState<TabKey>('overview');
+  const [activeTabState, setActiveTabState] = useState<TabKey>('overview');
   const [reportData, setReportData] = useState<ReportData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [historyData, setHistoryData] = useState<HistoryData | null>(null);
@@ -209,6 +209,23 @@ export default function App() {
     return reportData?.testRun?.enableHistory === false;
   }, [reportData]);
 
+  const isMinimalReport = useMemo(() => {
+    return Boolean(reportData?.testRun?.minimalReport);
+  }, [reportData]);
+
+  const activeTab = useMemo(() => {
+    if (
+      isMinimalReport &&
+      (activeTabState === 'projects' ||
+        activeTabState === 'history' ||
+        activeTabState === 'trends' ||
+        activeTabState === 'insights')
+    ) {
+      return 'overview';
+    }
+    return activeTabState;
+  }, [isMinimalReport, activeTabState]);
+
   /** Single root element for the app layout */
   return (
     <div className="flex h-screen overflow-hidden bg-canvas">
@@ -216,13 +233,14 @@ export default function App() {
       {!isSummaryView && (
         <Sidebar
           activeTab={activeTab}
-          setActiveTab={setActiveTab}
+          setActiveTab={setActiveTabState}
           isCollapsed={isCollapsed}
           setIsCollapsed={setIsCollapsed}
           failedCount={failedCount}
           timedOutCount={timedOutCount}
           interruptedCount={interruptedCount}
           isHistoryDisabled={isHistoryDisabled}
+          isMinimalReport={isMinimalReport}
         />
       )}
 
@@ -419,19 +437,21 @@ export default function App() {
             )}
 
             {!isLoading && reportData && (isSummaryView || activeTab === 'overview') && summary && (
-              <Overview summary={summary} suites={suites} />
+              <Overview summary={summary} suites={suites} isMinimalReport={isMinimalReport} />
             )}
 
-            {!isLoading && !isSummaryView && reportData && activeTab === 'projects' && (
-              <ProjectsSection suites={suites} />
-            )}
+            {!isLoading &&
+              !isSummaryView &&
+              !isMinimalReport &&
+              reportData &&
+              activeTab === 'projects' && <ProjectsSection suites={suites} />}
 
             {!isLoading && !isSummaryView && reportData && activeTab === 'suites' && (
               <SuitesSection suites={suites} />
             )}
 
             {!isLoading && !isSummaryView && reportData && activeTab === 'files' && (
-              <FilesSection suites={suites} />
+              <FilesSection suites={suites} isMinimalReport={isMinimalReport} />
             )}
 
             {!isLoading && !isSummaryView && reportData && activeTab === 'failures' && (
@@ -443,7 +463,7 @@ export default function App() {
               />
             )}
 
-            {!isLoading && !isSummaryView && activeTab === 'trends' && (
+            {!isLoading && !isSummaryView && !isMinimalReport && activeTab === 'trends' && (
               <TrendsSection
                 history={historyData}
                 suites={suites}
@@ -451,7 +471,7 @@ export default function App() {
               />
             )}
 
-            {!isLoading && !isSummaryView && activeTab === 'insights' && (
+            {!isLoading && !isSummaryView && !isMinimalReport && activeTab === 'insights' && (
               <InsightsSection
                 history={historyData}
                 suites={suites}
@@ -459,7 +479,7 @@ export default function App() {
               />
             )}
 
-            {!isLoading && !isSummaryView && activeTab === 'history' && (
+            {!isLoading && !isSummaryView && !isMinimalReport && activeTab === 'history' && (
               <HistorySection history={historyData} isHistoryDisabled={isHistoryDisabled} />
             )}
           </div>
