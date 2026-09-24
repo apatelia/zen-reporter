@@ -136,22 +136,26 @@ function formatDate(val) {
   return `${year}-${month}-${day} ${hours}:${mins}:${secs}`;
 }
 
-function printTable({ columns, rows }, emptyMessage = 'No records found.') {
+function printTable({ columns, rows }, emptyMessage = 'No records found.', entityName = 'records') {
   if (!columns || columns.length === 0) return;
 
   // Header mapping: Proper Case without 'ms'
-  const displayHeaders = columns.map((c) => {
-    let header = c;
-    if (header.endsWith('_ms')) {
-      header = header.slice(0, -3);
-    } else {
-      header = header.replace('_ms_', '_');
-    }
-    return toProperCase(header);
-  });
+  const displayHeaders = [
+    'Sr. No.',
+    ...columns.map((c) => {
+      let header = c;
+      if (header.endsWith('_ms')) {
+        header = header.slice(0, -3);
+      } else {
+        header = header.replace('_ms_', '_');
+      }
+      return toProperCase(header);
+    }),
+  ];
 
-  const formattedRows = rows.map((r) =>
-    columns.map((c) => {
+  const formattedRows = rows.map((r, idx) => [
+    idx + 1,
+    ...columns.map((c) => {
       const val = r && c in r ? r[c] : null;
       if (val === null || val === undefined) return '';
       if (c.includes('ms')) {
@@ -161,8 +165,8 @@ function printTable({ columns, rows }, emptyMessage = 'No records found.') {
         return formatDate(val);
       }
       return val;
-    })
-  );
+    }),
+  ]);
 
   let stringRows = formattedRows.map((row) =>
     row.map((cell) => {
@@ -172,50 +176,16 @@ function printTable({ columns, rows }, emptyMessage = 'No records found.') {
   );
 
   // Determine if column is predominantly numeric for right-alignment
-  const isNumericColumn = columns.map((_, colIdx) => {
-    return formattedRows.some((row) => isNumericValue(row[colIdx]));
-  });
-
-  const naturalWidths = displayHeaders.map((header, colIdx) =>
-    Math.max(header.length, ...stringRows.map((row) => row[colIdx].length))
-  );
+  const isNumericColumn = [
+    true,
+    ...columns.map((_, colIdx) => {
+      return formattedRows.some((row) => isNumericValue(row[colIdx + 1]));
+    }),
+  ];
 
   // Responsive column width calculation to prevent line-wrapping in terminals
   const termWidth =
     process.stdout.columns && process.stdout.columns > 20 ? process.stdout.columns : 0;
-  let widths = [...naturalWidths];
-
-  if (termWidth > 0) {
-    // Total overhead = (|  ) per column + starting | = columns * 3 + 1
-    const overhead = columns.length * 3 + 1;
-    const availableWidth = termWidth - overhead;
-    let totalNaturalWidth = naturalWidths.reduce((a, b) => a + b, 0);
-
-    if (totalNaturalWidth > availableWidth && availableWidth > columns.length * 5) {
-      const flexIndices = [];
-      let fixedWidthSum = 0;
-
-      columns.forEach((col, idx) => {
-        const isFlex = !isNumericColumn[idx] && !col.endsWith('_at') && naturalWidths[idx] > 15;
-        if (isFlex) {
-          flexIndices.push(idx);
-        } else {
-          fixedWidthSum += naturalWidths[idx];
-        }
-      });
-
-      if (flexIndices.length > 0) {
-        const flexAvailable = Math.max(flexIndices.length * 8, availableWidth - fixedWidthSum);
-        const flexNaturalSum = flexIndices.reduce((sum, i) => sum + naturalWidths[i], 0);
-
-        flexIndices.forEach((idx) => {
-          const share = Math.floor((naturalWidths[idx] / flexNaturalSum) * flexAvailable);
-          const minW = Math.max(displayHeaders[idx].length, 8);
-          widths[idx] = Math.max(minW, share);
-        });
-      }
-    }
-  }
 
   // Split a cell string into up to 2 lines matching the column width.
   // If the string exceeds 2 * width, line 2 gets elided with '...'.
@@ -242,10 +212,84 @@ function printTable({ columns, rows }, emptyMessage = 'No records found.') {
     return [line1, line2];
   };
 
-  const truncatedHeaders = displayHeaders.map((h, i) => {
-    const [l1] = wrapCell2Lines(h, widths[i]);
-    return l1;
+  // Split headers into up to 2 lines naturally by word boundary
+  const header2Lines = displayHeaders.map((h, colIdx) => {
+    const s = h.trim();
+    const maxValLen = Math.max(
+      colIdx === 0 ? String(stringRows.length).length : 0,
+      ...stringRows.map((r) => r[colIdx].length)
+    );
+    // If header has multiple words and is longer than data values (or > 6 chars), split into 2 lines
+    if (s.includes(' ') && s.length > Math.max(maxValLen, 6)) {
+      const mid = Math.floor(s.length / 2);
+      let spaceIdx = s.lastIndexOf(' ', mid);
+      if (spaceIdx === -1) spaceIdx = s.indexOf(' ', mid);
+      if (spaceIdx !== -1) {
+        const line1 = s.slice(0, spaceIdx).trim();
+        const line2 = s.slice(spaceIdx + 1).trim();
+        return [line1, line2];
+      }
+    }
+    return [s, ''];
   });
+
+  // Determine initial widths based on maximum of wrapped header lines and data rows
+  const naturalWidths = displayHeaders.map((_, colIdx) => {
+    const [h1, h2] = header2Lines[colIdx];
+    const maxValLen = Math.max(
+      colIdx === 0 ? String(stringRows.length).length : 0,
+      ...stringRows.map((row) => row[colIdx].length)
+    );
+    return Math.max(h1.length, h2.length, maxValLen);
+  });
+
+  let widths = [...naturalWidths];
+  const totalCols = displayHeaders.length;
+
+  if (termWidth > 0) {
+    // Total overhead = (|  ) per column + starting | = columns * 3 + 1
+    const overhead = totalCols * 3 + 1;
+    const availableWidth = termWidth - overhead;
+    let totalNaturalWidth = naturalWidths.reduce((a, b) => a + b, 0);
+
+    if (totalNaturalWidth > availableWidth && availableWidth > totalCols * 5) {
+      const flexIndices = [];
+      let fixedWidthSum = 0;
+
+      displayHeaders.forEach((_, idx) => {
+        const origCol = idx > 0 ? columns[idx - 1] : '';
+        const isFlex =
+          idx > 0 && !isNumericColumn[idx] && !origCol.endsWith('_at') && naturalWidths[idx] > 15;
+        if (isFlex) {
+          flexIndices.push(idx);
+        } else {
+          fixedWidthSum += naturalWidths[idx];
+        }
+      });
+
+      if (flexIndices.length > 0) {
+        const flexAvailable = Math.max(flexIndices.length * 8, availableWidth - fixedWidthSum);
+        const flexNaturalSum = flexIndices.reduce((sum, i) => sum + naturalWidths[i], 0);
+
+        flexIndices.forEach((idx) => {
+          const share = Math.floor((naturalWidths[idx] / flexNaturalSum) * flexAvailable);
+          widths[idx] = Math.max(8, share);
+        });
+      }
+    }
+  }
+
+  const wrappedHeaders = displayHeaders.map((h, i) => {
+    const [h1, h2] = header2Lines[i];
+    const targetW = widths[i];
+    // If line1 or line2 exceed targetW, use wrapCell2Lines
+    if (h1.length > targetW || h2.length > targetW) {
+      return wrapCell2Lines(h, targetW);
+    }
+    return [h1, h2];
+  });
+
+  const hasHeaderLine2 = wrappedHeaders.some((lines) => lines[1].length > 0);
 
   const formatRow = (cells) => {
     const formattedCells = cells.map((cell, i) => {
@@ -262,7 +306,10 @@ function printTable({ columns, rows }, emptyMessage = 'No records found.') {
   const border = `+${widths.map((w) => '-'.repeat(w + 2)).join('+')}+`;
 
   console.log(border);
-  console.log(formatRow(truncatedHeaders));
+  console.log(formatRow(wrappedHeaders.map((lines) => lines[0])));
+  if (hasHeaderLine2) {
+    console.log(formatRow(wrappedHeaders.map((lines) => lines[1])));
+  }
   console.log(border);
 
   if (stringRows.length === 0) {
@@ -296,6 +343,68 @@ function printTable({ columns, rows }, emptyMessage = 'No records found.') {
     }
   }
   console.log(border);
+  const label = rows.length === 1 ? entityName.replace(/s$/, '') : entityName;
+  console.log(`Total ${rows.length} ${label}.`);
+}
+
+function generateMarkdownSummaryFromReport(reportData) {
+  const testRun = reportData.testRun || {};
+  const summary = testRun.summary || {};
+  const total = summary.total || 0;
+  const passed = summary.passed || 0;
+  const failed = summary.failed || 0;
+  const timedOut = summary.timedOut || 0;
+  const skipped = summary.skipped || 0;
+  const interrupted = summary.interrupted || 0;
+  const hasFailures = failed > 0 || timedOut > 0 || interrupted > 0;
+  const statusStr = hasFailures ? '❌ FAILED' : '✅ PASSED';
+  const passRate = total > 0 ? ((passed / total) * 100).toFixed(1).replace(/\.0$/, '') : '0';
+  const durationStr = formatDuration(summary.duration || 0);
+
+  const titleProject = testRun.projectName || 'Test Automation Project';
+  const titleRun = testRun.testRunName || 'Test Run';
+
+  let md = `### 📊 Test Run Summary: ${titleProject} — ${titleRun}\n\n`;
+  md += `**Status:** ${statusStr}\n`;
+  md += `**Duration:** ${durationStr}\n`;
+  md += `**Pass Rate:** ${passRate}%\n\n`;
+  md += `| Total | Passed | Failed | Timed Out | Skipped |\n`;
+  md += `| :---: | :---: | :---: | :-------: | :-----: |\n`;
+  md += `| ${total} | ${passed} | ${failed} | ${timedOut} | ${skipped} |\n`;
+
+  const failedCases = [];
+  function collectFailedCases(suites) {
+    if (!suites || !Array.isArray(suites)) return;
+    for (const suite of suites) {
+      if (suite.cases && Array.isArray(suite.cases)) {
+        for (const tc of suite.cases) {
+          if (tc.status === 'failed' || tc.status === 'timedOut' || tc.status === 'interrupted') {
+            failedCases.push(tc);
+          }
+        }
+      }
+      if (suite.subSuites) {
+        collectFailedCases(suite.subSuites);
+      }
+    }
+  }
+  collectFailedCases(testRun.suites);
+
+  if (failedCases.length > 0) {
+    md += `\n#### ❌ Failed Tests (${failedCases.length})\n`;
+    const limit = 15;
+    const displayed = failedCases.slice(0, limit);
+    for (const tc of displayed) {
+      const projectStr = tc.project && tc.project !== 'unknown' ? `**[${tc.project}]** ` : '';
+      const fileStr = tc.fileName ? `\`${tc.fileName}\` › ` : '';
+      md += `- ${projectStr}${fileStr}${tc.title}\n`;
+    }
+    if (failedCases.length > limit) {
+      md += `- ... and ${failedCases.length - limit} more failed tests\n`;
+    }
+  }
+
+  return md;
 }
 
 function printHelp() {
@@ -304,6 +413,7 @@ Zen Reporter CLI
 
 Usage:
   npx zr show                           Serve and view the HTML report
+  npx zr summary                        Output Markdown summary snippet for current run results
   npx zr history                        List historic runs
   npx zr history runs                   Same as above
   npx zr history flaky                  Tests that failed in some runs and passed in others
@@ -397,7 +507,7 @@ async function generateHistoryReport(conn) {
     .replace(/<script id="history-data" type="application\/json">[\s\S]*?<\/script>/, '')
     .replace('</head>', `${script}\n</head>`);
   writeFileSync(indexPath, html, 'utf8');
-  console.log(`✓ history.json written and injected into ${indexPath}`);
+  console.log(`✓ Execution history updated.`);
 }
 
 async function handleHistory(subArgs) {
@@ -407,15 +517,27 @@ async function handleHistory(subArgs) {
   try {
     switch (sub) {
       case 'runs':
-        printTable(await runQuery(conn, RUNS_SQL, [runsGlob]), 'No historic test runs found.');
+        printTable(
+          await runQuery(conn, RUNS_SQL, [runsGlob]),
+          'No historic test runs found.',
+          'runs'
+        );
         break;
 
       case 'flaky':
-        printTable(await runQuery(conn, FLAKY_SQL, [runsGlob]), 'No flaky tests found.');
+        printTable(
+          await runQuery(conn, FLAKY_SQL, [runsGlob]),
+          'No flaky tests found.',
+          'flaky tests'
+        );
         break;
 
       case 'regressions':
-        printTable(await runQuery(conn, REGRESSIONS_SQL, [runsGlob]), 'No test regressions found.');
+        printTable(
+          await runQuery(conn, REGRESSIONS_SQL, [runsGlob]),
+          'No test regressions found.',
+          'regressions'
+        );
         break;
 
       case 'slow': {
@@ -423,23 +545,32 @@ async function handleHistory(subArgs) {
         const rawLimit =
           idx >= 0 ? subArgs[idx + 1] : /^\d+$/.test(subArgs[1] || '') ? subArgs[1] : '10';
         const limit = Math.max(1, parseInt(rawLimit, 10) || 10);
-        printTable(await runQuery(conn, SLOW_SQL, [runsGlob, limit]), 'No slow tests found.');
+        printTable(
+          await runQuery(conn, SLOW_SQL, [runsGlob, limit]),
+          'No slow tests found.',
+          'slow tests'
+        );
         break;
       }
 
       case 'trend':
-        printTable(await runQuery(conn, TREND_SQL, [runsGlob]), 'No trend data found.');
+        printTable(await runQuery(conn, TREND_SQL, [runsGlob]), 'No trend data found.', 'runs');
         break;
 
       case 'files':
         printTable(
           await runQuery(conn, FILES_SUMMARY_SQL, [runsGlob]),
-          'No spec files history found.'
+          'No spec files history found.',
+          'spec files'
         );
         break;
 
       case 'tests':
-        printTable(await runQuery(conn, TESTS_SUMMARY_SQL, [runsGlob]), 'No test history found.');
+        printTable(
+          await runQuery(conn, TESTS_SUMMARY_SQL, [runsGlob]),
+          'No test history found.',
+          'tests'
+        );
         break;
 
       case 'report':
@@ -458,7 +589,7 @@ async function handleHistory(subArgs) {
           : `WITH runs AS (SELECT * FROM read_json(?, format='newline_delimited')) ${sqlText}`;
         const params = usesReadJson ? [] : [runsGlob];
         try {
-          printTable(await runQuery(conn, sql, params), 'No matching records found.');
+          printTable(await runQuery(conn, sql, params), 'No matching records found.', 'records');
         } catch (e) {
           console.error('✗ Query failed:', e?.message || e);
           process.exit(1);
@@ -512,6 +643,25 @@ if (command === 'show') {
     ) {
       console.error('✗ Failed to launch report server:', err.message || err);
     }
+  }
+} else if (command === 'summary') {
+  const outputDir = process.env.PW_REPORTER_OUTPUT || 'zen-report';
+  const reportJsonPath = resolve(cwd, outputDir, 'report.json');
+
+  if (!existsSync(reportJsonPath)) {
+    console.error(`✗ Report file not found at "${outputDir}/report.json".`);
+    console.error(`  Make sure you have run your Playwright tests first.`);
+    process.exit(1);
+  }
+
+  try {
+    const rawData = readFileSync(reportJsonPath, 'utf8');
+    const reportData = JSON.parse(rawData);
+    const summaryMd = generateMarkdownSummaryFromReport(reportData);
+    console.log(summaryMd);
+  } catch (err) {
+    console.error('✗ Failed to read report summary:', err.message || err);
+    process.exit(1);
   }
 } else if (command === 'history') {
   handleHistory(args.slice(1)).catch((e) => {

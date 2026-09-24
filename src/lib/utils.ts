@@ -1140,3 +1140,58 @@ export function extractVisualDiffPairs(
 
   return pairs;
 }
+
+export function generateTerminalSummaryTable(
+  summary: ResultSummary,
+  projectName?: string,
+  testRunName?: string
+): string {
+  const total = summary.total || 0;
+  const passed = summary.passed || 0;
+  const failed = summary.failed || 0;
+  const timedOut = summary.timedOut || 0;
+  const skipped = summary.skipped || 0;
+  const interrupted = summary.interrupted || 0;
+  const hasFailures = failed > 0 || timedOut > 0 || interrupted > 0;
+  const statusStr = hasFailures ? 'FAILED' : 'PASSED';
+  const passRate = total > 0 ? `${((passed / total) * 100).toFixed(1).replace(/\.0$/, '')}%` : '0%';
+  const durationStr = formatDuration(summary.duration || 0);
+
+  const headers = [
+    'Status',
+    'Duration',
+    'Pass Rate',
+    'Total',
+    'Passed',
+    'Failed',
+    'Timed Out',
+    'Skipped',
+  ];
+  const values = [
+    statusStr,
+    durationStr,
+    passRate,
+    String(total),
+    String(passed),
+    String(failed),
+    String(timedOut),
+    String(skipped),
+  ];
+
+  if (interrupted > 0) {
+    headers.push('Interrupted');
+    values.push(String(interrupted));
+  }
+
+  const widths = headers.map((h, i) => Math.max(h.length, values[i].length));
+
+  const border = `+${widths.map((w) => '-'.repeat(w + 2)).join('+')}+`;
+  const formatRow = (cells: string[]) =>
+    `| ${cells.map((c, i) => c.padEnd(widths[i])).join(' | ')} |`;
+
+  const titleProject = projectName || 'Test Automation Project';
+  const titleRun = testRunName || 'Test Run';
+  const titleLine = `Test Summary: ${titleProject} — ${titleRun}`;
+
+  return `${titleLine}\n${border}\n${formatRow(headers)}\n${border}\n${formatRow(values)}\n${border}`;
+}

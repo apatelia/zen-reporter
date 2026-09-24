@@ -9,6 +9,7 @@ import type {
 import { execFileSync, execSync } from 'child_process';
 import * as fs from 'fs';
 import * as path from 'path';
+import * as readline from 'readline';
 import { fileURLToPath } from 'url';
 import { detectPackageManager, getViteBuildCommand } from './dataProcessor';
 import { buildRunId, flattenRunRows } from './runHistory';
@@ -20,7 +21,13 @@ import type {
   TestRun as TestRunModel,
   TestSuite,
 } from './types';
-import { buildSuitesFromCases, convertPlaywrightSteps, sanitizeAnsi, setFsModule } from './utils';
+import {
+  buildSuitesFromCases,
+  convertPlaywrightSteps,
+  generateTerminalSummaryTable,
+  sanitizeAnsi,
+  setFsModule,
+} from './utils';
 
 setFsModule(fs);
 
@@ -48,6 +55,7 @@ export interface ReporterConfig {
   theme?: string;
   darkMode?: boolean;
   enableHistory: 'auto' | boolean;
+  consoleProgress: 'auto' | 'line' | 'dot' | boolean;
 }
 
 export function resolveConfig(
@@ -85,6 +93,19 @@ export function resolveConfig(
     }
   }
 
+  let consoleProgress: 'auto' | 'line' | 'dot' | boolean = 'auto';
+  if (rawConfig?.consoleProgress !== undefined) {
+    if (typeof rawConfig.consoleProgress === 'boolean') {
+      consoleProgress = rawConfig.consoleProgress;
+    } else if (
+      rawConfig.consoleProgress === 'auto' ||
+      rawConfig.consoleProgress === 'line' ||
+      rawConfig.consoleProgress === 'dot'
+    ) {
+      consoleProgress = rawConfig.consoleProgress;
+    }
+  }
+
   return {
     outputDir,
     packageManager,
@@ -94,6 +115,7 @@ export function resolveConfig(
     theme,
     darkMode,
     enableHistory,
+    consoleProgress,
   };
 }
 
@@ -105,8 +127,77 @@ class ZenReporter implements Reporter {
   private testCases: TestCaseModel[] = [];
   private options?: Record<string, unknown>;
 
+  // Console progress tracking
+  private totalTests = 0;
+  private completedTests = 0;
+  private completedTestIds = new Set<string>();
+  private passedCount = 0;
+  private failedCount = 0;
+  private timedOutCount = 0;
+  private skippedCount = 0;
+  private activeWorkers = new Set<string>();
+  private lastCompletedTest = '';
+  private dotLineLength = 0;
+  private progressMode: 'line' | 'dot' | 'none' = 'none';
+
   constructor(options?: Record<string, unknown>) {
     this.options = options;
+  }
+
+  private printLineProgress(): void {
+    if (this.progressMode !== 'line') return;
+    const isTTY = typeof process !== 'undefined' && process.stdout && Boolean(process.stdout.isTTY);
+    if (!isTTY) return;
+
+    const pct = this.totalTests > 0 ? Math.floor((this.completedTests / this.totalTests) * 100) : 0;
+    const workersCount = this.activeWorkers.size;
+    const workerStr = `${workersCount} active worker${workersCount === 1 ? '' : 's'}`;
+
+    let line = `[ ${this.completedTests}/${this.totalTests} ] ${pct}% | ✅ ${this.passedCount} | ❌ ${this.failedCount + this.timedOutCount} | ⏭️ ${this.skippedCount} (${workerStr})`;
+
+    if (this.lastCompletedTest) {
+      line += ` | Last: ${this.lastCompletedTest}`;
+    }
+
+    const cols = process.stdout.columns || 100;
+    if (line.length > cols - 1) {
+      line = line.slice(0, Math.max(10, cols - 4)) + '...';
+    }
+
+    readline.clearLine(process.stdout, 0);
+    readline.cursorTo(process.stdout, 0);
+    process.stdout.write(line);
+  }
+
+  private clearLineProgress(): void {
+    if (
+      this.progressMode === 'line' &&
+      typeof process !== 'undefined' &&
+      process.stdout &&
+      Boolean(process.stdout.isTTY)
+    ) {
+      readline.clearLine(process.stdout, 0);
+      readline.cursorTo(process.stdout, 0);
+    }
+  }
+
+  private handleDotProgress(
+    status: 'passed' | 'failed' | 'timedOut' | 'skipped' | 'interrupted' | 'flaky'
+  ): void {
+    if (this.progressMode !== 'dot') return;
+
+    const isFail = status === 'failed' || status === 'timedOut' || status === 'interrupted';
+    const isSkip = status === 'skipped';
+    const isFlaky = status === 'flaky';
+    const symbol = isFail ? 'F' : isSkip ? 's' : isFlaky ? '±' : '.';
+
+    process.stdout.write(symbol);
+    this.dotLineLength += 1;
+
+    if (this.dotLineLength >= 80 || this.completedTestIds.size === this.totalTests) {
+      process.stdout.write(` [ ${this.completedTestIds.size}/${this.totalTests} ]\n`);
+      this.dotLineLength = 0;
+    }
   }
 
   private buildSuites(): TestSuite[] {
@@ -214,7 +305,40 @@ class ZenReporter implements Reporter {
     this.testCaseMap.clear();
     this.testCases = [];
 
-    for (const test of suite.allTests()) {
+    const allTests = suite.allTests();
+    this.totalTests = allTests.length;
+    this.completedTests = 0;
+    this.completedTestIds.clear();
+    this.passedCount = 0;
+    this.failedCount = 0;
+    this.timedOutCount = 0;
+    this.skippedCount = 0;
+    this.activeWorkers.clear();
+    this.lastCompletedTest = '';
+    this.dotLineLength = 0;
+
+    const cp = this.reportConfig.consoleProgress;
+    if (cp === false) {
+      this.progressMode = 'none';
+    } else if (cp === 'line') {
+      this.progressMode = 'line';
+    } else if (cp === 'dot') {
+      this.progressMode = 'dot';
+    } else {
+      const isTTY =
+        typeof process !== 'undefined' && process.stdout && Boolean(process.stdout.isTTY);
+      this.progressMode = isTTY ? 'line' : 'dot';
+    }
+
+    if (this.progressMode === 'dot') {
+      const workers = this.config.workers || 1;
+      const workerStr = workers === 1 ? '1 worker (serially)' : `${workers} workers (in parallel)`;
+      console.log(
+        `Running total ${this.totalTests} tests, ${workerStr}\n\nLegend: . passed | F failed | ± flaky | s skipped\n`
+      );
+    }
+
+    for (const test of allTests) {
       const fileName = test.location?.file
         ? test.location.file.replace(process.cwd(), '')
         : 'unknown file';
@@ -255,6 +379,10 @@ class ZenReporter implements Reporter {
   }
 
   onTestBegin(test: TestCase, _result: TestResult): void {
+    this.activeWorkers.add(test.id);
+    if (this.progressMode === 'line') {
+      this.printLineProgress();
+    }
     let existing = this.testCaseMap.get(test.id);
     if (!existing) {
       const fileName = test.parent.location?.file
@@ -465,9 +593,49 @@ class ZenReporter implements Reporter {
     testCase.steps = attemptSteps;
     testCase.stdout = attemptStdout.length > 0 ? attemptStdout : undefined;
     testCase.stderr = attemptStderr.length > 0 ? attemptStderr : undefined;
+
+    this.activeWorkers.delete(test.id);
+    this.completedTestIds.add(test.id);
+    this.completedTests = this.completedTestIds.size;
+
+    const status = testCase.status;
+    if (status === 'passed') this.passedCount += 1;
+    else if (status === 'failed') this.failedCount += 1;
+    else if (status === 'timedOut') this.timedOutCount += 1;
+    else if (status === 'skipped') this.skippedCount += 1;
+
+    const projStr =
+      testCase.project && testCase.project !== 'unknown' ? `[${testCase.project}] ` : '';
+    const shortName = `${projStr}${testCase.fileName} › ${testCase.title}`;
+    this.lastCompletedTest = shortName;
+
+    if (this.progressMode === 'line') {
+      if (status === 'failed' || status === 'timedOut' || status === 'interrupted') {
+        this.clearLineProgress();
+        const durationStr = testCase.duration > 0 ? ` (${testCase.duration}ms)` : '';
+        console.log(`❌ [FAILED] ${shortName}${durationStr}`);
+      }
+      this.printLineProgress();
+    } else if (this.progressMode === 'dot') {
+      let dotStatus: 'passed' | 'failed' | 'timedOut' | 'skipped' | 'interrupted' | 'flaky' =
+        status;
+      if (status === 'passed' && (testCase.failedAttempts?.length ?? 0) > 0) {
+        dotStatus = 'flaky';
+      }
+      this.handleDotProgress(dotStatus);
+    }
   }
 
   onEnd(result: FullResult): void {
+    if (this.progressMode === 'line') {
+      this.clearLineProgress();
+    } else if (this.progressMode === 'dot') {
+      if (this.dotLineLength > 0) {
+        process.stdout.write(` [ ${this.completedTests}/${this.totalTests} ]\n`);
+        this.dotLineLength = 0;
+      }
+    }
+
     if (result.status === 'interrupted') {
       for (const testCase of this.testCaseMap.values()) {
         if ((testCase.attempts ?? 0) === 0) {
@@ -532,6 +700,28 @@ class ZenReporter implements Reporter {
 
     const jsonPath = path.join(outputDir, 'report.json');
     fs.writeFileSync(jsonPath, JSON.stringify(reportData, null, 2), 'utf8');
+
+    // Output failed test list (in dot mode) and ASCII summary table
+    if (this.progressMode === 'dot') {
+      const failedCases = this.testCases.filter(
+        (tc) => tc.status === 'failed' || tc.status === 'timedOut' || tc.status === 'interrupted'
+      );
+      if (failedCases.length > 0) {
+        console.log('\nFailed Tests:');
+        for (const tc of failedCases) {
+          const projStr = tc.project && tc.project !== 'unknown' ? `[${tc.project}] ` : '';
+          const durationStr = tc.duration > 0 ? ` (${tc.duration}ms)` : '';
+          console.log(`❌ [FAILED] ${projStr}${tc.fileName} › ${tc.title}${durationStr}`);
+        }
+      }
+    }
+
+    const summaryTable = generateTerminalSummaryTable(
+      summary,
+      this.reportConfig.projectName,
+      this.reportConfig.testRunName
+    );
+    console.log('\n' + summaryTable);
 
     // Generate the single-file HTML report by injecting report.json data into pre-built template
     try {
@@ -612,7 +802,7 @@ class ZenReporter implements Reporter {
         const destHtml = path.join(outputDir, 'index.html');
         fs.writeFileSync(destHtml, finalHtml, 'utf8');
         console.debug(`\n✓ Report generated: ${destHtml}`);
-        console.log(`\n💡 Run "${getShowReportCommand(pm)}" to view the report\n`);
+        console.log(`\n💡 Run "${getShowReportCommand(pm)}" to view the report in web browser.\n`);
 
         // Auto-refresh: regenerate history.json from all runs via the CLI
         // and inject the fresh snapshot into the just-written index.html.

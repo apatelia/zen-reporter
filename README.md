@@ -76,6 +76,7 @@ export default defineConfig({
         darkMode: false, // Optional: Initial dark mode state (default: false)
         singleSummaryFile: true, // Optional: Generates a standalone summary.html file alongside index.html
         enableHistory: 'auto', // Optional: History recording mode ("auto" | boolean, default: "auto")
+        consoleProgress: 'auto', // Optional: Console execution progress output ("auto" | "line" | "dot" | false, default: "auto")
       },
     ],
   ],
@@ -84,15 +85,16 @@ export default defineConfig({
 
 ### Options Reference
 
-| Option              | Type                | Default                     | Description                                                                               |
-| :------------------ | :------------------ | :-------------------------- | :---------------------------------------------------------------------------------------- |
-| `outputDir`         | `string`            | `"zen-report"`              | Directory where final report files are saved.                                             |
-| `projectName`       | `string`            | `"Test Automation Project"` | Project name displayed prominently in the top bar of the dashboard.                       |
-| `testRunName`       | `string`            | `"Test Run #{N}"`           | Test run or build name displayed in top bar. `{N}` is replaced dynamically by run number. |
-| `theme`             | `string`            | `"Cafe"`                    | Theme applied on first load (`"Cafe"`, `"Concept"`, `"Sentinel"`).                        |
-| `darkMode`          | `boolean`           | `false`                     | When set to `true`, the report loads in dark mode on first load.                          |
-| `singleSummaryFile` | `boolean`           | `false`                     | Generates a standalone `summary.html` for executive summary views.                        |
-| `enableHistory`     | `'auto' \| boolean` | `"auto"`                    | Controls history execution archiving (`"auto"`, `true`, `false`).                         |
+| Option              | Type                                   | Default                     | Description                                                                               |
+| :------------------ | :------------------------------------- | :-------------------------- | :---------------------------------------------------------------------------------------- |
+| `outputDir`         | `string`                               | `"zen-report"`              | Directory where final report files are saved.                                             |
+| `projectName`       | `string`                               | `"Test Automation Project"` | Project name displayed prominently in the top bar of the dashboard.                       |
+| `testRunName`       | `string`                               | `"Test Run #{N}"`           | Test run or build name displayed in top bar. `{N}` is replaced dynamically by run number. |
+| `theme`             | `string`                               | `"Cafe"`                    | Theme applied on first load (`"Cafe"`, `"Concept"`, `"Sentinel"`).                        |
+| `darkMode`          | `boolean`                              | `false`                     | When set to `true`, the report loads in dark mode on first load.                          |
+| `singleSummaryFile` | `boolean`                              | `false`                     | Generates a standalone `summary.html` for executive summary views.                        |
+| `enableHistory`     | `'auto' \| boolean`                    | `"auto"`                    | Controls history execution archiving (`"auto"`, `true`, `false`).                         |
+| `consoleProgress`   | `'auto' \| 'line' \| 'dot' \| boolean` | `"auto"`                    | Controls terminal execution output (`"auto"` selects `line` in TTY and `dot` in non-TTY). |
 
 ---
 
@@ -100,7 +102,7 @@ export default defineConfig({
 
 ### 1. Running Tests
 
-Run your Playwright tests as usual. Zen Reporter will automatically record test run metadata, build structured suite trees, and generate the standalone HTML report:
+Run your Playwright tests as usual. Zen Reporter will stream live progress directly to your console (`line` mode in interactive terminals or `dot` mode in non-TTY environments) and display summary table upon test completion, while building structured suite trees and generating the standalone HTML report:
 
 ```bash
 npx playwright test
@@ -118,20 +120,22 @@ npx zr show
 
 Zen Reporter includes a built-in CLI executable (`npx zr`) for serving reports and querying historical test execution data:
 
-#### Report Server
+#### Report & Summaries
 
 - **`npx zr show`** — Launch the report server to view `index.html` in your default browser.
+- **`npx zr summary`** — Output Markdown summary snippet for current run results (ideal for PR comments or Slack).
 
 #### History & Intelligence (`zr history`)
 
 > **Note**: History commands analyze stored JSONL run logs via DuckDB. Ensure `@duckdb/node-api` is installed in your project (`npm i -D @duckdb/node-api`).
 
-| Command                           | Description                                                                                 |
-| :-------------------------------- | :------------------------------------------------------------------------------------------ |
-| `npx zr history`                  | List all historical test runs with start time, duration, and pass/fail/skip counts.         |
-| `npx zr history flaky`            | Identify flaky tests that passed in some runs and failed in others.                         |
-| `npx zr history regressions`      | List tests that passed in a previous run but failed in the latest run.                      |
-| `npx zr history slow [--limit N]` | Rank the top $N$ slowest tests by average execution duration across runs (default: 10).     |
-| `npx zr history trend`            | Display historical pass rate percentages per run over time.                                 |
-| `npx zr history report`           | Build `history.json` and inject it into `index.html` to populate the History & Trends tabs. |
-| `npx zr history query "<SQL>"`    | Run arbitrary DuckDB SQL queries over recorded test runs.                                   |
+| Command                           | Description                                                                                        |
+| :-------------------------------- | :------------------------------------------------------------------------------------------------- |
+| `npx zr history`                  | List all historical test runs with start time, duration, and pass/fail/skip counts.                |
+| `npx zr history runs`             | Same as above. List all historical test runs with start time, duration, and pass/fail/skip counts. |
+| `npx zr history flaky`            | Identify flaky tests that passed in some runs and failed in others.                                |
+| `npx zr history regressions`      | List tests that passed in a previous run but failed in the latest run.                             |
+| `npx zr history slow [--limit N]` | Rank the top $N$ slowest tests by average execution duration across runs (default: 10).            |
+| `npx zr history trend`            | Display historical pass rate percentages per run over time.                                        |
+| `npx zr history report`           | Build `history.json` and inject it into `index.html` to populate the History & Trends tabs.        |
+| `npx zr history query "<SQL>"`    | Run arbitrary DuckDB SQL queries over recorded test runs.                                          |
