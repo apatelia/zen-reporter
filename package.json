@@ -1,7 +1,7 @@
 {
   "name": "@arpanp/zen-reporter",
   "private": false,
-  "version": "0.9.0",
+  "version": "0.10.0",
   "type": "module",
   "description": "Beautiful test execution reports for Playwright",
   "bin": {
