@@ -39,7 +39,7 @@ Dark mode:
 ## Installation
 
 ```bash
-npm install zen-reporter
+npm install @arpanp/zen-reporter
 ```
 
 ---
