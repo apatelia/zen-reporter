@@ -21,12 +21,7 @@
   },
   "files": [
     "bin",
-    "dist",
-    "vite.config.ts",
-    "index.html",
-    "postcss.config.mjs",
-    "tsconfig.json",
-    "src"
+    "dist"
   ],
   "author": {
     "name": "Arpan Patelia",
