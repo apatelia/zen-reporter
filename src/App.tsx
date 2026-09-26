@@ -260,16 +260,34 @@ export default function App() {
                 </span>
                 <span className="text-text-muted-soft text-[10px]">•</span>
                 <span className="inline-flex items-center gap-1 text-[11px] text-text-muted">
-                  <img
-                    src={logo}
-                    alt="Zen Reporter"
-                    className="h-3 w-3 shrink-0 object-contain opacity-80"
-                  />
                   <span>
                     Powered by{' '}
-                    <span className="font-semibold text-text-ink dark:text-text-on-primary">
+                    <a
+                      href="https://apatelia.github.io/zen-reporter-website/"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-0.5 font-semibold text-accent-blue dark:text-accent-blue hover:underline"
+                    >
+                      <img
+                        src={logo}
+                        alt="Zen Reporter"
+                        className="h-3 w-3 shrink-0 object-contain opacity-80"
+                      />
                       Zen Reporter
-                    </span>
+                      <svg
+                        className="h-2.5 w-2.5 shrink-0 opacity-70"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                        strokeWidth={2}
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          d="M13.5 6H18m0 0v4.5m0-4.5L11.25 12.75M18 10.5v8.25a1.5 1.5 0 01-1.5 1.5H5.25A1.5 1.5 0 013.75 18.75V7.5a1.5 1.5 0 011.5-1.5h8.25"
+                        />
+                      </svg>
+                    </a>
                   </span>
                 </span>
               </div>

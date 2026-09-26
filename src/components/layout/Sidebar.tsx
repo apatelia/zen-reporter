@@ -296,7 +296,9 @@ export default function Sidebar({
         {!isCollapsed ? (
           <>
             <a
-              href="#"
+              href="https://apatelia.github.io/zen-reporter-website/"
+              target="_blank"
+              rel="noopener noreferrer"
               className="flex items-center gap-2.5 min-w-0 group cursor-pointer"
               title={`Zen Reporter v${pkg.version}`}
             >
@@ -306,8 +308,21 @@ export default function Sidebar({
                 className="h-7 w-7 shrink-0 object-contain drop-shadow-xs transition-transform group-hover:scale-105"
               />
               <div className="flex flex-col min-w-0">
-                <span className="text-sm font-bold tracking-tight text-text-ink dark:text-text-on-primary truncate leading-tight group-hover:text-accent-blue dark:group-hover:text-success-500 transition-colors">
+                <span className="inline-flex items-center gap-1 text-sm font-bold tracking-tight text-accent-blue dark:text-accent-blue group-hover:underline truncate leading-tight transition-colors">
                   Zen Reporter
+                  <svg
+                    className="h-3 w-3 shrink-0 opacity-70 group-hover:opacity-100 transition-opacity"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    strokeWidth={2}
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M13.5 6H18m0 0v4.5m0-4.5L11.25 12.75M18 10.5v8.25a1.5 1.5 0 01-1.5 1.5H5.25A1.5 1.5 0 013.75 18.75V7.5a1.5 1.5 0 011.5-1.5h8.25"
+                    />
+                  </svg>
                 </span>
                 <span className="text-[10px] font-medium text-text-muted truncate leading-tight">
                   v{pkg.version}
@@ -337,7 +352,9 @@ export default function Sidebar({
         ) : (
           <>
             <a
-              href="#"
+              href="https://apatelia.github.io/zen-reporter-website/"
+              target="_blank"
+              rel="noopener noreferrer"
               className="p-1 rounded-md hover:bg-surface-100 transition-colors block shrink-0"
               title={`Zen Reporter v${pkg.version}`}
             >
