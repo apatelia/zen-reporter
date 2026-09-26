@@ -21,7 +21,8 @@
   },
   "files": [
     "bin",
-    "dist"
+    "dist",
+    "docs/screenshots"
   ],
   "author": {
     "name": "Arpan Patelia",

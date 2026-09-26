@@ -407,6 +407,61 @@ function generateMarkdownSummaryFromReport(reportData) {
   return md;
 }
 
+import { createRequire } from 'module';
+import { platform, type } from 'os';
+
+function getOsName() {
+  const p = platform();
+  if (p === 'darwin') return 'macOS';
+  if (p === 'win32') return 'Windows';
+  if (p === 'linux') {
+    try {
+      if (existsSync('/etc/os-release')) {
+        const content = readFileSync('/etc/os-release', 'utf8');
+        const match = content.match(/^PRETTY_NAME="?([^"\n]+)"?/m);
+        if (match && match[1]) return match[1];
+      }
+    } catch {
+      /* ignore */
+    }
+    return 'Linux';
+  }
+  return type();
+}
+
+function getPlaywrightVersion(cwd) {
+  const require = createRequire(resolve(cwd, 'package.json'));
+  try {
+    const pwPkg = require('@playwright/test/package.json');
+    return pwPkg.version || 'not installed';
+  } catch {
+    return 'not installed';
+  }
+}
+
+function getZenReporterVersion() {
+  try {
+    const pkgPath = resolve(
+      import.meta.dirname || new URL('.', import.meta.url).pathname,
+      '../package.json'
+    );
+    if (existsSync(pkgPath)) {
+      const pkg = JSON.parse(readFileSync(pkgPath, 'utf8'));
+      return pkg.version || 'unknown';
+    }
+  } catch {
+    /* ignore */
+  }
+  return 'unknown';
+}
+
+function handleEnv() {
+  console.log(`zen-reporter version: ${getZenReporterVersion()}`);
+  console.log(`@playwright/test version: ${getPlaywrightVersion(cwd)}`);
+  console.log(`Node.js version: ${process.version}`);
+  console.log(`OS: ${getOsName()}`);
+}
+
 function printHelp() {
   console.log(`
 Zen Reporter CLI
@@ -414,6 +469,7 @@ Zen Reporter CLI
 Usage:
   npx zr show                           Serve and view the HTML report
   npx zr summary                        Output Markdown summary snippet for current run results
+  npx zr env                            Print environment details (versions, OS)
   npx zr history                        List historic runs
   npx zr history runs                   Same as above
   npx zr history flaky                  Tests that failed in some runs and passed in others
@@ -663,6 +719,8 @@ if (command === 'show') {
     console.error('✗ Failed to read report summary:', err.message || err);
     process.exit(1);
   }
+} else if (command === 'env') {
+  handleEnv();
 } else if (command === 'history') {
   handleHistory(args.slice(1)).catch((e) => {
     console.error('✗ history command failed:', e?.message || e);

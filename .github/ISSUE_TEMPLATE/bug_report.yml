@@ -1,0 +1,75 @@
+name: 🐛 Bug Report
+description: Create a report to help us improve zen-reporter
+title: '[Bug]: '
+labels: ['bug']
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report an issue with **zen-reporter**!
+        Please fill out the details below to help us diagnose and fix it faster.
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Bug Description
+      description: A clear and concise description of what the bug is.
+      placeholder: Describe what happened...
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to Reproduce
+      description: Steps to reproduce the behavior or a minimal repository link.
+      placeholder: |
+        1. Set reporter config to 'zen-reporter' in playwright.config.ts
+        2. Run `npx playwright test`
+        3. Open generated report
+        4. See error...
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected vs Actual Behavior
+      description: Explain what you expected to happen vs what actually occurred.
+      placeholder: |
+        Expected: The report should render the pass rate trend chart.
+        Actual: The chart renders blank with a console error.
+    validations:
+      required: true
+
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: Please provide relevant package and system versions. Run `npx zr env` to get these information quickly.
+      value: |
+        - **zen-reporter version**:
+        - **@playwright/test version**:
+        - **Node.js version**:
+        - **OS**: [e.g. macOS / Ubuntu / Windows]
+        - **Browser (if UI bug)**: [e.g. Chrome 120]
+    validations:
+      required: true
+
+  - type: textarea
+    id: config
+    attributes:
+      label: Playwright Configuration (Optional)
+      description: Relevant section of your `playwright.config.ts` setup.
+      render: typescript
+      placeholder: |
+        export default defineConfig({
+          reporter: [['@arpanp/zen-reporter', { outputDir: 'zen-report' }]],
+        });
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant Logs or Screenshots
+      description: Paste terminal output, stack traces, or upload screenshots.
+      render: bash

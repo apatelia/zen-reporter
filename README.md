@@ -34,7 +34,11 @@ Dark mode:
   - **Themes & Dark Mode**: Multiple design themes (`Cafe`, `Concept`, `Sentinel`) with light and dark mode toggles, built with WCAG-compliant color tokens and configurable default states.
   - **Single-File Standalone Output**: Generates a self-contained single-file HTML report (`index.html`) with embedded datasets for easy sharing and CI/CD artifact storage. Optionally creates a lightweight standalone `summary.html` dedicated to executive dashboards.
 
+> **Note**: Designed and built with AI pair-programming tools; fully tested, maintained, and quality-assured by human hands.
+
 ---
+
+> **Compatibility**: Zen Reporter is designed for standard Playwright test suites and does not support BDD-styled tests (e.g. Cucumber / `playwright-bdd`).
 
 ## Installation
 
@@ -121,12 +125,13 @@ npx zr show
 
 ### 3. CLI Commands Reference (`zr`)
 
-Zen Reporter includes a built-in CLI executable (`npx zr`) for serving reports and querying historical test execution data:
+Zen Reporter includes a built-in CLI executable (`npx zr`) for serving reports, checking system environment, and querying historical test execution data:
 
-#### Report & Summaries
+#### Report & Environment
 
 - **`npx zr show`** — Launch the report server to view `index.html` in your default browser.
 - **`npx zr summary`** — Output Markdown summary snippet for current run results (ideal for PR comments or Slack).
+- **`npx zr env`** — Print environment details (`zen-reporter` version, `@playwright/test` version, Node.js version, OS).
 
 #### History & Intelligence (`zr history`)
 
@@ -140,7 +145,7 @@ Zen Reporter includes a built-in CLI executable (`npx zr`) for serving reports a
 | `npx zr history tests`            | Summarize granular historical execution metrics and average durations per test case.               |
 | `npx zr history flaky`            | Identify flaky tests that passed in some runs and failed in others.                                |
 | `npx zr history regressions`      | List tests that passed in a previous run but failed in the latest run.                             |
-| `npx zr history slow [--limit N]` | Rank the top $N$ slowest tests by average execution duration across runs (default: 10).            |
+| `npx zr history slow [--limit N]` | Rank the top `N` slowest tests by average execution duration across runs (default: 10).            |
 | `npx zr history trend`            | Display historical pass rate percentages per run over time.                                        |
 | `npx zr history report`           | Build `history.json` and inject it into `index.html` to populate the History & Trends tabs.        |
 | `npx zr history query "<SQL>"`    | Run arbitrary DuckDB SQL queries over recorded test runs.                                          |
