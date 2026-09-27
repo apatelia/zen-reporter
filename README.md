@@ -50,7 +50,7 @@ npm install @arpanp/zen-reporter
 
 ## Configuring Zen Reporter in Playwright
 
-Add `zen-reporter` to your `playwright.config.ts` (or `playwright.config.js`):
+Add `@arpanp/zen-reporter` to your `playwright.config.ts` (or `playwright.config.js`):
 
 ### Basic Configuration
 
@@ -58,7 +58,7 @@ Add `zen-reporter` to your `playwright.config.ts` (or `playwright.config.js`):
 import { defineConfig } from '@playwright/test';
 
 export default defineConfig({
-  reporter: 'zen-reporter',
+  reporter: '@arpanp/zen-reporter',
 });
 ```
 
@@ -72,7 +72,7 @@ import { defineConfig } from '@playwright/test';
 export default defineConfig({
   reporter: [
     [
-      'zen-reporter',
+      '@arpanp/zen-reporter',
       {
         outputDir: 'zen-report', // Optional: Output directory where report files will be generated (default: "zen-report")
         projectName: 'My E2E Project', // Optional: Project name displayed in the top bar header
