@@ -8,11 +8,11 @@ Zen Reporter transforms Playwright's raw test results into an interactive, visua
 
 Light mode:
 
-![Dashboard Overview - Light Mode](docs/screenshots/light-mode.png)
+![Dashboard Overview - Light Mode](https://raw.githubusercontent.com/apatelia/zen-reporter/main/docs/screenshots/light-mode.png)
 
 Dark mode:
 
-![Dashboard Overview - Dark Mode](docs/screenshots/dark-mode.png)
+![Dashboard Overview - Dark Mode](https://raw.githubusercontent.com/apatelia/zen-reporter/main/docs/screenshots/dark-mode.png)
 
 ## Features
 

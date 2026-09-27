@@ -136,6 +136,14 @@ function formatDate(val) {
   return `${year}-${month}-${day} ${hours}:${mins}:${secs}`;
 }
 
+function padCenter(str, width) {
+  const totalPad = width - str.length;
+  if (totalPad <= 0) return str;
+  const padLeft = Math.floor(totalPad / 2);
+  const padRight = totalPad - padLeft;
+  return ' '.repeat(padLeft) + str + ' '.repeat(padRight);
+}
+
 function printTable({ columns, rows }, emptyMessage = 'No records found.', entityName = 'records') {
   if (!columns || columns.length === 0) return;
 
@@ -318,10 +326,7 @@ function printTable({ columns, rows }, emptyMessage = 'No records found.', entit
       emptyMessage.length > totalInnerWidth - 2
         ? emptyMessage.slice(0, totalInnerWidth - 5) + '...'
         : emptyMessage;
-    const padTotal = totalInnerWidth - msg.length;
-    const padLeft = Math.floor(padTotal / 2);
-    const padRight = padTotal - padLeft;
-    console.log(`|${' '.repeat(padLeft)}${msg}${' '.repeat(padRight)}|`);
+    console.log(`|${padCenter(msg, totalInnerWidth)}|`);
   } else {
     let isFirst = true;
     for (const row of stringRows) {
@@ -364,13 +369,25 @@ function generateMarkdownSummaryFromReport(reportData) {
   const titleProject = testRun.projectName || 'Test Automation Project';
   const titleRun = testRun.testRunName || 'Test Run';
 
-  let md = `### 📊 Test Run Summary: ${titleProject} — ${titleRun}\n\n`;
+  let md = `\n### 📊 Test Run Summary: ${titleProject} — ${titleRun}\n\n`;
   md += `**Status:** ${statusStr}\n`;
   md += `**Duration:** ${durationStr}\n`;
   md += `**Pass Rate:** ${passRate}%\n\n`;
-  md += `| Total | Passed | Failed | Timed Out | Skipped |\n`;
-  md += `| :---: | :---: | :---: | :-------: | :-----: |\n`;
-  md += `| ${total} | ${passed} | ${failed} | ${timedOut} | ${skipped} |\n`;
+
+  const headers = ['Total', 'Passed', 'Failed', 'Timed Out', 'Skipped'];
+  const values = [String(total), String(passed), String(failed), String(timedOut), String(skipped)];
+
+  if (interrupted > 0) {
+    headers.push('Interrupted');
+    values.push(String(interrupted));
+  }
+
+  const widths = headers.map((h, i) => Math.max(h.length, values[i].length, 3));
+  const headerRow = `| ${headers.map((h, i) => padCenter(h, widths[i])).join(' | ')} |`;
+  const sepRow = `| ${widths.map((w) => ':' + '-'.repeat(w - 2) + ':').join(' | ')} |`;
+  const valueRow = `| ${values.map((v, i) => padCenter(v, widths[i])).join(' | ')} |`;
+
+  md += `${headerRow}\n${sepRow}\n${valueRow}\n`;
 
   const failedCases = [];
   function collectFailedCases(suites) {
