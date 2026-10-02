@@ -16,11 +16,9 @@ export function injectReportData(options: { dataFile?: string } = {}): Plugin {
           : resolve(process.cwd(), envOutput, 'report.json');
       }
     } else {
-      dataFile = resolve(process.cwd(), 'zen-report', 'report.json');
+      dataFile = resolve(process.cwd(), 'not-available.json');
     }
   }
-
-  const historyFile = resolve(dirname(dataFile), 'history.json');
 
   return {
     name: 'inject-report-data',
@@ -37,6 +35,8 @@ export function injectReportData(options: { dataFile?: string } = {}): Plugin {
           /* ignore */
         }
       }
+
+      const historyFile = resolve(dirname(dataFile), 'history.json');
 
       if (existsSync(historyFile)) {
         try {
