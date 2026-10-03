@@ -10,17 +10,13 @@ import {
   ResponsiveContainer,
   TooltipContentProps,
 } from 'recharts';
-import { computeProjectStats, collectAllCases } from '@/lib/utils';
-import type { ResultSummary, TestSuite } from '@/lib/types';
-import { LearnMoreButton, GuideModal } from '@/components/shared';
+import { computeProjectStats, collectAllCases } from '@/lib/statsUtils';
+import type { ResultSummary, TestSuite } from '@/lib/types/report';
+import LearnMoreButton from '@/components/shared/LearnMoreButton';
+import GuideModal from '@/components/shared/GuideModal';
+import { TEST_STATUS_COLOR_MAP } from '@/lib/theme';
 
-const colorMap: Record<string, string> = {
-  Passed: 'var(--color-success-500)',
-  Failed: 'var(--color-danger-500)',
-  Interrupted: 'var(--color-danger-600)',
-  Skipped: 'var(--color-text-muted)',
-  'Timed Out': 'var(--color-warning-500)',
-};
+const colorMap = TEST_STATUS_COLOR_MAP;
 
 const LegendFormatter = (value: string) => {
   return (
@@ -61,7 +57,7 @@ const renderProjectSummaryTooltip = (props: TooltipContentProps) => {
   );
 };
 
-interface Props {
+export interface ProjectBarChartsProps {
   summary?: ResultSummary;
   suites: TestSuite[];
   title?: string;
@@ -76,7 +72,10 @@ interface ChartDataItem {
   'Timed Out': number;
 }
 
-export default function ProjectBarCharts({ suites, title = 'Projects Summary' }: Props) {
+export default function ProjectBarCharts({
+  suites,
+  title = 'Projects Summary',
+}: ProjectBarChartsProps) {
   const [showModal, setShowModal] = useState(false);
   const allCases = collectAllCases(suites);
   const projectStats = computeProjectStats(allCases);

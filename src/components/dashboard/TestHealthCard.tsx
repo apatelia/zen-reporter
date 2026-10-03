@@ -1,11 +1,11 @@
-import type { TestSuite } from '@/lib/types';
-import { collectAllCases } from '@/lib/utils';
+import type { TestSuite } from '@/lib/types/report';
+import { collectAllCases } from '@/lib/statsUtils';
 
-interface Props {
+export interface TestHealthCardProps {
   suites: TestSuite[];
 }
 
-export default function TestHealthCard({ suites }: Props) {
+export default function TestHealthCard({ suites }: TestHealthCardProps) {
   const allCases = collectAllCases(suites);
   const totalCases = allCases.length;
 

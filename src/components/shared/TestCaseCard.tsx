@@ -1,9 +1,9 @@
 import { useState } from 'react';
-import type { TestCase } from '@/lib/types';
+import type { TestCase } from '@/lib/types/report';
 import { getTagColor } from '@/lib/tagColors';
 import TestCaseDetail from './TestCaseDetail';
 
-interface Props {
+export interface TestCaseCardProps {
   testCase: TestCase;
   showSteps?: boolean;
 }
@@ -41,7 +41,7 @@ const statusConfig = {
   },
 };
 
-export default function TestCaseCard({ testCase, showSteps }: Props) {
+export default function TestCaseCard({ testCase, showSteps }: TestCaseCardProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const config = statusConfig[testCase.status];
 

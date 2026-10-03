@@ -9,11 +9,11 @@ import {
   Legend,
   ResponsiveContainer,
 } from 'recharts';
-import type { ProjectStats } from '@/lib/utils';
-import { formatDuration } from '@/lib/utils';
-import { LearnMoreButton } from '@/components/shared';
+import type { ProjectStats } from '@/lib/statsUtils';
+import { formatDuration } from '@/lib/formatters';
+import LearnMoreButton from '@/components/shared/LearnMoreButton';
 
-interface Props {
+export interface ProjectDurationChartProps {
   projectStats: ProjectStats[];
   title?: string;
   className?: string;
@@ -51,7 +51,7 @@ export default function ProjectDurationChart({
   projectStats,
   title = 'Execution Duration & Latency Benchmark',
   className = 'rounded-md bg-canvas border border-border-default px-6 py-6 shadow-sm flex flex-col justify-between',
-}: Props) {
+}: ProjectDurationChartProps) {
   const [showModal, setShowModal] = useState(false);
   const maxLen = projectStats.reduce((max, p) => Math.max(max, p.name.length), 0);
   const yAxisWidth = Math.max(80, Math.min(240, maxLen * 8 + 24));

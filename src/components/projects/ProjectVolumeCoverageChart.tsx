@@ -10,10 +10,11 @@ import {
   ResponsiveContainer,
   TooltipContentProps,
 } from 'recharts';
-import type { ProjectStats } from '@/lib/utils';
-import { LearnMoreButton, GuideModal } from '@/components/shared';
+import type { ProjectStats } from '@/lib/statsUtils';
+import LearnMoreButton from '@/components/shared/LearnMoreButton';
+import GuideModal from '@/components/shared/GuideModal';
 
-interface Props {
+export interface ProjectVolumeCoverageChartProps {
   projectStats: ProjectStats[];
   title?: string;
 }
@@ -81,7 +82,7 @@ const renderTooltip = (props: TooltipContentProps) => {
 export default function ProjectVolumeCoverageChart({
   projectStats,
   title = 'Test Volume & Coverage Density per Project',
-}: Props) {
+}: ProjectVolumeCoverageChartProps) {
   const [showModal, setShowModal] = useState(false);
   const maxLen = projectStats.reduce((max, p) => Math.max(max, p.name.length), 0);
   const yAxisWidth = Math.max(80, Math.min(240, maxLen * 8 + 24));

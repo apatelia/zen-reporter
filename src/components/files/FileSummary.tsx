@@ -1,14 +1,17 @@
 import { downloadCsv, type CsvColumn } from '@/lib/exportToCsv';
-import { collectAllCases, computeFileStats, truncateFileName } from '@/lib/utils';
-import type { TestSuite } from '@/lib/types';
-import { usePagination, PageSizeControl, PaginationFooter } from '@/components/pagination';
+import { truncateFileName } from '@/lib/formatters';
+import { collectAllCases, computeFileStats } from '@/lib/statsUtils';
+import type { TestSuite } from '@/lib/types/report';
+import { usePagination } from '@/components/pagination/usePagination';
+import { PageSizeControl } from '@/components/pagination/PageSizeControl';
+import { PaginationFooter } from '@/components/pagination/PaginationFooter';
 
-interface Props {
+export interface FileSummaryProps {
   suites: TestSuite[];
   title?: string;
 }
 
-export default function FileSummary({ suites, title }: Props) {
+export default function FileSummary({ suites, title }: FileSummaryProps) {
   const allCases = collectAllCases(suites);
   const fileStats = computeFileStats(allCases);
   const pagination = usePagination(fileStats.length, 25);

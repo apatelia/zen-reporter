@@ -1,21 +1,16 @@
 import { useMemo } from 'react';
-import type { TestSuite } from '@/lib/types';
-import { StatCard } from '@/components/shared';
+import type { TestSuite } from '@/lib/types/report';
+import StatCard from '@/components/shared/StatCard';
 
-import {
-  collectAllCases,
-  computeFileStats,
-  formatDuration,
-  truncateMiddlePath,
-  FileStats,
-} from '@/lib/utils';
+import { formatDuration, truncateMiddlePath } from '@/lib/formatters';
+import { collectAllCases, computeFileStats, type FileStats } from '@/lib/statsUtils';
 
-interface Props {
+export interface FileMetricsSectionProps {
   suites: TestSuite[];
   isMinimalReport?: boolean;
 }
 
-export default function FileMetricsSection({ suites, isMinimalReport }: Props) {
+export default function FileMetricsSection({ suites, isMinimalReport }: FileMetricsSectionProps) {
   const allCases = useMemo(() => collectAllCases(suites), [suites]);
   const fileStats = useMemo(() => computeFileStats(allCases), [allCases]);
 
@@ -152,7 +147,8 @@ export default function FileMetricsSection({ suites, isMinimalReport }: Props) {
       title: 'Avg Spec Duration',
       value: formatDuration(avgFileDuration),
       unit: '',
-      description: 'Average execution duration per spec file (Total Cumulative Time ÷ Total Files)',
+      description:
+        'Average execution duration per spec file (Total Cumulative Sequential Time ÷ Total Files)',
     },
     {
       title: 'Highest Test Density',

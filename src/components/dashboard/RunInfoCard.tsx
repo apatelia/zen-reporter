@@ -1,10 +1,14 @@
-interface Props {
+export interface RunInfoCardProps {
   label: string;
   value: string | number;
   barColorClass?: string;
 }
 
-export default function RunInfoCard({ label, value, barColorClass = 'bg-accent-blue' }: Props) {
+export default function RunInfoCard({
+  label,
+  value,
+  barColorClass = 'bg-accent-blue',
+}: RunInfoCardProps) {
   return (
     <div className="rounded-md bg-canvas border border-border-default shadow-sm overflow-hidden">
       <div className={`h-1 ${barColorClass}`} />

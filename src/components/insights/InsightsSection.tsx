@@ -1,26 +1,23 @@
 import { useState, useMemo } from 'react';
 import InsightsGuides, { type InsightModalType } from './InsightsGuides';
-import type { HistoryData, TestSuite } from '@/lib/types';
-import {
-  formatDate,
-  formatDurationVerbose,
-  computeProjectStats,
-  collectAllCases,
-} from '@/lib/utils';
+import type { TestSuite } from '@/lib/types/report';
+import type { HistoryData } from '@/lib/types/history';
+import { formatDate, formatDurationVerbose } from '@/lib/formatters';
+import { computeProjectStats, collectAllCases } from '@/lib/statsUtils';
 import ProjectFlakyRateChart from './ProjectFlakyRateChart';
 import ProjectDurationChart from '@/components/insights/ProjectDurationChart';
-import { usePagination, PageSizeControl, PaginationFooter } from '@/components/pagination';
-import {
-  LearnMoreButton,
-  HistoryDisabledBanner,
-  DateFilterControl,
-  DataTable,
-  SearchInput,
-  type ColumnDef,
-  type DateFilterRange,
-} from '@/components/shared';
+import { usePagination } from '@/components/pagination/usePagination';
+import { PageSizeControl } from '@/components/pagination/PageSizeControl';
+import { PaginationFooter } from '@/components/pagination/PaginationFooter';
+import LearnMoreButton from '@/components/shared/LearnMoreButton';
+import HistoryDisabledBanner from '@/components/shared/HistoryDisabledBanner';
+import DateFilterControl from '@/components/shared/DateFilterControl';
+import { DataTable } from '@/components/shared/DataTable';
+import SearchInput from '@/components/shared/SearchInput';
+import type { ColumnDef } from '@/components/shared/DataTable';
+import type { DateFilterRange } from '@/components/shared/DateFilterControl';
 
-interface Props {
+export interface InsightsSectionProps {
   history: HistoryData | null;
   suites: TestSuite[];
   isHistoryDisabled?: boolean;
@@ -58,7 +55,11 @@ const lastStatusStyles: Record<string, { label: string; pillClass: string; toolt
   },
 };
 
-export default function InsightsSection({ history, suites, isHistoryDisabled }: Props) {
+export default function InsightsSection({
+  history,
+  suites,
+  isHistoryDisabled,
+}: InsightsSectionProps) {
   const [activeModal, setActiveModal] = useState<InsightModalType>(null);
   const [flakyFilterRange, setFlakyFilterRange] = useState<DateFilterRange>({
     fromTimestamp: null,

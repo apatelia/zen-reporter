@@ -1,4 +1,4 @@
-import type { ResultSummary, TestCase } from './types';
+import type { ResultSummary, TestCase } from './types/report';
 
 /**
  * Exact ordered field list for a single history row (single source of truth
@@ -12,7 +12,7 @@ export const RUN_ROW_FIELDS: string[] = [
   'ended_at',
   'run_duration_ms',
   'run_sequential_duration_ms',
-  'run_interrupted',
+  'run_total',
   'run_passed',
   'run_failed',
   'run_skipped',
@@ -36,7 +36,13 @@ export const RUN_ROW_FIELDS: string[] = [
   'tags',
 ];
 
-/** Lowercase, trim, every non-alphanumeric run -> single '-', strip edge '-'. */
+/**
+ * Converts a string into a URL/file-safe slug.
+ * Lowercases, trims, replaces non-alphanumeric sequences with a hyphen, and strips leading/trailing hyphens.
+ *
+ * @param name - The input string to slugify.
+ * @returns The slugified string.
+ */
 export function slugify(name: string): string {
   return name
     .toLowerCase()
@@ -46,8 +52,12 @@ export function slugify(name: string): string {
 }
 
 /**
- * Deterministic run identifier: ISO start time (colons/dots -> '-') + slugified
- * test run name, plus a shard suffix when running sharded.
+ * Generates a deterministic run identifier based on start timestamp, test run name, and optional shard configuration.
+ *
+ * @param startedAtIso - The ISO formatted start timestamp of the test run.
+ * @param testRunName - The name of the test run.
+ * @param shard - Optional shard metadata containing current shard index and total shard count.
+ * @returns The formatted run identifier.
  */
 export function buildRunId(
   startedAtIso: string,
@@ -55,15 +65,25 @@ export function buildRunId(
   shard: { current: number; total: number } | null
 ): string {
   const base = `${startedAtIso.replace(/[:.]/g, '-')}__${slugify(testRunName)}`;
+
   if (shard && shard.total > 1) {
     return `${base}__shard${shard.current}of${shard.total}`;
   }
+
   return base;
 }
 
 /**
- * One row per test case, each carrying the run-level fields plus the per-test
- * fields, so DuckDB can group/join across runs on the uniform schema.
+ * Flattens test run metadata and individual test cases into single-row records for historical indexing.
+ * Ensures uniform JSON schema formatting for DuckDB queries.
+ *
+ * @param runId - Unique identifier of the run.
+ * @param testRunName - Name of the test run.
+ * @param projectName - Name of the project.
+ * @param summary - Execution result summary statistics.
+ * @param endedAt - ISO formatted end timestamp of the test run.
+ * @param testCases - List of test case result models.
+ * @returns Array of record objects conforming to `RUN_ROW_FIELDS`.
  */
 export function flattenRunRows(
   runId: string,
@@ -92,10 +112,12 @@ export function flattenRunRows(
   };
 
   if (testCases.length === 0) {
-    const row: Record<string, unknown> = { ...runLevel };
+    // Ensure every schema column exists even when there are no test rows, so
+    // DuckDB's read_json still sees a uniform schema.
+    const row: Record<string, unknown> = {};
 
     for (const field of RUN_ROW_FIELDS) {
-      if (!(field in row)) row[field] = null;
+      row[field] = (runLevel as Record<string, unknown>)[field] ?? null;
     }
 
     return [row];

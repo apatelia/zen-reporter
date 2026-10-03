@@ -10,9 +10,10 @@ import {
   XAxis,
   YAxis,
 } from 'recharts';
-import type { HistoryData } from '@/lib/types';
-import { formatDateParts, formatDuration } from '@/lib/utils';
-import { LearnMoreButton, GuideModal } from '@/components/shared';
+import type { HistoryData } from '@/lib/types/history';
+import { formatDateParts, formatDuration } from '@/lib/formatters';
+import LearnMoreButton from '@/components/shared/LearnMoreButton';
+import GuideModal from '@/components/shared/GuideModal';
 
 interface DurationTrendProps {
   history: HistoryData;
@@ -299,8 +300,14 @@ export default function DurationTrend({ history }: DurationTrendProps) {
               Project Duration Diagnostics
             </h4>
             <p>
-              Tracks run execution times by project across recent historical runs to identify
-              performance degradation and bottlenecks over time.
+              Tracks project execution times across recent historical runs to identify performance
+              degradation and bottlenecks over time.
+            </p>
+            <p className="text-[11px]">
+              <strong>Note:</strong> Each line shows the <em>sequential effort</em> — the sum of
+              every test's duration within that project — not wall-clock time. Because tests run in
+              parallel, the line for a busy project can exceed the run's actual wall-clock duration.
+              To see the parallelism savings itself, refer to the Execution Efficiency metric.
             </p>
           </div>
         </div>

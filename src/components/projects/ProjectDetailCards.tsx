@@ -1,15 +1,18 @@
 import { useState, useMemo } from 'react';
-import type { ProjectStats } from '@/lib/utils';
-import { formatDuration } from '@/lib/utils';
-import { LearnMoreButton, TestCaseCard, GuideModal, SearchInput } from '@/components/shared';
+import type { ProjectStats } from '@/lib/statsUtils';
+import { formatDuration } from '@/lib/formatters';
+import LearnMoreButton from '@/components/shared/LearnMoreButton';
+import TestCaseCard from '@/components/shared/TestCaseCard';
+import GuideModal from '@/components/shared/GuideModal';
+import SearchInput from '@/components/shared/SearchInput';
 
-interface Props {
+export interface ProjectDetailCardsProps {
   projectStats: ProjectStats[];
 }
 
 type SortOption = 'passRate' | 'duration' | 'flakiness' | 'total' | 'name';
 
-export default function ProjectDetailCards({ projectStats }: Props) {
+export default function ProjectDetailCards({ projectStats }: ProjectDetailCardsProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [sortBy, setSortBy] = useState<SortOption>('passRate');
   const [expandedProjects, setExpandedProjects] = useState<Record<string, boolean>>({});
@@ -120,6 +123,28 @@ export default function ProjectDetailCards({ projectStats }: Props) {
             (c) => c.status === 'failed' || c.status === 'timedOut' || c.status === 'interrupted'
           );
 
+          const speedBadge =
+            project.speedMultiplier > 1.0
+              ? {
+                  label: `⚡ ${project.speedMultiplier}x slower than avg`,
+                  color:
+                    'bg-warning-500/10 text-warning-600 dark:bg-warning-500/20 dark:text-warning-500 border-warning-500/20',
+                  tooltip: `Average test duration is ${project.speedMultiplier}x longer than overall run average`,
+                }
+              : project.speedMultiplier < 1.0
+                ? {
+                    label: `⚡ ${project.speedMultiplier}x faster than avg`,
+                    color:
+                      'bg-success-500/10 text-success-600 dark:bg-success-500/20 dark:text-success-500 border-success-500/20',
+                    tooltip: `Average test duration is ${project.speedMultiplier}x shorter than overall run average`,
+                  }
+                : {
+                    label: '⚡ 1.0x avg speed',
+                    color:
+                      'bg-surface-200/50 text-text-body-mid dark:text-text-muted border-border-default',
+                    tooltip: 'Average test duration matches overall run average',
+                  };
+
           // Pass rate styling
           const passRateColor =
             project.passRate >= 90
@@ -168,10 +193,10 @@ export default function ProjectDetailCards({ projectStats }: Props) {
                       <h4 className="text-base font-bold text-text-ink dark:text-text-on-primary flex items-center gap-2">
                         <span>{project.name}</span>
                         <span
-                          className="rounded px-1.5 py-0.5 text-[10px] font-semibold bg-warning-500/10 text-warning-600 dark:bg-warning-500/20 dark:text-warning-500 shrink-0 border border-warning-500/20"
-                          title={`Average test duration is ${project.speedMultiplier}x relative to overall run average`}
+                          className={`rounded px-1.5 py-0.5 text-[10px] font-semibold shrink-0 border ${speedBadge.color}`}
+                          title={speedBadge.tooltip}
                         >
-                          ⚡ {project.speedMultiplier}x speed factor
+                          {speedBadge.label}
                         </span>
                       </h4>
                       <p className="text-xs text-text-body-mid dark:text-text-muted mt-0.5">

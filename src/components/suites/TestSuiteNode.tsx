@@ -1,9 +1,9 @@
 import { useState } from 'react';
-import type { TestSuite, TestCase } from '@/lib/types';
-import { formatDurationVerbose } from '@/lib/utils';
-import { TestCaseCard } from '@/components/shared';
+import type { TestSuite, TestCase } from '@/lib/types/report';
+import { formatDurationVerbose } from '@/lib/formatters';
+import TestCaseCard from '@/components/shared/TestCaseCard';
 
-interface Props {
+export interface TestSuiteNodeProps {
   suite: TestSuite;
   filterStatuses: string[];
   filterProjects: string[];
@@ -165,7 +165,7 @@ export default function TestSuiteNode({
   filterFiles,
   fileSearchTerm,
   depth = 1,
-}: Props) {
+}: TestSuiteNodeProps) {
   const [isOpen, setIsOpen] = useState(false);
 
   const filteredSuite =

@@ -1,18 +1,16 @@
 import { useState, useMemo } from 'react';
-import type { TestSuite } from '@/lib/types';
-import { extractFailedTests } from '@/lib/utils';
-import {
-  MultiSelectFilter,
-  StatCard,
-  SearchInput,
-  TagCloudModal,
-  type TagCloudOption,
-} from '@/components/shared';
+import type { TestSuite } from '@/lib/types/report';
+import { extractFailedTests } from '@/lib/statsUtils';
+import MultiSelectFilter from '@/components/shared/MultiSelectFilter';
+import StatCard from '@/components/shared/StatCard';
+import SearchInput from '@/components/shared/SearchInput';
+import TagCloudModal from '@/components/shared/TagCloudModal';
+import type { TagCloudOption } from '@/components/shared/TagCloudModal';
 import FailureList from './FailureList';
 
 type FailureType = 'Failed' | 'Timed Out' | 'Interrupted';
 
-interface Props {
+export interface FailuresSectionProps {
   suites: TestSuite[];
   failedCount: number;
   timedOutCount: number;
@@ -91,7 +89,7 @@ export default function FailuresSection({
   failedCount,
   timedOutCount,
   interruptedCount = 0,
-}: Props) {
+}: FailuresSectionProps) {
   const [filterTypes, setFilterTypes] = useState<FailureType[]>([]);
   const [filterProjects, setFilterProjects] = useState<string[]>([]);
   const [filterTags, setFilterTags] = useState<string[]>([]);

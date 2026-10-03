@@ -1,21 +1,22 @@
+import { formatDuration } from '@/lib/formatters';
 import {
-  formatDuration,
   computeSlowestTest,
   computeFastestTest,
   getTotalTags,
   collectAllCases,
-} from '@/lib/utils';
-import type { ResultSummary, TestSuite } from '@/lib/types';
-import { StatCard } from '@/components/shared';
+} from '@/lib/statsUtils';
+import type { ResultSummary, TestSuite } from '@/lib/types/report';
+import StatCard from '@/components/shared/StatCard';
 
-interface Props {
+export interface QuickStatsProps {
   summary: ResultSummary;
   suites: TestSuite[];
 }
 
-export default function QuickStats({ summary, suites }: Props) {
+export default function QuickStats({ summary, suites }: QuickStatsProps) {
   const allCases = collectAllCases(suites);
-  const avgDuration = summary.total > 0 ? Math.round(summary.duration / summary.total) : 0;
+  const executedTotal = summary.total - summary.skipped;
+  const avgDuration = executedTotal > 0 ? Math.round(summary.duration / executedTotal) : 0;
   const failureRate =
     summary.total > 0 ? Math.round(((summary.failed + summary.timedOut) / summary.total) * 100) : 0;
   const slowestTest = computeSlowestTest(allCases);
@@ -26,7 +27,7 @@ export default function QuickStats({ summary, suites }: Props) {
     {
       label: 'Avg Duration',
       value: formatDuration(avgDuration),
-      description: 'Average duration per test case: total run duration / total test count',
+      description: 'Average duration per executed test case (excluding skipped tests)',
     },
     {
       label: 'Slowest Test',

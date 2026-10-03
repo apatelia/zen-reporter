@@ -56,9 +56,12 @@ const tagColorMap = new Map<string, number>();
 let nextColorIndex = 0;
 
 /**
- * Get color for a tag. First time a tag is seen, assigns the next available color.
- * Once assigned, a tag always returns the same color.
+ * Get color scheme for a tag. First time a tag is seen, assigns the next available color scheme.
+ * Once assigned, a tag always returns the same color scheme within the run lifetime.
  * Colors cycle after 10 unique tags.
+ *
+ * @param tag - The tag string.
+ * @returns Color class object containing background, text, and ring Tailwind utility classes.
  */
 export function getTagColor(tag: string) {
   if (tagColorMap.has(tag)) {
@@ -68,12 +71,4 @@ export function getTagColor(tag: string) {
   tagColorMap.set(tag, colorIndex);
   nextColorIndex++;
   return TAG_COLORS[colorIndex];
-}
-
-/**
- * Reset the global tag color assignment. Useful for testing or re-rendering.
- */
-export function resetTagColors() {
-  tagColorMap.clear();
-  nextColorIndex = 0;
 }

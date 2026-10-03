@@ -1,9 +1,9 @@
 import { useState, useMemo } from 'react';
-import type { FailedTest } from '@/lib/utils';
-import { getErrorSignature } from '@/lib/utils';
-import { TestCaseCard } from '@/components/shared';
+import type { FailedTest } from '@/lib/statsUtils';
+import { getErrorSignature } from '@/lib/cryptoUtils';
+import TestCaseCard from '@/components/shared/TestCaseCard';
 
-interface Props {
+export interface FailureListProps {
   failedTests: FailedTest[];
   hasSuites?: boolean;
 }
@@ -19,7 +19,7 @@ interface ErrorClusterGroup {
   projectsCount: number;
 }
 
-export default function FailureList({ failedTests, hasSuites = true }: Props) {
+export default function FailureList({ failedTests, hasSuites = true }: FailureListProps) {
   const [groupBy, setGroupBy] = useState<GroupByMode>('file');
 
   // Group failed tests by fileName

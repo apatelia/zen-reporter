@@ -1,5 +1,6 @@
-import type { ResultSummary, TestSuite } from '@/lib/types';
-import { computePassRate, formatDuration } from '@/lib/utils';
+import type { ResultSummary, TestSuite } from '@/lib/types/report';
+import { formatDuration } from '@/lib/formatters';
+import { computePassRate } from '@/lib/statsUtils';
 import ExecutionEfficiencyCard from './ExecutionEfficiencyCard';
 import PassRateRing from './PassRateRing';
 import QuickStats from './QuickStats';
@@ -7,13 +8,13 @@ import RunInfoCard from './RunInfoCard';
 import SummaryCard from './SummaryCard';
 import TestHealthCard from './TestHealthCard';
 
-interface Props {
+export interface OverviewProps {
   summary: ResultSummary;
   suites: TestSuite[];
   isMinimalReport?: boolean;
 }
 
-export default function Overview({ summary, suites, isMinimalReport }: Props) {
+export default function Overview({ summary, suites, isMinimalReport }: OverviewProps) {
   const passRate = computePassRate(summary);
 
   return (

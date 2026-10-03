@@ -1,8 +1,22 @@
 import { existsSync, readFileSync } from 'fs';
 import { resolve } from 'path';
-import type { ReportData, ResultSummary, TestCase, TestRun, TestStep } from './types';
-import { buildSuitesFromCases, sanitizeAnsi } from './utils';
+import { getStepCodeSnippet, sanitizeAnsi } from './codeHighlighting';
+import { buildSuitesFromCases } from './statsUtils';
+import type {
+  ReportData,
+  ResultSummary,
+  TestCase,
+  TestError,
+  TestRun,
+  TestStep,
+} from './types/report';
 
+/**
+ * Detects the package manager used in the target directory based on lockfiles or package.json settings.
+ *
+ * @param cwd - Current working directory to inspect.
+ * @returns Name of the detected package manager ('pnpm', 'yarn', 'bun', or 'npm').
+ */
 export function detectPackageManager(cwd: string = process.cwd()): string {
   const lockfiles: [string, string][] = [
     ['pnpm-lock.yaml', 'pnpm'],
@@ -19,8 +33,10 @@ export function detectPackageManager(cwd: string = process.cwd()): string {
 
   try {
     const pkgPath = resolve(cwd, 'package.json');
+
     if (existsSync(pkgPath)) {
       const pkgJson = JSON.parse(readFileSync(pkgPath, 'utf8'));
+
       if (pkgJson.packageManager) return pkgJson.packageManager.split('@')[0];
     }
   } catch {
@@ -30,8 +46,16 @@ export function detectPackageManager(cwd: string = process.cwd()): string {
   return 'npm';
 }
 
+/**
+ * Returns the terminal command string for running Vite build using the detected package manager.
+ *
+ * @param pm - Optional package manager override.
+ * @param cwd - Working directory.
+ * @returns Command string (e.g. `pnpm exec vite build`).
+ */
 export function getViteBuildCommand(pm?: string, cwd: string = process.cwd()): string {
   const manager = pm || detectPackageManager(cwd);
+
   switch (manager) {
     case 'pnpm':
       return 'pnpm exec vite build';
@@ -44,8 +68,6 @@ export function getViteBuildCommand(pm?: string, cwd: string = process.cwd()): s
   }
 }
 
-import { getStepCodeSnippet } from './utils';
-
 interface RawTestStep {
   title: string;
   subtitle?: string;
@@ -57,10 +79,22 @@ interface RawTestStep {
   steps?: RawTestStep[];
 }
 
+/**
+ * Type guard verifying if an unknown value satisfies the `RawTestStep` object structure.
+ *
+ * @param s - Value to inspect.
+ * @returns True if `s` is a valid RawTestStep.
+ */
 function isRawTestStep(s: unknown): s is RawTestStep {
   return typeof s === 'object' && s !== null && 'title' in s && 'duration' in s;
 }
 
+/**
+ * Recursively transforms raw test steps into internal `TestStep` models.
+ *
+ * @param steps - Array of raw test steps.
+ * @returns Processed TestStep models.
+ */
 function convertSteps(steps: RawTestStep[]): TestStep[] {
   return steps.filter(isRawTestStep).map((step) => {
     const location = step.location
@@ -120,58 +154,72 @@ interface RawPlaywrightData {
   tests?: RawTestCase[];
 }
 
+/**
+ * Normalizes a single Playwright raw error into the internal TestError shape.
+ * Centralizes the shape so callers build errors identically.
+ *
+ * @param e - Raw error object.
+ * @returns Structured TestError instance.
+ */
+function makeTestError(e: RawError): TestError {
+  return {
+    name: e.name || 'Error',
+    message: sanitizeAnsi(e.message || ''),
+    stack: sanitizeAnsi(e.stack || ''),
+    location: null,
+    snippet: '',
+    cause: null,
+  };
+}
+
+/**
+ * Converts a raw test case object into an internal `TestCase` model.
+ *
+ * @param test - Raw test case input.
+ * @param cwd - Base working directory to strip from file paths.
+ * @returns Formatted TestCase object.
+ */
+function convertRawTestCase(test: RawTestCase, cwd: string): TestCase {
+  const statusLookup: Record<string, TestCase['status']> = {
+    passed: 'passed',
+    failed: 'failed',
+    skipped: 'skipped',
+    timedOut: 'timedOut',
+    interrupted: 'interrupted',
+  };
+
+  const fileName = test.location?.file ? test.location.file.replace(cwd, '') : 'unknown file';
+
+  const status = statusLookup[test.status || ''] ?? 'failed';
+  const steps = test.steps ? convertSteps(test.steps) : [];
+  const stepDurationSum = steps.reduce((sum, s) => sum + (s.duration || 0), 0);
+  const duration =
+    typeof test.duration === 'number' && test.duration > 0 ? test.duration : stepDurationSum;
+
+  return {
+    title: test.title || '',
+    parent: test.parent?.title || '',
+    project: test.project?.name || 'unknown',
+    fileName,
+    status,
+    duration,
+    steps,
+    errors: (test.errors ?? []).map(makeTestError),
+    describePath: (test as unknown as Record<string, unknown>).describePath as string[] | undefined,
+  };
+}
+
+/**
+ * Processes raw Playwright result data into a structured `ReportData` object containing run summaries and suites.
+ *
+ * @param rawData - Raw Playwright execution payload.
+ * @returns Formatted ReportData structure.
+ */
 export function processRawData(rawData: RawPlaywrightData): ReportData {
   const startTime = new Date().toISOString();
+  const cwd = process.cwd();
 
-  const testCases: TestCase[] = [];
-
-  const tests = rawData.tests || [];
-  for (const test of tests) {
-    const fileName = test.location?.file
-      ? test.location.file.replace(process.cwd(), '')
-      : 'unknown file';
-
-    const status =
-      test.status === 'passed'
-        ? ('passed' as const)
-        : test.status === 'failed'
-          ? ('failed' as const)
-          : test.status === 'skipped'
-            ? ('skipped' as const)
-            : test.status === 'timedOut'
-              ? ('timedOut' as const)
-              : test.status === 'interrupted'
-                ? ('interrupted' as const)
-                : ('failed' as const);
-
-    const steps = test.steps ? convertSteps(test.steps) : [];
-    const stepDurationSum = steps.reduce((sum, s) => sum + (s.duration || 0), 0);
-    const duration =
-      typeof test.duration === 'number' && test.duration > 0 ? test.duration : stepDurationSum;
-
-    const testCase: TestCase = {
-      title: test.title || '',
-      parent: test.parent?.title || '',
-      project: test.project?.name || 'unknown',
-      fileName,
-      status,
-      duration,
-      steps,
-      errors: test.errors
-        ? test.errors.map((e: RawError) => ({
-            name: e.name || 'Error',
-            message: sanitizeAnsi(e.message || ''),
-            stack: sanitizeAnsi(e.stack || ''),
-            location: null,
-            snippet: '',
-            cause: null,
-          }))
-        : [],
-      describePath:
-        ((test as unknown as Record<string, unknown>).describePath as string[] | undefined) || [],
-    };
-    testCases.push(testCase);
-  }
+  const testCases = (rawData.tests || []).map((test) => convertRawTestCase(test, cwd));
 
   const endTime = new Date().toISOString();
   const startTimeMs = new Date(startTime).getTime();

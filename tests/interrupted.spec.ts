@@ -1,6 +1,6 @@
 import { test } from '@playwright/test';
 
-test(
+test.fail(
   'should be interrupted',
   {
     tag: ['@interrupted'],

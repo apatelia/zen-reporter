@@ -1,15 +1,19 @@
-import type { TestSuite } from '@/lib/types';
-import { collectAllCases, computeProjectStats, computeProjectExecutiveKPIs } from '@/lib/utils';
+import type { TestSuite } from '@/lib/types/report';
+import {
+  collectAllCases,
+  computeProjectStats,
+  computeProjectExecutiveKPIs,
+} from '@/lib/statsUtils';
 import ProjectBarCharts from '@/components/projects/ProjectBarCharts';
 import ProjectsOverviewCards from '@/components/projects/ProjectsOverviewCards';
 import ProjectVolumeCoverageChart from '@/components/projects/ProjectVolumeCoverageChart';
 import ProjectDetailCards from '@/components/projects/ProjectDetailCards';
 
-interface Props {
+export interface ProjectsSectionProps {
   suites: TestSuite[];
 }
 
-export default function ProjectsSection({ suites }: Props) {
+export default function ProjectsSection({ suites }: ProjectsSectionProps) {
   const allCases = collectAllCases(suites);
   const projectStats = computeProjectStats(allCases);
   const executiveKPIs = computeProjectExecutiveKPIs(projectStats);

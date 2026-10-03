@@ -1,12 +1,12 @@
-import type { ProjectExecutiveKPIs } from '@/lib/utils';
-import { formatDuration } from '@/lib/utils';
-import { StatCard } from '@/components/shared';
+import type { ProjectExecutiveKPIs } from '@/lib/statsUtils';
+import { formatDuration } from '@/lib/formatters';
+import StatCard from '@/components/shared/StatCard';
 
-interface Props {
+export interface ProjectsOverviewCardsProps {
   kpis: ProjectExecutiveKPIs;
 }
 
-export default function ProjectsOverviewCards({ kpis }: Props) {
+export default function ProjectsOverviewCards({ kpis }: ProjectsOverviewCardsProps) {
   const cards = [
     {
       label: 'Total Projects',

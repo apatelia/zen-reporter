@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 
-test(
+test.fail(
   'should fail',
   {
     tag: ['@failure'],
@@ -35,7 +35,7 @@ test.skip(
   }
 );
 
-test(
+test.fail(
   'should time out',
   {
     tag: ['@timeout'],

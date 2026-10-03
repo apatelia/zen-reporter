@@ -10,11 +10,11 @@ import {
   ResponsiveContainer,
   TooltipContentProps,
 } from 'recharts';
-import { computeProjectStats, collectAllCases } from '@/lib/utils';
-import { LearnMoreButton } from '@/components/shared';
-import type { TestSuite } from '@/lib/types';
+import { computeProjectStats, collectAllCases } from '@/lib/statsUtils';
+import LearnMoreButton from '@/components/shared/LearnMoreButton';
+import type { TestSuite } from '@/lib/types/report';
 
-interface Props {
+export interface ProjectFlakyRateChartProps {
   suites: TestSuite[];
   title?: string;
 }
@@ -24,6 +24,7 @@ interface ChartDataItem {
   'Flaky Tests': number;
   'Flaky Rate (%)': number;
   total: number;
+  executed: number;
 }
 
 const renderTooltip = (props: TooltipContentProps) => {
@@ -37,8 +38,8 @@ const renderTooltip = (props: TooltipContentProps) => {
       <div className="font-bold text-xs mb-1 border-b border-border-default pb-1">{label}</div>
       <div className="space-y-1 text-xs">
         <div className="flex justify-between gap-4">
-          <span className="text-text-body-mid dark:text-text-muted">Total Tests Evaluated:</span>
-          <span className="font-bold tabular-nums">{data.total}</span>
+          <span className="text-text-body-mid dark:text-text-muted">Executed Tests:</span>
+          <span className="font-bold tabular-nums">{data.executed}</span>
         </div>
         <div className="flex justify-between gap-4">
           <span className="flex items-center gap-1.5 text-warning-600 dark:text-warning-500">
@@ -66,7 +67,7 @@ const renderTooltip = (props: TooltipContentProps) => {
 export default function ProjectFlakyRateChart({
   suites,
   title = 'Flaky Test Count & Retry Rate by Project',
-}: Props) {
+}: ProjectFlakyRateChartProps) {
   const [showModal, setShowModal] = useState(false);
   const allCases = collectAllCases(suites);
   const projectStats = computeProjectStats(allCases);
@@ -79,6 +80,7 @@ export default function ProjectFlakyRateChart({
     'Flaky Tests': p.flakyCount,
     'Flaky Rate (%)': p.flakyRate,
     total: p.total,
+    executed: p.executed,
   }));
 
   const hasFlakyData = projectStats.length > 0 && data.some((d) => d['Flaky Tests'] > 0);

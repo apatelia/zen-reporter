@@ -1,5 +1,5 @@
-import type { ResultSummary } from '@/lib/types';
-import { formatDuration } from '@/lib/utils';
+import type { ResultSummary } from '@/lib/types/report';
+import { formatDuration } from '@/lib/formatters';
 
 interface ExecutionEfficiencyCardProps {
   summary: ResultSummary;

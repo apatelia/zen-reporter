@@ -1,10 +1,10 @@
 import { useState } from 'react';
-import type { TestSuite, TestCase } from '@/lib/types';
-import { formatDurationVerbose } from '@/lib/utils';
-import { TestCaseCard } from '@/components/shared';
+import type { TestSuite, TestCase } from '@/lib/types/report';
+import { formatDurationVerbose } from '@/lib/formatters';
+import TestCaseCard from '@/components/shared/TestCaseCard';
 import TestSuiteNode from './TestSuiteNode';
 
-interface Props {
+export interface SuiteViewProps {
   suite: TestSuite;
   filterStatuses: string[];
   filterProjects: string[];
@@ -148,7 +148,7 @@ export default function SuiteView({
   filterProjects,
   filterTags,
   filterFiles,
-}: Props) {
+}: SuiteViewProps) {
   const [isOpen, setIsOpen] = useState(false);
 
   const filteredSuite =

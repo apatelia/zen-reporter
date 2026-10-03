@@ -1,17 +1,15 @@
-import type { TestSuite } from '@/lib/types';
+import type { TestSuite } from '@/lib/types/report';
 import { useMemo, useState } from 'react';
-import {
-  MultiSelectFilter,
-  StatCard,
-  SearchInput,
-  TagCloudModal,
-  type TagCloudOption,
-} from '@/components/shared';
+import MultiSelectFilter from '@/components/shared/MultiSelectFilter';
+import StatCard from '@/components/shared/StatCard';
+import SearchInput from '@/components/shared/SearchInput';
+import TagCloudModal from '@/components/shared/TagCloudModal';
+import type { TagCloudOption } from '@/components/shared/TagCloudModal';
 import SuiteView from './SuiteView';
 
 type TestCaseStatus = 'passed' | 'failed' | 'skipped' | 'timedOut' | 'interrupted';
 
-interface Props {
+export interface SuitesSectionProps {
   suites: TestSuite[];
 }
 
@@ -147,7 +145,7 @@ function filterSuites(
   );
 }
 
-export default function SuitesSection({ suites }: Props) {
+export default function SuitesSection({ suites }: SuitesSectionProps) {
   const [filterStatuses, setFilterStatuses] = useState<TestCaseStatus[]>([]);
   const [filterProjects, setFilterProjects] = useState<string[]>([]);
   const [selectedTags, setSelectedTags] = useState<string[]>([]);

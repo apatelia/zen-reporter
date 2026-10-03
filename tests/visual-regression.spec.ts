@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 
-test(
+test.fail(
   'visual regression comparison failure',
   {
     tag: ['@visual', '@failure'],

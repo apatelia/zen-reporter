@@ -9,9 +9,10 @@ import {
   XAxis,
   YAxis,
 } from 'recharts';
-import type { HistoryData } from '@/lib/types';
-import { formatDateParts } from '@/lib/utils';
-import { LearnMoreButton, GuideModal } from '@/components/shared';
+import type { HistoryData } from '@/lib/types/history';
+import { formatDateParts } from '@/lib/formatters';
+import LearnMoreButton from '@/components/shared/LearnMoreButton';
+import GuideModal from '@/components/shared/GuideModal';
 
 interface PassRateTrendProps {
   history: HistoryData;

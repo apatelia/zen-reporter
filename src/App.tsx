@@ -1,23 +1,27 @@
-import logoRaw from '@/assets/logo.svg?raw';
+import faviconRaw from '@/assets/favicon.svg?raw';
 import Overview from '@/components/dashboard/Overview';
 import FailuresSection from '@/components/failures/FailuresSection';
-import SuitesSection from '@/components/suites/SuitesSection';
 import FilesSection from '@/components/files/FilesSection';
-import ProjectsSection from '@/components/projects/ProjectsSection';
-import InsightsSection from '@/components/insights/InsightsSection';
-import TrendsSection from '@/components/trends/TrendsSection';
 import HistorySection from '@/components/history/HistorySection';
 import Sidebar, { type TabKey } from '@/components/layout/Sidebar';
-import type { HistoryData, ReportData, TestRun, TestSuite } from '@/lib/types';
-import { formatDateRange, formatDuration } from '@/lib/utils';
-import { useEffect, useMemo, useState } from 'react';
+import SuitesSection from '@/components/suites/SuitesSection';
+import { formatDateRange, formatDuration } from '@/lib/formatters';
+import type { HistoryData } from '@/lib/types/history';
+import type { ReportData, TestRun, TestSuite } from '@/lib/types/report';
+import { lazy, Suspense, useEffect, useMemo, useState } from 'react';
 
-const logo = `data:image/svg+xml;utf8,${encodeURIComponent(logoRaw)}`;
+const ProjectsSection = lazy(() => import('@/components/projects/ProjectsSection'));
+const TrendsSection = lazy(() => import('@/components/trends/TrendsSection'));
+const InsightsSection = lazy(() => import('@/components/insights/InsightsSection'));
+
+const faviconUri = `data:image/svg+xml;utf8,${encodeURIComponent(faviconRaw)}`;
 
 export default function App() {
   const isSummaryView = useMemo(() => {
     if (typeof window === 'undefined') return false;
+
     const params = new URLSearchParams(window.location.search);
+
     return (
       params.get('view') === 'summary' ||
       Boolean((window as unknown as { __ZEN_SUMMARY_ONLY__?: boolean }).__ZEN_SUMMARY_ONLY__)
@@ -32,6 +36,7 @@ export default function App() {
 
   const initialReportData = useMemo(() => {
     if (typeof document === 'undefined') return null;
+
     const inlineEl = document.getElementById('report-data');
     if (inlineEl) {
       const text = inlineEl.textContent?.trim();
@@ -43,6 +48,7 @@ export default function App() {
         }
       }
     }
+
     return null;
   }, []);
 
@@ -50,38 +56,45 @@ export default function App() {
     const testRun = initialReportData?.testRun as
       (TestRun & { theme?: string; darkMode?: boolean }) | undefined;
     const configuredTheme = testRun?.theme;
+
     if (configuredTheme) {
       const lower = configuredTheme.toLowerCase();
       if (lower === 'cafe' || lower === 'concept' || lower === 'sentinel') {
         return lower;
       }
     }
+
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem('zen-theme');
       if (saved === 'cafe' || saved === 'concept' || saved === 'sentinel') {
         return saved;
       }
     }
+
     return 'cafe';
   });
 
   const [darkMode, setDarkMode] = useState<'light' | 'dark'>(() => {
     const testRun = initialReportData?.testRun as
       (TestRun & { theme?: string; darkMode?: boolean }) | undefined;
+
     if (testRun?.darkMode !== undefined) {
       return testRun.darkMode ? 'dark' : 'light';
     }
+
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem('zen-dark-mode');
       if (saved === 'dark' || saved === 'light') {
         return saved;
       }
     }
+
     return 'light';
   });
 
   const applyThemeAndDarkMode = (data: ReportData) => {
     const testRun = data?.testRun as (TestRun & { theme?: string; darkMode?: boolean }) | undefined;
+
     if (testRun) {
       if (testRun.theme) {
         const lower = testRun.theme.toLowerCase();
@@ -108,16 +121,18 @@ export default function App() {
       document.documentElement.classList.remove('dark');
       document.documentElement.style.colorScheme = 'light';
     }
+  }, [darkMode]);
 
+  useEffect(() => {
     let link = document.querySelector<HTMLLinkElement>("link[rel~='icon']");
     if (!link) {
       link = document.createElement('link');
       link.rel = 'icon';
+      link.type = 'image/svg+xml';
       document.head.appendChild(link);
     }
-    link.type = 'image/svg+xml';
-    link.href = logo;
-  }, [darkMode]);
+    link.href = faviconUri;
+  }, []);
 
   const cycleDarkMode = () => {
     const next = darkMode === 'light' ? 'dark' : 'light';
@@ -130,13 +145,16 @@ export default function App() {
       async function loadReportData() {
         // First check for embedded inline report data (used in static single-file HTML reports)
         const inlineEl = document.getElementById('report-data');
+
         if (inlineEl) {
           const text = inlineEl.textContent?.trim();
+
           if (text) {
             try {
               const data = JSON.parse(text);
               setReportData(data);
               applyThemeAndDarkMode(data);
+
               return;
             } catch {
               // ignore parse errors and proceed
@@ -147,6 +165,7 @@ export default function App() {
         // Only attempt fetching if not running under file:// protocol (e.g., local dev server)
         if (typeof window !== 'undefined' && window.location.protocol !== 'file:') {
           const resp = await fetch('./report.json');
+
           if (resp.ok) {
             const data = await resp.json();
             setReportData(data);
@@ -158,19 +177,24 @@ export default function App() {
 
       const loadHistory = async () => {
         const inlineEl = document.getElementById('history-data');
+
         if (inlineEl) {
           const text = inlineEl.textContent?.trim();
+
           if (text) {
             try {
               setHistoryData(JSON.parse(text));
+
               return;
             } catch {
               /* fall through to fetch */
             }
           }
         }
+
         if (typeof window !== 'undefined' && window.location.protocol !== 'file:') {
           const resp = await fetch('./history.json');
+
           if (resp.ok) setHistoryData(await resp.json());
         }
       };
@@ -193,6 +217,7 @@ export default function App() {
         projectName: undefined,
         testRunName: undefined,
       };
+
     return {
       summary: reportData.testRun.summary,
       suites: reportData.testRun.suites,
@@ -223,6 +248,7 @@ export default function App() {
     ) {
       return 'overview';
     }
+
     return activeTabState;
   }, [isMinimalReport, activeTabState]);
 
@@ -257,38 +283,6 @@ export default function App() {
                 <span className="text-text-muted font-normal">Report for</span>
                 <span className="inline-flex items-center rounded-md bg-accent-blue/10 px-2 py-0.5 text-xs font-semibold text-accent-blue ring-1 ring-inset ring-accent-blue/20 dark:bg-accent-blue/20 dark:text-accent-blue max-w-sm truncate">
                   {testRunName || 'Playwright Test Reporter'}
-                </span>
-                <span className="text-text-muted-soft text-[10px]">•</span>
-                <span className="inline-flex items-center gap-1 text-[11px] text-text-muted">
-                  <span>
-                    Powered by{' '}
-                    <a
-                      href="https://apatelia.github.io/zen-reporter-website/"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-0.5 font-semibold text-accent-blue dark:text-accent-blue hover:underline"
-                    >
-                      <img
-                        src={logo}
-                        alt="Zen Reporter"
-                        className="h-3 w-3 shrink-0 object-contain opacity-80"
-                      />
-                      Zen Reporter
-                      <svg
-                        className="h-2.5 w-2.5 shrink-0 opacity-70"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                        strokeWidth={2}
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          d="M13.5 6H18m0 0v4.5m0-4.5L11.25 12.75M18 10.5v8.25a1.5 1.5 0 01-1.5 1.5H5.25A1.5 1.5 0 013.75 18.75V7.5a1.5 1.5 0 011.5-1.5h8.25"
-                        />
-                      </svg>
-                    </a>
-                  </span>
                 </span>
               </div>
               {summary && (
@@ -462,7 +456,17 @@ export default function App() {
               !isSummaryView &&
               !isMinimalReport &&
               reportData &&
-              activeTab === 'projects' && <ProjectsSection suites={suites} />}
+              activeTab === 'projects' && (
+                <Suspense
+                  fallback={
+                    <div className="flex items-center justify-center py-24 text-sm text-text-body-mid">
+                      Loading projects…
+                    </div>
+                  }
+                >
+                  <ProjectsSection suites={suites} />
+                </Suspense>
+              )}
 
             {!isLoading && !isSummaryView && reportData && activeTab === 'suites' && (
               <SuitesSection suites={suites} />
@@ -482,19 +486,35 @@ export default function App() {
             )}
 
             {!isLoading && !isSummaryView && !isMinimalReport && activeTab === 'trends' && (
-              <TrendsSection
-                history={historyData}
-                suites={suites}
-                isHistoryDisabled={isHistoryDisabled}
-              />
+              <Suspense
+                fallback={
+                  <div className="flex items-center justify-center py-24 text-sm text-text-body-mid">
+                    Loading trends…
+                  </div>
+                }
+              >
+                <TrendsSection
+                  history={historyData}
+                  suites={suites}
+                  isHistoryDisabled={isHistoryDisabled}
+                />
+              </Suspense>
             )}
 
             {!isLoading && !isSummaryView && !isMinimalReport && activeTab === 'insights' && (
-              <InsightsSection
-                history={historyData}
-                suites={suites}
-                isHistoryDisabled={isHistoryDisabled}
-              />
+              <Suspense
+                fallback={
+                  <div className="flex items-center justify-center py-24 text-sm text-text-body-mid">
+                    Loading insights…
+                  </div>
+                }
+              >
+                <InsightsSection
+                  history={historyData}
+                  suites={suites}
+                  isHistoryDisabled={isHistoryDisabled}
+                />
+              </Suspense>
             )}
 
             {!isLoading && !isSummaryView && !isMinimalReport && activeTab === 'history' && (

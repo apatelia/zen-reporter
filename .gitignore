@@ -1,6 +1,7 @@
 # Playwright browser / state data
 .playwright-cli/
 .playwright/
+.playwright-mcp/
 
 # Dependencies
 node_modules/

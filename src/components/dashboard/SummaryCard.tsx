@@ -1,51 +1,33 @@
 import type { ReactNode } from 'react';
+import { SUMMARY_CARD_THEME, type SummaryCardColor } from '@/lib/theme';
 
-interface Props {
+export interface SummaryCardProps {
   label: string;
   value: number;
   total?: number;
   icon?: ReactNode;
-  color: 'success' | 'danger' | 'warning' | 'info';
+  color: SummaryCardColor;
 }
 
-const bgMap = {
-  success: 'bg-success-50 border-success-200 dark:bg-success-50/20 dark:border-success-500/30',
-  danger: 'bg-danger-50 border-danger-200 dark:bg-danger-50/20 dark:border-danger-500/30',
-  warning: 'bg-warning-50 border-warning-200 dark:bg-warning-50/20 dark:border-warning-500/30',
-  info: 'bg-info-50 border-info-200 dark:bg-info-50/20 dark:border-info-500/30',
-};
+export default function SummaryCard({ label, value, total, icon, color }: SummaryCardProps) {
+  const theme = SUMMARY_CARD_THEME[color];
 
-const textMap = {
-  success: 'text-success-600 dark:text-success-500',
-  danger: 'text-danger-600 dark:text-danger-500',
-  warning: 'text-warning-500 dark:text-warning-500',
-  info: 'text-info-600 dark:text-info-500',
-};
-
-const progressBgMap = {
-  success: 'bg-success-500',
-  danger: 'bg-danger-500',
-  warning: 'bg-warning-500',
-  info: 'bg-info-500',
-};
-
-export default function SummaryCard({ label, value, total, icon, color }: Props) {
   return (
-    <div className={`rounded-md p-4 shadow-sm border ${bgMap[color]}`}>
+    <div className={`rounded-md p-4 shadow-sm border ${theme.bg}`}>
       <div className="flex items-center justify-between">
         <div>
           <p className="text-[13px] font-semibold uppercase tracking-wider text-text-body-mid dark:text-text-muted">
             {label}
           </p>
-          <p className={`mt-1 text-3xl font-extrabold ${textMap[color]}`}>{value}</p>
+          <p className={`mt-1 text-3xl font-extrabold ${theme.text}`}>{value}</p>
         </div>
-        {icon && <div className={textMap[color]}>{icon}</div>}
+        {icon && <div className={theme.text}>{icon}</div>}
       </div>
       {total !== undefined && (
         <div className="mt-3">
           <div className="h-1.5 w-full rounded-[50px] bg-border-default dark:bg-surface-200">
             <div
-              className={`h-1.5 rounded-[50px] ${progressBgMap[color]}`}
+              className={`h-1.5 rounded-[50px] ${theme.progressBg}`}
               style={{ width: `${(value / total) * 100}%` }}
             />
           </div>

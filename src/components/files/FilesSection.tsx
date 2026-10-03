@@ -1,13 +1,13 @@
-import type { TestSuite } from '@/lib/types';
+import type { TestSuite } from '@/lib/types/report';
 import FileSummary from '@/components/files/FileSummary';
 import FileMetricsSection from '@/components/files/FileMetricsSection';
 
-interface Props {
+export interface FilesSectionProps {
   suites: TestSuite[];
   isMinimalReport?: boolean;
 }
 
-export default function FilesSection({ suites, isMinimalReport }: Props) {
+export default function FilesSection({ suites, isMinimalReport }: FilesSectionProps) {
   return (
     <div className="w-full space-y-6">
       <div>

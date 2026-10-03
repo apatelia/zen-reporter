@@ -1,8 +1,12 @@
 # Zen Reporter
 
+[![npm version](https://img.shields.io/npm/v/@arpanp/zen-reporter.svg)](https://www.npmjs.com/package/@arpanp/zen-reporter)
+[![npm downloads](https://img.shields.io/npm/dm/@arpanp/zen-reporter.svg)](https://www.npmjs.com/package/@arpanp/zen-reporter)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
 Beautiful test execution reports for Playwright.
+
+[🚀 Live Demo](https://zen-reporter.vercel.app/demo) | [📚 Documentation](https://zen-reporter.vercel.app) | [📦 NPM Package](https://www.npmjs.com/package/@arpanp/zen-reporter) | [🐛 Report an Issue](https://github.com/apatelia/zen-reporter/issues)
 
 Zen Reporter transforms Playwright's raw test results into an interactive, visually stunning dashboard. It provides a clean, modern interface for exploring test suites, analyzing pass/fail rates, and diving into individual test failures with full step-by-step execution traces, source code snippets, syntax highlighting, and error stacks.
 
@@ -32,7 +36,7 @@ Dark mode:
   - **P95 Duration & Latency**: Analyze 95th percentile completion thresholds per project profile.
 - **Core Platform Capabilities**:
   - **Themes & Dark Mode**: Multiple design themes (`Cafe`, `Concept`, `Sentinel`) with light and dark mode toggles, built with WCAG-compliant color tokens and configurable default states.
-  - **Single-File Standalone Output**: Generates a self-contained single-file HTML report (`index.html`) with embedded datasets for easy sharing and CI/CD artifact storage. Optionally creates a lightweight standalone `summary.html` dedicated to executive dashboards.
+  - **Self-Contained Report Bundle Output**: Generates an interactive HTML dashboard (`index.html`) backed by per-run JSONL execution history (`runs/`) and test attachments (`attachments/`) for easy CI/CD artifact storage. Optionally creates a lightweight standalone `summary.html` dedicated to executive dashboards.
 
 > **Note**: Designed and built with AI pair-programming tools; fully tested, maintained, and quality-assured by human hands.
 
@@ -103,13 +107,27 @@ export default defineConfig({
 | `enableHistory`     | `'auto' \| boolean`                    | `"auto"`                    | Controls history execution archiving (`"auto"`, `true`, `false`). Forced to `false` when `minimalReport` is `true`.                         |
 | `consoleProgress`   | `'auto' \| 'line' \| 'dot' \| boolean` | `"auto"`                    | Controls terminal execution output (`"auto"` selects `line` in TTY and `dot` in non-TTY).                                                   |
 
+### Report Output Structure
+
+When executed, Zen Reporter generates a self-contained report folder (default: `zen-report/`) with the following directory structure:
+
+```text
+zen-report/
+├── index.html        # Main interactive HTML dashboard interface
+├── summary.html      # Optional standalone executive summary dashboard (when singleSummaryFile: true)
+├── runs/             # Per-run JSONL execution history logs (<timestamp>__<run-slug>.jsonl)
+└── attachments/      # Extracted test attachments (screenshots, videos, trace files, text logs)
+```
+
+> **Note**: To ensure historic trends, run logs, and media attachments render correctly, archive or publish the complete `zen-report/` directory in your CI/CD pipeline artifacts.
+
 ---
 
 ## Usage
 
 ### 1. Running Tests
 
-Run your Playwright tests as usual. Zen Reporter will stream live progress directly to your console (`line` mode in interactive terminals or `dot` mode in non-TTY environments) and display summary table upon test completion, while building structured suite trees and generating the standalone HTML report:
+Run your Playwright tests as usual. Zen Reporter will stream live progress directly to your console (`line` mode in interactive terminals or `dot` mode in non-TTY environments) and display summary table upon test completion, while building structured suite trees and generating the HTML report bundle:
 
 ```bash
 npx playwright test

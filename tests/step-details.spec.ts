@@ -1,7 +1,7 @@
 import { fileURLToPath } from 'url';
 import { expect, test } from '@playwright/test';
 import { processRawData } from '../src/lib/dataProcessor';
-import { convertPlaywrightSteps } from '../src/lib/utils';
+import { convertPlaywrightSteps } from '../src/lib/codeHighlighting';
 
 const currentFile = fileURLToPath(import.meta.url);
 

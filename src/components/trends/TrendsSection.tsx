@@ -1,16 +1,17 @@
-import type { HistoryData, TestSuite } from '@/lib/types';
+import type { TestSuite } from '@/lib/types/report';
+import type { HistoryData } from '@/lib/types/history';
 import PassRateTrend from '@/components/trends/PassRateTrend';
 import DurationTrend from '@/components/trends/DurationTrend';
 import StepCategoryTrend from '@/components/trends/StepCategoryTrend';
-import { HistoryDisabledBanner } from '@/components/shared';
+import HistoryDisabledBanner from '@/components/shared/HistoryDisabledBanner';
 
-interface Props {
+export interface TrendsSectionProps {
   history: HistoryData | null;
   suites: TestSuite[];
   isHistoryDisabled?: boolean;
 }
 
-export default function TrendsSection({ history, suites, isHistoryDisabled }: Props) {
+export default function TrendsSection({ history, suites, isHistoryDisabled }: TrendsSectionProps) {
   if (!history) {
     return (
       <div className="space-y-6">

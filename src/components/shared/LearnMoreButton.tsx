@@ -1,4 +1,4 @@
-interface Props {
+export interface LearnMoreButtonProps {
   onClick: () => void;
   label?: string;
   title?: string;
@@ -10,7 +10,7 @@ export default function LearnMoreButton({
   label = 'Learn more',
   title = 'Learn more about this section',
   className = '',
-}: Props) {
+}: LearnMoreButtonProps) {
   return (
     <button
       type="button"

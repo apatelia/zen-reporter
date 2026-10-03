@@ -1,56 +1,11 @@
 import { useMemo } from 'react';
+import { HEALTH_CATEGORY_CONFIG } from '@/lib/theme';
 
-interface Props {
+export interface PassRateRingProps {
   passRate: number;
 }
 
-const categoryConfig = {
-  excellent: {
-    color: 'var(--color-success-500)',
-    bgLight: 'bg-success-100/80',
-    bgDark: 'dark:bg-success-50/20',
-    dotLight: 'bg-success-500',
-    dotDark: 'dark:bg-success-500',
-    textLight: 'text-success-600',
-    textDark: 'dark:text-success-500',
-    badgeStyle: 'bg-success-500/10 text-success-600 dark:text-success-500 border-success-500/20',
-    label: 'Excellent',
-    range: '≥ 90%',
-    borderLight: 'border-success-300/70',
-    borderDark: 'dark:border-success-800/40',
-    active: (passRate: number) => passRate >= 90,
-  },
-  warning: {
-    color: 'var(--color-warning-500)',
-    bgLight: 'bg-warning-100/80',
-    bgDark: 'dark:bg-warning-50/20',
-    dotLight: 'bg-warning-500',
-    dotDark: 'dark:bg-warning-500',
-    textLight: 'text-warning-600',
-    textDark: 'dark:text-warning-500',
-    badgeStyle: 'bg-warning-500/10 text-warning-600 dark:text-warning-500 border-warning-500/20',
-    label: 'Needs Improvement',
-    range: '60% – 89%',
-    borderLight: 'border-warning-300/70',
-    borderDark: 'dark:border-warning-800/40',
-    active: (passRate: number) => passRate >= 60 && passRate < 90,
-  },
-  critical: {
-    color: 'var(--color-danger-500)',
-    bgLight: 'bg-danger-100/80',
-    bgDark: 'dark:bg-danger-50/20',
-    dotLight: 'bg-danger-500',
-    dotDark: 'dark:bg-danger-500',
-    textLight: 'text-danger-600',
-    textDark: 'dark:text-danger-500',
-    badgeStyle: 'bg-danger-500/10 text-danger-600 dark:text-danger-500 border-danger-500/20',
-    label: 'Critical',
-    range: '< 60%',
-    borderLight: 'border-danger-300/70',
-    borderDark: 'dark:border-danger-800/40',
-    active: (passRate: number) => passRate < 60,
-  },
-} as const;
+const categoryConfig = HEALTH_CATEGORY_CONFIG;
 
 const categories = [
   categoryConfig.excellent,
@@ -70,7 +25,7 @@ const VIEWBOX = SIZE;
 const CENTER = VIEWBOX / 2;
 const circumference = 2 * Math.PI * RADIUS;
 
-export default function PassRateRing({ passRate }: Props) {
+export default function PassRateRing({ passRate }: PassRateRingProps) {
   const activeCategory = categories.find((c) => c.active(passRate))!;
 
   const dashOffset = useMemo(() => circumference - (passRate / 100) * circumference, [passRate]);
