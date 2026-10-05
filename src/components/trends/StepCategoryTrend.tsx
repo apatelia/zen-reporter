@@ -1,5 +1,4 @@
 import { useMemo, useState } from 'react';
-import GuideModal from '@/components/shared/GuideModal';
 import LearnMoreButton from '@/components/shared/LearnMoreButton';
 import type { TestSuite } from '@/lib/types/report';
 import type { HistoryData } from '@/lib/types/history';
@@ -21,11 +20,15 @@ export {
 export interface StepCategoryTrendProps {
   suites: TestSuite[];
   history?: HistoryData | null;
+  onOpenGuide?: () => void;
 }
 
-export default function StepCategoryTrend({ suites, history }: StepCategoryTrendProps) {
+export default function StepCategoryTrend({
+  suites,
+  history,
+  onOpenGuide,
+}: StepCategoryTrendProps) {
   const [viewMode, setViewMode] = useState<'percent' | 'count'>('percent');
-  const [isModalOpen, setIsModalOpen] = useState(false);
 
   const currentCounts = useMemo(() => countStepCategories(suites), [suites]);
 
@@ -67,6 +70,18 @@ export default function StepCategoryTrend({ suites, history }: StepCategoryTrend
       return [currentPoint];
     }
 
+    // Default fallback baseline ratio if current run has 0 total steps
+    const defaultBaseline: Record<StepCategoryKey, number> = {
+      assertions: 45,
+      actions: 35,
+      network: 10,
+      hooks: 8,
+      waits: 2,
+      others: 0,
+    };
+
+    const hasCurrentData = totalCurrentSteps > 0;
+
     return runsList.map((run, idx) => {
       const isLatest = idx === runsList.length - 1;
       const name = isLatest ? 'Current Run' : run.started_at || run.run_name || `Run #${idx + 1}`;
@@ -83,17 +98,32 @@ export default function StepCategoryTrend({ suites, history }: StepCategoryTrend
             viewMode === 'percent' ? currentPercentages[cat.key] : currentCounts[cat.key];
         }
       } else {
-        const passRate = run.pass_rate ?? 90;
-        const total = run.run_total * 8;
-        const assertionsPct = Math.min(50, Math.max(30, Math.round(passRate * 0.45)));
-        const actionsPct = 35;
-        const networkPct = 10;
-        const hooksPct = 8;
-        const waitsPct = Math.max(2, Math.round((100 - passRate) * 0.3 + 2));
-        const othersPct = Math.max(
-          1,
-          100 - (assertionsPct + actionsPct + networkPct + hooksPct + waitsPct)
-        );
+        // Derive historical percentages based on current run's actual profile
+        const baseline = hasCurrentData ? currentPercentages : defaultBaseline;
+
+        // Apply slight pass-rate variance (e.g. slight increase in waits/failures when pass rate drops)
+        const passRate = run.pass_rate ?? 100;
+        const passFactor = (100 - passRate) * 0.05; // small adjustment factor
+
+        let assertionsPct = Math.max(0, baseline.assertions - passFactor);
+        let waitsPct = baseline.waits > 0 ? Math.max(0, baseline.waits + passFactor) : 0;
+        let actionsPct = baseline.actions;
+        let networkPct = baseline.network;
+        let hooksPct = baseline.hooks;
+        let othersPct = baseline.others;
+
+        const sum = assertionsPct + actionsPct + networkPct + hooksPct + waitsPct + othersPct;
+        if (sum > 0) {
+          assertionsPct = Math.round((assertionsPct / sum) * 100);
+          actionsPct = Math.round((actionsPct / sum) * 100);
+          networkPct = Math.round((networkPct / sum) * 100);
+          hooksPct = Math.round((hooksPct / sum) * 100);
+          waitsPct = Math.round((waitsPct / sum) * 100);
+          othersPct = Math.max(
+            0,
+            100 - (assertionsPct + actionsPct + networkPct + hooksPct + waitsPct)
+          );
+        }
 
         const historicalPercents: Record<StepCategoryKey, number> = {
           assertions: assertionsPct,
@@ -104,15 +134,24 @@ export default function StepCategoryTrend({ suites, history }: StepCategoryTrend
           others: othersPct,
         };
 
+        const approxTotalSteps = hasCurrentData
+          ? Math.round(
+              (run.run_total /
+                Math.max(1, history?.runs[history.runs.length - 1]?.run_total || 1)) *
+                totalCurrentSteps
+            )
+          : run.run_total * 8;
+
         for (const cat of STEP_CATEGORIES) {
           const pct = historicalPercents[cat.key];
-          item[cat.label] = viewMode === 'percent' ? pct : Math.round((pct * total) / 100);
+          item[cat.label] =
+            viewMode === 'percent' ? pct : Math.round((pct * approxTotalSteps) / 100);
         }
       }
 
       return item;
     });
-  }, [history, currentCounts, currentPercentages, viewMode]);
+  }, [history, currentCounts, currentPercentages, totalCurrentSteps, viewMode]);
 
   return (
     <section className="rounded-md border border-border-default bg-surface-50 p-5 shadow-xs space-y-6">
@@ -123,7 +162,7 @@ export default function StepCategoryTrend({ suites, history }: StepCategoryTrend
             <h2 className="text-lg font-bold text-text-ink dark:text-text-on-primary">
               Step Category Composition & Trend
             </h2>
-            <LearnMoreButton onClick={() => setIsModalOpen(true)} />
+            {onOpenGuide && <LearnMoreButton onClick={onOpenGuide} />}
           </div>
           <p className="mt-1 text-xs text-text-body-mid dark:text-text-muted">
             Proportional breakdown of automated step types (Assertions, Actions, Network, Waits)
@@ -167,51 +206,6 @@ export default function StepCategoryTrend({ suites, history }: StepCategoryTrend
 
       {/* Recharts Stacked Bar Trend Chart */}
       <StepCategoryChart chartData={chartData} viewMode={viewMode} />
-
-      {/* Interactive Guide Modal */}
-      <GuideModal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        title="Step Category Composition & Trend Guide"
-      >
-        <div className="space-y-4 text-xs text-text-body-mid dark:text-text-muted">
-          <div>
-            <h4 className="font-bold text-sm text-text-ink dark:text-text-on-primary mb-1">
-              Overview
-            </h4>
-            <p>
-              This chart categorizes and tracks every automated step executed in your Playwright
-              test runs, revealing the architectural composition of your test suite over time.
-            </p>
-          </div>
-          <div>
-            <h4 className="font-bold text-sm text-text-ink dark:text-text-on-primary mb-2">
-              Step Categories
-            </h4>
-            <div className="space-y-3">
-              {STEP_CATEGORIES.map((cat) => (
-                <div
-                  key={cat.key}
-                  className="p-2.5 rounded-md border border-border-default bg-surface-100/50 dark:bg-surface-200/20"
-                >
-                  <div className="flex items-center gap-2 mb-1">
-                    <span
-                      className="h-2.5 w-2.5 rounded-full"
-                      style={{ backgroundColor: cat.color }}
-                    />
-                    <span className="font-bold text-xs text-text-ink dark:text-text-on-primary">
-                      {cat.label}
-                    </span>
-                  </div>
-                  <p className="text-xs text-text-body-mid dark:text-text-muted">
-                    {cat.description}
-                  </p>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </GuideModal>
     </section>
   );
 }

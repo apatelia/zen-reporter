@@ -32,6 +32,15 @@ const serveReportAssets: Plugin = {
       res.setHeader('content-type', 'application/json; charset=utf-8');
       res.end(readFileSync(file));
     });
+
+    server.middlewares.use('/attachments', (req, res, next) => {
+      if (!req.url) return next();
+      const filename = req.url.replace(/^\//, '');
+      const file = resolve(REPORT_DIR, 'attachments', filename);
+      if (!existsSync(file)) return next();
+      res.statusCode = 200;
+      res.end(readFileSync(file));
+    });
   },
 };
 

@@ -11,6 +11,10 @@ export interface SuiteViewProps {
   filterTags: string[];
   filterFiles: string[];
   fileSearchTerm?: string;
+  isOpen?: boolean;
+  onToggle?: (isOpen: boolean) => void;
+  forceOpen?: boolean | null;
+  expandKey?: number;
 }
 
 function filterCases(
@@ -19,7 +23,8 @@ function filterCases(
   filterProjects: string[],
   filterTags: string[],
   filterFiles: string[],
-  fileSearchTerm?: string
+  fileSearchTerm?: string,
+  parentSuiteTitleMatch: boolean = false
 ): TestCase[] {
   const query = fileSearchTerm?.trim().toLowerCase();
   return cases.filter((c) => {
@@ -28,7 +33,11 @@ function filterCases(
     const tagMatch =
       filterTags.length === 0 || (c.tags || []).some((tag) => filterTags.includes(tag));
     const fileMatch = query
-      ? Boolean(c.fileName && c.fileName.toLowerCase().includes(query))
+      ? Boolean(
+          parentSuiteTitleMatch ||
+          (c.fileName && c.fileName.toLowerCase().includes(query)) ||
+          (c.title && c.title.toLowerCase().includes(query))
+        )
       : filterFiles.length === 0 || filterFiles.includes(c.fileName);
 
     return statusMatch && projectMatch && tagMatch && fileMatch;
@@ -41,22 +50,44 @@ function filterSuite(
   filterProjects: string[],
   filterTags: string[],
   filterFiles: string[],
-  fileSearchTerm?: string
+  fileSearchTerm?: string,
+  parentMatch: boolean = false
 ): TestSuite {
+  const query = fileSearchTerm?.trim().toLowerCase();
+  const currentSuiteMatch =
+    parentMatch || Boolean(query && suite.title && suite.title.toLowerCase().includes(query));
+
   const filteredCases = filterCases(
     suite.cases,
     filterStatuses,
     filterProjects,
     filterTags,
     filterFiles,
-    fileSearchTerm
+    fileSearchTerm,
+    currentSuiteMatch
   );
   const filteredSubSuites = (suite.subSuites || [])
     .map((sub) =>
-      filterSuite(sub, filterStatuses, filterProjects, filterTags, filterFiles, fileSearchTerm)
+      filterSuite(
+        sub,
+        filterStatuses,
+        filterProjects,
+        filterTags,
+        filterFiles,
+        fileSearchTerm,
+        currentSuiteMatch
+      )
     )
     .filter((sub) =>
-      hasTestCases(sub, filterStatuses, filterProjects, filterTags, filterFiles, fileSearchTerm)
+      hasTestCases(
+        sub,
+        filterStatuses,
+        filterProjects,
+        filterTags,
+        filterFiles,
+        fileSearchTerm,
+        currentSuiteMatch
+      )
     );
 
   return {
@@ -72,16 +103,24 @@ function hasTestCases(
   filterProjects: string[],
   filterTags: string[],
   filterFiles: string[],
-  fileSearchTerm?: string
+  fileSearchTerm?: string,
+  parentMatch: boolean = false
 ): boolean {
   const query = fileSearchTerm?.trim().toLowerCase();
+  const currentSuiteMatch =
+    parentMatch || Boolean(query && suite.title && suite.title.toLowerCase().includes(query));
+
   const hasMatchingCases = suite.cases.some((c) => {
     const statusMatch = filterStatuses.length === 0 || filterStatuses.includes(c.status);
     const projectMatch = filterProjects.length === 0 || filterProjects.includes(c.project);
     const tagMatch =
       filterTags.length === 0 || (c.tags || []).some((tag) => filterTags.includes(tag));
     const fileMatch = query
-      ? Boolean(c.fileName && c.fileName.toLowerCase().includes(query))
+      ? Boolean(
+          currentSuiteMatch ||
+          (c.fileName && c.fileName.toLowerCase().includes(query)) ||
+          (c.title && c.title.toLowerCase().includes(query))
+        )
       : filterFiles.length === 0 || filterFiles.includes(c.fileName);
 
     return statusMatch && projectMatch && tagMatch && fileMatch;
@@ -90,7 +129,17 @@ function hasTestCases(
   if (hasMatchingCases) return true;
 
   for (const sub of suite.subSuites || []) {
-    if (hasTestCases(sub, filterStatuses, filterProjects, filterTags, filterFiles, fileSearchTerm))
+    if (
+      hasTestCases(
+        sub,
+        filterStatuses,
+        filterProjects,
+        filterTags,
+        filterFiles,
+        fileSearchTerm,
+        currentSuiteMatch
+      )
+    )
       return true;
   }
 
@@ -102,7 +151,9 @@ function countCases(
   filterStatuses: string[],
   filterProjects: string[],
   filterTags: string[],
-  filterFiles: string[]
+  filterFiles: string[],
+  fileSearchTerm?: string,
+  parentMatch: boolean = false
 ): {
   total: number;
   passed: number;
@@ -112,7 +163,19 @@ function countCases(
   interrupted: number;
   duration: number;
 } {
-  const cases = filterCases(suite.cases, filterStatuses, filterProjects, filterTags, filterFiles);
+  const query = fileSearchTerm?.trim().toLowerCase();
+  const currentSuiteMatch =
+    parentMatch || Boolean(query && suite.title && suite.title.toLowerCase().includes(query));
+
+  const cases = filterCases(
+    suite.cases,
+    filterStatuses,
+    filterProjects,
+    filterTags,
+    filterFiles,
+    fileSearchTerm,
+    currentSuiteMatch
+  );
   let total = cases.length;
   let passed = cases.filter((c) => c.status === 'passed').length;
   let failed = cases.filter((c) => c.status === 'failed').length;
@@ -129,7 +192,15 @@ function countCases(
   );
 
   for (const sub of suite.subSuites || []) {
-    const subCount = countCases(sub, filterStatuses, filterProjects, filterTags, filterFiles);
+    const subCount = countCases(
+      sub,
+      filterStatuses,
+      filterProjects,
+      filterTags,
+      filterFiles,
+      fileSearchTerm,
+      currentSuiteMatch
+    );
     total += subCount.total;
     passed += subCount.passed;
     failed += subCount.failed;
@@ -148,15 +219,44 @@ export default function SuiteView({
   filterProjects,
   filterTags,
   filterFiles,
+  fileSearchTerm,
+  isOpen: propIsOpen,
+  onToggle,
+  forceOpen,
+  expandKey,
 }: SuiteViewProps) {
-  const [isOpen, setIsOpen] = useState(false);
+  const [isOpen, setIsOpen] = useState<boolean>(() => {
+    if (typeof propIsOpen === 'boolean') return propIsOpen;
+    if (typeof forceOpen === 'boolean') return forceOpen;
+    return false;
+  });
+
+  const [prevProps, setPrevProps] = useState({ propIsOpen, forceOpen, expandKey });
+  if (
+    prevProps.propIsOpen !== propIsOpen ||
+    prevProps.forceOpen !== forceOpen ||
+    prevProps.expandKey !== expandKey
+  ) {
+    setPrevProps({ propIsOpen, forceOpen, expandKey });
+    if (typeof propIsOpen === 'boolean') {
+      setIsOpen(propIsOpen);
+    } else if (typeof forceOpen === 'boolean') {
+      setIsOpen(forceOpen);
+    }
+  }
+
+  const handleToggle = (open: boolean) => {
+    setIsOpen(open);
+    onToggle?.(open);
+  };
 
   const filteredSuite =
     filterStatuses.length > 0 ||
     filterProjects.length > 0 ||
     filterTags.length > 0 ||
-    filterFiles.length > 0
-      ? filterSuite(suite, filterStatuses, filterProjects, filterTags, filterFiles)
+    filterFiles.length > 0 ||
+    Boolean(fileSearchTerm?.trim())
+      ? filterSuite(suite, filterStatuses, filterProjects, filterTags, filterFiles, fileSearchTerm)
       : suite;
 
   const { total, passed, failed, skipped, timedOut, interrupted, duration } = countCases(
@@ -164,13 +264,15 @@ export default function SuiteView({
     filterStatuses,
     filterProjects,
     filterTags,
-    filterFiles
+    filterFiles,
+    fileSearchTerm
   );
   const passRate = total > 0 ? Math.round((passed / total) * 100) : 100;
 
   return (
     <details
-      onToggle={(e) => setIsOpen(e.currentTarget.open)}
+      open={isOpen}
+      onToggle={(e) => handleToggle(e.currentTarget.open)}
       className="group rounded-md overflow-hidden bg-surface-100 shadow-sm ring-1 ring-black/5 dark:ring-white/5 transition-all duration-200"
     >
       <summary className="rounded-md group-open:rounded-b-none cursor-pointer select-none p-4 flex items-center justify-between hover:bg-surface-50 dark:hover:bg-surface-200/30 transition-colors">
@@ -251,7 +353,7 @@ export default function SuiteView({
             <p className="mb-2 text-[11px] font-bold uppercase tracking-wider text-text-body-mid dark:text-text-muted">
               Nested Suites
             </p>
-            <div className="ml-3 border-l-2 border-border-default dark:border-border-default pl-4 space-y-3">
+            <div className="ml-3 border-l-2 border-accent-blue/30 dark:border-accent-blue/40 pl-4 space-y-3">
               {filteredSuite.subSuites.map((sub) => (
                 <TestSuiteNode
                   key={sub.title}
@@ -260,6 +362,9 @@ export default function SuiteView({
                   filterProjects={filterProjects}
                   filterTags={filterTags}
                   filterFiles={filterFiles}
+                  fileSearchTerm={fileSearchTerm}
+                  forceOpen={forceOpen}
+                  expandKey={expandKey}
                 />
               ))}
             </div>

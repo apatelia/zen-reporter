@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import {
   BarChart,
   Bar,
@@ -17,6 +16,7 @@ import type { TestSuite } from '@/lib/types/report';
 export interface ProjectFlakyRateChartProps {
   suites: TestSuite[];
   title?: string;
+  onOpenGuide?: () => void;
 }
 
 interface ChartDataItem {
@@ -67,8 +67,8 @@ const renderTooltip = (props: TooltipContentProps) => {
 export default function ProjectFlakyRateChart({
   suites,
   title = 'Flaky Test Count & Retry Rate by Project',
+  onOpenGuide,
 }: ProjectFlakyRateChartProps) {
-  const [showModal, setShowModal] = useState(false);
   const allCases = collectAllCases(suites);
   const projectStats = computeProjectStats(allCases);
 
@@ -95,7 +95,7 @@ export default function ProjectFlakyRateChart({
           </p>
         </div>
 
-        <LearnMoreButton onClick={() => setShowModal(true)} />
+        {onOpenGuide && <LearnMoreButton onClick={onOpenGuide} />}
       </div>
 
       {!hasFlakyData ? (
@@ -161,77 +161,6 @@ export default function ProjectFlakyRateChart({
             <Bar dataKey="Flaky Tests" fill="var(--color-warning-500)" radius={[0, 4, 4, 0]} />
           </BarChart>
         </ResponsiveContainer>
-      )}
-
-      {/* Guide Modal */}
-      {showModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 overflow-y-auto">
-          <div className="relative w-full max-w-xl rounded-lg border border-border-default bg-canvas p-6 shadow-2xl space-y-4">
-            <div className="flex items-start justify-between border-b border-border-default pb-3">
-              <div>
-                <h3 className="text-lg font-bold text-text-ink dark:text-text-on-primary">
-                  Flaky Test Count & Retry Analytics Guide
-                </h3>
-                <p className="text-xs text-text-body-mid dark:text-text-muted mt-0.5">
-                  Analyzing cross-project test instability and environmental flakiness
-                </p>
-              </div>
-              <button
-                onClick={() => setShowModal(false)}
-                className="rounded-md p-1 text-text-body-mid hover:bg-surface-100 hover:text-text-ink dark:text-text-muted dark:hover:text-text-on-primary transition-colors cursor-pointer"
-              >
-                <svg
-                  className="h-5 w-5"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                  strokeWidth={2}
-                >
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-
-            <div className="space-y-3 text-xs text-text-body-mid dark:text-text-muted leading-relaxed">
-              <p>
-                A test case is classified as{' '}
-                <strong className="text-warning-600 dark:text-warning-500">Flaky</strong> when it is
-                non-deterministic and recorded BOTH passed and failed outcomes across test
-                executions (minimum 1 failure and 1 success).
-              </p>
-
-              <div className="rounded-md border border-border-default bg-surface-50 p-3 space-y-2">
-                <div className="font-bold text-text-ink dark:text-text-on-primary text-xs uppercase tracking-wider">
-                  Diagnostic Value by Project Profile:
-                </div>
-                <ul className="list-disc list-inside space-y-1">
-                  <li>
-                    <strong>Browser Specific Flakiness:</strong> Compare WebKit, Chromium, and
-                    Firefox to isolate rendering engine timing bugs.
-                  </li>
-                  <li>
-                    <strong>Viewport & Mobile Emulation:</strong> Identify if responsive layout
-                    tests flake on mobile viewports due to animation delays.
-                  </li>
-                  <li>
-                    <strong>Retry Overhead:</strong> Flaky tests double execution latency.
-                    Eliminating flakiness speeds up overall CI build time.
-                  </li>
-                </ul>
-              </div>
-            </div>
-
-            <div className="flex justify-end pt-2 border-t border-border-default">
-              <button
-                type="button"
-                onClick={() => setShowModal(false)}
-                className="rounded-md bg-accent-blue px-4 py-2 text-xs font-bold text-text-on-primary hover:bg-accent-blue/90 transition-colors cursor-pointer"
-              >
-                Close Guide
-              </button>
-            </div>
-          </div>
-        </div>
       )}
     </div>
   );

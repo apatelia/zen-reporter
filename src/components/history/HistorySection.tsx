@@ -61,16 +61,7 @@ export default function HistorySection({ history, isHistoryDisabled }: HistorySe
   return (
     <div className="space-y-6">
       {isHistoryDisabled && <HistoryDisabledBanner />}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
-        <div>
-          <h2 className="text-2xl font-bold tracking-tight text-text-ink dark:text-text-on-primary sm:text-3xl">
-            Execution Run History
-          </h2>
-          <p className="mt-1.5 text-sm text-text-body-mid dark:text-text-muted">
-            Audit log of all historical test execution runs stored in Zen Reporter
-          </p>
-        </div>
-      </div>
+      <h1 className="sr-only">Execution Run History</h1>
 
       {/* Test Runs Audit Log Section */}
       <HistoryRunsTableSection

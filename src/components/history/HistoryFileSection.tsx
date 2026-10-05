@@ -2,12 +2,20 @@ import { useMemo, useState } from 'react';
 import { PageSizeControl } from '@/components/pagination/PageSizeControl';
 import { PaginationFooter } from '@/components/pagination/PaginationFooter';
 import { usePagination } from '@/components/pagination/usePagination';
-import { ColumnDef, DataTable, PassRateBadge } from '@/components/shared/DataTable';
+import {
+  ColumnDef,
+  DataTable,
+  ExportCsvButton,
+  exportColumnsToCsv,
+} from '@/components/shared/DataTable';
+import { PassRateBadge } from '@/components/shared/PassRateBadge';
+import { StatusCountBadge } from '@/components/shared/StatusCountBadge';
 import DateFilterControl, { type DateFilterRange } from '@/components/shared/DateFilterControl';
 import LearnMoreButton from '@/components/shared/LearnMoreButton';
 import SearchInput from '@/components/shared/SearchInput';
 import type { HistoryFileRow } from '@/lib/types/history';
-import { truncateFileName } from '@/lib/formatters';
+import { truncateFileName, calculatePassRate } from '@/lib/formatters';
+import { generateExportFilename } from '@/lib/exportFilename';
 
 export interface HistoryFileSectionProps {
   rawFiles: HistoryFileRow[];
@@ -15,8 +23,9 @@ export interface HistoryFileSectionProps {
   onOpenGuide: () => void;
 }
 
-const sectionClass = 'rounded-md border border-border-default bg-surface-50 p-6 shadow-xs';
-const headingClass = 'text-xl font-bold text-text-ink dark:text-text-on-primary';
+const sectionClass =
+  'overflow-hidden rounded-md bg-canvas border border-border-default shadow-sm p-4';
+const headingClass = 'text-lg font-bold text-text-ink dark:text-text-on-primary';
 
 export function HistoryFileSection({
   rawFiles,
@@ -29,6 +38,8 @@ export function HistoryFileSection({
     label: null,
   });
   const [fileNameSearchTerm, setFileNameSearchTerm] = useState('');
+
+  const isFiltered = Boolean(fileFilterRange.fromTimestamp || fileFilterRange.toTimestamp);
 
   const aggregatedFiles = useMemo(() => {
     const filtered = rawFiles.filter((row) => {
@@ -87,7 +98,7 @@ export function HistoryFileSection({
     return Array.from(map.values())
       .map((item) => {
         const total = item.total;
-        const passRate = total > 0 ? Math.round((item.passed / total) * 100) : null;
+        const passRate = calculatePassRate(item.passed, total);
         return {
           file: item.file,
           runsCount: item.runIds.size || 1,
@@ -122,8 +133,21 @@ export function HistoryFileSection({
       },
       {
         key: 'runs',
-        header: 'Runs',
-        align: 'right',
+        header: (
+          <span className="inline-flex items-center gap-1.5">
+            <span>Runs</span>
+            {isFiltered && (
+              <span
+                className="inline-flex items-center gap-1 rounded bg-success-500/10 px-1.5 py-0.5 text-[10px] font-semibold text-success-600 dark:bg-success-500/20 dark:text-success-400"
+                title="Date range filter active on sampled runs"
+              >
+                Filtered
+              </span>
+            )}
+          </span>
+        ),
+        headerLabel: 'Runs',
+        align: 'center',
         className: 'text-text-body-mid dark:text-text-muted',
         cell: (f) => f.runsCount,
         csvValue: (f) => f.runsCount,
@@ -131,7 +155,7 @@ export function HistoryFileSection({
       {
         key: 'total',
         header: 'Total Tests',
-        align: 'right',
+        align: 'center',
         className: 'font-medium',
         cell: (f) => f.total,
         csvValue: (f) => f.total,
@@ -139,71 +163,47 @@ export function HistoryFileSection({
       {
         key: 'passed',
         header: 'Passed',
-        align: 'right',
-        cell: (f) => (
-          <span className={f.passed > 0 ? 'text-success-600 dark:text-success-500 font-bold' : ''}>
-            {f.passed}
-          </span>
-        ),
+        align: 'center',
+        cell: (f) => <StatusCountBadge count={f.passed} type="passed" />,
         csvValue: (f) => f.passed,
       },
       {
         key: 'failed',
         header: 'Failed',
-        align: 'right',
-        cell: (f) => (
-          <span className={f.failed > 0 ? 'text-danger-600 dark:text-danger-500 font-bold' : ''}>
-            {f.failed}
-          </span>
-        ),
+        align: 'center',
+        cell: (f) => <StatusCountBadge count={f.failed} type="failed" />,
         csvValue: (f) => f.failed,
       },
       {
         key: 'timed_out',
         header: 'Timed Out',
-        align: 'right',
-        cell: (f) => (
-          <span className={f.timedOut > 0 ? 'text-danger-600 dark:text-danger-500 font-bold' : ''}>
-            {f.timedOut}
-          </span>
-        ),
+        align: 'center',
+        cell: (f) => <StatusCountBadge count={f.timedOut} type="timedOut" />,
         csvValue: (f) => f.timedOut,
       },
       {
         key: 'interrupted',
         header: 'Interrupted',
-        align: 'right',
-        cell: (f) => (
-          <span
-            className={f.interrupted > 0 ? 'text-warning-600 dark:text-warning-500 font-bold' : ''}
-          >
-            {f.interrupted}
-          </span>
-        ),
+        align: 'center',
+        cell: (f) => <StatusCountBadge count={f.interrupted} type="interrupted" />,
         csvValue: (f) => f.interrupted,
       },
       {
         key: 'skipped',
         header: 'Skipped',
-        align: 'right',
-        cell: (f) => (
-          <span
-            className={f.skipped > 0 ? 'text-text-body-mid dark:text-text-muted font-medium' : ''}
-          >
-            {f.skipped}
-          </span>
-        ),
+        align: 'center',
+        cell: (f) => <StatusCountBadge count={f.skipped} type="skipped" />,
         csvValue: (f) => f.skipped,
       },
       {
         key: 'pass_rate',
         header: 'Pass Rate',
-        align: 'right',
+        align: 'center',
         cell: (f) => <PassRateBadge passRate={f.passRate} />,
         csvValue: (f) => (f.passRate != null ? `${f.passRate}%` : '-'),
       },
     ],
-    []
+    [isFiltered]
   );
 
   const pageFiles = aggregatedFiles.slice(filesPag.start, filesPag.start + filesPag.pageSize);
@@ -213,7 +213,7 @@ export function HistoryFileSection({
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-3 border-b border-border-default">
         <div>
           <div className="flex items-center gap-3">
-            <h2 className={headingClass}>File History</h2>
+            <h2 className={headingClass}>File Execution History</h2>
             <LearnMoreButton onClick={onOpenGuide} />
           </div>
           <p className="mt-1 text-xs text-text-body-mid dark:text-text-muted">
@@ -227,7 +227,7 @@ export function HistoryFileSection({
         />
       </div>
 
-      <div className="pt-3 pb-1 border-b border-border-default/50 flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+      <div className="pt-3 pb-3 border-b border-border-default/50 flex flex-col gap-3">
         <DateFilterControl
           onFilterChange={(range) => {
             setFileFilterRange(range);
@@ -235,24 +235,47 @@ export function HistoryFileSection({
           }}
           availableTimestamps={availableTimestamps}
         />
-        <SearchInput
-          value={fileNameSearchTerm}
-          onChange={(val) => {
-            setFileNameSearchTerm(val);
-            filesPag.setPage(1);
-          }}
-          placeholder="Search spec files..."
-          className="w-44 sm:w-48 shrink-0"
-          inputClassName="w-full rounded-md border border-border-default bg-surface-50 pl-9 pr-7 py-1.5 text-xs text-text-ink placeholder:text-text-muted focus:border-accent-blue focus:outline-none dark:bg-surface-50 dark:text-text-on-primary"
-        />
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <SearchInput
+            value={fileNameSearchTerm}
+            onChange={(val) => {
+              setFileNameSearchTerm(val);
+              filesPag.setPage(1);
+            }}
+            placeholder="Search file history by spec file name or path..."
+            className="w-full sm:w-80 md:w-96"
+          />
+          {aggregatedFiles.length > 0 && (
+            <ExportCsvButton
+              onClick={() =>
+                exportColumnsToCsv(
+                  () =>
+                    generateExportFilename('spec_file_history', {
+                      dateRange: fileFilterRange,
+                      searchTerm: fileNameSearchTerm,
+                    }),
+                  aggregatedFiles,
+                  fileColumns
+                )
+              }
+              count={aggregatedFiles.length}
+            />
+          )}
+        </div>
       </div>
 
       <DataTable
         data={pageFiles}
         columns={fileColumns}
         getRowKey={(f) => f.file}
-        exportFilename="spec_file_history.csv"
+        exportFilename={() =>
+          generateExportFilename('spec_file_history', {
+            dateRange: fileFilterRange,
+            searchTerm: fileNameSearchTerm,
+          })
+        }
         fullData={aggregatedFiles}
+        hideExportButton
         className="mt-4"
         emptyMessage={
           <div className="py-16 text-center text-text-body-mid dark:text-text-muted">

@@ -413,6 +413,77 @@ export function computeProjectExecutiveKPIs(projectStats: ProjectStats[]): Proje
   };
 }
 
+export interface StatusPercentages {
+  passed: number;
+  failed: number;
+  timedOut: number;
+  interrupted: number;
+  skipped: number;
+  failureRate: number;
+  passRate: number;
+}
+
+/**
+ * Computes status percentages using the Largest Remainder Method (Hare-Niemeyer).
+ * Guarantees that individual integer status percentages sum to 100% and that constituent
+ * failure status cards (failed + timedOut + interrupted) exactly match the total failureRate.
+ *
+ * @param summary - Result summary object.
+ * @returns StatusPercentages object.
+ */
+export function computeStatusPercentages(summary: ResultSummary): StatusPercentages {
+  const { total, passed, failed, timedOut, skipped } = summary;
+  const interrupted = summary.interrupted ?? 0;
+
+  if (total === 0) {
+    return {
+      passed: 0,
+      failed: 0,
+      timedOut: 0,
+      interrupted: 0,
+      skipped: 0,
+      failureRate: 0,
+      passRate: 0,
+    };
+  }
+
+  // 0: passed, 1: failed, 2: timedOut, 3: interrupted, 4: skipped
+  const counts = [passed, failed, timedOut, interrupted, skipped];
+  const floors = [0, 0, 0, 0, 0];
+  const remainders = [0, 0, 0, 0, 0];
+  let sumFloors = 0;
+
+  for (let i = 0; i < 5; i++) {
+    const pct = (counts[i] / total) * 100;
+    const floor = Math.floor(pct);
+    floors[i] = floor;
+    remainders[i] = pct - floor;
+    sumFloors += floor;
+  }
+
+  const remainderToDistribute = 100 - sumFloors;
+
+  // Order indices 0..4 by remainder descending, with original index as tie-breaker
+  const indices = [0, 1, 2, 3, 4];
+  indices.sort((a, b) => remainders[b] - remainders[a] || a - b);
+
+  for (let i = 0; i < remainderToDistribute && i < 5; i++) {
+    floors[indices[i]] += 1;
+  }
+
+  const failureRate = floors[1] + floors[2] + floors[3];
+
+  return {
+    passed: floors[0],
+    failed: floors[1],
+    timedOut: floors[2],
+    interrupted: floors[3],
+    skipped: floors[4],
+    failureRate,
+    passRate: floors[0],
+  };
+}
+
 /**
  * Computes overall pass rate percentage from a ResultSummary.
  *
@@ -421,7 +492,7 @@ export function computeProjectExecutiveKPIs(projectStats: ProjectStats[]): Proje
  */
 export function computePassRate(summary: ResultSummary): number {
   if (summary.total === 0) return 0;
-  return Math.round((summary.passed / summary.total) * 100);
+  return computeStatusPercentages(summary).passRate;
 }
 
 /**

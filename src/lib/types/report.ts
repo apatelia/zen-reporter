@@ -86,7 +86,7 @@ export interface Attachment {
   name: string;
   contentType: string;
   path: string | null;
-  body: string | null;
+  body?: string | null;
 }
 
 export interface Location {

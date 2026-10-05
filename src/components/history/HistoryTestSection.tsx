@@ -2,12 +2,20 @@ import { useMemo, useState } from 'react';
 import { PageSizeControl } from '@/components/pagination/PageSizeControl';
 import { PaginationFooter } from '@/components/pagination/PaginationFooter';
 import { usePagination } from '@/components/pagination/usePagination';
-import { ColumnDef, DataTable, PassRateBadge } from '@/components/shared/DataTable';
+import {
+  ColumnDef,
+  DataTable,
+  ExportCsvButton,
+  exportColumnsToCsv,
+} from '@/components/shared/DataTable';
+import { PassRateBadge } from '@/components/shared/PassRateBadge';
+import { StatusCountBadge } from '@/components/shared/StatusCountBadge';
 import DateFilterControl, { type DateFilterRange } from '@/components/shared/DateFilterControl';
 import LearnMoreButton from '@/components/shared/LearnMoreButton';
 import SearchInput from '@/components/shared/SearchInput';
 import type { HistoryData, HistoryTestRow } from '@/lib/types/history';
-import { formatDuration, truncateFileName } from '@/lib/formatters';
+import { formatDuration, truncateFileName, calculatePassRate } from '@/lib/formatters';
+import { generateExportFilename } from '@/lib/exportFilename';
 
 export interface HistoryTestSectionProps {
   history: HistoryData;
@@ -15,8 +23,9 @@ export interface HistoryTestSectionProps {
   onOpenGuide: () => void;
 }
 
-const sectionClass = 'rounded-md border border-border-default bg-surface-50 p-6 shadow-xs';
-const headingClass = 'text-xl font-bold text-text-ink dark:text-text-on-primary';
+const sectionClass =
+  'overflow-hidden rounded-md bg-canvas border border-border-default shadow-sm p-4';
+const headingClass = 'text-lg font-bold text-text-ink dark:text-text-on-primary';
 
 export function HistoryTestSection({
   history,
@@ -29,6 +38,8 @@ export function HistoryTestSection({
     label: null,
   });
   const [testSearchTerm, setTestSearchTerm] = useState('');
+
+  const isFiltered = Boolean(testFilterRange.fromTimestamp || testFilterRange.toTimestamp);
 
   const aggregatedTests = useMemo(() => {
     let rawTests: HistoryTestRow[] = history.tests ?? [];
@@ -142,7 +153,7 @@ export function HistoryTestSection({
     return Array.from(map.values())
       .map((item) => {
         const total = item.total;
-        const passRate = total > 0 ? Math.round((item.passed / total) * 100) : null;
+        const passRate = calculatePassRate(item.passed, total);
         const avgDurationMs =
           item.durationCount > 0 ? Math.round(item.totalDurationMs / item.durationCount) : null;
         return {
@@ -203,8 +214,21 @@ export function HistoryTestSection({
       },
       {
         key: 'runs',
-        header: 'Runs',
-        align: 'right',
+        header: (
+          <span className="inline-flex items-center gap-1.5">
+            <span>Runs</span>
+            {isFiltered && (
+              <span
+                className="inline-flex items-center gap-1 rounded bg-success-500/10 px-1.5 py-0.5 text-[10px] font-semibold text-success-600 dark:bg-success-500/20 dark:text-success-400"
+                title="Date range filter active on sampled runs"
+              >
+                Filtered
+              </span>
+            )}
+          </span>
+        ),
+        headerLabel: 'Runs',
+        align: 'center',
         className: 'text-text-body-mid dark:text-text-muted',
         cell: (t) => t.runsCount,
         csvValue: (t) => t.runsCount,
@@ -212,60 +236,36 @@ export function HistoryTestSection({
       {
         key: 'passed',
         header: 'Passed',
-        align: 'right',
-        cell: (t) => (
-          <span className={t.passed > 0 ? 'text-success-600 dark:text-success-500 font-bold' : ''}>
-            {t.passed}
-          </span>
-        ),
+        align: 'center',
+        cell: (t) => <StatusCountBadge count={t.passed} type="passed" />,
         csvValue: (t) => t.passed,
       },
       {
         key: 'failed',
         header: 'Failed',
-        align: 'right',
-        cell: (t) => (
-          <span className={t.failed > 0 ? 'text-danger-600 dark:text-danger-500 font-bold' : ''}>
-            {t.failed}
-          </span>
-        ),
+        align: 'center',
+        cell: (t) => <StatusCountBadge count={t.failed} type="failed" />,
         csvValue: (t) => t.failed,
       },
       {
         key: 'timed_out',
         header: 'Timed Out',
-        align: 'right',
-        cell: (t) => (
-          <span className={t.timedOut > 0 ? 'text-danger-600 dark:text-danger-500 font-bold' : ''}>
-            {t.timedOut}
-          </span>
-        ),
+        align: 'center',
+        cell: (t) => <StatusCountBadge count={t.timedOut} type="timedOut" />,
         csvValue: (t) => t.timedOut,
       },
       {
         key: 'interrupted',
         header: 'Interrupted',
-        align: 'right',
-        cell: (t) => (
-          <span
-            className={t.interrupted > 0 ? 'text-warning-600 dark:text-warning-500 font-bold' : ''}
-          >
-            {t.interrupted}
-          </span>
-        ),
+        align: 'center',
+        cell: (t) => <StatusCountBadge count={t.interrupted} type="interrupted" />,
         csvValue: (t) => t.interrupted,
       },
       {
         key: 'skipped',
         header: 'Skipped',
-        align: 'right',
-        cell: (t) => (
-          <span
-            className={t.skipped > 0 ? 'text-text-body-mid dark:text-text-muted font-medium' : ''}
-          >
-            {t.skipped}
-          </span>
-        ),
+        align: 'center',
+        cell: (t) => <StatusCountBadge count={t.skipped} type="skipped" />,
         csvValue: (t) => t.skipped,
       },
       {
@@ -278,12 +278,12 @@ export function HistoryTestSection({
       {
         key: 'pass_rate',
         header: 'Pass Rate',
-        align: 'right',
+        align: 'center',
         cell: (t) => <PassRateBadge passRate={t.passRate} />,
         csvValue: (t) => (t.passRate != null ? `${t.passRate}%` : '-'),
       },
     ],
-    []
+    [isFiltered]
   );
 
   const pageTests = aggregatedTests.slice(testsPag.start, testsPag.start + testsPag.pageSize);
@@ -293,7 +293,7 @@ export function HistoryTestSection({
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-3 border-b border-border-default">
         <div>
           <div className="flex items-center gap-3">
-            <h2 className={headingClass}>Test History</h2>
+            <h2 className={headingClass}>Test Case History</h2>
             <LearnMoreButton onClick={onOpenGuide} />
           </div>
           <p className="mt-1 text-xs text-text-body-mid dark:text-text-muted">
@@ -307,7 +307,7 @@ export function HistoryTestSection({
         />
       </div>
 
-      <div className="pt-3 pb-1 border-b border-border-default/50 flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+      <div className="pt-3 pb-3 border-b border-border-default/50 flex flex-col gap-3">
         <DateFilterControl
           onFilterChange={(range) => {
             setTestFilterRange(range);
@@ -315,24 +315,47 @@ export function HistoryTestSection({
           }}
           availableTimestamps={availableTimestamps}
         />
-        <SearchInput
-          value={testSearchTerm}
-          onChange={(val) => {
-            setTestSearchTerm(val);
-            testsPag.setPage(1);
-          }}
-          placeholder="Search tests..."
-          className="w-44 sm:w-48 shrink-0"
-          inputClassName="w-full rounded-md border border-border-default bg-surface-50 pl-9 pr-7 py-1.5 text-xs text-text-ink placeholder:text-text-muted focus:border-accent-blue focus:outline-none dark:bg-surface-50 dark:text-text-on-primary"
-        />
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <SearchInput
+            value={testSearchTerm}
+            onChange={(val) => {
+              setTestSearchTerm(val);
+              testsPag.setPage(1);
+            }}
+            placeholder="Search test history by title, suite, spec file, or project..."
+            className="w-full sm:w-80 md:w-96"
+          />
+          {aggregatedTests.length > 0 && (
+            <ExportCsvButton
+              onClick={() =>
+                exportColumnsToCsv(
+                  () =>
+                    generateExportFilename('test_case_history', {
+                      dateRange: testFilterRange,
+                      searchTerm: testSearchTerm,
+                    }),
+                  aggregatedTests,
+                  testColumns
+                )
+              }
+              count={aggregatedTests.length}
+            />
+          )}
+        </div>
       </div>
 
       <DataTable
         data={pageTests}
         columns={testColumns}
         getRowKey={(t) => t.key}
-        exportFilename="test_case_history.csv"
+        exportFilename={() =>
+          generateExportFilename('test_case_history', {
+            dateRange: testFilterRange,
+            searchTerm: testSearchTerm,
+          })
+        }
         fullData={aggregatedTests}
+        hideExportButton
         className="mt-4"
         emptyMessage={
           <div className="py-16 text-center text-text-body-mid dark:text-text-muted">

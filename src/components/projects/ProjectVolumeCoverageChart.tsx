@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import {
   BarChart,
   Bar,
@@ -12,11 +11,11 @@ import {
 } from 'recharts';
 import type { ProjectStats } from '@/lib/statsUtils';
 import LearnMoreButton from '@/components/shared/LearnMoreButton';
-import GuideModal from '@/components/shared/GuideModal';
 
 export interface ProjectVolumeCoverageChartProps {
   projectStats: ProjectStats[];
   title?: string;
+  onOpenGuide: () => void;
 }
 
 const colorMap: Record<string, string> = {
@@ -82,8 +81,8 @@ const renderTooltip = (props: TooltipContentProps) => {
 export default function ProjectVolumeCoverageChart({
   projectStats,
   title = 'Test Volume & Coverage Density per Project',
+  onOpenGuide,
 }: ProjectVolumeCoverageChartProps) {
-  const [showModal, setShowModal] = useState(false);
   const maxLen = projectStats.reduce((max, p) => Math.max(max, p.name.length), 0);
   const yAxisWidth = Math.max(80, Math.min(240, maxLen * 8 + 24));
 
@@ -103,15 +102,14 @@ export default function ProjectVolumeCoverageChart({
 
   return (
     <div className="rounded-md bg-canvas border border-border-default px-6 py-6 shadow-sm flex flex-col justify-between">
-      <div className="mb-3 flex items-start justify-between gap-2">
-        <div>
+      <div className="mb-3">
+        <div className="flex items-center gap-2.5">
           <h3 className="text-lg font-semibold text-text-ink dark:text-text-on-primary">{title}</h3>
-          <p className="text-xs text-text-body-mid dark:text-text-muted mt-0.5">
-            Executed vs skipped test load and active test coverage density across projects
-          </p>
+          <LearnMoreButton onClick={onOpenGuide} />
         </div>
-
-        <LearnMoreButton onClick={() => setShowModal(true)} />
+        <p className="text-xs text-text-body-mid dark:text-text-muted mt-0.5">
+          Executed vs skipped test load and active test coverage density across projects
+        </p>
       </div>
 
       <ResponsiveContainer width="100%" height={chartHeight}>
@@ -169,55 +167,6 @@ export default function ProjectVolumeCoverageChart({
           />
         </BarChart>
       </ResponsiveContainer>
-
-      <GuideModal
-        isOpen={showModal}
-        onClose={() => setShowModal(false)}
-        title="About Test Volume & Coverage Density"
-        subtitle="Understanding test suite distribution and active execution coverage"
-      >
-        <p>
-          This chart benchmarks the total test case load and execution density across configured
-          target project profiles (browsers and platforms).
-        </p>
-
-        <div className="rounded-md border border-border-default bg-surface-50 p-3 space-y-2">
-          <div className="font-bold text-text-ink dark:text-text-on-primary text-xs uppercase tracking-wider">
-            Key Metrics:
-          </div>
-          <ul className="list-disc list-inside space-y-1.5">
-            <li>
-              <strong className="text-sky-600 dark:text-sky-400">Executed Tests:</strong> Active
-              test cases that ran to completion (Passed, Failed, Timed Out, or Interrupted).
-            </li>
-            <li>
-              <strong className="text-slate-600 dark:text-slate-400">Skipped Tests:</strong> Test
-              cases bypassed via <code className="bg-surface-200 px-1 rounded">test.skip()</code> or
-              conditional tags.
-            </li>
-            <li>
-              <strong className="text-emerald-600 dark:text-emerald-400">
-                Coverage Density (%):
-              </strong>{' '}
-              The ratio of executed tests over total tests (
-              <code className="bg-surface-200 px-1 rounded">Executed / Total * 100</code>).
-            </li>
-          </ul>
-        </div>
-
-        <div className="rounded-md border border-border-default bg-surface-50 p-3 space-y-2">
-          <div className="font-bold text-text-ink dark:text-text-on-primary text-xs uppercase tracking-wider">
-            Operational Guidelines:
-          </div>
-          <ul className="list-disc list-inside space-y-1">
-            <li>Ensure all target environments maintain high coverage density (≥95%).</li>
-            <li>
-              Unintended gaps between environments reveal browser-specific skips or conditional test
-              exclusions.
-            </li>
-          </ul>
-        </div>
-      </GuideModal>
     </div>
   );
 }

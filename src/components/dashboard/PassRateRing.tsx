@@ -38,11 +38,6 @@ export default function PassRateRing({ passRate }: PassRateRingProps) {
           <h3 className="text-base font-semibold text-text-ink dark:text-text-on-primary">
             Overall Pass Rate
           </h3>
-          <span
-            className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold border ${activeCategory.badgeStyle}`}
-          >
-            {activeCategory.label}
-          </span>
         </div>
         <p className="mt-1 text-xs text-text-body-mid dark:text-text-muted text-left">
           Percentage of passed test cases across all suites

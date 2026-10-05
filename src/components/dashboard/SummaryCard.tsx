@@ -5,15 +5,31 @@ export interface SummaryCardProps {
   label: string;
   value: number;
   total?: number;
+  percentage?: number;
   icon?: ReactNode;
   color: SummaryCardColor;
 }
 
-export default function SummaryCard({ label, value, total, icon, color }: SummaryCardProps) {
+export default function SummaryCard({
+  label,
+  value,
+  total,
+  percentage,
+  icon,
+  color,
+}: SummaryCardProps) {
   const theme = SUMMARY_CARD_THEME[color];
+  const displayPercentage =
+    percentage !== undefined
+      ? percentage
+      : total && total > 0
+        ? Math.round((value / total) * 100)
+        : 0;
 
   return (
-    <div className={`rounded-md p-4 shadow-sm border ${theme.bg}`}>
+    <div
+      className={`h-full flex flex-col justify-between rounded-md p-4 shadow-xs border ${theme.bg}`}
+    >
       <div className="flex items-center justify-between">
         <div>
           <p className="text-[13px] font-semibold uppercase tracking-wider text-text-body-mid dark:text-text-muted">
@@ -32,7 +48,7 @@ export default function SummaryCard({ label, value, total, icon, color }: Summar
             />
           </div>
           <p className="mt-1 text-[10px] font-medium text-text-body-mid dark:text-text-muted">
-            {Math.round((value / total) * 100)}% of total
+            {displayPercentage}% of total
           </p>
         </div>
       )}

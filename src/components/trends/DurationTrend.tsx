@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import {
   CartesianGrid,
   Legend,
@@ -13,10 +13,10 @@ import {
 import type { HistoryData } from '@/lib/types/history';
 import { formatDateParts, formatDuration } from '@/lib/formatters';
 import LearnMoreButton from '@/components/shared/LearnMoreButton';
-import GuideModal from '@/components/shared/GuideModal';
 
 interface DurationTrendProps {
   history: HistoryData;
+  onOpenGuide?: () => void;
 }
 
 const sectionClass = 'rounded-md border border-border-default bg-surface-50 p-5 shadow-xs';
@@ -124,9 +124,7 @@ const renderDurationTooltip = (props: TooltipContentProps) => {
   );
 };
 
-export default function DurationTrend({ history }: DurationTrendProps) {
-  const [isModalOpen, setIsModalOpen] = useState(false);
-
+export default function DurationTrend({ history, onOpenGuide }: DurationTrendProps) {
   const { durationChartData, projectNames } = useMemo(() => {
     if (!history || !history.runs.length) return { durationChartData: [], projectNames: [] };
 
@@ -181,7 +179,7 @@ export default function DurationTrend({ history }: DurationTrendProps) {
       <div className="flex items-center justify-between gap-4">
         <div className="flex items-center gap-2">
           <h2 className={headingClass}>Duration trend</h2>
-          <LearnMoreButton onClick={() => setIsModalOpen(true)} />
+          {onOpenGuide && <LearnMoreButton onClick={onOpenGuide} />}
         </div>
       </div>
       {history.runs.length > 15 && (
@@ -286,32 +284,6 @@ export default function DurationTrend({ history }: DurationTrendProps) {
           </ResponsiveContainer>
         </div>
       )}
-
-      {/* Dynamic Modal Guide Component */}
-      <GuideModal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        title="Project Duration Trend Guide"
-        subtitle="Metric definitions, targets, and diagnostic guidelines for Zen Reporter"
-      >
-        <div className="space-y-4 text-xs text-text-body-mid dark:text-text-muted leading-relaxed">
-          <div className="rounded-md border border-border-default bg-surface-50 p-4 space-y-2">
-            <h4 className="font-bold text-sm text-text-ink dark:text-text-on-primary">
-              Project Duration Diagnostics
-            </h4>
-            <p>
-              Tracks project execution times across recent historical runs to identify performance
-              degradation and bottlenecks over time.
-            </p>
-            <p className="text-[11px]">
-              <strong>Note:</strong> Each line shows the <em>sequential effort</em> — the sum of
-              every test's duration within that project — not wall-clock time. Because tests run in
-              parallel, the line for a busy project can exceed the run's actual wall-clock duration.
-              To see the parallelism savings itself, refer to the Execution Efficiency metric.
-            </p>
-          </div>
-        </div>
-      </GuideModal>
     </section>
   );
 }

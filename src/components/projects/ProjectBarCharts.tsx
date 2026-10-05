@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import {
   BarChart,
   Bar,
@@ -13,7 +12,6 @@ import {
 import { computeProjectStats, collectAllCases } from '@/lib/statsUtils';
 import type { ResultSummary, TestSuite } from '@/lib/types/report';
 import LearnMoreButton from '@/components/shared/LearnMoreButton';
-import GuideModal from '@/components/shared/GuideModal';
 import { TEST_STATUS_COLOR_MAP } from '@/lib/theme';
 
 const colorMap = TEST_STATUS_COLOR_MAP;
@@ -61,6 +59,7 @@ export interface ProjectBarChartsProps {
   summary?: ResultSummary;
   suites: TestSuite[];
   title?: string;
+  onOpenGuide: () => void;
 }
 
 interface ChartDataItem {
@@ -75,8 +74,8 @@ interface ChartDataItem {
 export default function ProjectBarCharts({
   suites,
   title = 'Projects Summary',
+  onOpenGuide,
 }: ProjectBarChartsProps) {
-  const [showModal, setShowModal] = useState(false);
   const allCases = collectAllCases(suites);
   const projectStats = computeProjectStats(allCases);
 
@@ -96,15 +95,14 @@ export default function ProjectBarCharts({
 
   return (
     <div className="rounded-md bg-canvas border border-border-default px-6 py-6 shadow-sm flex flex-col justify-between">
-      <div className="mb-3 flex items-start justify-between gap-2">
-        <div>
+      <div className="mb-3">
+        <div className="flex items-center gap-2.5">
           <h3 className="text-lg font-semibold text-text-ink dark:text-text-on-primary">{title}</h3>
-          <p className="text-xs text-text-body-mid dark:text-text-muted mt-0.5">
-            Stacked status breakdown across project profiles
-          </p>
+          <LearnMoreButton onClick={onOpenGuide} />
         </div>
-
-        <LearnMoreButton onClick={() => setShowModal(true)} />
+        <p className="text-xs text-text-body-mid dark:text-text-muted mt-0.5">
+          Stacked status breakdown across project profiles
+        </p>
       </div>
 
       <ResponsiveContainer width="100%" height={chartHeight}>
@@ -187,61 +185,6 @@ export default function ProjectBarCharts({
           />
         </BarChart>
       </ResponsiveContainer>
-
-      <GuideModal
-        isOpen={showModal}
-        onClose={() => setShowModal(false)}
-        title="About Status Breakdown by Project"
-        subtitle="Stacked status breakdown across project profiles"
-      >
-        <p>
-          This horizontal stacked bar chart displays the distribution of test execution outcomes for
-          each configured Playwright project profile (e.g., Chromium, Firefox, WebKit, Mobile
-          Chrome).
-        </p>
-
-        <div>
-          <h5 className="font-semibold text-text-ink dark:text-text-on-primary mb-1">
-            Status Categories:
-          </h5>
-          <ul className="list-disc pl-4 space-y-1">
-            <li>
-              <strong className="text-success-600 dark:text-success-500">Passed:</strong> Tests that
-              executed and satisfied all assertion checks within timeout limits.
-            </li>
-            <li>
-              <strong className="text-danger-600 dark:text-danger-500">Failed:</strong> Hard
-              assertion failures or unhandled runtime exceptions.
-            </li>
-            <li>
-              <strong className="text-warning-600 dark:text-warning-500">Timed Out:</strong> Tests
-              exceeding the configured Playwright project timeout limit.
-            </li>
-            <li>
-              <strong className="text-danger-700 dark:text-danger-400">Interrupted:</strong> Tests
-              cancelled due to worker signals or parent run aborts.
-            </li>
-            <li>
-              <strong className="text-text-muted">Skipped:</strong> Tests conditionally bypassed (
-              <code className="font-mono bg-surface-100 px-1 py-0.5 rounded text-[10px]">
-                test.skip()
-              </code>
-              ).
-            </li>
-          </ul>
-        </div>
-
-        <div>
-          <h5 className="font-semibold text-text-ink dark:text-text-on-primary mb-1">
-            Diagnostic Insights:
-          </h5>
-          <p>
-            Comparing status stacks across projects allows you to immediately pinpoint
-            browser-specific regressions. If failures concentrate in WebKit while Chromium passes,
-            focus debugging on Safari rendering standards or engine differences.
-          </p>
-        </div>
-      </GuideModal>
     </div>
   );
 }

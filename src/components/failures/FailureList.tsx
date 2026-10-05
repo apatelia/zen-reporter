@@ -6,6 +6,8 @@ import TestCaseCard from '@/components/shared/TestCaseCard';
 export interface FailureListProps {
   failedTests: FailedTest[];
   hasSuites?: boolean;
+  totalFailuresCount?: number;
+  onResetFilters?: () => void;
 }
 
 type GroupByMode = 'file' | 'signature';
@@ -19,7 +21,12 @@ interface ErrorClusterGroup {
   projectsCount: number;
 }
 
-export default function FailureList({ failedTests, hasSuites = true }: FailureListProps) {
+export default function FailureList({
+  failedTests,
+  hasSuites = true,
+  totalFailuresCount,
+  onResetFilters,
+}: FailureListProps) {
   const [groupBy, setGroupBy] = useState<GroupByMode>('file');
 
   // Group failed tests by fileName
@@ -87,16 +94,45 @@ export default function FailureList({ failedTests, hasSuites = true }: FailureLi
     return currentGroupKeys.length > 0 && currentGroupKeys.every((k) => expandedKeys[k]);
   }, [currentGroupKeys, expandedKeys]);
 
-  const toggleCollapseAll = () => {
-    const nextState = !isAllExpanded;
-    const updated: Record<string, boolean> = {};
-    for (const k of currentGroupKeys) {
-      updated[k] = nextState;
-    }
-    setExpandedKeys(updated);
-  };
-
   if (failedTests.length === 0) {
+    if (totalFailuresCount !== undefined && totalFailuresCount > 0) {
+      return (
+        <div className="flex flex-col items-center justify-center py-12 px-6 rounded-md border border-border-default bg-surface-50/50 text-center dark:border-border-default dark:bg-surface-50/20">
+          <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-surface-100 dark:bg-surface-200 border border-border-default">
+            <svg
+              className="h-6 w-6 text-text-body-mid dark:text-text-muted"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={1.75}
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"
+              />
+            </svg>
+          </div>
+          <p className="text-sm font-semibold text-text-ink dark:text-text-on-primary">
+            No matching failures found
+          </p>
+          <p className="mt-1 text-xs text-text-body-mid dark:text-text-muted max-w-md">
+            No failure items match your search query or selected filter criteria. Try clearing or
+            adjusting your filters.
+          </p>
+          {onResetFilters && (
+            <button
+              type="button"
+              onClick={onResetFilters}
+              className="mt-4 h-8 inline-flex items-center gap-1.5 rounded-md border border-border-default bg-surface-100 px-3 text-xs font-semibold text-text-body-mid shadow-2xs hover:border-primary-500 hover:text-text-ink dark:border-border-default dark:bg-surface-100 dark:text-text-body-mid dark:hover:border-primary-400 dark:hover:text-text-on-primary cursor-pointer transition-colors"
+            >
+              Reset filters
+            </button>
+          )}
+        </div>
+      );
+    }
+
     return (
       <div className="flex items-center gap-4 rounded-md border border-success-200 bg-success-50/50 px-6 py-6 shadow-sm dark:border-success-500/30 dark:bg-success-500/10">
         <svg
@@ -128,70 +164,70 @@ export default function FailureList({ failedTests, hasSuites = true }: FailureLi
     <div className="space-y-4">
       {/* Group By Mode Toggle & Controls */}
       <div className="flex flex-wrap items-center justify-between gap-3 px-1">
-        <div className="flex items-center gap-2">
-          <span className="text-xs font-semibold text-text-body-mid dark:text-text-muted">
-            Group by:
-          </span>
-          <div className="inline-flex items-center rounded-md border border-border-default bg-surface-100 p-0.5 text-xs font-semibold shrink-0">
-            <button
-              type="button"
-              onClick={() => {
-                setGroupBy('file');
-                setExpandedKeys({});
-              }}
-              className={`flex items-center gap-1.5 px-3 py-1 rounded transition-colors cursor-pointer ${
-                groupBy === 'file'
-                  ? 'bg-canvas dark:bg-surface-200 border border-border-active text-text-ink dark:text-text-on-primary shadow-xs font-bold'
-                  : 'border border-transparent text-text-body-mid hover:text-text-ink dark:text-text-muted dark:hover:text-text-on-primary font-medium'
-              }`}
-            >
-              <svg
-                className="h-3.5 w-3.5 shrink-0"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                strokeWidth={2}
+        <div className="flex items-center gap-3 flex-wrap">
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-semibold text-text-body-mid dark:text-text-muted">
+              Group by:
+            </span>
+            <div className="inline-flex items-center rounded-md border border-border-default bg-surface-100 p-0.5 text-xs font-semibold shrink-0">
+              <button
+                type="button"
+                onClick={() => {
+                  setGroupBy('file');
+                  setExpandedKeys({});
+                }}
+                className={`flex items-center gap-1.5 px-3 py-1 rounded transition-colors cursor-pointer ${
+                  groupBy === 'file'
+                    ? 'bg-canvas dark:bg-surface-200 border border-border-active text-text-ink dark:text-text-on-primary shadow-xs font-bold'
+                    : 'border border-transparent text-text-body-mid hover:text-text-ink dark:text-text-muted dark:hover:text-text-on-primary font-medium'
+                }`}
               >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"
-                />
-              </svg>
-              File
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setGroupBy('signature');
-                setExpandedKeys({});
-              }}
-              className={`flex items-center gap-1.5 px-3 py-1 rounded transition-colors cursor-pointer ${
-                groupBy === 'signature'
-                  ? 'bg-canvas dark:bg-surface-200 border border-border-active text-text-ink dark:text-text-on-primary shadow-xs font-bold'
-                  : 'border border-transparent text-text-body-mid hover:text-text-ink dark:text-text-muted dark:hover:text-text-on-primary font-medium'
-              }`}
-            >
-              <svg
-                className="h-3.5 w-3.5 shrink-0"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                strokeWidth={2}
+                <svg
+                  className="h-3.5 w-3.5 shrink-0"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={2}
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"
+                  />
+                </svg>
+                File
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setGroupBy('signature');
+                  setExpandedKeys({});
+                }}
+                className={`flex items-center gap-1.5 px-3 py-1 rounded transition-colors cursor-pointer ${
+                  groupBy === 'signature'
+                    ? 'bg-canvas dark:bg-surface-200 border border-border-active text-text-ink dark:text-text-on-primary shadow-xs font-bold'
+                    : 'border border-transparent text-text-body-mid hover:text-text-ink dark:text-text-muted dark:hover:text-text-on-primary font-medium'
+                }`}
               >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z"
-                />
-              </svg>
-              Error
-            </button>
+                <svg
+                  className="h-3.5 w-3.5 shrink-0"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={2}
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z"
+                  />
+                </svg>
+                Error
+              </button>
+            </div>
           </div>
-        </div>
 
-        <div className="flex items-center gap-3">
-          <span className="text-xs font-medium text-text-body-mid dark:text-text-muted">
+          <span className="text-xs font-medium text-text-body-mid dark:text-text-muted border-l border-border-default pl-3 dark:border-border-subtle">
             {groupBy === 'file' ? (
               <>
                 Grouped into{' '}
@@ -212,16 +248,81 @@ export default function FailureList({ failedTests, hasSuites = true }: FailureLi
               </>
             )}
           </span>
-          {currentGroupKeys.length > 1 && (
+        </div>
+
+        {currentGroupKeys.length > 0 && (
+          <div className="inline-flex items-center rounded-lg border border-border-default bg-surface-100 p-0.5 shadow-2xs shrink-0">
             <button
               type="button"
-              onClick={toggleCollapseAll}
-              className="text-xs font-semibold text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300 transition-colors"
+              disabled={isAllExpanded}
+              onClick={() => {
+                const updated: Record<string, boolean> = {};
+                for (const k of currentGroupKeys) {
+                  updated[k] = true;
+                }
+                setExpandedKeys(updated);
+              }}
+              className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-md transition-colors ${
+                isAllExpanded
+                  ? 'opacity-40 cursor-not-allowed text-text-body-mid'
+                  : 'text-text-body-mid hover:text-text-ink hover:bg-surface-200/50 dark:hover:text-text-on-primary cursor-pointer'
+              }`}
+              title={isAllExpanded ? 'All failures are currently expanded' : 'Expand all failures'}
             >
-              {isAllExpanded ? 'Collapse all' : 'Expand all'}
+              <svg
+                className="h-3.5 w-3.5"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={2}
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M19.5 8.25l-7.5 7.5-7.5-7.5"
+                />
+              </svg>
+              <span>Expand All</span>
             </button>
-          )}
-        </div>
+            <button
+              type="button"
+              disabled={
+                currentGroupKeys.every((k) => expandedKeys[k] === false) ||
+                Object.keys(expandedKeys).length === 0
+              }
+              onClick={() => {
+                const updated: Record<string, boolean> = {};
+                for (const k of currentGroupKeys) {
+                  updated[k] = false;
+                }
+                setExpandedKeys(updated);
+              }}
+              className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-md transition-colors ${
+                currentGroupKeys.every((k) => expandedKeys[k] === false) ||
+                Object.keys(expandedKeys).length === 0
+                  ? 'opacity-40 cursor-not-allowed text-text-body-mid'
+                  : 'text-text-body-mid hover:text-text-ink hover:bg-surface-200/50 dark:hover:text-text-on-primary cursor-pointer'
+              }`}
+              title={
+                currentGroupKeys.every((k) => expandedKeys[k] === false) ||
+                Object.keys(expandedKeys).length === 0
+                  ? 'All failures are currently collapsed'
+                  : 'Collapse all failures'
+              }
+            >
+              <svg
+                className="h-3.5 w-3.5"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={2}
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 15.75l7.5-7.5 7.5 7.5" />
+              </svg>
+              <span>Collapse All</span>
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Group by File Render */}
@@ -334,7 +435,7 @@ export default function FailureList({ failedTests, hasSuites = true }: FailureLi
                     {/* 2nd Line: Systemic Cause Badge & Impact Metrics */}
                     <div className="flex flex-wrap items-center gap-2">
                       {cluster.tests.length > 1 && (
-                        <span className="text-[11px] font-bold px-2 py-0.5 rounded bg-danger-50 text-danger-700 dark:bg-danger-500/20 dark:text-danger-400">
+                        <span className="inline-flex items-center text-[11px] font-bold px-2 py-0.5 rounded-full bg-amber-50 text-amber-800 ring-1 ring-amber-600/20 dark:bg-amber-500/20 dark:text-amber-300 dark:ring-1 dark:ring-amber-500/40">
                           Shared Issue ({cluster.tests.length} tests)
                         </span>
                       )}

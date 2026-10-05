@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import {
   Bar,
   BarChart,
@@ -128,6 +129,23 @@ const renderCategoryTooltip = (props: TooltipContentProps, viewMode: 'percent' |
 };
 
 export function StepCategoryChart({ chartData, viewMode }: StepCategoryChartProps) {
+  const [hiddenCategories, setHiddenCategories] = useState<Set<string>>(() => new Set());
+
+  const handleLegendClick = (dataKey: string) => {
+    setHiddenCategories((prev) => {
+      const next = new Set(prev);
+      if (next.has(dataKey)) {
+        next.delete(dataKey);
+      } else {
+        // Don't allow hiding all categories
+        if (next.size < STEP_CATEGORIES.length - 1) {
+          next.add(dataKey);
+        }
+      }
+      return next;
+    });
+  };
+
   return (
     <div className="h-72 w-full pt-2">
       <ResponsiveContainer width="100%" height="100%">
@@ -142,6 +160,7 @@ export function StepCategoryChart({ chartData, viewMode }: StepCategoryChartProp
             tick={renderTrendTick}
             axisLine={{ stroke: 'var(--color-border-chart, #e5e7eb)' }}
             tickLine={false}
+            interval={0}
             height={45}
           />
           <YAxis
@@ -151,14 +170,38 @@ export function StepCategoryChart({ chartData, viewMode }: StepCategoryChartProp
             tickLine={false}
             tick={{ fill: 'var(--color-text-body-mid)', fontSize: 11 }}
           />
-          <Tooltip content={(props) => renderCategoryTooltip(props, viewMode)} />
+          <Tooltip
+            content={(props) => renderCategoryTooltip(props, viewMode)}
+            wrapperStyle={{
+              backgroundColor: 'var(--color-surface-100)',
+              border: '1px solid var(--color-border-default)',
+              borderRadius: '0.5rem',
+              boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+              outline: 'none',
+            }}
+          />
           <Legend
             wrapperStyle={{ paddingTop: '10px', fontSize: '12px' }}
-            formatter={(value) => (
-              <span className="text-text-body-mid dark:text-text-muted font-medium font-sans">
-                {value}
-              </span>
-            )}
+            onClick={(e) => {
+              if (e && e.dataKey) {
+                handleLegendClick(String(e.dataKey));
+              }
+            }}
+            formatter={(value) => {
+              const isHidden = hiddenCategories.has(value);
+              return (
+                <span
+                  className={`font-medium font-sans cursor-pointer transition-opacity select-none ${
+                    isHidden
+                      ? 'line-through text-text-body-mid/40 dark:text-text-muted/40'
+                      : 'text-text-body-mid dark:text-text-muted hover:text-text-ink dark:hover:text-text-on-primary'
+                  }`}
+                  title={isHidden ? `Show ${value}` : `Hide ${value}`}
+                >
+                  {value}
+                </span>
+              );
+            }}
           />
           {STEP_CATEGORIES.map((cat) => (
             <Bar
@@ -168,6 +211,7 @@ export function StepCategoryChart({ chartData, viewMode }: StepCategoryChartProp
               fill={cat.color}
               stroke={cat.borderColor}
               strokeWidth={0.5}
+              hide={hiddenCategories.has(cat.label)}
             />
           ))}
         </BarChart>

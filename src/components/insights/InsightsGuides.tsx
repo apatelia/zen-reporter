@@ -1,6 +1,12 @@
 import GuideModal from '@/components/shared/GuideModal';
 
-export type InsightModalType = 'flaky-tests' | 'regressions' | 'slowest-tests' | null;
+export type InsightModalType =
+  | 'flaky-tests'
+  | 'regressions'
+  | 'slowest-tests'
+  | 'duration-benchmark'
+  | 'project-flaky-rate'
+  | null;
 
 interface InsightsGuidesProps {
   activeModal: InsightModalType;
@@ -23,24 +29,27 @@ export default function InsightsGuides({ activeModal, onClose }: InsightsGuidesP
           across historical test runs (minimum 1 failure and 1 success).
         </p>
 
-        <div className="rounded-md border border-primary-500/20 bg-primary-500/5 p-3.5 space-y-1.5">
+        <div className="rounded-md border border-success-500/20 bg-success-500/5 p-3.5 space-y-1.5">
           <div className="font-bold text-text-ink dark:text-text-on-primary text-xs flex items-center gap-1.5">
-            <span className="text-primary-600 dark:text-primary-400 font-bold">
-              ℹ Note on Flakiness & Retry Definitions:
+            <span className="text-success-600 dark:text-success-400 font-bold">
+              ⚠️ Note on Flakiness & Retry Definitions:
             </span>
           </div>
-          <p className="text-xs text-text-body-mid dark:text-text-muted">
-            <strong>Insights Tab (Historical Instability):</strong> Evaluates non-deterministic test
-            behavior aggregated across multiple historical runs over time.
-            <br />
-            <strong>Files, Projects & Overview Tabs (In-Run Retries):</strong> Measures
-            Playwright&apos;s official in-run retry status (test cases that failed initial execution
-            but passed upon automatic retry within the single run).
-          </p>
+          <ul className="list-disc list-inside space-y-1">
+            <li>
+              <strong>Insights Tab (Historical Instability):</strong> Evaluates non-deterministic
+              test behavior aggregated across multiple historical runs over time.
+            </li>
+            <li>
+              <strong>Files, Projects & Overview Tabs (In-Run Retries):</strong> Measures
+              Playwright&apos;s official in-run retry status (test cases that failed initial
+              execution but passed upon automatic retry within the single run).
+            </li>
+          </ul>
         </div>
 
         <div className="rounded-md border border-border-default bg-surface-50 p-4 space-y-2">
-          <div className="font-bold text-text-ink dark:text-text-on-primary text-xs uppercase tracking-wider">
+          <div className="font-bold text-text-ink dark:text-text-on-primary text-xs tracking-wider">
             Remediation Guidelines:
           </div>
           <ul className="list-disc list-inside space-y-1">
@@ -60,7 +69,7 @@ export default function InsightsGuides({ activeModal, onClose }: InsightsGuidesP
         </div>
 
         <div className="rounded-md border border-border-default bg-surface-50 p-4 space-y-2">
-          <div className="font-bold text-text-ink dark:text-text-on-primary text-xs uppercase tracking-wider">
+          <div className="font-bold text-text-ink dark:text-text-on-primary text-xs tracking-wider">
             Filtering & Export Capabilities:
           </div>
           <ul className="list-disc list-inside space-y-1">
@@ -92,7 +101,7 @@ export default function InsightsGuides({ activeModal, onClose }: InsightsGuidesP
           in a subsequent execution.
         </p>
         <div className="rounded-md border border-border-default bg-surface-50 p-4 space-y-2.5">
-          <div className="font-bold text-text-ink dark:text-text-on-primary text-xs uppercase tracking-wider">
+          <div className="font-bold text-text-ink dark:text-text-on-primary text-xs tracking-wider">
             Last Run Status Meanings & Next Actions Required:
           </div>
           <div className="space-y-2">
@@ -104,12 +113,13 @@ export default function InsightsGuides({ activeModal, onClose }: InsightsGuidesP
               </div>
               <div>
                 <div className="font-bold text-text-ink dark:text-text-on-primary text-xs">
-                  Regression Resolved
+                  Regression Possibly Resolved
                 </div>
                 <p className="text-xs text-text-body-mid dark:text-text-muted mt-0.5">
                   The test regressed in a prior run, but passed cleanly in the most recent run.
                   <span className="block font-semibold text-success-600 dark:text-success-400 mt-1">
-                    ✓ Next Action: None required. The regression has been resolved.
+                    🔍 Next Action: Perform iterative testing to ensure the regression is fully
+                    resolved.
                   </span>
                 </p>
               </div>
@@ -200,7 +210,7 @@ export default function InsightsGuides({ activeModal, onClose }: InsightsGuidesP
         </div>
 
         <div className="rounded-md border border-border-default bg-surface-50 p-4 space-y-2">
-          <div className="font-bold text-text-ink dark:text-text-on-primary text-xs uppercase tracking-wider">
+          <div className="font-bold text-text-ink dark:text-text-on-primary text-xs tracking-wider">
             Filtering & Export Capabilities:
           </div>
           <ul className="list-disc list-inside space-y-1">
@@ -233,7 +243,7 @@ export default function InsightsGuides({ activeModal, onClose }: InsightsGuidesP
         </p>
 
         <div className="rounded-md border border-border-default bg-surface-50 p-4 space-y-2.5">
-          <div className="font-bold text-text-ink dark:text-text-on-primary text-xs uppercase tracking-wider">
+          <div className="font-bold text-text-ink dark:text-text-on-primary text-xs tracking-wider">
             Key Metrics Explained:
           </div>
           <ul className="list-disc list-inside space-y-1.5 text-xs text-text-body-mid dark:text-text-muted">
@@ -256,7 +266,7 @@ export default function InsightsGuides({ activeModal, onClose }: InsightsGuidesP
         </div>
 
         <div className="rounded-md border border-border-default bg-surface-50 p-4 space-y-2">
-          <div className="font-bold text-text-ink dark:text-text-on-primary text-xs uppercase tracking-wider">
+          <div className="font-bold text-text-ink dark:text-text-on-primary text-xs tracking-wider">
             Export Capabilities:
           </div>
           <ul className="list-disc list-inside space-y-1">
@@ -268,7 +278,7 @@ export default function InsightsGuides({ activeModal, onClose }: InsightsGuidesP
         </div>
 
         <div className="rounded-md border border-border-default bg-surface-50 p-4 space-y-2">
-          <div className="font-bold text-text-ink dark:text-text-on-primary text-xs uppercase tracking-wider">
+          <div className="font-bold text-text-ink dark:text-text-on-primary text-xs tracking-wider">
             Diagnostic & Optimization Strategy:
           </div>
           <ul className="list-disc list-inside space-y-1.5 text-xs text-text-body-mid dark:text-text-muted">
@@ -286,6 +296,100 @@ export default function InsightsGuides({ activeModal, onClose }: InsightsGuidesP
             <li>
               <strong>CI Pipeline Impact:</strong> Refactoring these top bottleneck tests yields the
               highest overall reduction in suite execution time.
+            </li>
+          </ul>
+        </div>
+      </GuideModal>
+
+      <GuideModal
+        isOpen={activeModal === 'duration-benchmark'}
+        onClose={onClose}
+        title="About Duration & P95 Latency Benchmark"
+      >
+        <p>
+          This chart benchmarks the execution latency per test case across project targets,
+          comparing average duration against 95th percentile (P95) latency.
+        </p>
+
+        <div className="rounded-md border border-border-default bg-surface-50 p-3 space-y-2">
+          <div className="font-bold text-text-ink dark:text-text-on-primary text-xs tracking-wider">
+            <h5 className="font-semibold text-text-ink dark:text-text-on-primary mb-1">
+              Key Metrics Explained:
+            </h5>
+          </div>
+          <ul className="list-disc pl-4 space-y-1.5">
+            <li>
+              <strong className="text-accent-blue">Avg Duration (s):</strong> Calculated as{' '}
+              <code className="font-mono bg-surface-100 px-1 py-0.5 rounded text-[10px]">
+                Total Duration / Executed Tests
+              </code>
+              . It represents the mean time required to complete a single test case in that project
+              profile.
+            </li>
+            <li>
+              <strong className="text-warning-600 dark:text-warning-500">
+                P95 Duration / Latency (s):
+              </strong>{' '}
+              Represents the 95th percentile completion threshold.{' '}
+              <strong>
+                95% of all executed tests in that project completed faster than this duration
+              </strong>
+              , while only 5% took longer.
+            </li>
+          </ul>
+        </div>
+
+        <div className="rounded-md border border-border-default bg-surface-50 p-3 space-y-2">
+          <div className="font-bold text-text-ink dark:text-text-on-primary text-xs tracking-wider">
+            <h5 className="font-semibold text-text-ink dark:text-text-on-primary mb-1">
+              Why P95 Latency is Critical for QA & CI Pipelines:
+            </h5>
+          </div>
+          <p className="mb-1.5">
+            Average duration can be deceptive—a large number of fast 100ms API checks will drag the
+            average down, masking extremely slow 15-second E2E user flows.
+          </p>
+          <p className="mb-1.5">
+            P95 isolates tail latency. High P95 latency exposes tests that suffer from:
+          </p>
+          <ul className="list-disc pl-4 space-y-1">
+            <li>Unnecessary explicit sleep/timeout delays</li>
+            <li>Heavy DOM re-rendering or unoptimized navigation</li>
+            <li>CI worker CPU/RAM throttling on specific browser engines</li>
+            <li>Slow background API network dependencies</li>
+          </ul>
+        </div>
+      </GuideModal>
+
+      <GuideModal
+        isOpen={activeModal === 'project-flaky-rate'}
+        onClose={onClose}
+        title="Flaky Test Count & Retry Analytics Guide"
+        subtitle="Analyzing cross-project test instability and environmental flakiness"
+      >
+        <p>
+          A test case is classified as{' '}
+          <strong className="text-warning-600 dark:text-warning-500">Flaky</strong> when it is
+          non-deterministic and recorded BOTH passed and failed outcomes across test executions
+          (minimum 1 failure and 1 success).
+        </p>
+
+        <div className="rounded-md border border-border-default bg-surface-50 p-3 space-y-2">
+          <div className="font-bold text-text-ink dark:text-text-on-primary text-xs tracking-wider">
+            Diagnostic Value by Project Profile:
+          </div>
+          <ul className="list-disc list-inside space-y-1">
+            <li>
+              <strong>Browser Specific Flakiness:</strong> Compare WebKit, Chromium, and Firefox to
+              isolate rendering engine timing bugs.
+            </li>
+            <li>
+              <strong>Viewport & Mobile Emulation:</strong> Identify if responsive layout tests
+              flake on mobile viewports due to animation delays.
+            </li>
+            <li>
+              <strong>Retry Overhead:</strong> Flaky tests double execution latency. Eliminating
+              flakiness speeds up overall CI build time.
             </li>
           </ul>
         </div>

@@ -1,3 +1,27 @@
+/**
+ * Calculates integer pass rate percentage safely without false 100% when failures exist or false 0% when passes exist.
+ *
+ * @param passed - Number of passed tests.
+ * @param total - Total number of tests.
+ * @returns Pass rate percentage (0-100) or null if total is 0.
+ */
+export function calculatePassRate(passed: number, total: number): number | null {
+  if (!total || total <= 0) return null;
+  const rawPct = (passed / total) * 100;
+
+  // Prevent rounding up to 100% when there are failures/non-passed outcomes
+  if (passed < total && rawPct >= 99.5) {
+    return Math.floor(rawPct);
+  }
+
+  // Prevent rounding down to 0% when there are passing tests
+  if (passed > 0 && rawPct <= 0.5) {
+    return Math.ceil(rawPct);
+  }
+
+  return Math.round(rawPct);
+}
+
 const DATE_FMT: Intl.DateTimeFormatOptions = {
   month: 'short',
   day: 'numeric',

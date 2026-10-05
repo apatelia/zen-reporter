@@ -16,7 +16,7 @@ export default function ProjectsOverviewCards({ kpis }: ProjectsOverviewCardsPro
           ? '1 Playwright Project'
           : `${kpis.totalProjects} Playwright Projects`,
       description: 'Total number of configured Playwright project profiles in this test run',
-      badgeClass: 'bg-success-500/10 text-success-600 dark:bg-success-500/20 dark:text-success-500',
+      badgeClass: 'bg-success-500/10 text-success-600 dark:bg-success-500/20 dark:text-success-400',
     },
     {
       label: 'Most Stable Project',
@@ -42,7 +42,7 @@ export default function ProjectsOverviewCards({ kpis }: ProjectsOverviewCardsPro
       subtext:
         kpis.passRateParityDelta === 0
           ? 'Perfect cross-project consistency'
-          : `${kpis.passRateParityDelta}% pass rate gap across targets`,
+          : `${kpis.passRateParityDelta}% pass rate gap across projects`,
       description: 'Difference between the highest and lowest project pass rates',
       badgeClass:
         kpis.passRateParityDelta > 15

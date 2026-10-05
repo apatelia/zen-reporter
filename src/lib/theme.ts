@@ -91,3 +91,18 @@ export const SUMMARY_CARD_THEME: Record<
     progressBg: 'bg-info-500',
   },
 };
+
+export type StatusType = 'passed' | 'failed' | 'timedOut' | 'interrupted' | 'skipped';
+
+export const STATUS_BADGE_STYLE_MAP: Record<StatusType, string> = {
+  passed:
+    'bg-success-50 text-success-600 dark:bg-success-500/20 dark:text-success-400 dark:ring-1 dark:ring-success-500/30',
+  failed:
+    'bg-danger-50 text-danger-600 dark:bg-danger-500/20 dark:text-danger-400 dark:ring-1 dark:ring-danger-500/30',
+  timedOut:
+    'bg-warning-50 text-warning-600 dark:bg-warning-500/20 dark:text-warning-400 dark:ring-1 dark:ring-warning-500/30',
+  interrupted:
+    'bg-danger-50 text-danger-600 dark:bg-danger-500/20 dark:text-danger-400 dark:ring-1 dark:ring-danger-500/30',
+  skipped:
+    'bg-slate-200/80 text-slate-800 ring-1 ring-slate-300 dark:bg-slate-700/60 dark:text-slate-200 dark:ring-1 dark:ring-slate-600',
+};

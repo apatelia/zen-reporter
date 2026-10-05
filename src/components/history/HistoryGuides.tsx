@@ -34,7 +34,7 @@ export default function HistoryGuides({
           Zen Reporter&apos;s run store.
         </p>
         <div className="rounded-md border border-border-default bg-surface-50 p-4 space-y-2">
-          <div className="font-bold text-text-ink dark:text-text-on-primary text-xs uppercase tracking-wider">
+          <div className="font-bold text-text-ink dark:text-text-on-primary text-xs tracking-wider">
             Table Column Definitions:
           </div>
           <ul className="list-disc list-inside space-y-1">
@@ -46,9 +46,10 @@ export default function HistoryGuides({
               <strong>Duration:</strong> Total wall-clock execution time elapsed for the test run.
             </li>
             <li>
-              <strong>Time Saved:</strong> Difference between cumulative test execution time
-              (sequential effort) and actual wall-clock duration when running in parallel mode (e.g.
-              ⚡ 3m 45s saved with 4x speedup).
+              <strong>Time Saved:</strong> Net time saved via parallel execution compared to
+              sequential effort (e.g. ⚡ 3m 45s saved with 4.2x speedup). When parallel execution
+              overhead exceeds sequential effort, it displays the extra time spent (e.g. ⚠️ +12s
+              with 0.8x speedup).
             </li>
             <li>
               <strong>Status Breakdown:</strong> Counts for Passed, Failed, Skipped, Timed Out, and
@@ -58,7 +59,30 @@ export default function HistoryGuides({
         </div>
 
         <div className="rounded-md border border-border-default bg-surface-50 p-4 space-y-2">
-          <div className="font-bold text-text-ink dark:text-text-on-primary text-xs uppercase tracking-wider">
+          <div className="font-bold text-text-ink dark:text-text-on-primary text-xs tracking-wider">
+            Interpretation of Speedup Ratio:
+          </div>
+          <p className="text-xs text-text-body-mid dark:text-text-muted">
+            Speedup ratio (S = Sequential Effort / Wall-Clock Duration) is a positive ratio
+            comparing total test work against wall-clock duration:
+          </p>
+          <ul className="list-disc list-inside space-y-1 text-xs">
+            <li>
+              <strong>S &gt; 1.0 (Parallel Speedup):</strong> Parallel execution saved time (e.g. ⚡
+              2.5x speedup).
+            </li>
+            <li>
+              <strong>S = 1.0 (Neutral):</strong> Parallel duration matched sequential effort.
+            </li>
+            <li>
+              <strong>0 &lt; S &lt; 1.0 (Parallel Overhead):</strong> Worker creation, IPC
+              serialization, or setup overhead exceeded parallelism gains (e.g. ⚠️ 0.8x speedup).
+            </li>
+          </ul>
+        </div>
+
+        <div className="rounded-md border border-border-default bg-surface-50 p-4 space-y-2">
+          <div className="font-bold text-text-ink dark:text-text-on-primary text-xs tracking-wider">
             Pass Rate Health Categories & Status Badges:
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-1">
@@ -78,13 +102,17 @@ export default function HistoryGuides({
         </div>
 
         <div className="rounded-md border border-border-default bg-surface-50 p-4 space-y-2">
-          <div className="font-bold text-text-ink dark:text-text-on-primary text-xs uppercase tracking-wider">
+          <div className="font-bold text-text-ink dark:text-text-on-primary text-xs tracking-wider">
             Filtering & Export Capabilities:
           </div>
           <ul className="list-disc list-inside space-y-1">
             <li>
               <strong>Date Range Filter:</strong> Filter test runs for All Time, specific calendar
               months, or custom date ranges.
+            </li>
+            <li>
+              <strong>Run Name Search:</strong> Instantly filter test runs by run name substring
+              without clearing active date filters.
             </li>
             <li>
               <strong>Export CSV:</strong> Download the complete filtered dataset of test runs to an
@@ -107,7 +135,7 @@ export default function HistoryGuides({
           in Zen Reporter, grouped by spec file.
         </p>
         <div className="rounded-md border border-border-default bg-surface-50 p-4 space-y-2">
-          <div className="font-bold text-text-ink dark:text-text-on-primary text-xs uppercase tracking-wider">
+          <div className="font-bold text-text-ink dark:text-text-on-primary text-xs tracking-wider">
             Table Column Definitions:
           </div>
           <ul className="list-disc list-inside space-y-1">
@@ -134,7 +162,7 @@ export default function HistoryGuides({
         </div>
 
         <div className="rounded-md border border-border-default bg-surface-50 p-4 space-y-2">
-          <div className="font-bold text-text-ink dark:text-text-on-primary text-xs uppercase tracking-wider">
+          <div className="font-bold text-text-ink dark:text-text-on-primary text-xs tracking-wider">
             Filtering & Export Capabilities:
           </div>
           <ul className="list-disc list-inside space-y-1">
@@ -167,7 +195,7 @@ export default function HistoryGuides({
           in Zen Reporter.
         </p>
         <div className="rounded-md border border-border-default bg-surface-50 p-4 space-y-2">
-          <div className="font-bold text-text-ink dark:text-text-on-primary text-xs uppercase tracking-wider">
+          <div className="font-bold text-text-ink dark:text-text-on-primary text-xs tracking-wider">
             Table Column Definitions:
           </div>
           <ul className="list-disc list-inside space-y-1">
@@ -200,7 +228,7 @@ export default function HistoryGuides({
         </div>
 
         <div className="rounded-md border border-border-default bg-surface-50 p-4 space-y-2">
-          <div className="font-bold text-text-ink dark:text-text-on-primary text-xs uppercase tracking-wider">
+          <div className="font-bold text-text-ink dark:text-text-on-primary text-xs tracking-wider">
             Filtering & Export Capabilities:
           </div>
           <ul className="list-disc list-inside space-y-1">

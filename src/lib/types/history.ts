@@ -1,5 +1,5 @@
-// ── Run-history data (computed by `zr history report`; snake_case fields
-// deliberately match the JSONL/SQL column names) ──────────────────────────
+// Run-history data (computed by `zr history report`; snake_case fields
+// deliberately match the JSONL/SQL column names)
 
 export interface HistoryRun {
   run_id: string;
@@ -27,6 +27,8 @@ export interface HistoryFlakyRow {
   passed_runs: number;
   recovered_by_retry: number;
   total_runs: number;
+  last_seen_at?: string;
+  last_flaky_at?: string;
 }
 
 export interface HistoryRegressionRow {

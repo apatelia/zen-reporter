@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import {
   CartesianGrid,
   Line,
@@ -12,10 +11,10 @@ import {
 import type { HistoryData } from '@/lib/types/history';
 import { formatDateParts } from '@/lib/formatters';
 import LearnMoreButton from '@/components/shared/LearnMoreButton';
-import GuideModal from '@/components/shared/GuideModal';
 
 interface PassRateTrendProps {
   history: HistoryData;
+  onOpenGuide?: () => void;
 }
 
 const sectionClass = 'rounded-md border border-border-default bg-surface-50 p-5 shadow-xs';
@@ -74,8 +73,7 @@ const renderTrendTooltip = (props: TooltipContentProps) => {
   );
 };
 
-export default function PassRateTrend({ history }: PassRateTrendProps) {
-  const [isModalOpen, setIsModalOpen] = useState(false);
+export default function PassRateTrend({ history, onOpenGuide }: PassRateTrendProps) {
   const chartRuns = (history.runs || []).slice(-15).map((run) => ({
     ...run,
     pass_rate: run.pass_rate ?? 0,
@@ -86,7 +84,7 @@ export default function PassRateTrend({ history }: PassRateTrendProps) {
       <div className="flex items-center justify-between gap-4">
         <div className="flex items-center gap-2">
           <h2 className={headingClass}>Pass rate trend</h2>
-          <LearnMoreButton onClick={() => setIsModalOpen(true)} />
+          {onOpenGuide && <LearnMoreButton onClick={onOpenGuide} />}
         </div>
       </div>
       {history.runs.length > 15 && (
@@ -173,33 +171,6 @@ export default function PassRateTrend({ history }: PassRateTrendProps) {
           </ResponsiveContainer>
         </div>
       )}
-
-      <GuideModal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        title="Pass Rate Trend Guide"
-        subtitle="Metric definitions, targets, and diagnostic guidelines for Zen Reporter"
-      >
-        <div className="space-y-4 text-xs text-text-body-mid dark:text-text-muted leading-relaxed">
-          <div className="rounded-md border border-border-default bg-surface-50 p-4 space-y-2">
-            <h4 className="font-bold text-sm text-text-ink dark:text-text-on-primary">
-              Target Thresholds
-            </h4>
-            <p>
-              • <strong className="text-success-600 dark:text-success-500">&gt;= 95%:</strong>{' '}
-              Target operational health for CI production pipelines.
-            </p>
-            <p>
-              • <strong className="text-warning-600 dark:text-warning-500">85% – 94%:</strong>{' '}
-              Elevated flakiness or minor regressions needing attention.
-            </p>
-            <p>
-              • <strong className="text-danger-600 dark:text-danger-500">&lt; 85%:</strong> Pipeline
-              instability requiring immediate remediation.
-            </p>
-          </div>
-        </div>
-      </GuideModal>
     </section>
   );
 }

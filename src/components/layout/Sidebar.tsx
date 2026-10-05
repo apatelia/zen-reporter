@@ -124,25 +124,6 @@ const TABS: { key: TabKey; label: string; icon: React.ReactNode }[] = [
     ),
   },
   {
-    key: 'trends',
-    label: 'Trends',
-    icon: (
-      <svg
-        className="h-5 w-5"
-        fill="none"
-        viewBox="0 0 24 24"
-        stroke="currentColor"
-        strokeWidth={1.5}
-      >
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          d="M2.25 18L9 11.25l4.306 4.307a.5.5 0 00.71 0l7.234-7.234M21 8.25V12M21 8.25H17.25"
-        />
-      </svg>
-    ),
-  },
-  {
     key: 'insights',
     label: 'Insights',
     icon: (
@@ -157,6 +138,25 @@ const TABS: { key: TabKey; label: string; icon: React.ReactNode }[] = [
           strokeLinecap="round"
           strokeLinejoin="round"
           d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z"
+        />
+      </svg>
+    ),
+  },
+  {
+    key: 'trends',
+    label: 'Trends',
+    icon: (
+      <svg
+        className="h-5 w-5"
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke="currentColor"
+        strokeWidth={1.5}
+      >
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          d="M2.25 18L9 11.25l4.306 4.307a.5.5 0 00.71 0l7.234-7.234M21 8.25V12M21 8.25H17.25"
         />
       </svg>
     ),
@@ -211,8 +211,8 @@ function SidebarItem({
         <span
           className={
             isCollapsed
-              ? 'absolute -top-1 -right-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-accent-red px-1 text-[10px] font-bold text-text-on-primary dark:text-surface-950 shadow-sm'
-              : 'ml-auto flex h-5 min-w-5 items-center justify-center rounded-full bg-accent-red px-1.5 text-[11px] font-bold text-text-on-primary dark:text-surface-950'
+              ? 'absolute top-1.5 right-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-danger-500 px-1 text-[10px] font-bold text-white dark:text-surface-950 shadow-xs'
+              : 'ml-auto flex h-5 min-w-5 items-center justify-center rounded-full bg-danger-500 px-1.5 text-[11px] font-bold text-white dark:text-surface-950 shadow-xs'
           }
         >
           {badge}
@@ -223,8 +223,8 @@ function SidebarItem({
           title="History recording disabled"
           className={
             isCollapsed
-              ? 'absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-amber-500 text-text-on-primary shadow-sm'
-              : 'ml-auto flex items-center gap-1 rounded bg-amber-500/15 px-1.5 py-0.5 text-[10px] font-semibold text-amber-700 dark:text-amber-300 border border-amber-500/30'
+              ? 'absolute top-1.5 right-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-amber-500 text-white dark:text-surface-950 shadow-xs'
+              : 'ml-auto flex items-center gap-1 rounded-full bg-amber-500/15 px-2 py-0.5 text-[10px] font-semibold text-amber-700 dark:text-amber-300 border border-amber-500/30'
           }
         >
           {isCollapsed ? (
@@ -286,7 +286,7 @@ export default function Sidebar({
   return (
     <aside
       className={`flex flex-col border-r border-border-default bg-surface-50 transition-all duration-200 ${
-        isCollapsed ? 'w-16' : 'w-60'
+        isCollapsed ? 'w-16 min-w-16 shrink-0' : 'w-52 min-w-52 shrink-0'
       }`}
     >
       {/* Sidebar Header & Collapse Toggle */}
@@ -298,7 +298,7 @@ export default function Sidebar({
         {!isCollapsed ? (
           <>
             <a
-              href="https://apatelia.github.io/zen-reporter-website/"
+              href="https://zen-reporter.vercel.app"
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-center gap-2.5 min-w-0 group cursor-pointer"
@@ -359,7 +359,7 @@ export default function Sidebar({
         ) : (
           <>
             <a
-              href="https://apatelia.github.io/zen-reporter-website/"
+              href="https://zen-reporter.vercel.app"
               target="_blank"
               rel="noopener noreferrer"
               className="p-1 rounded-md hover:bg-surface-100 transition-colors block shrink-0"

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ViewMode, ViewModeSelector } from './ViewModeSelector';
 import { ImageSliderViewer } from './ImageSliderViewer';
 import { SideBySideViewer } from './SideBySideViewer';
@@ -19,10 +19,38 @@ interface VisualDiffViewerProps {
 export const VisualDiffViewer: React.FC<VisualDiffViewerProps> = ({ pair, onClose }) => {
   const [mode, setMode] = useState<ViewMode>('slider');
 
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Don't trigger if user is typing in an input or textarea
+      if (
+        e.target instanceof HTMLInputElement ||
+        e.target instanceof HTMLTextAreaElement ||
+        e.target instanceof HTMLSelectElement
+      ) {
+        return;
+      }
+
+      if (e.key === '1') {
+        setMode('slider');
+      } else if (e.key === '2') {
+        setMode('side-by-side');
+      } else if (e.key === '3' && pair.diffUrl) {
+        setMode('diff');
+      } else if (e.key === '4') {
+        setMode('onion');
+      } else if (e.key === 'Escape' && onClose) {
+        onClose();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [pair.diffUrl, onClose]);
+
   return (
-    <div className="flex flex-col gap-3 w-full bg-white dark:bg-surface-100 p-4 rounded-xl border border-border-default dark:border-border-default/50 shadow-lg">
+    <div className="flex flex-col gap-3 w-full bg-canvas p-4 rounded-lg border border-border-default shadow-lg">
       {/* Header Toolbar */}
-      <div className="flex flex-wrap items-center justify-between gap-3 pb-2 border-b border-border-default dark:border-border-default/50">
+      <div className="flex flex-wrap items-center justify-between gap-3 pb-2 border-b border-border-default">
         <div className="flex items-center gap-2">
           <div className="flex h-7 w-7 items-center justify-center rounded-md bg-accent-blue/10 text-accent-blue">
             <svg
@@ -53,12 +81,11 @@ export const VisualDiffViewer: React.FC<VisualDiffViewerProps> = ({ pair, onClos
 
         <div className="flex items-center gap-3">
           <ViewModeSelector mode={mode} onModeChange={setMode} hasDiffImage={!!pair.diffUrl} />
-
           {onClose && (
             <button
               type="button"
               onClick={onClose}
-              className="rounded-md p-1.5 text-text-body-mid hover:text-danger-600 bg-surface-100 hover:bg-danger-50 dark:bg-surface-200/50 dark:text-text-on-primary dark:hover:bg-danger-500/20 dark:hover:text-danger-400 border border-border-default dark:border-border-default/50 transition-colors"
+              className="rounded-md p-1.5 text-text-body-mid hover:bg-surface-100 hover:text-text-ink dark:text-text-muted dark:hover:bg-surface-200/50 dark:hover:text-text-on-primary transition-colors cursor-pointer"
               title="Close viewer"
             >
               <svg

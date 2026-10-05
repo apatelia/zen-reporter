@@ -55,8 +55,8 @@ export const STEP_CATEGORIES: StepCategoryConfig[] = [
   {
     key: 'actions',
     label: 'User Actions',
-    color: 'var(--color-surface-700, #1e3932)',
-    borderColor: 'var(--color-surface-800, #0d1a17)',
+    color: 'var(--color-info-600, #1e3932)',
+    borderColor: 'var(--color-info-700, #0d1a17)',
     description:
       'Direct browser interactions simulating user behavior such as navigation, clicks, keystrokes, and form inputs.',
     examples: [
@@ -81,8 +81,8 @@ export const STEP_CATEGORIES: StepCategoryConfig[] = [
   {
     key: 'others',
     label: 'Other Steps',
-    color: 'var(--color-surface-200, #d5d2cb)',
-    borderColor: 'var(--color-border-chart, #b4bcc1)',
+    color: 'var(--color-surface-700, #d5d2cb)',
+    borderColor: 'var(--color-surface-800, #b4bcc1)',
     description:
       'Custom test steps, logging statements, or uncategorized auxiliary execution logic.',
     examples: [

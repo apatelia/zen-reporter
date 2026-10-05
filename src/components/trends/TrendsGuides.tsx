@@ -1,4 +1,5 @@
 import GuideModal from '@/components/shared/GuideModal';
+import { STEP_CATEGORIES } from './step-category/stepCategoryClassifier';
 
 interface TrendsGuidesProps {
   passRateModalOpen: boolean;
@@ -24,32 +25,93 @@ export default function TrendsGuides({
         isOpen={passRateModalOpen}
         onClose={onClosePassRateModal}
         title="Pass Rate Trend Guide"
-        subtitle="Historical stability benchmarks and quality target guidelines"
+        subtitle="Metric definitions, targets, and diagnostic guidelines for Zen Reporter"
       >
-        <p>
-          The <strong className="text-text-ink dark:text-text-on-primary">Pass Rate Trend</strong>{' '}
-          chart tracks overall test pass percentage across historical execution runs stored in Zen
-          Reporter.
-        </p>
-
-        <div className="rounded-md border border-border-default bg-surface-50 p-4 space-y-2">
-          <div className="font-bold text-text-ink dark:text-text-on-primary text-xs uppercase tracking-wider">
-            Quality Targets & Operational Guidelines:
+        <div className="space-y-4 text-xs text-text-body-mid dark:text-text-muted leading-relaxed">
+          {/* Overview */}
+          <div>
+            <h4 className="font-bold text-sm text-text-ink dark:text-text-on-primary mb-1">
+              Overview
+            </h4>
+            <p>
+              The <strong>Pass Rate Trend</strong> chart tracks overall test pass percentage across
+              historical execution runs stored in Zen Reporter, providing a long-term pulse on test
+              suite stability and build quality.
+            </p>
           </div>
-          <ul className="list-disc list-inside space-y-1">
-            <li>
-              <strong>Target Pass Rate:</strong> Aim for a consistent pass rate of ≥95% across CI/CD
-              runs.
-            </li>
-            <li>
-              <strong>Triage Drops:</strong> Sharp drops in pass rate indicate widespread regression
-              or environment infrastructure failures.
-            </li>
-            <li>
-              <strong>Long-Term Stability:</strong> Upward trend slopes reflect successful flaky
-              test remediation and test suite stabilization.
-            </li>
-          </ul>
+
+          {/* Target Thresholds */}
+          <div className="space-y-2 border-t border-border-default pt-4">
+            <h4 className="font-bold text-sm text-text-ink dark:text-text-on-primary mb-1">
+              Quality Target Thresholds
+            </h4>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div className="rounded-md border border-border-default bg-surface-100/50 p-3 space-y-1 dark:bg-surface-200/20">
+                <span className="font-bold text-xs text-success-600 dark:text-success-500">
+                  ≥ 95% Pass Rate
+                </span>
+                <p className="text-xs text-text-body-mid dark:text-text-muted leading-relaxed">
+                  Target operational health for CI/CD production deployment pipelines.
+                </p>
+              </div>
+
+              <div className="rounded-md border border-border-default bg-surface-100/50 p-3 space-y-1 dark:bg-surface-200/20">
+                <span className="font-bold text-xs text-warning-600 dark:text-warning-500">
+                  85% – 94% Pass Rate
+                </span>
+                <p className="text-xs text-text-body-mid dark:text-text-muted leading-relaxed">
+                  Elevated flakiness or minor regressions requiring suite maintenance.
+                </p>
+              </div>
+
+              <div className="rounded-md border border-border-default bg-surface-100/50 p-3 space-y-1 dark:bg-surface-200/20">
+                <span className="font-bold text-xs text-danger-600 dark:text-danger-500">
+                  &lt; 85% Pass Rate
+                </span>
+                <p className="text-xs text-text-body-mid dark:text-text-muted leading-relaxed">
+                  Severe pipeline instability requiring immediate developer triage.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Why & How This Trend Chart Is Useful */}
+          <div className="space-y-2 border-t border-border-default pt-4">
+            <h4 className="font-bold text-sm text-text-ink dark:text-text-on-primary mb-1">
+              Why & How This Trend Is Useful
+            </h4>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div className="rounded-md border border-border-default bg-surface-100/50 p-3 space-y-1 dark:bg-surface-200/20">
+                <span className="font-bold text-xs text-danger-600 dark:text-danger-400">
+                  🚨 Triage & Regression Signal
+                </span>
+                <p className="text-xs text-text-body-mid dark:text-text-muted leading-relaxed">
+                  Sharp downward drops in pass rate pinpoint widespread software regressions, broken
+                  API dependencies, or CI environment infrastructure outages.
+                </p>
+              </div>
+
+              <div className="rounded-md border border-border-default bg-surface-100/50 p-3 space-y-1 dark:bg-surface-200/20">
+                <span className="font-bold text-xs text-success-600 dark:text-success-500">
+                  📈 Stability Slope Tracking
+                </span>
+                <p className="text-xs text-text-body-mid dark:text-text-muted leading-relaxed">
+                  Upward trend slopes demonstrate successful flaky test remediation, stabilized test
+                  fixtures, and improved overall test harness reliability.
+                </p>
+              </div>
+
+              <div className="rounded-md border border-border-default bg-surface-100/50 p-3 space-y-1 dark:bg-surface-200/20">
+                <span className="font-bold text-xs text-accent-blue dark:text-accent-blue">
+                  🛡️ Release Gatekeeper
+                </span>
+                <p className="text-xs text-text-body-mid dark:text-text-muted leading-relaxed">
+                  Provides engineering leads and QA managers with clear historical confidence
+                  metrics before authorizing production release candidate deployments.
+                </p>
+              </div>
+            </div>
+          </div>
         </div>
       </GuideModal>
 
@@ -57,33 +119,67 @@ export default function TrendsGuides({
       <GuideModal
         isOpen={durationModalOpen}
         onClose={onCloseDurationModal}
-        title="Duration Trend Guide"
-        subtitle="Historical runtime performance and project execution benchmarks"
+        title="Project Duration Trend Guide"
+        subtitle="Historical run duration trends and sequential effort diagnostics across projects"
       >
-        <p>
-          The <strong className="text-text-ink dark:text-text-on-primary">Duration Trend</strong>{' '}
-          chart visualizes wall-clock execution time (in seconds) across historical test runs,
-          broken down by project profile.
-        </p>
-
-        <div className="rounded-md border border-border-default bg-surface-50 p-4 space-y-2">
-          <div className="font-bold text-text-ink dark:text-text-on-primary text-xs uppercase tracking-wider">
-            Performance Benchmarks & Insights:
+        <div className="space-y-4 text-xs text-text-body-mid dark:text-text-muted leading-relaxed">
+          {/* Overview */}
+          <div>
+            <h4 className="font-bold text-sm text-text-ink dark:text-text-on-primary mb-1">
+              Overview & Diagnostic Utility
+            </h4>
+            <p>
+              The <strong>Project Duration Trend</strong> chart plots execution run times across
+              historical test runs for each project, helping engineering teams spot performance
+              drift, suite bloat, and execution bottlenecks over time.
+            </p>
           </div>
-          <ul className="list-disc list-inside space-y-1">
-            <li>
-              <strong>Pipeline Efficiency:</strong> Monitor total execution time to ensure CI
-              feedback loops stay fast.
-            </li>
-            <li>
-              <strong>Duration Creep:</strong> Gradual increases in run duration indicate test bloat
-              or unoptimized waits.
-            </li>
-            <li>
-              <strong>Parallel Optimization:</strong> Compare durations between worker
-              configurations to evaluate parallel scaling efficiency.
-            </li>
-          </ul>
+
+          {/* Sequential Effort Explanation Note */}
+          <div className="rounded-md border border-border-default bg-surface-100/50 p-3.5 space-y-1.5 dark:bg-surface-200/20">
+            <h5 className="font-bold text-xs text-text-ink dark:text-text-on-primary flex items-center gap-1.5">
+              <span>💡</span> Sequential Effort vs. Wall-Clock Duration
+            </h5>
+            <p className="text-xs text-text-body-mid dark:text-text-muted leading-relaxed">
+              Each trend line tracks total <strong>sequential effort</strong> — calculated as the
+              sum of all individual test durations within that project — rather than total
+              wall-clock elapsed time.
+            </p>
+            <p className="text-[11px] text-text-body-mid/90 dark:text-text-muted/90 leading-relaxed">
+              <strong>Why this matters:</strong> In parallelized test runs, the cumulative
+              sequential effort of a busy project can be significantly higher than the actual
+              wall-clock execution time. To analyze concurrency gains and worker efficiency, check
+              the <em>Execution Efficiency</em> metrics on the dashboard.
+            </p>
+          </div>
+
+          {/* Diagnostic Action Items */}
+          <div className="space-y-2 border-t border-border-default pt-4">
+            <h4 className="font-bold text-sm text-text-ink dark:text-text-on-primary mb-1">
+              How to Use This Diagnostic Trend
+            </h4>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="rounded-md border border-border-default bg-surface-100/50 p-3 space-y-1 dark:bg-surface-200/20">
+                <span className="font-bold text-xs text-warning-600 dark:text-warning-500">
+                  📈 Upward Duration Spikes
+                </span>
+                <p className="text-xs text-text-body-mid dark:text-text-muted leading-relaxed">
+                  Indicates newly added heavy setup hooks, lengthy tests, unoptimized API calls, or
+                  slow database migrations added in recent commits.
+                </p>
+              </div>
+
+              <div className="rounded-md border border-border-default bg-surface-100/50 p-3 space-y-1 dark:bg-surface-200/20">
+                <span className="font-bold text-xs text-accent-blue dark:text-accent-blue">
+                  ⚖️ Suite Workload Balancing
+                </span>
+                <p className="text-xs text-text-body-mid dark:text-text-muted leading-relaxed">
+                  Spots slow projects holding back the entire test run, showing you where to split
+                  tests or move workers to get faster feedback.
+                </p>
+              </div>
+            </div>
+          </div>
         </div>
       </GuideModal>
 
@@ -91,40 +187,109 @@ export default function TrendsGuides({
       <GuideModal
         isOpen={stepCategoryModalOpen}
         onClose={onCloseStepCategoryModal}
-        title="Step Category Composition Guide"
-        subtitle="Automated step type breakdown, ratio targets, and optimization strategy"
+        title="Step Category Composition & Trend Guide"
       >
-        <p>
-          The{' '}
-          <strong className="text-text-ink dark:text-text-on-primary">
-            Step Category Composition
-          </strong>{' '}
-          chart details the breakdown of test step execution types across historical runs
-          (Assertions, Actions, Network activity, and Explicit Waits).
-        </p>
-
-        <div className="rounded-md border border-border-default bg-surface-50 p-4 space-y-2">
-          <div className="font-bold text-text-ink dark:text-text-on-primary text-xs uppercase tracking-wider">
-            Step Type Guidelines:
+        <div className="space-y-4 text-xs text-text-body-mid dark:text-text-muted">
+          <div>
+            <h4 className="font-bold text-sm text-text-ink dark:text-text-on-primary mb-1">
+              Overview
+            </h4>
+            <p>
+              This chart categorizes and tracks every automated step executed in your Playwright
+              test runs, revealing the architectural composition of your test suite over time.
+            </p>
           </div>
-          <ul className="list-disc list-inside space-y-1">
-            <li>
-              <strong className="text-success-600 dark:text-success-500">Assertions:</strong> High
-              assertion density indicates strong test verification quality.
-            </li>
-            <li>
-              <strong className="text-accent-blue dark:text-accent-blue">Actions:</strong> User
-              interaction steps like clicks, fills, and navigation.
-            </li>
-            <li>
-              <strong className="text-warning-600 dark:text-warning-500">Waits:</strong> High wait
-              ratios suggest overuse of fixed delays; replace with web-first assertions.
-            </li>
-            <li>
-              <strong className="text-purple-600 dark:text-purple-400">Network:</strong> API
-              requests and network interception steps during execution.
-            </li>
-          </ul>
+          <div>
+            <h4 className="font-bold text-sm text-text-ink dark:text-text-on-primary mb-2">
+              Step Categories
+            </h4>
+            <div className="space-y-3">
+              {STEP_CATEGORIES.map((cat) => (
+                <div
+                  key={cat.key}
+                  className="p-2.5 rounded-md border border-border-default bg-surface-100/50 dark:bg-surface-200/20"
+                >
+                  <div className="flex items-center gap-2 mb-1">
+                    <span
+                      className="h-2.5 w-2.5 rounded-full"
+                      style={{ backgroundColor: cat.color }}
+                    />
+                    <span className="font-bold text-xs text-text-ink dark:text-text-on-primary">
+                      {cat.label}
+                    </span>
+                  </div>
+                  <p className="text-xs text-text-body-mid dark:text-text-muted">
+                    {cat.description}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* View Modes Explanation */}
+          <div className="space-y-2 border-t border-border-default pt-4">
+            <h4 className="font-bold text-sm text-text-ink dark:text-text-on-primary mb-1">
+              View Modes (% Normalized vs. Step Count)
+            </h4>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="rounded-md border border-border-default bg-surface-100/50 p-3 space-y-1 dark:bg-surface-200/20">
+                <span className="font-bold text-xs text-text-ink dark:text-text-on-primary">
+                  % Normalized View
+                </span>
+                <p className="text-xs text-text-body-mid dark:text-text-muted leading-relaxed">
+                  Displays the relative percentage (0%–100%) contribution of each step category for
+                  every run. This normalizes for changes in test suite size so you can compare
+                  relative test composition over time.
+                </p>
+              </div>
+              <div className="rounded-md border border-border-default bg-surface-100/50 p-3 space-y-1 dark:bg-surface-200/20">
+                <span className="font-bold text-xs text-text-ink dark:text-text-on-primary">
+                  Step Count View
+                </span>
+                <p className="text-xs text-text-body-mid dark:text-text-muted leading-relaxed">
+                  Displays the absolute number of steps executed per category in each run. This
+                  helps track total step volume expansion and absolute execution scale across test
+                  runs.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Why & How This Trend Chart Is Useful */}
+          <div className="space-y-2 border-t border-border-default pt-4">
+            <h4 className="font-bold text-sm text-text-ink dark:text-text-on-primary mb-1">
+              Why & How This Trend Chart Is Useful
+            </h4>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div className="rounded-md border border-border-default bg-surface-100/50 p-3 space-y-1 dark:bg-surface-200/20">
+                <span className="font-bold text-xs text-warning-600 dark:text-warning-500">
+                  ⚡ Flakiness & Overhead
+                </span>
+                <p className="text-xs text-text-body-mid dark:text-text-muted leading-relaxed">
+                  Spikes in <strong>Explicit Waits</strong> steps highlight dynamic wait patching or
+                  flaky test practices.
+                </p>
+              </div>
+              <div className="rounded-md border border-border-default bg-surface-100/50 p-3 space-y-1 dark:bg-surface-200/20">
+                <span className="font-bold text-xs text-success-600 dark:text-success-500">
+                  🎯 Assertion Rigor
+                </span>
+                <p className="text-xs text-text-body-mid dark:text-text-muted leading-relaxed">
+                  Tracks whether new tests validate application state or spend excessive time
+                  navigating without assertion density.
+                </p>
+              </div>
+              <div className="rounded-md border border-border-default bg-surface-100/50 p-3 space-y-1 dark:bg-surface-200/20">
+                <span className="font-bold text-xs text-text-ink dark:text-text-on-primary">
+                  🛠️ Fixture Maintenance
+                </span>
+                <p className="text-xs text-text-body-mid dark:text-text-muted leading-relaxed">
+                  Ensures setup hooks (`beforeEach`, auth setup) remain lightweight over time
+                  without consuming runtime.
+                </p>
+              </div>
+            </div>
+          </div>
         </div>
       </GuideModal>
     </>

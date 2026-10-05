@@ -248,7 +248,6 @@ class ZenReporter implements Reporter {
     const attachmentsDir = path.join(outputDir, 'attachments');
 
     const result = rawAttachments.map((att, attIdx) => {
-      let bodyData: string | null = null;
       let finalPath: string | null = att.path || null;
 
       const isText =
@@ -266,40 +265,47 @@ class ZenReporter implements Reporter {
           const targetPath = path.join(attachmentsDir, targetFilename);
           fs.copyFileSync(att.path, targetPath);
           finalPath = `./attachments/${targetFilename}`;
-
-          if (isText) {
-            bodyData = fs.readFileSync(att.path, 'utf8');
-          }
         } catch (e) {
           console.error(`Failed to copy attachment file from ${att.path}:`, e);
         }
       } else if (att.body) {
+        try {
+          fs.mkdirSync(attachmentsDir, { recursive: true });
+
+          let ext = '.bin';
+          if (att.contentType === 'image/png') ext = '.png';
+          else if (att.contentType === 'image/jpeg') ext = '.jpg';
+          else if (att.contentType === 'text/plain') ext = '.txt';
+          else if (att.contentType === 'text/html' || att.name?.endsWith('.html')) ext = '.html';
+          else if (att.contentType === 'application/json' || att.name?.endsWith('.json'))
+            ext = '.json';
+          else if (isText) ext = '.txt';
+
+          const safeTestId = testId.replace(/[^a-zA-Z0-9_-]/g, '_');
+          const targetFilename = `${safeTestId}_att${attIdx}${ext}`;
+          const targetPath = path.join(attachmentsDir, targetFilename);
+          const buf = Buffer.isBuffer(att.body) ? att.body : Buffer.from(att.body);
+
+          fs.writeFileSync(targetPath, buf);
+          finalPath = `./attachments/${targetFilename}`;
+        } catch (e) {
+          console.error('Failed to write in-memory attachment to disk:', e);
+        }
+      }
+
+      let bodyContent: string | null = null;
+      if (att.body) {
         if (isText) {
-          bodyData = Buffer.isBuffer(att.body)
-            ? att.body.toString('utf8')
-            : typeof att.body === 'string'
-              ? att.body
-              : String(att.body);
+          bodyContent = Buffer.isBuffer(att.body) ? att.body.toString('utf8') : String(att.body);
         } else {
-          try {
-            fs.mkdirSync(attachmentsDir, { recursive: true });
-
-            const ext =
-              att.contentType === 'image/png'
-                ? '.png'
-                : att.contentType === 'image/jpeg'
-                  ? '.jpg'
-                  : '.bin';
-            const safeTestId = testId.replace(/[^a-zA-Z0-9_-]/g, '_');
-            const targetFilename = `${safeTestId}_att${attIdx}${ext}`;
-            const targetPath = path.join(attachmentsDir, targetFilename);
-            const buf = Buffer.isBuffer(att.body) ? att.body : Buffer.from(att.body);
-
-            fs.writeFileSync(targetPath, buf);
-            finalPath = `./attachments/${targetFilename}`;
-          } catch (e) {
-            console.error('Failed to write in-memory attachment to disk:', e);
-          }
+          bodyContent = Buffer.isBuffer(att.body) ? att.body.toString('base64') : String(att.body);
+        }
+      } else if (isText && att.path && fs.existsSync(att.path)) {
+        try {
+          // Embed text attachment content in body so file:// previews work offline & without CORS blocks
+          bodyContent = fs.readFileSync(att.path, 'utf8');
+        } catch (e) {
+          console.error(`Failed to read text attachment file from ${att.path}:`, e);
         }
       }
 
@@ -307,7 +313,7 @@ class ZenReporter implements Reporter {
         name: att.name,
         contentType: att.contentType,
         path: finalPath,
-        body: bodyData,
+        body: bodyContent,
       };
     });
 

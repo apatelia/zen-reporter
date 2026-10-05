@@ -2,11 +2,20 @@ import { useMemo, useState } from 'react';
 import { PageSizeControl } from '@/components/pagination/PageSizeControl';
 import { PaginationFooter } from '@/components/pagination/PaginationFooter';
 import { usePagination } from '@/components/pagination/usePagination';
-import { ColumnDef, DataTable, PassRateBadge } from '@/components/shared/DataTable';
+import {
+  ColumnDef,
+  DataTable,
+  ExportCsvButton,
+  exportColumnsToCsv,
+} from '@/components/shared/DataTable';
+import { PassRateBadge } from '@/components/shared/PassRateBadge';
+import { StatusCountBadge } from '@/components/shared/StatusCountBadge';
 import DateFilterControl, { type DateFilterRange } from '@/components/shared/DateFilterControl';
 import LearnMoreButton from '@/components/shared/LearnMoreButton';
+import SearchInput from '@/components/shared/SearchInput';
 import type { HistoryRun } from '@/lib/types/history';
 import { formatDate, formatDuration } from '@/lib/formatters';
+import { generateExportFilename } from '@/lib/exportFilename';
 
 export interface HistoryRunsTableSectionProps {
   runs: HistoryRun[];
@@ -14,8 +23,9 @@ export interface HistoryRunsTableSectionProps {
   onOpenGuide: () => void;
 }
 
-const sectionClass = 'rounded-md border border-border-default bg-surface-50 p-6 shadow-xs';
-const headingClass = 'text-xl font-bold text-text-ink dark:text-text-on-primary';
+const sectionClass =
+  'overflow-hidden rounded-md bg-canvas border border-border-default shadow-sm p-4';
+const headingClass = 'text-lg font-bold text-text-ink dark:text-text-on-primary';
 
 export function HistoryRunsTableSection({
   runs: rawRuns,
@@ -27,17 +37,26 @@ export function HistoryRunsTableSection({
     toTimestamp: null,
     label: null,
   });
+  const [runSearchTerm, setRunSearchTerm] = useState('');
+
+  const isFiltered = Boolean(filterRange.fromTimestamp || filterRange.toTimestamp);
 
   const filteredRuns = useMemo(() => {
-    if (!filterRange.fromTimestamp && !filterRange.toTimestamp) return rawRuns;
-
     return rawRuns.filter((run) => {
       const runTime = new Date(run.started_at).getTime();
       if (filterRange.fromTimestamp && runTime < filterRange.fromTimestamp) return false;
       if (filterRange.toTimestamp && runTime > filterRange.toTimestamp) return false;
+
+      if (runSearchTerm.trim()) {
+        const query = runSearchTerm.trim().toLowerCase();
+        if (!run.run_name || !run.run_name.toLowerCase().includes(query)) {
+          return false;
+        }
+      }
+
       return true;
     });
-  }, [rawRuns, filterRange]);
+  }, [rawRuns, filterRange, runSearchTerm]);
 
   const runs = useMemo(() => [...filteredRuns].reverse(), [filteredRuns]);
   const runsPag = usePagination(runs.length, 10);
@@ -66,7 +85,20 @@ export function HistoryRunsTableSection({
       },
       {
         key: 'started_at',
-        header: 'Started',
+        header: (
+          <span className="inline-flex items-center gap-1.5">
+            <span>Started</span>
+            {isFiltered && (
+              <span
+                className="inline-flex items-center gap-1 rounded bg-success-500/10 px-1.5 py-0.5 text-[10px] font-semibold text-success-600 dark:bg-success-500/20 dark:text-success-400"
+                title="Date range filter active on this column"
+              >
+                Filtered
+              </span>
+            )}
+          </span>
+        ),
+        headerLabel: 'Started',
         cell: (run) => formatDate(run.started_at),
         csvValue: (run) => formatDate(run.started_at),
       },
@@ -84,15 +116,14 @@ export function HistoryRunsTableSection({
         cell: (run) => {
           const isParallel = Boolean(run.run_workers && run.run_workers > 1);
           const seqMs = run.run_sequential_duration_ms;
+          const parMs = run.run_duration_ms;
           const hasSeqData = seqMs != null;
-          const savedMs =
-            isParallel && hasSeqData && seqMs > run.run_duration_ms
-              ? seqMs - run.run_duration_ms
-              : 0;
-          const speedup =
-            isParallel && hasSeqData && savedMs > 0
-              ? (seqMs / Math.max(1, run.run_duration_ms)).toFixed(1)
-              : null;
+          const hasSavings = isParallel && hasSeqData && seqMs > parMs;
+          const isOverhead = isParallel && hasSeqData && parMs > seqMs && seqMs > 0;
+          const savedMs = hasSavings ? seqMs - parMs : 0;
+          const overheadMs = isOverhead ? parMs - seqMs : 0;
+          const speedupRatio = seqMs && seqMs > 0 ? seqMs / Math.max(1, parMs) : 1;
+          const speedup = speedupRatio.toFixed(1);
 
           if (!isParallel)
             return <span className="text-text-body-mid dark:text-text-muted">0s</span>;
@@ -105,10 +136,16 @@ export function HistoryRunsTableSection({
                 —
               </span>
             );
-          if (savedMs > 0 && speedup)
+          if (hasSavings)
             return (
               <span className="font-bold text-success-600 dark:text-success-500 whitespace-nowrap">
                 ⚡ {formatDuration(savedMs)} ({speedup}x)
+              </span>
+            );
+          if (isOverhead)
+            return (
+              <span className="font-semibold text-amber-600 dark:text-amber-500 whitespace-nowrap">
+                ⚠️ +{formatDuration(overheadMs)} ({speedup}x)
               </span>
             );
           return <span className="text-text-body-mid dark:text-text-muted">0s</span>;
@@ -116,26 +153,26 @@ export function HistoryRunsTableSection({
         csvValue: (run) => {
           const isParallel = Boolean(run.run_workers && run.run_workers > 1);
           const seqMs = run.run_sequential_duration_ms;
+          const parMs = run.run_duration_ms;
           const hasSeqData = seqMs != null;
-          const savedMs =
-            isParallel && hasSeqData && seqMs > run.run_duration_ms
-              ? seqMs - run.run_duration_ms
-              : 0;
-          const speedup =
-            isParallel && hasSeqData && savedMs > 0
-              ? (seqMs / Math.max(1, run.run_duration_ms)).toFixed(1)
-              : null;
+          const hasSavings = isParallel && hasSeqData && seqMs > parMs;
+          const isOverhead = isParallel && hasSeqData && parMs > seqMs && seqMs > 0;
+          const savedMs = hasSavings ? seqMs - parMs : 0;
+          const overheadMs = isOverhead ? parMs - seqMs : 0;
+          const speedupRatio = seqMs && seqMs > 0 ? seqMs / Math.max(1, parMs) : 1;
+          const speedup = speedupRatio.toFixed(1);
 
           if (!isParallel) return '0s';
           if (!hasSeqData) return '-';
-          if (savedMs > 0 && speedup) return `${formatDuration(savedMs)} (${speedup}x)`;
+          if (hasSavings) return `${formatDuration(savedMs)} (${speedup}x)`;
+          if (isOverhead) return `+${formatDuration(overheadMs)} (${speedup}x)`;
           return '0s';
         },
       },
       {
         key: 'total',
         header: 'Total',
-        align: 'right',
+        align: 'center',
         className: 'font-medium',
         cell: (run) => run.run_total,
         csvValue: (run) => run.run_total,
@@ -143,72 +180,36 @@ export function HistoryRunsTableSection({
       {
         key: 'passed',
         header: 'Passed',
-        align: 'right',
-        cell: (run) => (
-          <span
-            className={run.run_passed > 0 ? 'text-success-600 dark:text-success-500 font-bold' : ''}
-          >
-            {run.run_passed}
-          </span>
-        ),
+        align: 'center',
+        cell: (run) => <StatusCountBadge count={run.run_passed} type="passed" />,
         csvValue: (run) => run.run_passed,
       },
       {
         key: 'failed',
         header: 'Failed',
-        align: 'right',
-        cell: (run) => (
-          <span
-            className={run.run_failed > 0 ? 'text-danger-600 dark:text-danger-500 font-bold' : ''}
-          >
-            {run.run_failed}
-          </span>
-        ),
+        align: 'center',
+        cell: (run) => <StatusCountBadge count={run.run_failed} type="failed" />,
         csvValue: (run) => run.run_failed,
       },
       {
         key: 'skipped',
         header: 'Skipped',
-        align: 'right',
-        cell: (run) => (
-          <span
-            className={
-              run.run_skipped > 0 ? 'text-text-body-mid dark:text-text-muted font-medium' : ''
-            }
-          >
-            {run.run_skipped}
-          </span>
-        ),
+        align: 'center',
+        cell: (run) => <StatusCountBadge count={run.run_skipped} type="skipped" />,
         csvValue: (run) => run.run_skipped,
       },
       {
         key: 'timed_out',
         header: 'Timed Out',
-        align: 'right',
-        cell: (run) => (
-          <span
-            className={
-              run.run_timed_out > 0 ? 'text-danger-600 dark:text-danger-500 font-bold' : ''
-            }
-          >
-            {run.run_timed_out}
-          </span>
-        ),
+        align: 'center',
+        cell: (run) => <StatusCountBadge count={run.run_timed_out} type="timedOut" />,
         csvValue: (run) => run.run_timed_out,
       },
       {
         key: 'interrupted',
         header: 'Interrupted',
-        align: 'right',
-        cell: (run) => (
-          <span
-            className={
-              run.run_interrupted > 0 ? 'text-warning-600 dark:text-warning-500 font-bold' : ''
-            }
-          >
-            {run.run_interrupted}
-          </span>
-        ),
+        align: 'center',
+        cell: (run) => <StatusCountBadge count={run.run_interrupted} type="interrupted" />,
         csvValue: (run) => run.run_interrupted,
       },
       {
@@ -219,7 +220,7 @@ export function HistoryRunsTableSection({
         csvValue: (run) => (run.pass_rate != null ? `${run.pass_rate}%` : '-'),
       },
     ],
-    []
+    [isFiltered]
   );
 
   const pageRuns = runs.slice(runsPag.start, runsPag.start + runsPag.pageSize);
@@ -228,7 +229,7 @@ export function HistoryRunsTableSection({
     <section className={sectionClass}>
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-3 border-b border-border-default">
         <div className="flex items-center gap-3">
-          <h2 className={headingClass}>Test runs audit log</h2>
+          <h2 className={headingClass}>Execution Runs History</h2>
           <LearnMoreButton onClick={onOpenGuide} />
         </div>
         <PageSizeControl
@@ -238,7 +239,7 @@ export function HistoryRunsTableSection({
         />
       </div>
 
-      <div className="pt-3 pb-1 border-b border-border-default/50">
+      <div className="pt-3 pb-3 border-b border-border-default/50 flex flex-col gap-3">
         <DateFilterControl
           onFilterChange={(range) => {
             setFilterRange(range);
@@ -246,20 +247,51 @@ export function HistoryRunsTableSection({
           }}
           availableTimestamps={availableTimestamps}
         />
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <SearchInput
+            value={runSearchTerm}
+            onChange={(val) => {
+              setRunSearchTerm(val);
+              runsPag.setPage(1);
+            }}
+            placeholder="Search test runs by run name..."
+            className="w-full sm:w-80 md:w-96"
+          />
+          <ExportCsvButton
+            onClick={() =>
+              exportColumnsToCsv(
+                () =>
+                  generateExportFilename('test_runs_history', {
+                    dateRange: filterRange,
+                    searchTerm: runSearchTerm,
+                  }),
+                runs,
+                runColumns
+              )
+            }
+            count={runs.length}
+          />
+        </div>
       </div>
 
       <DataTable
         data={pageRuns}
         columns={runColumns}
         getRowKey={(run) => run.run_id}
-        exportFilename="test_runs_history.csv"
+        exportFilename={() =>
+          generateExportFilename('test_runs_history', {
+            dateRange: filterRange,
+            searchTerm: runSearchTerm,
+          })
+        }
         fullData={runs}
+        hideExportButton
         className="mt-4"
         emptyMessage={
           <div className="py-16 text-center text-text-body-mid dark:text-text-muted">
             <p className="text-base font-semibold">No matching test runs found</p>
             <p className="mt-1 text-xs text-text-muted-soft">
-              Try adjusting or clearing your date range filter criteria.
+              Try adjusting or clearing your date range or search filter criteria.
             </p>
           </div>
         }

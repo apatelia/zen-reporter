@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import type { Attachment, TestCase } from '@/lib/types/report';
 import { extractVisualDiffPairs } from '@/lib/cryptoUtils';
 import { VisualDiffViewer } from '../visual-regression/VisualDiffViewer';
@@ -8,6 +8,10 @@ import { StepItem } from './test-case-detail/StepItem';
 import { TestAttachments } from './test-case-detail/TestAttachments';
 import { TestErrorAlert } from './test-case-detail/TestErrorAlert';
 import { TestStdOutput } from './test-case-detail/TestStdOutput';
+import {
+  UniversalPreviewModal,
+  buildAttemptPreviewItems,
+} from './test-case-detail/UniversalPreviewModal';
 
 export interface TestCaseDetailProps {
   testCase: TestCase;
@@ -18,6 +22,7 @@ export default function TestCaseDetail({ testCase, showSteps = true }: TestCaseD
   const attempts = buildAttempts(testCase);
   const [activeAttemptIdx, setActiveAttemptIdx] = useState(attempts.length - 1);
   const activeAttempt = attempts[Math.max(0, Math.min(activeAttemptIdx, attempts.length - 1))];
+  const [previewModalIndex, setPreviewModalIndex] = useState<number | null>(null);
 
   const caseAnnotations = testCase.annotations || [];
   const validAnnotations = caseAnnotations.filter(
@@ -33,6 +38,13 @@ export default function TestCaseDetail({ testCase, showSteps = true }: TestCaseD
       return `data:${mime};base64,${att.body}`;
     }
     if (att.path) {
+      if (typeof window !== 'undefined') {
+        try {
+          return new URL(att.path, window.location.href).href;
+        } catch {
+          return att.path;
+        }
+      }
       return att.path;
     }
     return null;
@@ -40,6 +52,11 @@ export default function TestCaseDetail({ testCase, showSteps = true }: TestCaseD
 
   const attachments = collectAttemptAttachments(activeAttempt);
   const visualDiffPairs = extractVisualDiffPairs(attachments, getAttachmentUrl);
+
+  const previewItems = useMemo(
+    () => buildAttemptPreviewItems(activeAttempt, attachments, getAttachmentUrl),
+    [activeAttempt, attachments]
+  );
 
   const hasNoDetails =
     !activeAttempt.steps &&
@@ -119,10 +136,30 @@ export default function TestCaseDetail({ testCase, showSteps = true }: TestCaseD
       )}
 
       {/* Attachments */}
-      <TestAttachments attachments={attachments} getAttachmentUrl={getAttachmentUrl} />
+      <TestAttachments
+        attachments={attachments}
+        getAttachmentUrl={getAttachmentUrl}
+        previewItems={previewItems}
+        onOpenPreview={(idx) => setPreviewModalIndex(idx)}
+      />
 
       {/* Standard Output (stdout & stderr) */}
-      <TestStdOutput stdout={activeAttempt.stdout} stderr={activeAttempt.stderr} />
+      <TestStdOutput
+        stdout={activeAttempt.stdout}
+        stderr={activeAttempt.stderr}
+        previewItems={previewItems}
+        onOpenPreview={(idx) => setPreviewModalIndex(idx)}
+      />
+
+      {/* Unified Preview Modal */}
+      {previewModalIndex !== null && (
+        <UniversalPreviewModal
+          isOpen={previewModalIndex !== null}
+          onClose={() => setPreviewModalIndex(null)}
+          items={previewItems}
+          initialIndex={previewModalIndex}
+        />
+      )}
 
       {/* No Details Fallback */}
       {hasNoDetails && (

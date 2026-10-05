@@ -3,20 +3,19 @@ import type { ProjectStats } from '@/lib/statsUtils';
 import { formatDuration } from '@/lib/formatters';
 import LearnMoreButton from '@/components/shared/LearnMoreButton';
 import TestCaseCard from '@/components/shared/TestCaseCard';
-import GuideModal from '@/components/shared/GuideModal';
 import SearchInput from '@/components/shared/SearchInput';
 
 export interface ProjectDetailCardsProps {
   projectStats: ProjectStats[];
+  onOpenGuide: () => void;
 }
 
 type SortOption = 'passRate' | 'duration' | 'flakiness' | 'total' | 'name';
 
-export default function ProjectDetailCards({ projectStats }: ProjectDetailCardsProps) {
+export default function ProjectDetailCards({ projectStats, onOpenGuide }: ProjectDetailCardsProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [sortBy, setSortBy] = useState<SortOption>('passRate');
   const [expandedProjects, setExpandedProjects] = useState<Record<string, boolean>>({});
-  const [isModalOpen, setIsModalOpen] = useState(false);
 
   const toggleExpand = (name: string) => {
     setExpandedProjects((prev) => ({
@@ -57,23 +56,22 @@ export default function ProjectDetailCards({ projectStats }: ProjectDetailCardsP
     <div className="w-full rounded-lg bg-canvas border border-border-default p-5 shadow-sm space-y-4">
       {/* Cohesive Section Header & Filter Controls */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border-b border-border-default pb-4">
-        <div className="flex items-center gap-2 min-w-0">
+        <div className="flex items-center gap-2.5 min-w-0 flex-wrap">
           <h3 className="text-base font-bold text-text-ink dark:text-text-on-primary shrink-0">
             Project Health & Breakdown
           </h3>
           <span className="rounded-full bg-surface-100 dark:bg-surface-100 px-2.5 py-0.5 text-xs font-semibold text-text-body-mid dark:text-text-muted border border-border-default">
             {filteredAndSortedProjects.length} Projects
           </span>
-          <LearnMoreButton onClick={() => setIsModalOpen(true)} />
+          <LearnMoreButton onClick={onOpenGuide} />
         </div>
 
         <div className="flex flex-wrap items-center gap-3">
           <SearchInput
             value={searchTerm}
             onChange={setSearchTerm}
-            placeholder="Search projects..."
-            className="min-w-50 flex-1 sm:flex-initial"
-            inputClassName="w-full rounded-md border border-border-default bg-surface-50 pl-9 pr-7 py-1.5 text-xs text-text-ink placeholder:text-text-muted focus:border-accent-blue focus:outline-none dark:bg-surface-50 dark:text-text-on-primary"
+            placeholder="Search projects by project name..."
+            className="w-full sm:w-80 md:w-80 flex-1 sm:flex-initial"
           />
 
           {/* Sort Dropdown */}
@@ -128,20 +126,20 @@ export default function ProjectDetailCards({ projectStats }: ProjectDetailCardsP
               ? {
                   label: `⚡ ${project.speedMultiplier}x slower than avg`,
                   color:
-                    'bg-warning-500/10 text-warning-600 dark:bg-warning-500/20 dark:text-warning-500 border-warning-500/20',
+                    'bg-warning-500/10 text-warning-600 dark:bg-warning-500/20 dark:text-warning-500 border-warning-500/40 dark:border-warning-500/30',
                   tooltip: `Average test duration is ${project.speedMultiplier}x longer than overall run average`,
                 }
               : project.speedMultiplier < 1.0
                 ? {
                     label: `⚡ ${project.speedMultiplier}x faster than avg`,
                     color:
-                      'bg-success-500/10 text-success-600 dark:bg-success-500/20 dark:text-success-500 border-success-500/20',
+                      'bg-success-500/10 text-success-600 dark:bg-success-500/20 dark:text-success-500 border-success-500/40 dark:border-success-500/30',
                     tooltip: `Average test duration is ${project.speedMultiplier}x shorter than overall run average`,
                   }
                 : {
                     label: '⚡ 1.0x avg speed',
                     color:
-                      'bg-surface-200/50 text-text-body-mid dark:text-text-muted border-border-default',
+                      'bg-surface-100/80 text-text-body-mid dark:text-text-muted border-border-chart dark:border-border-default',
                     tooltip: 'Average test duration matches overall run average',
                   };
 
@@ -193,7 +191,7 @@ export default function ProjectDetailCards({ projectStats }: ProjectDetailCardsP
                       <h4 className="text-base font-bold text-text-ink dark:text-text-on-primary flex items-center gap-2">
                         <span>{project.name}</span>
                         <span
-                          className={`rounded px-1.5 py-0.5 text-[10px] font-semibold shrink-0 border ${speedBadge.color}`}
+                          className={`rounded-full px-2 py-0.5 text-[10px] font-semibold shrink-0 border ${speedBadge.color}`}
                           title={speedBadge.tooltip}
                         >
                           {speedBadge.label}
@@ -379,64 +377,6 @@ export default function ProjectDetailCards({ projectStats }: ProjectDetailCardsP
           );
         })}
       </div>
-
-      <GuideModal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        title="Project Health & Breakdown Guide"
-        subtitle="Understanding project metrics, performance distributions, and diagnostic controls"
-      >
-        <p>
-          The{' '}
-          <strong className="text-text-ink dark:text-text-on-primary">
-            Project Health & Breakdown
-          </strong>{' '}
-          panel provides granular execution metrics scoped to each configured Playwright project
-          profile (e.g., cross-browser targets like Chromium, Firefox, WebKit, or custom test
-          configurations).
-        </p>
-
-        <div className="rounded-md border border-border-default bg-surface-50 p-4 space-y-2.5">
-          <div className="font-bold text-text-ink dark:text-text-on-primary text-xs uppercase tracking-wider">
-            Key Metrics & Health Indicators:
-          </div>
-          <ul className="list-disc list-inside space-y-1.5">
-            <li>
-              <strong>Pass Rate:</strong> Percentage of test cases in the project profile that
-              executed cleanly to completion.
-            </li>
-            <li>
-              <strong>Execution Duration:</strong> Cumulative runtime and average duration per test
-              case within the project target.
-            </li>
-            <li>
-              <strong>Duration Percentiles (p95, Median, Min, Max):</strong> Detailed timing stats
-              to identify long-tail execution bottlenecks across specs.
-            </li>
-            <li>
-              <strong>Retries & In-Run Flakiness:</strong> Count and percentage of test cases that
-              failed on initial attempt but succeeded after automatic retries.
-            </li>
-          </ul>
-        </div>
-
-        <div className="rounded-md border border-border-default bg-surface-50 p-4 space-y-2.5">
-          <div className="font-bold text-text-ink dark:text-text-on-primary text-xs uppercase tracking-wider">
-            Diagnostic Controls & Deep Dives:
-          </div>
-          <ul className="list-disc list-inside space-y-1.5">
-            <li>
-              <strong>Search & Sort:</strong> Quickly filter project profiles by name or sort by
-              Pass Rate, Cumulative Duration, Retry Count, or Total Test Volume.
-            </li>
-            <li>
-              <strong>Expandable Failure Details:</strong> Click any project card with errors to
-              expand and inspect step-by-step logs, stack traces, snippets, and attachments scoped
-              strictly to that project target.
-            </li>
-          </ul>
-        </div>
-      </GuideModal>
     </div>
   );
 }

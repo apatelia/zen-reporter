@@ -16,7 +16,7 @@ export default function SearchInput({
   onChange,
   placeholder = 'Search...',
   className = 'min-w-50 flex-1 sm:flex-none',
-  inputClassName = 'w-full rounded-lg border border-border-default bg-surface-100 pl-9 pr-8 py-2 text-xs text-text-ink placeholder:text-text-muted focus:border-accent-blue focus:outline-none disabled:opacity-50 dark:bg-surface-100 dark:text-text-on-primary',
+  inputClassName = 'h-9 w-full rounded-md border border-border-default bg-canvas pl-9 pr-7 text-xs text-text-ink placeholder:text-text-muted focus:border-accent-blue focus:outline-none disabled:opacity-50 dark:bg-canvas dark:text-text-on-primary transition-colors',
   disabled = false,
   onClear,
   icon,

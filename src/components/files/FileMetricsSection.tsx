@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import type { TestSuite } from '@/lib/types/report';
 import StatCard from '@/components/shared/StatCard';
+import InfoTooltip from '@/components/shared/InfoTooltip';
 
 import { formatDuration, truncateMiddlePath } from '@/lib/formatters';
 import { collectAllCases, computeFileStats, type FileStats } from '@/lib/statsUtils';
@@ -82,7 +83,7 @@ export default function FileMetricsSection({ suites, isMinimalReport }: FileMetr
       value: `${totalFiles}`,
       subtext: `${totalTests} total test cases`,
       description: 'Total number of spec files executed in this test run',
-      badgeClass: 'bg-primary-500/10 text-primary-600 dark:bg-primary-500/20 dark:text-primary-400',
+      badgeClass: 'bg-success-500/10 text-success-600 dark:bg-success-500/20 dark:text-success-400',
     },
     {
       label: 'Clean Spec Files',
@@ -104,7 +105,7 @@ export default function FileMetricsSection({ suites, isMinimalReport }: FileMetr
       description: 'Count of spec files containing 1+ failed or timed-out test cases',
       badgeClass:
         failingFilesCount > 0
-          ? 'bg-danger-500/10 text-danger-600 dark:bg-danger-500/20 dark:text-danger-400'
+          ? 'bg-danger-500/10 text-danger-600 dark:bg-danger-500/20 dark:text-danger-300 font-semibold'
           : 'bg-success-500/10 text-success-600 dark:bg-success-500/20 dark:text-success-400',
     },
     {
@@ -130,7 +131,7 @@ export default function FileMetricsSection({ suites, isMinimalReport }: FileMetr
       title: failureHotspot?.file.fileName,
       description: 'Highest percentage of overall suite failures originating from a single file',
       badgeClass: failureHotspot
-        ? 'bg-danger-500/10 text-danger-600 dark:bg-danger-500/20 dark:text-danger-400'
+        ? 'bg-danger-500/10 text-danger-600 dark:bg-danger-500/20 dark:text-danger-300 font-semibold'
         : 'bg-success-500/10 text-success-600 dark:bg-success-500/20 dark:text-success-400',
     },
   ];
@@ -198,12 +199,6 @@ export default function FileMetricsSection({ suites, isMinimalReport }: FileMetr
               <div className="grid grid-cols-2 gap-3">
                 {distributionSubCards.map((card, index) => {
                   const isRightCol = index % 2 === 1;
-                  const subTooltipPosClass = isRightCol
-                    ? 'right-0 translate-x-0'
-                    : 'left-1/2 -translate-x-1/2';
-                  const subArrowPosClass = isRightCol
-                    ? 'right-2.5 translate-x-0'
-                    : 'left-1/2 -translate-x-1/2';
 
                   return (
                     <div
@@ -214,29 +209,7 @@ export default function FileMetricsSection({ suites, isMinimalReport }: FileMetr
                         <p className="text-xs font-medium text-text-body-mid dark:text-text-muted">
                           {card.title}
                         </p>
-                        <div className="group relative inline-flex items-center">
-                          <svg
-                            className="h-3.5 w-3.5 cursor-help text-text-body-mid opacity-60 hover:opacity-100 dark:text-text-muted transition-opacity shrink-0"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            stroke="currentColor"
-                            strokeWidth={2}
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z"
-                            />
-                          </svg>
-                          <div
-                            className={`pointer-events-none absolute bottom-full mb-2 hidden group-hover:block z-50 w-48 rounded bg-slate-900 dark:bg-slate-800 p-2 text-center text-xs text-white shadow-lg ring-1 ring-slate-700 ${subTooltipPosClass}`}
-                          >
-                            {card.description}
-                            <div
-                              className={`absolute top-full -mt-1 border-4 border-transparent border-t-slate-900 dark:border-t-slate-800 ${subArrowPosClass}`}
-                            />
-                          </div>
-                        </div>
+                        <InfoTooltip text={card.description} isLast={isRightCol} />
                       </div>
 
                       <div className="mt-1.5">
@@ -276,9 +249,12 @@ export default function FileMetricsSection({ suites, isMinimalReport }: FileMetr
           <div className="rounded-md bg-canvas border border-border-default p-4 shadow-sm flex flex-col justify-between">
             <div>
               <div className="flex items-center justify-between mb-3">
-                <h3 className="text-sm font-semibold uppercase tracking-wider text-text-body-mid dark:text-text-muted">
-                  Longest Execution Spec Files
-                </h3>
+                <div className="flex items-center gap-1.5">
+                  <h3 className="text-sm font-semibold uppercase tracking-wider text-text-body-mid dark:text-text-muted">
+                    Longest Execution Spec Files
+                  </h3>
+                  <InfoTooltip text="Durations reflect cumulative sequential effort (total test runtime within the file), helping identify the heaviest execution bottlenecks regardless of worker allocation." />
+                </div>
                 <span className="text-xs text-text-muted font-mono">Top 5 by Duration</span>
               </div>
 

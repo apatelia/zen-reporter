@@ -12,10 +12,11 @@ import { PaginationFooter } from '@/components/pagination/PaginationFooter';
 import LearnMoreButton from '@/components/shared/LearnMoreButton';
 import HistoryDisabledBanner from '@/components/shared/HistoryDisabledBanner';
 import DateFilterControl from '@/components/shared/DateFilterControl';
-import { DataTable } from '@/components/shared/DataTable';
+import { DataTable, ExportCsvButton, exportColumnsToCsv } from '@/components/shared/DataTable';
 import SearchInput from '@/components/shared/SearchInput';
 import type { ColumnDef } from '@/components/shared/DataTable';
 import type { DateFilterRange } from '@/components/shared/DateFilterControl';
+import { generateExportFilename } from '@/lib/exportFilename';
 
 export interface InsightsSectionProps {
   history: HistoryData | null;
@@ -23,7 +24,8 @@ export interface InsightsSectionProps {
   isHistoryDisabled?: boolean;
 }
 
-const sectionClass = 'rounded-md border border-border-default bg-surface-50 p-5 shadow-xs';
+const sectionClass =
+  'overflow-hidden rounded-md bg-canvas border border-border-default shadow-sm p-4';
 const headingClass = 'text-lg font-bold text-text-ink dark:text-text-on-primary';
 
 const lastStatusStyles: Record<string, { label: string; pillClass: string; tooltip: string }> = {
@@ -75,6 +77,11 @@ export default function InsightsSection({
   });
   const [regressionSearchTerm, setRegressionSearchTerm] = useState('');
 
+  const isRegressionFiltered = Boolean(
+    regressionFilterRange.fromTimestamp || regressionFilterRange.toTimestamp
+  );
+  const isFlakyFiltered = Boolean(flakyFilterRange.fromTimestamp || flakyFilterRange.toTimestamp);
+
   const availableTimestamps = useMemo(
     () => history?.runs.map((r) => r.started_at) ?? [],
     [history]
@@ -96,11 +103,19 @@ export default function InsightsSection({
     if (!history?.flaky) return [];
     let list = history.flaky;
 
-    if (
-      (flakyFilterRange.fromTimestamp || flakyFilterRange.toTimestamp) &&
-      filteredFlakyRuns.length === 0
-    ) {
-      list = [];
+    if (flakyFilterRange.fromTimestamp || flakyFilterRange.toTimestamp) {
+      if (filteredFlakyRuns.length === 0) {
+        list = [];
+      } else {
+        list = list.filter((row) => {
+          const dateStr = row.last_flaky_at || row.last_seen_at;
+          if (!dateStr) return true;
+          const time = new Date(dateStr).getTime();
+          if (flakyFilterRange.fromTimestamp && time < flakyFilterRange.fromTimestamp) return false;
+          if (flakyFilterRange.toTimestamp && time > flakyFilterRange.toTimestamp) return false;
+          return true;
+        });
+      }
     }
 
     if (flakySearchTerm.trim()) {
@@ -122,7 +137,7 @@ export default function InsightsSection({
 
     if (regressionFilterRange.fromTimestamp || regressionFilterRange.toTimestamp) {
       list = list.filter((row) => {
-        const regDate = row.last_run_at || row.regressed_at;
+        const regDate = row.regressed_at || row.last_run_at;
         if (!regDate) return true;
         const time = new Date(regDate).getTime();
         if (regressionFilterRange.fromTimestamp && time < regressionFilterRange.fromTimestamp)
@@ -178,6 +193,31 @@ export default function InsightsSection({
         csvValue: (row) => row.project,
       },
       {
+        key: 'last_seen',
+        header: (
+          <span className="inline-flex items-center gap-1.5">
+            <span>Last Flaky Date</span>
+            {isFlakyFiltered && (
+              <span
+                className="inline-flex items-center gap-1 rounded bg-accent-blue/10 px-1.5 py-0.5 text-[10px] font-semibold text-accent-blue dark:bg-accent-blue/20 dark:text-accent-blue"
+                title="Date range filter active on this column"
+              >
+                Filtered
+              </span>
+            )}
+          </span>
+        ),
+        headerLabel: 'Last Flaky Date',
+        cell: (row) => {
+          const dateStr = row.last_flaky_at || row.last_seen_at;
+          return dateStr ? formatDate(dateStr) : '-';
+        },
+        csvValue: (row) => {
+          const dateStr = row.last_flaky_at || row.last_seen_at;
+          return dateStr ? formatDate(dateStr) : '';
+        },
+      },
+      {
         key: 'failed_runs',
         header: 'Failed Runs',
         align: 'right',
@@ -229,7 +269,7 @@ export default function InsightsSection({
         csvValue: (row) => row.total_runs,
       },
     ],
-    []
+    [isFlakyFiltered]
   );
 
   const regressionColumns: ColumnDef<(typeof regressionRows)[0]>[] = useMemo(
@@ -255,7 +295,20 @@ export default function InsightsSection({
       },
       {
         key: 'regressed_in',
-        header: 'Regressed In',
+        header: (
+          <span className="inline-flex items-center gap-1.5">
+            <span>Regressed In</span>
+            {isRegressionFiltered && (
+              <span
+                className="inline-flex items-center gap-1 rounded bg-success-500/10 px-1.5 py-0.5 text-[10px] font-semibold text-success-600 dark:bg-success-500/20 dark:text-success-400"
+                title="Date range filter active on Regressed In column"
+              >
+                Filtered
+              </span>
+            )}
+          </span>
+        ),
+        headerLabel: 'Regressed In',
         className: 'text-danger-600 dark:text-danger-500 font-bold',
         cell: (row) => formatDate(row.regressed_at),
         csvValue: (row) => formatDate(row.regressed_at),
@@ -287,7 +340,7 @@ export default function InsightsSection({
         csvValue: (row) => row.last_status,
       },
     ],
-    []
+    [isRegressionFiltered]
   );
 
   const slowestColumns: ColumnDef<(typeof slowestRows)[0]>[] = useMemo(
@@ -347,9 +400,7 @@ export default function InsightsSection({
   return (
     <div className="space-y-6">
       {isHistoryDisabled && <HistoryDisabledBanner />}
-      <h2 className="mb-4 text-2xl font-bold tracking-tight text-text-ink dark:text-text-on-primary sm:text-3xl">
-        Analytical Insights
-      </h2>
+      <h1 className="sr-only">Analytical Insights</h1>
 
       {/* 1. Duration & P95 Latency Benchmark Grid */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2 items-stretch">
@@ -357,8 +408,13 @@ export default function InsightsSection({
           projectStats={computeProjectStats(collectAllCases(suites))}
           title="Execution Duration & P95 Latency Benchmark"
           className="rounded-md border border-border-default bg-surface-50 p-5 shadow-xs flex flex-col justify-between"
+          onOpenGuide={() => setActiveModal('duration-benchmark')}
         />
-        <ProjectFlakyRateChart suites={suites} title="Flaky Test Count & Retry Rate by Project" />
+        <ProjectFlakyRateChart
+          suites={suites}
+          title="Flaky Test Count & Retry Rate by Project"
+          onOpenGuide={() => setActiveModal('project-flaky-rate')}
+        />
       </div>
 
       {!history ? (
@@ -413,7 +469,7 @@ export default function InsightsSection({
               />
             </div>
 
-            <div className="pt-3 pb-1 border-b border-border-default/50 flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+            <div className="pt-3 pb-3 border-b border-border-default/50 flex flex-col gap-3">
               <DateFilterControl
                 onFilterChange={(range) => {
                   setFlakyFilterRange(range);
@@ -421,16 +477,31 @@ export default function InsightsSection({
                 }}
                 availableTimestamps={availableTimestamps}
               />
-              <SearchInput
-                value={flakySearchTerm}
-                onChange={(val) => {
-                  setFlakySearchTerm(val);
-                  flakyPag.setPage(1);
-                }}
-                placeholder="Search tests..."
-                className="w-44 sm:w-48 shrink-0"
-                inputClassName="w-full rounded-md border border-border-default bg-surface-50 pl-9 pr-7 py-1.5 text-xs text-text-ink placeholder:text-text-muted focus:border-accent-blue focus:outline-none dark:bg-surface-50 dark:text-text-on-primary"
-              />
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <SearchInput
+                  value={flakySearchTerm}
+                  onChange={(val) => {
+                    setFlakySearchTerm(val);
+                    flakyPag.setPage(1);
+                  }}
+                  placeholder="Search flaky tests by title, suite, or project..."
+                  className="w-full sm:w-80 md:w-96"
+                />
+                <ExportCsvButton
+                  onClick={() =>
+                    exportColumnsToCsv(
+                      () =>
+                        generateExportFilename('flaky_tests', {
+                          dateRange: flakyFilterRange,
+                          searchTerm: flakySearchTerm,
+                        }),
+                      filteredFlaky,
+                      flakyColumns
+                    )
+                  }
+                  count={filteredFlaky.length}
+                />
+              </div>
             </div>
 
             {filteredFlaky.length === 0 ? (
@@ -447,7 +518,13 @@ export default function InsightsSection({
                   columns={flakyColumns}
                   getRowKey={(row, i) => `${row.project}/${row.file}/${row.title}/${i}`}
                   compact
-                  exportFilename="flaky_tests.csv"
+                  exportFilename={() =>
+                    generateExportFilename('flaky_tests', {
+                      dateRange: flakyFilterRange,
+                      searchTerm: flakySearchTerm,
+                    })
+                  }
+                  hideExportButton
                   className="mt-3"
                 />
                 <PaginationFooter
@@ -482,7 +559,7 @@ export default function InsightsSection({
               />
             </div>
 
-            <div className="pt-3 pb-1 border-b border-border-default/50 flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+            <div className="pt-3 pb-3 border-b border-border-default/50 flex flex-col gap-3">
               <DateFilterControl
                 onFilterChange={(range) => {
                   setRegressionFilterRange(range);
@@ -490,16 +567,31 @@ export default function InsightsSection({
                 }}
                 availableTimestamps={availableTimestamps}
               />
-              <SearchInput
-                value={regressionSearchTerm}
-                onChange={(val) => {
-                  setRegressionSearchTerm(val);
-                  regressionsPag.setPage(1);
-                }}
-                placeholder="Search tests..."
-                className="w-44 sm:w-48 shrink-0"
-                inputClassName="w-full rounded-md border border-border-default bg-surface-50 pl-9 pr-7 py-1.5 text-xs text-text-ink placeholder:text-text-muted focus:border-accent-blue focus:outline-none dark:bg-surface-50 dark:text-text-on-primary"
-              />
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <SearchInput
+                  value={regressionSearchTerm}
+                  onChange={(val) => {
+                    setRegressionSearchTerm(val);
+                    regressionsPag.setPage(1);
+                  }}
+                  placeholder="Search regressions by title, suite, or project..."
+                  className="w-full sm:w-80 md:w-96"
+                />
+                <ExportCsvButton
+                  onClick={() =>
+                    exportColumnsToCsv(
+                      () =>
+                        generateExportFilename('test_regressions', {
+                          dateRange: regressionFilterRange,
+                          searchTerm: regressionSearchTerm,
+                        }),
+                      filteredRegressions,
+                      regressionColumns
+                    )
+                  }
+                  count={filteredRegressions.length}
+                />
+              </div>
             </div>
 
             {filteredRegressions.length === 0 ? (
@@ -516,7 +608,13 @@ export default function InsightsSection({
                   columns={regressionColumns}
                   getRowKey={(row) => `${row.project}/${row.file}/${row.title}`}
                   compact
-                  exportFilename="test_regressions.csv"
+                  exportFilename={() =>
+                    generateExportFilename('test_regressions', {
+                      dateRange: regressionFilterRange,
+                      searchTerm: regressionSearchTerm,
+                    })
+                  }
+                  hideExportButton
                   className="mt-3"
                 />
                 <PaginationFooter
@@ -534,9 +632,11 @@ export default function InsightsSection({
 
           {/* 4. Slowest Tests Section */}
           <section className={sectionClass}>
-            <div className="flex items-center gap-2">
-              <h2 className={headingClass}>Slowest tests</h2>
-              <LearnMoreButton onClick={() => setActiveModal('slowest-tests')} />
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-3 border-b border-border-default">
+              <div className="flex items-center gap-2">
+                <h2 className={headingClass}>Slowest tests</h2>
+                <LearnMoreButton onClick={() => setActiveModal('slowest-tests')} />
+              </div>
             </div>
             {history.slowest.length === 0 ? (
               <p className="mt-3 text-xs font-medium text-text-body-mid dark:text-text-muted">
@@ -549,7 +649,7 @@ export default function InsightsSection({
                 columns={slowestColumns}
                 getRowKey={(row) => `${row.project}/${row.file}/${row.title}`}
                 compact
-                exportFilename="slowest_tests.csv"
+                exportFilename={() => generateExportFilename('slowest_tests')}
                 className="mt-3"
               />
             )}

@@ -12,6 +12,17 @@ interface MultiSelectFilterProps<T> {
   disabled?: boolean;
 }
 
+export function FilterCountBadge({ count, className = '' }: { count: number; className?: string }) {
+  if (count <= 0) return null;
+  return (
+    <span
+      className={`inline-flex h-5 w-5 items-center justify-center rounded-full bg-accent-blue text-xs font-bold text-text-on-primary dark:text-surface-950 shadow-xs shrink-0 ${className}`}
+    >
+      {count}
+    </span>
+  );
+}
+
 export default function MultiSelectFilter<T extends string>({
   options,
   selectedOptions,
@@ -94,19 +105,17 @@ export default function MultiSelectFilter<T extends string>({
             setTempSelection(selectedOptions.length > 0 ? [...selectedOptions] : [...options]);
             setIsOpen(!isOpen);
           }}
-          className={`inline-flex items-center gap-2.5 rounded-lg border border-border-default bg-surface-100 px-4 py-2 text-sm font-semibold text-text-body-mid shadow-xs transition-all duration-200 ${
+          className={`h-9 inline-flex items-center gap-2 rounded-md border border-border-default bg-surface-100 px-3.5 text-xs font-semibold text-text-body-mid shadow-xs transition-all duration-200 ${
             isDisabled
               ? 'opacity-50 cursor-not-allowed pointer-events-none'
               : 'hover:border-primary-500 hover:text-text-ink dark:border-border-default dark:bg-surface-100 dark:text-text-body-mid dark:hover:border-primary-400 dark:hover:text-text-on-primary'
           }`}
         >
-          {icon && <span className="shrink-0 text-base">{icon}</span>}
-          <span className="truncate max-w-48">{selectionLabel}</span>
-          {filterCount !== 0 && (
-            <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-accent-blue text-xs font-bold text-text-on-primary dark:bg-accent-blue/80 shadow-xs">
-              {filterCount}
-            </span>
+          {icon && (
+            <span className="shrink-0 flex items-center justify-center text-sm">{icon}</span>
           )}
+          <span className="truncate max-w-48">{selectionLabel}</span>
+          <FilterCountBadge count={filterCount} />
           <svg
             className={`h-4 w-4 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
             fill="none"
@@ -175,26 +184,26 @@ export default function MultiSelectFilter<T extends string>({
                     key={option}
                     type="button"
                     onClick={() => handleToggle(option)}
-                    className={`flex w-full items-center gap-2.5 rounded-md px-2.5 py-2 text-left text-sm font-medium transition-colors ${
+                    className={`group flex w-full items-center gap-2.5 rounded-md px-2.5 py-2 text-left text-sm transition-all duration-150 ${
                       isSelected
-                        ? 'bg-accent-blue/15 ring-1 ring-accent-blue/40 text-accent-blue dark:bg-accent-blue/25 dark:text-text-on-primary dark:ring-accent-blue/50'
-                        : 'text-text-body-mid hover:bg-surface-50 dark:text-text-body-mid dark:hover:bg-surface-100 dark:hover:text-text-on-primary'
+                        ? 'font-bold bg-accent-blue/15 ring-1 ring-accent-blue/40 text-accent-blue dark:bg-accent-blue/25 dark:text-text-on-primary dark:ring-accent-blue/50'
+                        : 'font-medium text-text-body-mid hover:bg-surface-100/70 hover:text-text-ink dark:text-text-body-mid dark:hover:bg-surface-100 dark:hover:text-text-on-primary'
                     }`}
                   >
                     <span
                       className={`flex h-4 w-4 shrink-0 items-center justify-center rounded border transition-all ${
                         isSelected
-                          ? 'border-accent-blue bg-accent-blue dark:border-accent-blue dark:bg-accent-blue'
-                          : 'border-border-default bg-surface-50 dark:border-border-default dark:bg-surface-50'
+                          ? 'border-accent-blue bg-accent-blue dark:border-accent-blue dark:bg-accent-blue shadow-2xs'
+                          : 'border-border-chart bg-surface-100/50 group-hover:border-accent-blue/60 dark:border-border-default dark:bg-surface-50'
                       }`}
                     >
                       {isSelected && (
                         <svg
-                          className="h-2.5 w-2.5 text-text-on-primary dark:text-text-on-primary"
+                          className="h-2.5 w-2.5 text-text-on-primary dark:text-surface-950"
                           fill="none"
                           viewBox="0 0 24 24"
                           stroke="currentColor"
-                          strokeWidth={3}
+                          strokeWidth={3.5}
                         >
                           <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                         </svg>
@@ -210,21 +219,21 @@ export default function MultiSelectFilter<T extends string>({
               <button
                 type="button"
                 onClick={handleSelectAll}
-                className="rounded-md border border-border-default bg-surface-100 px-2 py-1 text-[10px] font-medium text-text-body-mid transition-colors hover:border-accent-blue hover:bg-accent-blue/10 hover:text-accent-blue dark:border-border-default dark:bg-surface-100 dark:text-text-body-mid dark:hover:border-accent-blue dark:hover:bg-accent-blue/10 dark:hover:text-accent-blue"
+                className="rounded-md border border-border-default bg-surface-100 px-2.5 py-1 text-[10px] font-semibold text-text-ink transition-colors hover:border-accent-blue hover:bg-accent-blue/10 hover:text-accent-blue dark:border-border-default dark:bg-surface-100 dark:text-text-on-primary dark:hover:border-accent-blue dark:hover:bg-accent-blue/10 dark:hover:text-accent-blue cursor-pointer"
               >
                 Select All
               </button>
               <button
                 type="button"
                 onClick={handleClear}
-                className="rounded-md border border-border-default bg-surface-100 px-2 py-1 text-[10px] font-medium text-text-body-mid transition-colors hover:border-danger hover:bg-danger/10 hover:text-danger dark:border-border-default dark:bg-surface-100 dark:text-text-body-mid dark:hover:border-danger dark:hover:bg-danger/10 dark:hover:text-danger"
+                className="rounded-md border border-border-default bg-surface-100 px-2.5 py-1 text-[10px] font-semibold text-text-ink transition-colors hover:border-danger hover:bg-danger/10 hover:text-danger dark:border-border-default dark:bg-surface-100 dark:text-text-on-primary dark:hover:border-danger dark:hover:bg-danger/10 dark:hover:text-danger cursor-pointer"
               >
                 Clear
               </button>
               <button
                 type="button"
                 onClick={handleApply}
-                className="rounded-md bg-accent-blue px-2.5 py-1 text-[10px] font-semibold text-text-on-primary shadow-sm transition-colors hover:bg-accent-blue/90"
+                className="rounded-full bg-accent-blue px-3 py-1 text-[10px] font-bold text-text-on-primary dark:text-surface-950 shadow-xs transition-colors hover:bg-accent-blue/90 cursor-pointer"
               >
                 Apply
               </button>

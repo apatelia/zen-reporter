@@ -61,12 +61,12 @@
   --color-warning-700: #593c09;
 
   /* ── Semantic: Info ──────────────────────────── */
-  --color-info: #00754a;
-  --color-info-50: #f0f7f5;
-  --color-info-100: #d4e9e2;
-  --color-info-500: #00754a;
-  --color-info-600: #006241;
-  --color-info-700: #1e3932;
+  --color-info: #2563eb;
+  --color-info-50: #eff6ff;
+  --color-info-100: #dbeafe;
+  --color-info-500: #2563eb;
+  --color-info-600: #1d4ed8;
+  --color-info-700: #1e40af;
 
   /* ── Accent Palette ──────────────────────────── */
   --color-accent-cafe: #006241;
@@ -79,7 +79,10 @@
   --color-accent-blue-info: #00754a;
   --color-accent-orange: #ff6b00;
   --color-accent-yellow: #cba258;
-  --color-accent-red: #c82014;
+  /* ── Tooltip Palette ─────────────────────────── */
+  --color-tooltip-bg: #1e3932;
+  --color-tooltip-text: #ffffff;
+  --color-tooltip-border: #2b5148;
 }
 
 :root {
@@ -106,9 +109,9 @@ html[data-theme='cafe'].dark {
   --color-ink-strong: #ffffff;
 
   --color-canvas: #142622;
-  --color-surface-50: #1e3932;
-  --color-surface-100: #25463e;
-  --color-surface-200: #2b5148;
+  --color-surface-50: #1c352e;
+  --color-surface-100: #203c34;
+  --color-surface-200: #284b41;
   --color-surface-700: #d4e9e2;
   --color-surface-800: #edebe9;
   --color-surface-900: #f2f0eb;
@@ -138,6 +141,7 @@ html[data-theme='cafe'].dark {
   --color-danger: #fca5a5;
   --color-danger-50: #361210;
   --color-danger-100: #4a1917;
+  --color-danger-300: #fca5a5;
   --color-danger-500: #fca5a5;
   --color-danger-600: #ef4444;
   --color-danger-700: #f87171;
@@ -167,6 +171,11 @@ html[data-theme='cafe'].dark {
   --color-accent-orange: #fb923c;
   --color-accent-yellow: #fcd34d;
   --color-accent-red: #fca5a5;
+
+  /* Tooltip */
+  --color-tooltip-bg: #284b41;
+  --color-tooltip-text: #ffffff;
+  --color-tooltip-border: #385d54;
 }
 
 /* ==========================================================================
@@ -180,10 +189,10 @@ html[data-theme='concept'] {
   --color-ink-strong: #005bab;
 
   /* ── Surface Palette ── */
-  --color-canvas: #f6f5f4;
-  --color-surface-50: #ffffff;
-  --color-surface-100: #f0eee9;
-  --color-surface-200: #e6e4df;
+  --color-canvas: #f2f0eb;
+  --color-surface-50: #e8e5df;
+  --color-surface-100: #dfdcd6;
+  --color-surface-200: #d5d2cb;
   --color-surface-700: #615d59;
   --color-surface-800: #31302e;
   --color-surface-900: #213183;
@@ -199,9 +208,9 @@ html[data-theme='concept'] {
   --color-text-on-primary: #ffffff;
 
   /* ── Border / Hairline ───────────────────────── */
-  --color-border-default: #e6e6e6;
-  --color-border-subtle: #f0f0f0;
-  --color-border-chart: #d0d0d0;
+  --color-border-default: #d6dbde;
+  --color-border-subtle: #edebe9;
+  --color-border-chart: #b4bcc1;
   --color-border-active: #31302e;
 
   /* ── Semantic: Success ─ */
@@ -251,6 +260,11 @@ html[data-theme='concept'] {
   --color-accent-orange: #dd5b00;
   --color-accent-yellow: #dd5b00;
   --color-accent-red: #e03e3e;
+
+  /* Tooltip */
+  --color-tooltip-bg: #213183;
+  --color-tooltip-text: #ffffff;
+  --color-tooltip-border: #364595;
 }
 
 /* Concept Dark Mode */
@@ -262,9 +276,9 @@ html[data-theme='concept'].dark,
 
   /* ── Surface Palette (Deep Indigo Hero Canvas) ─ */
   --color-canvas: #191b22;
-  --color-surface-50: #222530;
-  --color-surface-100: #2b2f3d;
-  --color-surface-200: #363b4d;
+  --color-surface-50: #1f222c;
+  --color-surface-100: #252935;
+  --color-surface-200: #2f3444;
   --color-surface-700: #a39e98;
   --color-surface-800: #f0eee9;
   --color-surface-900: #f6f5f4;
@@ -297,6 +311,7 @@ html[data-theme='concept'].dark,
   --color-danger: #ff64c8;
   --color-danger-50: #38122c;
   --color-danger-100: #521841;
+  --color-danger-300: #ffa8e5;
   --color-danger-500: #ff64c8;
   --color-danger-600: #e04bb0;
   --color-danger-700: #bf3494;
@@ -329,6 +344,11 @@ html[data-theme='concept'].dark,
   --color-accent-orange: #f56c18;
   --color-accent-yellow: #f56c18;
   --color-accent-red: #ff64c8;
+
+  /* Tooltip */
+  --color-tooltip-bg: #2f3444;
+  --color-tooltip-text: #ffffff;
+  --color-tooltip-border: #484f67;
 }
 
 /* ==========================================================================
@@ -414,6 +434,11 @@ html[data-theme='sentinel'],
   --color-accent-orange: #d97706;
   --color-accent-yellow: #c2ef4e;
   --color-accent-red: #d93d75;
+
+  /* Tooltip */
+  --color-tooltip-bg: #422082;
+  --color-tooltip-text: #ffffff;
+  --color-tooltip-border: #582da8;
 }
 
 /* Sentinel Dark Mode */
@@ -452,6 +477,7 @@ html[data-theme='sentinel'].dark,
   --color-success: #c2ef4e;
   --color-success-50: #182206;
   --color-success-100: #26380a;
+  --color-success-200: #709600;
   --color-success-500: #c2ef4e;
   --color-success-600: #a9d936;
   --color-success-700: #8ec41f;
@@ -460,6 +486,7 @@ html[data-theme='sentinel'].dark,
   --color-danger: #fa7faa;
   --color-danger-50: #380f20;
   --color-danger-100: #521730;
+  --color-danger-300: #fdb5ce;
   --color-danger-500: #fa7faa;
   --color-danger-600: #f85590;
   --color-danger-700: #f52b75;
@@ -473,12 +500,12 @@ html[data-theme='sentinel'].dark,
   --color-warning-700: #d97706;
 
   /* ── Semantic: Info ─ */
-  --color-info: #9d93eb;
+  --color-info: #c8c2ff;
   --color-info-50: #1c173d;
   --color-info-100: #292257;
-  --color-info-500: #9d93eb;
-  --color-info-600: #8174e5;
-  --color-info-700: #6a5fc1;
+  --color-info-500: #c8c2ff;
+  --color-info-600: #a49beb;
+  --color-info-700: #8174e5;
 
   /* ── Accent Palette ──────────────────────────── */
   --color-accent-cafe: #c2ef4e;
@@ -486,12 +513,17 @@ html[data-theme='sentinel'].dark,
   --color-accent-house: #79628c;
   --color-accent-gold: #fbbf24;
   --color-accent-pink: #fa7faa;
-  --color-accent-blue: #9d93eb;
-  --color-accent-blue-deep: #6a5fc1;
-  --color-accent-blue-info: #9d93eb;
+  --color-accent-blue: #c8c2ff;
+  --color-accent-blue-deep: #a49beb;
+  --color-accent-blue-info: #c8c2ff;
   --color-accent-orange: #fbbf24;
   --color-accent-yellow: #c2ef4e;
   --color-accent-red: #fa7faa;
+
+  /* Tooltip */
+  --color-tooltip-bg: #362d59;
+  --color-tooltip-text: #ffffff;
+  --color-tooltip-border: #544975;
 }
 
 body {
@@ -583,28 +615,31 @@ input[type='range'].onion-opacity-slider::-webkit-slider-thumb {
   margin-top: -5px;
 }
 
-/* Custom date picker styling: Uppercase MM/DD/YYYY placeholder & dark mode calendar icon visibility */
-input[type='date']::-webkit-datetime-edit,
-input[type='date']::-webkit-datetime-edit-fields-wrapper,
-input[type='date']::-webkit-datetime-edit-text,
-input[type='date']::-webkit-datetime-edit-month-field,
-input[type='date']::-webkit-datetime-edit-day-field,
-input[type='date']::-webkit-datetime-edit-year-field {
-  text-transform: uppercase;
+/* 3D Elevation & Ambient Highlight Enhancements for Dark Mode Cards */
+.dark .shadow-xs,
+html.dark .shadow-xs {
+  box-shadow:
+    0 1px 3px rgba(0, 0, 0, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.07);
 }
 
-input[type='date']::-webkit-calendar-picker-indicator {
-  cursor: pointer;
-  opacity: 0.85;
-  transition: opacity 0.2s;
+.dark .shadow-sm,
+html.dark .shadow-sm {
+  box-shadow:
+    0 2px 6px rgba(0, 0, 0, 0.45),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
 }
 
-input[type='date']::-webkit-calendar-picker-indicator:hover {
-  opacity: 1;
+.dark .shadow-md,
+html.dark .shadow-md {
+  box-shadow:
+    0 4px 12px rgba(0, 0, 0, 0.5),
+    inset 0 1px 0 rgba(255, 255, 255, 0.09);
 }
 
-.dark input[type='date']::-webkit-calendar-picker-indicator,
-html.dark input[type='date']::-webkit-calendar-picker-indicator,
-[data-theme] .dark input[type='date']::-webkit-calendar-picker-indicator {
-  filter: invert(0.9) brightness(1.2);
+.dark .shadow-lg,
+html.dark .shadow-lg {
+  box-shadow:
+    0 8px 20px rgba(0, 0, 0, 0.55),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
 }

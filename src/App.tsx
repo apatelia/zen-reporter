@@ -4,7 +4,9 @@ import FailuresSection from '@/components/failures/FailuresSection';
 import FilesSection from '@/components/files/FilesSection';
 import HistorySection from '@/components/history/HistorySection';
 import Sidebar, { type TabKey } from '@/components/layout/Sidebar';
+import ThemeControls from '@/components/layout/ThemeControls';
 import SuitesSection from '@/components/suites/SuitesSection';
+import BackToTopButton from '@/components/shared/BackToTopButton';
 import { formatDateRange, formatDuration } from '@/lib/formatters';
 import type { HistoryData } from '@/lib/types/history';
 import type { ReportData, TestRun, TestSuite } from '@/lib/types/report';
@@ -74,7 +76,14 @@ export default function App() {
     return 'cafe';
   });
 
-  const [darkMode, setDarkMode] = useState<'light' | 'dark'>(() => {
+  const [darkMode, setDarkMode] = useState<'system' | 'light' | 'dark'>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('zen-dark-mode');
+      if (saved === 'dark' || saved === 'light' || saved === 'system') {
+        return saved;
+      }
+    }
+
     const testRun = initialReportData?.testRun as
       (TestRun & { theme?: string; darkMode?: boolean }) | undefined;
 
@@ -82,14 +91,7 @@ export default function App() {
       return testRun.darkMode ? 'dark' : 'light';
     }
 
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('zen-dark-mode');
-      if (saved === 'dark' || saved === 'light') {
-        return saved;
-      }
-    }
-
-    return 'light';
+    return 'system';
   });
 
   const applyThemeAndDarkMode = (data: ReportData) => {
@@ -102,7 +104,11 @@ export default function App() {
           setTheme(lower as 'cafe' | 'concept' | 'sentinel');
         }
       }
-      if (testRun.darkMode !== undefined) {
+      if (
+        testRun.darkMode !== undefined &&
+        typeof window !== 'undefined' &&
+        !localStorage.getItem('zen-dark-mode')
+      ) {
         setDarkMode(testRun.darkMode ? 'dark' : 'light');
       }
     }
@@ -114,12 +120,28 @@ export default function App() {
   }, [theme]);
 
   useEffect(() => {
-    if (darkMode === 'dark') {
-      document.documentElement.classList.add('dark');
-      document.documentElement.style.colorScheme = 'dark';
+    const applyMode = (isDark: boolean) => {
+      if (isDark) {
+        document.documentElement.classList.add('dark');
+        document.documentElement.style.colorScheme = 'dark';
+      } else {
+        document.documentElement.classList.remove('dark');
+        document.documentElement.style.colorScheme = 'light';
+      }
+    };
+
+    if (darkMode === 'system') {
+      if (typeof window !== 'undefined' && window.matchMedia) {
+        const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+        applyMode(mediaQuery.matches);
+
+        const listener = (e: MediaQueryListEvent) => applyMode(e.matches);
+        mediaQuery.addEventListener('change', listener);
+        return () => mediaQuery.removeEventListener('change', listener);
+      }
+      applyMode(false);
     } else {
-      document.documentElement.classList.remove('dark');
-      document.documentElement.style.colorScheme = 'light';
+      applyMode(darkMode === 'dark');
     }
   }, [darkMode]);
 
@@ -133,12 +155,6 @@ export default function App() {
     }
     link.href = faviconUri;
   }, []);
-
-  const cycleDarkMode = () => {
-    const next = darkMode === 'light' ? 'dark' : 'light';
-    setDarkMode(next);
-    localStorage.setItem('zen-dark-mode', next);
-  };
 
   useEffect(() => {
     void (async () => {
@@ -273,142 +289,77 @@ export default function App() {
       {/* Main Content */}
       <main className="flex-1 flex flex-col min-w-0 overflow-hidden bg-canvas">
         {/* Top Bar with Project/Run Name & Theme Switch */}
-        <header className="border-b border-border-default bg-surface-50/50 px-6 py-3 shrink-0 flex items-start justify-between gap-4">
+        <header className="border-b border-border-default bg-surface-50/50 px-6 py-2.5 shrink-0 flex items-center justify-between gap-4">
           <div className="flex items-center gap-3 min-w-0">
             <div className="min-w-0 flex flex-col justify-center">
               <h1 className="text-base font-bold tracking-tight text-text-ink dark:text-text-on-primary sm:text-lg truncate leading-tight">
                 {projectName || 'Test Execution Report'}
               </h1>
               <div className="mt-1 flex items-center gap-2 flex-wrap text-xs text-text-body-mid dark:text-text-muted min-w-0">
-                <span className="text-text-muted font-normal">Report for</span>
-                <span className="inline-flex items-center rounded-md bg-accent-blue/10 px-2 py-0.5 text-xs font-semibold text-accent-blue ring-1 ring-inset ring-accent-blue/20 dark:bg-accent-blue/20 dark:text-accent-blue max-w-sm truncate">
+                <span
+                  className="font-medium text-text-ink dark:text-text-on-primary max-w-md truncate"
+                  title={testRunName || 'Playwright Test Reporter'}
+                >
                   {testRunName || 'Playwright Test Reporter'}
                 </span>
-              </div>
-              {summary && (
-                <div className="mt-1.5 hidden sm:flex items-center gap-2 text-xs text-text-body-mid dark:text-text-muted">
-                  <div className="flex items-center gap-1.5">
-                    <svg
-                      className="h-3.5 w-3.5 text-text-muted shrink-0"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                      strokeWidth={1.75}
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    >
-                      <rect width="18" height="18" x="3" y="4" rx="2" ry="2" />
-                      <line x1="16" x2="16" y1="2" y2="6" />
-                      <line x1="8" x2="8" y1="2" y2="6" />
-                      <line x1="3" x2="21" y1="10" y2="10" />
-                    </svg>
-                    <span className="font-medium">
-                      {formatDateRange(summary.startTime, summary.endTime)}
+                {summary && (
+                  <>
+                    <span className="text-text-muted/60 font-medium">·</span>
+                    <div className="flex items-center gap-1.5">
+                      <svg
+                        className="h-3.5 w-3.5 text-text-muted shrink-0"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                        strokeWidth={1.75}
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <rect width="18" height="18" x="3" y="4" rx="2" ry="2" />
+                        <line x1="16" x2="16" y1="2" y2="6" />
+                        <line x1="8" x2="8" y1="2" y2="6" />
+                        <line x1="3" x2="21" y1="10" y2="10" />
+                      </svg>
+                      <span className="font-medium">
+                        {formatDateRange(summary.startTime, summary.endTime)}
+                      </span>
+                    </div>
+                    <span className="inline-flex items-center gap-1.5 rounded-full bg-success-500/10 px-2.5 py-0.5 text-[11px] font-bold text-success-600 ring-1 ring-inset ring-success-500/20 dark:bg-success-500/20 dark:text-success-400 dark:ring-success-500/30">
+                      <svg
+                        className="h-3 w-3 text-success-600 dark:text-success-400 shrink-0"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                        strokeWidth={2}
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <circle cx="12" cy="12" r="9" />
+                        <polyline points="12 6 12 12 16 14" />
+                      </svg>
+                      <span>{formatDuration(summary.duration)}</span>
                     </span>
-                  </div>
-                  <span className="inline-flex items-center gap-1.5 rounded-full bg-surface-100 px-2 py-0.5 text-[11px] font-semibold text-text-body-mid border border-border-default dark:bg-surface-100/60 dark:text-text-muted">
-                    <svg
-                      className="h-3 w-3 text-text-body-mid dark:text-text-muted shrink-0"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                      strokeWidth={2}
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    >
-                      <circle cx="12" cy="12" r="9" />
-                      <polyline points="12 6 12 12 16 14" />
-                    </svg>
-                    <span>{formatDuration(summary.duration)}</span>
-                  </span>
-                </div>
-              )}
+                  </>
+                )}
+              </div>
             </div>
           </div>
 
           <div className="flex items-center gap-3 shrink-0 pt-0.5">
-            <div className="flex items-center gap-2">
-              <label
-                htmlFor="theme-select"
-                className="text-xs text-text-body-mid dark:text-text-muted shrink-0 font-medium"
-              >
-                Theme:
-              </label>
-              <div className="relative inline-flex items-center">
-                <select
-                  id="theme-select"
-                  value={theme}
-                  onChange={(e) => setTheme(e.target.value as 'cafe' | 'concept' | 'sentinel')}
-                  className="appearance-none rounded-md border border-border-default bg-surface-50 pl-3 pr-8 py-1.5 text-xs text-text-ink focus:border-accent-blue focus:outline-none dark:bg-surface-50 dark:text-text-on-primary font-medium cursor-pointer"
-                  aria-label="Select Theme"
-                  title="Select Theme"
-                >
-                  <option value="cafe">Cafe</option>
-                  <option value="concept">Concept</option>
-                  <option value="sentinel">Sentinel</option>
-                </select>
-                <svg
-                  className="pointer-events-none absolute right-2.5 h-3.5 w-3.5 text-text-body-mid dark:text-text-muted shrink-0"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                  strokeWidth={2}
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M19.5 8.25l-7.5 7.5-7.5-7.5"
-                  />
-                </svg>
-              </div>
-            </div>
-
-            <button
-              onClick={cycleDarkMode}
-              className="inline-flex items-center gap-2 px-3 py-1.5 rounded-md border border-border-default text-text-body-mid hover:text-text-ink hover:bg-surface-100 dark:text-text-muted dark:hover:text-text-on-primary transition-colors shrink-0 cursor-pointer text-xs font-medium"
-              title={`Switch to ${darkMode === 'dark' ? 'Light' : 'Dark'} mode`}
-            >
-              {darkMode === 'dark' ? (
-                <>
-                  <svg
-                    className="h-4 w-4 text-warning-400"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                    strokeWidth={1.5}
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M12 3v2.25m6.364.386l-1.591 1.591M21 12h-2.25m-.386 6.364l-1.591-1.591M12 18.75V21m-4.773-4.227l-1.591 1.591M5.25 12H3m4.227-4.773L5.636 5.636M15.75 12a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0z"
-                    />
-                  </svg>
-                  <span className="hidden sm:inline">Light Mode</span>
-                </>
-              ) : (
-                <>
-                  <svg
-                    className="h-4 w-4 text-primary-500"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                    strokeWidth={1.5}
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M21.752 15.002A9.718 9.718 0 0118 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 003 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 009.002-5.998z"
-                    />
-                  </svg>
-                  <span className="hidden sm:inline">Dark Mode</span>
-                </>
-              )}
-            </button>
+            <ThemeControls
+              theme={theme}
+              setTheme={setTheme}
+              darkMode={darkMode}
+              setDarkMode={(mode) => {
+                setDarkMode(mode);
+                localStorage.setItem('zen-dark-mode', mode);
+              }}
+            />
           </div>
         </header>
 
         <div className="flex-1 overflow-auto">
-          <div className="mx-auto max-w-full px-6 sm:px-8 pt-4 pb-8">
+          <div className="mx-auto max-w-full px-6 sm:px-8 pt-6 sm:pt-8 pb-8">
             {isLoading && (
               <div className="flex items-center justify-center py-24">
                 <div className="text-center">
@@ -523,6 +474,8 @@ export default function App() {
           </div>
         </div>
       </main>
+
+      <BackToTopButton activeTab={activeTab} />
     </div>
   );
 }

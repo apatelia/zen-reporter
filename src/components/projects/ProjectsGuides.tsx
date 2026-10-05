@@ -32,7 +32,7 @@ export default function ProjectsGuides({
           Chrome).
         </p>
 
-        <div>
+        <div className="rounded-md border border-border-default bg-surface-50 p-3 space-y-2">
           <h5 className="font-semibold text-text-ink dark:text-text-on-primary mb-1">
             Status Categories:
           </h5>
@@ -63,7 +63,7 @@ export default function ProjectsGuides({
           </ul>
         </div>
 
-        <div>
+        <div className="rounded-md border border-border-default bg-surface-50 p-3 space-y-2">
           <h5 className="font-semibold text-text-ink dark:text-text-on-primary mb-1">
             Diagnostic Insights:
           </h5>
@@ -88,7 +88,7 @@ export default function ProjectsGuides({
         </p>
 
         <div className="rounded-md border border-border-default bg-surface-50 p-3 space-y-2">
-          <div className="font-bold text-text-ink dark:text-text-on-primary text-xs uppercase tracking-wider">
+          <div className="font-bold text-text-ink dark:text-text-on-primary text-xs tracking-wider">
             Key Metrics:
           </div>
           <ul className="list-disc list-inside space-y-1.5">
@@ -112,7 +112,7 @@ export default function ProjectsGuides({
         </div>
 
         <div className="rounded-md border border-border-default bg-surface-50 p-3 space-y-2">
-          <div className="font-bold text-text-ink dark:text-text-on-primary text-xs uppercase tracking-wider">
+          <div className="font-bold text-text-ink dark:text-text-on-primary text-xs tracking-wider">
             Operational Guidelines:
           </div>
           <ul className="list-disc list-inside space-y-1">
@@ -143,7 +143,7 @@ export default function ProjectsGuides({
         </p>
 
         <div className="rounded-md border border-border-default bg-surface-50 p-4 space-y-2.5">
-          <div className="font-bold text-text-ink dark:text-text-on-primary text-xs uppercase tracking-wider">
+          <div className="font-bold text-text-ink dark:text-text-on-primary text-xs tracking-wider">
             Key Metrics & Health Indicators:
           </div>
           <ul className="list-disc list-inside space-y-1.5">
@@ -160,6 +160,29 @@ export default function ProjectsGuides({
               to identify long-tail execution bottlenecks across specs.
             </li>
             <li>
+              <strong>Relative Speed Multiplier:</strong> The speed badge next to the project title
+              indicates how that project's average test duration compares to the overall test suite
+              average across all projects:
+              <ul className="list-disc pl-4 mt-1 space-y-1 text-xs">
+                <li>
+                  <strong className="text-success-600 dark:text-success-500">
+                    ⚡ N.Nx faster than avg:
+                  </strong>{' '}
+                  Average test duration is shorter than the overall run average.
+                </li>
+                <li>
+                  <strong className="text-warning-600 dark:text-warning-500">
+                    ⚡ N.Nx slower than avg:
+                  </strong>{' '}
+                  Average test duration is longer than the overall run average.
+                </li>
+                <li>
+                  <strong className="text-text-muted">⚡ 1.0x avg speed:</strong> Average test
+                  duration matches the overall run average.
+                </li>
+              </ul>
+            </li>
+            <li>
               <strong>Retries & In-Run Flakiness:</strong> Count and percentage of test cases that
               failed on initial attempt but succeeded after automatic retries.
             </li>
@@ -167,7 +190,7 @@ export default function ProjectsGuides({
         </div>
 
         <div className="rounded-md border border-border-default bg-surface-50 p-4 space-y-2.5">
-          <div className="font-bold text-text-ink dark:text-text-on-primary text-xs uppercase tracking-wider">
+          <div className="font-bold text-text-ink dark:text-text-on-primary text-xs tracking-wider">
             Diagnostic Controls & Deep Dives:
           </div>
           <ul className="list-disc list-inside space-y-1.5">

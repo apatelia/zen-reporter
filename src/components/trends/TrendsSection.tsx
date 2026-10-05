@@ -1,8 +1,10 @@
+import { useState } from 'react';
 import type { TestSuite } from '@/lib/types/report';
 import type { HistoryData } from '@/lib/types/history';
 import PassRateTrend from '@/components/trends/PassRateTrend';
 import DurationTrend from '@/components/trends/DurationTrend';
 import StepCategoryTrend from '@/components/trends/StepCategoryTrend';
+import TrendsGuides from '@/components/trends/TrendsGuides';
 import HistoryDisabledBanner from '@/components/shared/HistoryDisabledBanner';
 
 export interface TrendsSectionProps {
@@ -12,15 +14,32 @@ export interface TrendsSectionProps {
 }
 
 export default function TrendsSection({ history, suites, isHistoryDisabled }: TrendsSectionProps) {
+  const [passRateModalOpen, setPassRateModalOpen] = useState(false);
+  const [durationModalOpen, setDurationModalOpen] = useState(false);
+  const [stepCategoryModalOpen, setStepCategoryModalOpen] = useState(false);
+
+  const guidesElement = (
+    <TrendsGuides
+      passRateModalOpen={passRateModalOpen}
+      onClosePassRateModal={() => setPassRateModalOpen(false)}
+      durationModalOpen={durationModalOpen}
+      onCloseDurationModal={() => setDurationModalOpen(false)}
+      stepCategoryModalOpen={stepCategoryModalOpen}
+      onCloseStepCategoryModal={() => setStepCategoryModalOpen(false)}
+    />
+  );
+
   if (!history) {
     return (
       <div className="space-y-6">
         {isHistoryDisabled && <HistoryDisabledBanner />}
-        <h2 className="mb-4 text-2xl font-bold tracking-tight text-text-ink dark:text-text-on-primary sm:text-3xl">
-          Historical Trends
-        </h2>
+        <h1 className="sr-only">Historical Trends</h1>
         {/* Step Category Composition for current run can still display even without history */}
-        <StepCategoryTrend suites={suites} history={null} />
+        <StepCategoryTrend
+          suites={suites}
+          history={null}
+          onOpenGuide={() => setStepCategoryModalOpen(true)}
+        />
         <div className="flex items-center justify-center py-16 text-center rounded-md border border-border-default bg-surface-50 p-6">
           <div>
             <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-md bg-surface-100 border border-border-default">
@@ -50,6 +69,9 @@ export default function TrendsSection({ history, suites, isHistoryDisabled }: Tr
             </p>
           </div>
         </div>
+
+        {/* Interactive Modal Guides */}
+        {guidesElement}
       </div>
     );
   }
@@ -57,18 +79,23 @@ export default function TrendsSection({ history, suites, isHistoryDisabled }: Tr
   return (
     <div className="space-y-6">
       {isHistoryDisabled && <HistoryDisabledBanner />}
-      <h2 className="mb-4 text-2xl font-bold tracking-tight text-text-ink dark:text-text-on-primary sm:text-3xl">
-        Historical Trends
-      </h2>
+      <h1 className="sr-only">Historical Trends</h1>
 
       {/* 1. Pass Rate Trend Section */}
-      <PassRateTrend history={history} />
+      <PassRateTrend history={history} onOpenGuide={() => setPassRateModalOpen(true)} />
 
       {/* 2. Duration Trend Section */}
-      <DurationTrend history={history} />
+      <DurationTrend history={history} onOpenGuide={() => setDurationModalOpen(true)} />
 
       {/* 3. Step Category Composition & Trend Section */}
-      <StepCategoryTrend suites={suites} history={history} />
+      <StepCategoryTrend
+        suites={suites}
+        history={history}
+        onOpenGuide={() => setStepCategoryModalOpen(true)}
+      />
+
+      {/* Interactive Modal Guides */}
+      {guidesElement}
     </div>
   );
 }

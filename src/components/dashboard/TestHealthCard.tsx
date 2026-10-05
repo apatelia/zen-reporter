@@ -50,7 +50,7 @@ export default function TestHealthCard({ suites }: TestHealthCardProps) {
   }
 
   return (
-    <div className="flex flex-col justify-between w-full h-full rounded-md bg-canvas border border-border-default p-5 shadow-sm">
+    <div className="flex flex-col justify-between w-full h-full rounded-md bg-canvas border border-border-default p-5 shadow-xs">
       {/* Header */}
       <div>
         <div className="flex items-center justify-between">
