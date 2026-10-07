@@ -462,47 +462,53 @@ export default function InsightsSection({
                   success)
                 </p>
               </div>
-              <PageSizeControl
-                id="flaky-page-size"
-                pageSize={flakyPag.pageSize}
-                onPageSizeChange={flakyPag.changePageSize}
-              />
+              {history.flaky.length > 0 && filteredFlaky.length > 0 && (
+                <PageSizeControl
+                  id="flaky-page-size"
+                  pageSize={flakyPag.pageSize}
+                  onPageSizeChange={flakyPag.changePageSize}
+                />
+              )}
             </div>
 
-            <div className="pt-3 pb-3 border-b border-border-default/50 flex flex-col gap-3">
-              <DateFilterControl
-                onFilterChange={(range) => {
-                  setFlakyFilterRange(range);
-                  flakyPag.setPage(1);
-                }}
-                availableTimestamps={availableTimestamps}
-              />
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                <SearchInput
-                  value={flakySearchTerm}
-                  onChange={(val) => {
-                    setFlakySearchTerm(val);
+            {history.flaky.length > 0 && (
+              <div className="pt-3 pb-3 border-b border-border-default/50 flex flex-col gap-3">
+                <DateFilterControl
+                  onFilterChange={(range) => {
+                    setFlakyFilterRange(range);
                     flakyPag.setPage(1);
                   }}
-                  placeholder="Search flaky tests by title, suite, or project..."
-                  className="w-full sm:w-80 md:w-96"
+                  availableTimestamps={availableTimestamps}
                 />
-                <ExportCsvButton
-                  onClick={() =>
-                    exportColumnsToCsv(
-                      () =>
-                        generateExportFilename('flaky_tests', {
-                          dateRange: flakyFilterRange,
-                          searchTerm: flakySearchTerm,
-                        }),
-                      filteredFlaky,
-                      flakyColumns
-                    )
-                  }
-                  count={filteredFlaky.length}
-                />
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <SearchInput
+                    value={flakySearchTerm}
+                    onChange={(val) => {
+                      setFlakySearchTerm(val);
+                      flakyPag.setPage(1);
+                    }}
+                    placeholder="Search flaky tests by title, suite, or project..."
+                    className="w-full sm:w-80 md:w-96"
+                  />
+                  {filteredFlaky.length > 0 && (
+                    <ExportCsvButton
+                      onClick={() =>
+                        exportColumnsToCsv(
+                          () =>
+                            generateExportFilename('flaky_tests', {
+                              dateRange: flakyFilterRange,
+                              searchTerm: flakySearchTerm,
+                            }),
+                          filteredFlaky,
+                          flakyColumns
+                        )
+                      }
+                      count={filteredFlaky.length}
+                    />
+                  )}
+                </div>
               </div>
-            </div>
+            )}
 
             {filteredFlaky.length === 0 ? (
               <p className="mt-3 text-xs font-medium text-text-body-mid dark:text-text-muted">
@@ -552,47 +558,53 @@ export default function InsightsSection({
                   Tests that previously passed in a prior run but failed during a subsequent run
                 </p>
               </div>
-              <PageSizeControl
-                id="regressions-page-size"
-                pageSize={regressionsPag.pageSize}
-                onPageSizeChange={regressionsPag.changePageSize}
-              />
+              {history.regressions.length > 0 && filteredRegressions.length > 0 && (
+                <PageSizeControl
+                  id="regressions-page-size"
+                  pageSize={regressionsPag.pageSize}
+                  onPageSizeChange={regressionsPag.changePageSize}
+                />
+              )}
             </div>
 
-            <div className="pt-3 pb-3 border-b border-border-default/50 flex flex-col gap-3">
-              <DateFilterControl
-                onFilterChange={(range) => {
-                  setRegressionFilterRange(range);
-                  regressionsPag.setPage(1);
-                }}
-                availableTimestamps={availableTimestamps}
-              />
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                <SearchInput
-                  value={regressionSearchTerm}
-                  onChange={(val) => {
-                    setRegressionSearchTerm(val);
+            {history.regressions.length > 0 && (
+              <div className="pt-3 pb-3 border-b border-border-default/50 flex flex-col gap-3">
+                <DateFilterControl
+                  onFilterChange={(range) => {
+                    setRegressionFilterRange(range);
                     regressionsPag.setPage(1);
                   }}
-                  placeholder="Search regressions by title, suite, or project..."
-                  className="w-full sm:w-80 md:w-96"
+                  availableTimestamps={availableTimestamps}
                 />
-                <ExportCsvButton
-                  onClick={() =>
-                    exportColumnsToCsv(
-                      () =>
-                        generateExportFilename('test_regressions', {
-                          dateRange: regressionFilterRange,
-                          searchTerm: regressionSearchTerm,
-                        }),
-                      filteredRegressions,
-                      regressionColumns
-                    )
-                  }
-                  count={filteredRegressions.length}
-                />
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <SearchInput
+                    value={regressionSearchTerm}
+                    onChange={(val) => {
+                      setRegressionSearchTerm(val);
+                      regressionsPag.setPage(1);
+                    }}
+                    placeholder="Search regressions by title, suite, or project..."
+                    className="w-full sm:w-80 md:w-96"
+                  />
+                  {filteredRegressions.length > 0 && (
+                    <ExportCsvButton
+                      onClick={() =>
+                        exportColumnsToCsv(
+                          () =>
+                            generateExportFilename('test_regressions', {
+                              dateRange: regressionFilterRange,
+                              searchTerm: regressionSearchTerm,
+                            }),
+                          filteredRegressions,
+                          regressionColumns
+                        )
+                      }
+                      count={filteredRegressions.length}
+                    />
+                  )}
+                </div>
               </div>
-            </div>
+            )}
 
             {filteredRegressions.length === 0 ? (
               <p className="mt-3 text-xs font-medium text-text-body-mid dark:text-text-muted">

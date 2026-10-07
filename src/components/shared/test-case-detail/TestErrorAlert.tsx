@@ -114,7 +114,7 @@ export function TestErrorAlert({ error, status }: TestErrorAlertProps) {
                   Code Snippet:
                 </p>
                 <div
-                  className="rounded-md bg-surface-100 dark:bg-surface-950 p-2.5 text-xs font-mono leading-relaxed text-text-ink dark:text-slate-200 border border-border-default dark:border-border-subtle overflow-x-auto"
+                  className="rounded-md bg-surface-100 dark:bg-surface-950 p-2.5 text-[13px] font-mono leading-relaxed text-text-ink dark:text-slate-200 border border-border-default dark:border-border-subtle overflow-x-auto"
                   /* eslint-disable-next-line @eslint-react/dom-no-dangerously-set-innerhtml */
                   dangerouslySetInnerHTML={{
                     __html: highlightCodeSnippet(sanitizeAnsi(error.snippet), status),
@@ -129,7 +129,7 @@ export function TestErrorAlert({ error, status }: TestErrorAlertProps) {
                   Stack Trace:
                 </p>
                 <pre
-                  className="rounded-md bg-surface-100 dark:bg-surface-950 p-3 text-xs font-mono leading-relaxed text-text-ink dark:text-slate-200 border border-border-default dark:border-border-subtle overflow-x-auto"
+                  className="rounded-md bg-surface-100 dark:bg-surface-950 p-3 text-[13px] font-mono leading-relaxed text-text-ink dark:text-slate-200 border border-border-default dark:border-border-subtle overflow-x-auto"
                   /* eslint-disable-next-line @eslint-react/dom-no-dangerously-set-innerhtml */
                   dangerouslySetInnerHTML={{
                     __html: highlightExpectedReceived(error.stack),

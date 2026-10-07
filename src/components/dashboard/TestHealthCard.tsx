@@ -74,7 +74,7 @@ export default function TestHealthCard({ suites }: TestHealthCardProps) {
           {flakyRate}%
         </span>
         <span className="text-xs font-medium uppercase tracking-wider text-text-body-mid dark:text-text-muted">
-          Flakiness Rate ({flakyCount}/{executedCount || 1} executed tests recovered)
+          Flakiness Rate ({flakyCount}/{executedCount} executed tests recovered)
         </span>
       </div>
 

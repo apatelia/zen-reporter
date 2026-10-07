@@ -10,6 +10,7 @@ interface MultiSelectFilterProps<T> {
   renderOption?: (option: T, isSelected: boolean, handleToggle: (option: T) => void) => ReactNode;
   showSearch?: boolean;
   disabled?: boolean;
+  align?: 'left' | 'right';
 }
 
 export function FilterCountBadge({ count, className = '' }: { count: number; className?: string }) {
@@ -32,6 +33,7 @@ export default function MultiSelectFilter<T extends string>({
   renderOption,
   showSearch = false,
   disabled = false,
+  align = 'left',
 }: MultiSelectFilterProps<T>) {
   const [isOpen, setIsOpen] = useState(false);
   const [tempSelection, setTempSelection] = useState<T[]>([...selectedOptions]);
@@ -94,6 +96,8 @@ export default function MultiSelectFilter<T extends string>({
         : selectedOptions.length
       : 0;
 
+  const alignClass = align === 'right' ? 'right-0' : 'left-0';
+
   return (
     <div className="flex items-center gap-2">
       <div className="relative" ref={dropdownRef}>
@@ -128,7 +132,9 @@ export default function MultiSelectFilter<T extends string>({
         </button>
 
         {isOpen && (
-          <div className="absolute left-0 z-50 mt-1 min-w-62.5 overflow-hidden rounded-md border border-border-default bg-canvas shadow-2xl ring-1 ring-black/5 dark:border-border-default dark:bg-canvas dark:ring-white/10">
+          <div
+            className={`absolute ${alignClass} z-50 mt-1 min-w-62.5 overflow-hidden rounded-md border border-border-default bg-canvas shadow-2xl ring-1 ring-black/5 dark:border-border-default dark:bg-canvas dark:ring-white/10`}
+          >
             <div className="p-2 space-y-2 max-h-80 overflow-y-auto">
               {showSearch && (
                 <div className="relative">

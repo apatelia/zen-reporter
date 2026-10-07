@@ -10,6 +10,7 @@ export interface DateFilterRange {
 interface DateFilterControlProps {
   onFilterChange: (range: DateFilterRange) => void;
   availableTimestamps?: string[];
+  disabled?: boolean;
 }
 
 const MONTH_NAMES = [
@@ -62,6 +63,7 @@ function formatIsoToDDMMYYYY(isoDateStr: string): string {
 export default function DateFilterControl({
   onFilterChange,
   availableTimestamps = [],
+  disabled = false,
 }: DateFilterControlProps) {
   const [currentYear] = useState(() => new Date().getFullYear());
 
@@ -327,15 +329,16 @@ export default function DateFilterControl({
   const isFilterApplied = appliedLabel !== null || activePreset !== null;
 
   return (
-    <div className="flex flex-col gap-2">
+    <div className={`flex flex-col gap-2 ${disabled ? 'opacity-50 pointer-events-none' : ''}`}>
       {/* Primary Row: Mode Tabs, Date Inputs & Action Buttons */}
       <div className="flex flex-wrap items-center gap-2">
         {/* Segmented Mode Selector */}
         <div className="inline-flex items-center rounded-md border border-border-default bg-surface-100 p-0.5 text-xs font-semibold shrink-0">
           <button
             type="button"
+            disabled={disabled}
             onClick={handleClearFilter}
-            className={`flex items-center gap-1.5 px-3 py-1 rounded transition-colors cursor-pointer ${
+            className={`flex items-center gap-1.5 px-3 py-1 rounded transition-colors cursor-pointer disabled:cursor-not-allowed ${
               mode === 'all'
                 ? 'bg-canvas dark:bg-surface-200 border border-border-active text-text-ink dark:text-text-on-primary shadow-xs font-bold'
                 : 'border border-transparent text-text-body-mid hover:text-text-ink dark:text-text-muted dark:hover:text-text-on-primary font-medium'
@@ -346,11 +349,12 @@ export default function DateFilterControl({
 
           <button
             type="button"
+            disabled={disabled}
             onClick={() => {
               setMode('month');
               setIsMonthPopoverOpen(true);
             }}
-            className={`flex items-center gap-1.5 px-3 py-1 rounded transition-colors cursor-pointer ${
+            className={`flex items-center gap-1.5 px-3 py-1 rounded transition-colors cursor-pointer disabled:cursor-not-allowed ${
               mode === 'month'
                 ? 'bg-canvas dark:bg-surface-200 border border-border-active text-text-ink dark:text-text-on-primary shadow-xs font-bold'
                 : 'border border-transparent text-text-body-mid hover:text-text-ink dark:text-text-muted dark:hover:text-text-on-primary font-medium'
@@ -374,11 +378,12 @@ export default function DateFilterControl({
 
           <button
             type="button"
+            disabled={disabled}
             onClick={() => {
               setMode('range');
               setIsMonthPopoverOpen(false);
             }}
-            className={`flex items-center gap-1.5 px-3 py-1 rounded transition-colors cursor-pointer ${
+            className={`flex items-center gap-1.5 px-3 py-1 rounded transition-colors cursor-pointer disabled:cursor-not-allowed ${
               mode === 'range'
                 ? 'bg-canvas dark:bg-surface-200 border border-border-active text-text-ink dark:text-text-on-primary shadow-xs font-bold'
                 : 'border border-transparent text-text-body-mid hover:text-text-ink dark:text-text-muted dark:hover:text-text-on-primary font-medium'
@@ -407,8 +412,9 @@ export default function DateFilterControl({
             <div className="relative" ref={monthPopoverRef}>
               <button
                 type="button"
+                disabled={disabled}
                 onClick={() => setIsMonthPopoverOpen(!isMonthPopoverOpen)}
-                className="inline-flex items-center gap-2 rounded-lg border border-border-default bg-surface-50 px-3 py-1.5 text-xs font-semibold text-text-ink dark:text-text-on-primary shadow-xs hover:border-accent-blue transition-colors cursor-pointer"
+                className="inline-flex items-center gap-2 rounded-lg border border-border-default bg-surface-50 px-3 py-1.5 text-xs font-semibold text-text-ink dark:text-text-on-primary shadow-xs hover:border-accent-blue transition-colors cursor-pointer disabled:cursor-not-allowed"
               >
                 <span>📅 {selectedMonthLabel}</span>
                 <svg
@@ -508,6 +514,7 @@ export default function DateFilterControl({
               value={startDate}
               min={datasetYearsMonths.minDateStr}
               max={endDate || datasetYearsMonths.maxDateStr}
+              disabled={disabled}
               onChange={(val) => {
                 setStartDate(val);
                 setIsDirty(true);
@@ -519,6 +526,7 @@ export default function DateFilterControl({
               value={endDate}
               min={startDate || datasetYearsMonths.minDateStr}
               max={datasetYearsMonths.maxDateStr}
+              disabled={disabled}
               onChange={(val) => {
                 setEndDate(val);
                 setIsDirty(true);
@@ -584,8 +592,9 @@ export default function DateFilterControl({
             {datasetYearsMonths.hasThisMonthData && (
               <button
                 type="button"
+                disabled={disabled}
                 onClick={() => handlePreset('thisMonth')}
-                className={`inline-flex items-center gap-1 rounded-md border px-2.5 py-1 text-xs font-semibold transition-colors cursor-pointer ${
+                className={`inline-flex items-center gap-1 rounded-md border px-2.5 py-1 text-xs font-semibold transition-colors cursor-pointer disabled:cursor-not-allowed ${
                   activePreset === 'thisMonth'
                     ? 'border-success-600 bg-success-600 text-white dark:bg-success-600 dark:text-white shadow-xs font-bold'
                     : 'border-border-default bg-surface-50 text-text-body-mid hover:border-accent-blue hover:text-text-ink dark:hover:text-text-on-primary'
@@ -609,8 +618,9 @@ export default function DateFilterControl({
             {datasetYearsMonths.has7DaysData && (
               <button
                 type="button"
+                disabled={disabled}
                 onClick={() => handlePreset('last7Days')}
-                className={`inline-flex items-center gap-1 rounded-md border px-2.5 py-1 text-xs font-semibold transition-colors cursor-pointer ${
+                className={`inline-flex items-center gap-1 rounded-md border px-2.5 py-1 text-xs font-semibold transition-colors cursor-pointer disabled:cursor-not-allowed ${
                   activePreset === 'last7Days'
                     ? 'border-success-600 bg-success-600 text-white dark:bg-success-600 dark:text-white shadow-xs font-bold'
                     : 'border-border-default bg-surface-50 text-text-body-mid hover:border-accent-blue hover:text-text-ink dark:hover:text-text-on-primary'
@@ -634,8 +644,9 @@ export default function DateFilterControl({
             {datasetYearsMonths.has30DaysData && (
               <button
                 type="button"
+                disabled={disabled}
                 onClick={() => handlePreset('last30Days')}
-                className={`inline-flex items-center gap-1 rounded-md border px-2.5 py-1 text-xs font-semibold transition-colors cursor-pointer ${
+                className={`inline-flex items-center gap-1 rounded-md border px-2.5 py-1 text-xs font-semibold transition-colors cursor-pointer disabled:cursor-not-allowed ${
                   activePreset === 'last30Days'
                     ? 'border-success-600 bg-success-600 text-white dark:bg-success-600 dark:text-white shadow-xs font-bold'
                     : 'border-border-default bg-surface-50 text-text-body-mid hover:border-accent-blue hover:text-text-ink dark:hover:text-text-on-primary'
@@ -659,8 +670,9 @@ export default function DateFilterControl({
             {datasetYearsMonths.has90DaysData && (
               <button
                 type="button"
+                disabled={disabled}
                 onClick={() => handlePreset('last90Days')}
-                className={`inline-flex items-center gap-1 rounded-md border px-2.5 py-1 text-xs font-semibold transition-colors cursor-pointer ${
+                className={`inline-flex items-center gap-1 rounded-md border px-2.5 py-1 text-xs font-semibold transition-colors cursor-pointer disabled:cursor-not-allowed ${
                   activePreset === 'last90Days'
                     ? 'border-success-600 bg-success-600 text-white dark:bg-success-600 dark:text-white shadow-xs font-bold'
                     : 'border-border-default bg-surface-50 text-text-body-mid hover:border-accent-blue hover:text-text-ink dark:hover:text-text-on-primary'

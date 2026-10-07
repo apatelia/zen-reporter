@@ -220,49 +220,53 @@ export function HistoryFileSection({
             Spec files test execution breakdown across test runs
           </p>
         </div>
-        <PageSizeControl
-          id="files-history-page-size"
-          pageSize={filesPag.pageSize}
-          onPageSizeChange={filesPag.changePageSize}
-        />
+        {rawFiles.length > 0 && aggregatedFiles.length > 0 && (
+          <PageSizeControl
+            id="files-history-page-size"
+            pageSize={filesPag.pageSize}
+            onPageSizeChange={filesPag.changePageSize}
+          />
+        )}
       </div>
 
-      <div className="pt-3 pb-3 border-b border-border-default/50 flex flex-col gap-3">
-        <DateFilterControl
-          onFilterChange={(range) => {
-            setFileFilterRange(range);
-            filesPag.setPage(1);
-          }}
-          availableTimestamps={availableTimestamps}
-        />
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <SearchInput
-            value={fileNameSearchTerm}
-            onChange={(val) => {
-              setFileNameSearchTerm(val);
+      {rawFiles.length > 0 && (
+        <div className="pt-3 pb-3 border-b border-border-default/50 flex flex-col gap-3">
+          <DateFilterControl
+            onFilterChange={(range) => {
+              setFileFilterRange(range);
               filesPag.setPage(1);
             }}
-            placeholder="Search file history by spec file name or path..."
-            className="w-full sm:w-80 md:w-96"
+            availableTimestamps={availableTimestamps}
           />
-          {aggregatedFiles.length > 0 && (
-            <ExportCsvButton
-              onClick={() =>
-                exportColumnsToCsv(
-                  () =>
-                    generateExportFilename('spec_file_history', {
-                      dateRange: fileFilterRange,
-                      searchTerm: fileNameSearchTerm,
-                    }),
-                  aggregatedFiles,
-                  fileColumns
-                )
-              }
-              count={aggregatedFiles.length}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <SearchInput
+              value={fileNameSearchTerm}
+              onChange={(val) => {
+                setFileNameSearchTerm(val);
+                filesPag.setPage(1);
+              }}
+              placeholder="Search file history by spec file name or path..."
+              className="w-full sm:w-80 md:w-96"
             />
-          )}
+            {aggregatedFiles.length > 0 && (
+              <ExportCsvButton
+                onClick={() =>
+                  exportColumnsToCsv(
+                    () =>
+                      generateExportFilename('spec_file_history', {
+                        dateRange: fileFilterRange,
+                        searchTerm: fileNameSearchTerm,
+                      }),
+                    aggregatedFiles,
+                    fileColumns
+                  )
+                }
+                count={aggregatedFiles.length}
+              />
+            )}
+          </div>
         </div>
-      </div>
+      )}
 
       <DataTable
         data={pageFiles}

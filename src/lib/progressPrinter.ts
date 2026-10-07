@@ -123,7 +123,7 @@ export class ProgressPrinter {
     const workersCount = this.activeWorkers.size;
     const workerStr = `${workersCount} active worker${workersCount === 1 ? '' : 's'}`;
 
-    let line = `[ ${this.completedTests}/${this.totalTests} ] ${pct}% | ✅ ${this.passedCount} | ❌ ${this.failedCount + this.timedOutCount} | ⏭️ ${this.skippedCount} (${workerStr})`;
+    let line = `[ ${this.completedTests}/${this.totalTests} ] ${pct}% | ✅ ${this.passedCount} | ❌ ${this.failedCount + this.timedOutCount} | ⏭️  ${this.skippedCount} (${workerStr})`;
 
     if (this.lastCompletedTest) {
       line += ` | Last: ${this.lastCompletedTest}`;

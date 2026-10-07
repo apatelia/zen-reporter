@@ -219,7 +219,7 @@ export function highlightCodeLine(codeLine: string, status?: string): string {
 
   const highlightedCode = highlightJsTokens(codePart);
 
-  return `<div class="flex items-center gap-2 px-2 py-0.5 font-mono text-[11px] leading-relaxed">${prefixHtml} <span>${highlightedCode}</span></div>`;
+  return `<div class="flex items-center gap-2 px-2 py-0.5 font-mono text-[12px] leading-relaxed">${prefixHtml} <span>${highlightedCode}</span></div>`;
 }
 
 /**

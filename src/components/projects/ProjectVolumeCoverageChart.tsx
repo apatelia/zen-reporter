@@ -112,61 +112,72 @@ export default function ProjectVolumeCoverageChart({
         </p>
       </div>
 
-      <ResponsiveContainer width="100%" height={chartHeight}>
-        <BarChart
-          data={data}
-          layout="vertical"
-          margin={{ top: 5, right: 20, left: 10, bottom: 5 }}
-          barSize={18}
-          barGap={4}
-        >
-          <CartesianGrid
-            strokeDasharray="3 3"
-            stroke="var(--color-border-chart)"
-            horizontal={false}
-          />
-          <XAxis type="number" fontSize={12} tick={{ fill: 'var(--color-text-muted)' }} />
-          <YAxis
-            type="category"
-            dataKey="name"
-            width={yAxisWidth}
-            fontSize={12}
-            tick={{ fill: 'var(--color-text-ink)' }}
-          />
-          <Tooltip
-            content={renderTooltip}
-            wrapperStyle={{
-              backgroundColor: 'var(--color-surface-100)',
-              border: '1px solid var(--color-border-default)',
-              borderRadius: '0.5rem',
-              boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
-              outline: 'none',
-            }}
-          />
-          <Legend
-            formatter={LegendFormatter}
-            iconType="circle"
-            wrapperStyle={{
-              paddingTop: '8px',
-              textAlign: 'center',
-              width: '100%',
-              fontSize: '12px',
-            }}
-          />
-          <Bar
-            dataKey="Executed"
-            stackId="a"
-            fill="var(--color-success-500)"
-            radius={[0, 0, 0, 0]}
-          />
-          <Bar
-            dataKey="Skipped"
-            stackId="a"
-            fill="var(--color-border-chart)"
-            radius={[0, 4, 4, 0]}
-          />
-        </BarChart>
-      </ResponsiveContainer>
+      {projectStats.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-12 text-center rounded-md border border-dashed border-border-default bg-surface-100/50 p-6 space-y-1.5 mt-2">
+          <p className="text-xs font-semibold text-text-ink dark:text-text-on-primary">
+            No project data available for current run
+          </p>
+          <p className="text-[11px] text-text-body-mid dark:text-text-muted">
+            No test cases were executed or matched the criteria.
+          </p>
+        </div>
+      ) : (
+        <ResponsiveContainer width="100%" height={chartHeight}>
+          <BarChart
+            data={data}
+            layout="vertical"
+            margin={{ top: 5, right: 20, left: 10, bottom: 5 }}
+            barSize={18}
+            barGap={4}
+          >
+            <CartesianGrid
+              strokeDasharray="3 3"
+              stroke="var(--color-border-chart)"
+              horizontal={false}
+            />
+            <XAxis type="number" fontSize={12} tick={{ fill: 'var(--color-text-muted)' }} />
+            <YAxis
+              type="category"
+              dataKey="name"
+              width={yAxisWidth}
+              fontSize={12}
+              tick={{ fill: 'var(--color-text-ink)' }}
+            />
+            <Tooltip
+              content={renderTooltip}
+              wrapperStyle={{
+                backgroundColor: 'var(--color-surface-100)',
+                border: '1px solid var(--color-border-default)',
+                borderRadius: '0.5rem',
+                boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+                outline: 'none',
+              }}
+            />
+            <Legend
+              formatter={LegendFormatter}
+              iconType="circle"
+              wrapperStyle={{
+                paddingTop: '8px',
+                textAlign: 'center',
+                width: '100%',
+                fontSize: '12px',
+              }}
+            />
+            <Bar
+              dataKey="Executed"
+              stackId="a"
+              fill="var(--color-success-500)"
+              radius={[0, 0, 0, 0]}
+            />
+            <Bar
+              dataKey="Skipped"
+              stackId="a"
+              fill="var(--color-border-chart)"
+              radius={[0, 4, 4, 0]}
+            />
+          </BarChart>
+        </ResponsiveContainer>
+      )}
     </div>
   );
 }

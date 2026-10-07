@@ -118,34 +118,41 @@ export default function FileSummary({ suites, title }: FileSummaryProps) {
         ) : (
           <div></div>
         )}
-        <PageSizeControl
-          id="files-page-size"
-          pageSize={pagination.pageSize}
-          onPageSizeChange={pagination.changePageSize}
-        />
+        {fileStats.length > 0 && filteredFiles.length > 0 && (
+          <PageSizeControl
+            id="files-page-size"
+            pageSize={pagination.pageSize}
+            onPageSizeChange={pagination.changePageSize}
+          />
+        )}
       </div>
 
-      <div className="pt-3 pb-3 border-b border-border-default/50 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <SearchInput
-          value={fileSearchTerm}
-          onChange={(val) => {
-            setFileSearchTerm(val);
-            pagination.setPage(1);
-          }}
-          placeholder="Search spec files by file name or path..."
-          className="w-full sm:w-80 md:w-96"
-        />
-        <ExportCsvButton
-          onClick={() =>
-            exportColumnsToCsv(
-              () => generateExportFilename('file_summary_metrics', { searchTerm: fileSearchTerm }),
-              filteredFiles,
-              fileColumns
-            )
-          }
-          count={filteredFiles.length}
-        />
-      </div>
+      {fileStats.length > 0 && (
+        <div className="pt-3 pb-3 border-b border-border-default/50 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <SearchInput
+            value={fileSearchTerm}
+            onChange={(val) => {
+              setFileSearchTerm(val);
+              pagination.setPage(1);
+            }}
+            placeholder="Search spec files by file name or path..."
+            className="w-full sm:w-80 md:w-96"
+          />
+          {filteredFiles.length > 0 && (
+            <ExportCsvButton
+              onClick={() =>
+                exportColumnsToCsv(
+                  () =>
+                    generateExportFilename('file_summary_metrics', { searchTerm: fileSearchTerm }),
+                  filteredFiles,
+                  fileColumns
+                )
+              }
+              count={filteredFiles.length}
+            />
+          )}
+        </div>
+      )}
 
       <DataTable
         data={paginatedFiles}

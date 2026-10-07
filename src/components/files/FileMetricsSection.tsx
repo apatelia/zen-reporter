@@ -15,8 +15,6 @@ export default function FileMetricsSection({ suites, isMinimalReport }: FileMetr
   const allCases = useMemo(() => collectAllCases(suites), [suites]);
   const fileStats = useMemo(() => computeFileStats(allCases), [allCases]);
 
-  if (fileStats.length === 0) return null;
-
   const totalFiles = fileStats.length;
   const totalTests = allCases.length;
 
@@ -29,11 +27,11 @@ export default function FileMetricsSection({ suites, isMinimalReport }: FileMetr
       f.interrupted === 0
   );
   const cleanFilesCount = cleanFiles.length;
-  const cleanFilesPct = Math.round((cleanFilesCount / totalFiles) * 100);
+  const cleanFilesPct = totalFiles > 0 ? Math.round((cleanFilesCount / totalFiles) * 100) : 0;
 
   const failingFiles = fileStats.filter((f) => f.failed > 0 || f.timedOut > 0 || f.interrupted > 0);
   const failingFilesCount = failingFiles.length;
-  const failingFilesPct = Math.round((failingFilesCount / totalFiles) * 100);
+  const failingFilesPct = totalFiles > 0 ? Math.round((failingFilesCount / totalFiles) * 100) : 0;
 
   // Sorted by total duration for bottlenecks
   const sortedByDuration = [...fileStats].sort((a, b) => b.totalDuration - a.totalDuration);
@@ -187,7 +185,7 @@ export default function FileMetricsSection({ suites, isMinimalReport }: FileMetr
       </div>
 
       {/* Secondary Metrics & Bottlenecks Grid */}
-      {!isMinimalReport && (
+      {!isMinimalReport && totalFiles > 0 && (
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           {/* Spec File Density & Distribution */}
           <div className="rounded-md bg-canvas border border-border-default p-4 shadow-sm flex flex-col justify-between">

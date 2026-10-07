@@ -1,5 +1,5 @@
 import { formatDuration } from './formatters';
-import type { FailedTest } from './statsUtils';
+import { computePassRate, type FailedTest } from './statsUtils';
 import type { Attachment, ResultSummary } from './types/report';
 
 /**
@@ -269,7 +269,7 @@ export function generateTerminalSummaryTable(
   const interrupted = summary.interrupted || 0;
   const hasFailures = failed > 0 || timedOut > 0 || interrupted > 0;
   const statusStr = hasFailures ? 'FAILED' : 'PASSED';
-  const passRate = total > 0 ? `${((passed / total) * 100).toFixed(1).replace(/\.0$/, '')}%` : '0%';
+  const passRate = `${computePassRate(summary)}%`;
   const durationStr = formatDuration(summary.duration || 0);
 
   const headers = [
@@ -280,6 +280,7 @@ export function generateTerminalSummaryTable(
     'Passed',
     'Failed',
     'Timed Out',
+    'Interrupted',
     'Skipped',
   ];
   const values = [
@@ -290,13 +291,9 @@ export function generateTerminalSummaryTable(
     String(passed),
     String(failed),
     String(timedOut),
+    String(interrupted),
     String(skipped),
   ];
-
-  if (interrupted > 0) {
-    headers.push('Interrupted');
-    values.push(String(interrupted));
-  }
 
   const widths = headers.map((h, i) => Math.max(h.length, values[i].length));
 

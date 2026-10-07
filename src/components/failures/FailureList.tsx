@@ -133,6 +133,19 @@ export default function FailureList({
       );
     }
 
+    if (!hasSuites) {
+      return (
+        <div className="flex flex-col items-center justify-center py-10 px-6 rounded-md border border-dashed border-border-default bg-surface-100/50 text-center space-y-1.5">
+          <p className="text-xs font-semibold text-text-ink dark:text-text-on-primary">
+            No failures found
+          </p>
+          <p className="text-[11px] text-text-body-mid dark:text-text-muted">
+            No test cases were executed or matched the criteria.
+          </p>
+        </div>
+      );
+    }
+
     return (
       <div className="flex items-center gap-4 rounded-md border border-success-200 bg-success-50/50 px-6 py-6 shadow-sm dark:border-success-500/30 dark:bg-success-500/10">
         <svg
@@ -153,7 +166,7 @@ export default function FailureList({
             No failures
           </p>
           <p className="text-xs text-text-body-mid dark:text-text-muted">
-            {hasSuites ? 'All tests passed successfully.' : 'No suites/tests found.'}
+            All tests passed successfully.
           </p>
         </div>
       </div>

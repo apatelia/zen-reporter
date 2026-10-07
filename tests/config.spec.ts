@@ -9,7 +9,7 @@ test.describe('Zen Reporter Configuration Tests', () => {
     expect(config.outputDir).toBe('zen-report');
     expect(config.projectName).toBe('Test Automation Project');
     expect(config.theme).toBe('Cafe');
-    expect(config.darkMode).toBe(false);
+    expect(config.darkMode).toBeUndefined();
   });
 
   test('resolves custom projectName and testRunName configuration options', () => {
@@ -22,7 +22,7 @@ test.describe('Zen Reporter Configuration Tests', () => {
     expect(config.projectName).toBe('My E2E Project');
     expect(config.testRunName).toBe('Nightly Run #42');
     expect(config.theme).toBe('Cafe');
-    expect(config.darkMode).toBe(false);
+    expect(config.darkMode).toBeUndefined();
   });
 
   test('replaces {N} placeholder with dynamic run number based on existing runs', () => {

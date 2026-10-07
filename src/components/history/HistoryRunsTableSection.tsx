@@ -16,6 +16,7 @@ import SearchInput from '@/components/shared/SearchInput';
 import type { HistoryRun } from '@/lib/types/history';
 import { formatDate, formatDuration } from '@/lib/formatters';
 import { generateExportFilename } from '@/lib/exportFilename';
+import { computePassRate } from '@/lib/statsUtils';
 
 export interface HistoryRunsTableSectionProps {
   runs: HistoryRun[];
@@ -174,7 +175,12 @@ export function HistoryRunsTableSection({
         header: 'Total',
         align: 'center',
         className: 'font-medium',
-        cell: (run) => run.run_total,
+        cell: (run) =>
+          run.run_total === 0 ? (
+            <StatusCountBadge count={0} type="failed" showZeroBadge={true} />
+          ) : (
+            run.run_total
+          ),
         csvValue: (run) => run.run_total,
       },
       {
@@ -216,8 +222,30 @@ export function HistoryRunsTableSection({
         key: 'pass_rate',
         header: 'Pass Rate',
         align: 'right',
-        cell: (run) => <PassRateBadge passRate={run.pass_rate} />,
-        csvValue: (run) => (run.pass_rate != null ? `${run.pass_rate}%` : '-'),
+        cell: (run) => {
+          const passRate = computePassRate({
+            total: run.run_total,
+            passed: run.run_passed,
+            failed: run.run_failed,
+            timedOut: run.run_timed_out,
+            skipped: run.run_skipped,
+            interrupted: run.run_interrupted,
+            duration: run.run_duration_ms,
+          });
+          return <PassRateBadge passRate={passRate} />;
+        },
+        csvValue: (run) => {
+          const passRate = computePassRate({
+            total: run.run_total,
+            passed: run.run_passed,
+            failed: run.run_failed,
+            timedOut: run.run_timed_out,
+            skipped: run.run_skipped,
+            interrupted: run.run_interrupted,
+            duration: run.run_duration_ms,
+          });
+          return `${passRate}%`;
+        },
       },
     ],
     [isFiltered]
@@ -232,47 +260,53 @@ export function HistoryRunsTableSection({
           <h2 className={headingClass}>Execution Runs History</h2>
           <LearnMoreButton onClick={onOpenGuide} />
         </div>
-        <PageSizeControl
-          id="runs-page-size"
-          pageSize={runsPag.pageSize}
-          onPageSizeChange={runsPag.changePageSize}
-        />
+        {rawRuns.length > 0 && runs.length > 0 && (
+          <PageSizeControl
+            id="runs-page-size"
+            pageSize={runsPag.pageSize}
+            onPageSizeChange={runsPag.changePageSize}
+          />
+        )}
       </div>
 
-      <div className="pt-3 pb-3 border-b border-border-default/50 flex flex-col gap-3">
-        <DateFilterControl
-          onFilterChange={(range) => {
-            setFilterRange(range);
-            runsPag.setPage(1);
-          }}
-          availableTimestamps={availableTimestamps}
-        />
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <SearchInput
-            value={runSearchTerm}
-            onChange={(val) => {
-              setRunSearchTerm(val);
+      {rawRuns.length > 0 && (
+        <div className="pt-3 pb-3 border-b border-border-default/50 flex flex-col gap-3">
+          <DateFilterControl
+            onFilterChange={(range) => {
+              setFilterRange(range);
               runsPag.setPage(1);
             }}
-            placeholder="Search test runs by run name..."
-            className="w-full sm:w-80 md:w-96"
+            availableTimestamps={availableTimestamps}
           />
-          <ExportCsvButton
-            onClick={() =>
-              exportColumnsToCsv(
-                () =>
-                  generateExportFilename('test_runs_history', {
-                    dateRange: filterRange,
-                    searchTerm: runSearchTerm,
-                  }),
-                runs,
-                runColumns
-              )
-            }
-            count={runs.length}
-          />
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <SearchInput
+              value={runSearchTerm}
+              onChange={(val) => {
+                setRunSearchTerm(val);
+                runsPag.setPage(1);
+              }}
+              placeholder="Search test runs by run name..."
+              className="w-full sm:w-80 md:w-96"
+            />
+            {runs.length > 0 && (
+              <ExportCsvButton
+                onClick={() =>
+                  exportColumnsToCsv(
+                    () =>
+                      generateExportFilename('test_runs_history', {
+                        dateRange: filterRange,
+                        searchTerm: runSearchTerm,
+                      }),
+                    runs,
+                    runColumns
+                  )
+                }
+                count={runs.length}
+              />
+            )}
+          </div>
         </div>
-      </div>
+      )}
 
       <DataTable
         data={pageRuns}

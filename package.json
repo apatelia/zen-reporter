@@ -67,7 +67,7 @@
     "node": ">=18.0.0"
   },
   "peerDependencies": {
-    "@duckdb/node-api": "1.5.5-r.5",
+    "@duckdb/node-api": ">=1.5.5",
     "@playwright/test": ">=1.63.0"
   },
   "peerDependenciesMeta": {

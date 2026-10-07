@@ -105,86 +105,97 @@ export default function ProjectBarCharts({
         </p>
       </div>
 
-      <ResponsiveContainer width="100%" height={chartHeight}>
-        <BarChart
-          data={data}
-          layout="vertical"
-          margin={{ top: 5, right: 15, left: 10, bottom: 5 }}
-          barSize={18}
-        >
-          <CartesianGrid
-            strokeDasharray="3 3"
-            stroke="var(--color-border-chart)"
-            horizontal={false}
-          />
-          <XAxis
-            type="number"
-            fontSize={12}
-            tick={{ fill: 'var(--color-text-muted)' }}
-            allowDecimals={false}
-          />
-          <YAxis
-            type="category"
-            dataKey="name"
-            fontSize={12}
-            width={yAxisWidth}
-            tick={{ fill: 'var(--color-text-muted)' }}
-            tickFormatter={(val: string) =>
-              val.length === maxLen && maxLen > 0 ? `\u00A0${val}` : val
-            }
-          />
-          <Tooltip
-            content={renderProjectSummaryTooltip}
-            wrapperStyle={{
-              backgroundColor: 'var(--color-surface-100)',
-              border: '1px solid var(--color-border-default)',
-              borderRadius: '0.5rem',
-              boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
-              outline: 'none',
-            }}
-          />
-          <Legend
-            formatter={LegendFormatter}
-            iconType="circle"
-            wrapperStyle={{
-              paddingTop: '8px',
-              textAlign: 'center',
-              width: '100%',
-              fontSize: '12px',
-            }}
-          />
-          <Bar
-            dataKey="Passed"
-            stackId="status"
-            fill="var(--color-success-500)"
-            radius={[0, 0, 0, 0]}
-          />
-          <Bar
-            dataKey="Failed"
-            stackId="status"
-            fill="var(--color-danger-500)"
-            radius={[0, 0, 0, 0]}
-          />
-          <Bar
-            dataKey="Interrupted"
-            stackId="status"
-            fill="var(--color-danger-600)"
-            radius={[0, 0, 0, 0]}
-          />
-          <Bar
-            dataKey="Skipped"
-            stackId="status"
-            fill="var(--color-text-muted)"
-            radius={[0, 0, 0, 0]}
-          />
-          <Bar
-            dataKey="Timed Out"
-            stackId="status"
-            fill="var(--color-warning-500)"
-            radius={[0, 4, 4, 0]}
-          />
-        </BarChart>
-      </ResponsiveContainer>
+      {projectStats.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-12 text-center rounded-md border border-dashed border-border-default bg-surface-100/50 p-6 space-y-1.5 mt-2">
+          <p className="text-xs font-semibold text-text-ink dark:text-text-on-primary">
+            No project data available for current run
+          </p>
+          <p className="text-[11px] text-text-body-mid dark:text-text-muted">
+            No test cases were executed or matched the criteria.
+          </p>
+        </div>
+      ) : (
+        <ResponsiveContainer width="100%" height={chartHeight}>
+          <BarChart
+            data={data}
+            layout="vertical"
+            margin={{ top: 5, right: 15, left: 10, bottom: 5 }}
+            barSize={18}
+          >
+            <CartesianGrid
+              strokeDasharray="3 3"
+              stroke="var(--color-border-chart)"
+              horizontal={false}
+            />
+            <XAxis
+              type="number"
+              fontSize={12}
+              tick={{ fill: 'var(--color-text-muted)' }}
+              allowDecimals={false}
+            />
+            <YAxis
+              type="category"
+              dataKey="name"
+              fontSize={12}
+              width={yAxisWidth}
+              tick={{ fill: 'var(--color-text-muted)' }}
+              tickFormatter={(val: string) =>
+                val.length === maxLen && maxLen > 0 ? `\u00A0${val}` : val
+              }
+            />
+            <Tooltip
+              content={renderProjectSummaryTooltip}
+              wrapperStyle={{
+                backgroundColor: 'var(--color-surface-100)',
+                border: '1px solid var(--color-border-default)',
+                borderRadius: '0.5rem',
+                boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+                outline: 'none',
+              }}
+            />
+            <Legend
+              formatter={LegendFormatter}
+              iconType="circle"
+              wrapperStyle={{
+                paddingTop: '8px',
+                textAlign: 'center',
+                width: '100%',
+                fontSize: '12px',
+              }}
+            />
+            <Bar
+              dataKey="Passed"
+              stackId="status"
+              fill="var(--color-success-500)"
+              radius={[0, 0, 0, 0]}
+            />
+            <Bar
+              dataKey="Failed"
+              stackId="status"
+              fill="var(--color-danger-500)"
+              radius={[0, 0, 0, 0]}
+            />
+            <Bar
+              dataKey="Interrupted"
+              stackId="status"
+              fill="var(--color-danger-600)"
+              radius={[0, 0, 0, 0]}
+            />
+            <Bar
+              dataKey="Skipped"
+              stackId="status"
+              fill="var(--color-text-muted)"
+              radius={[0, 0, 0, 0]}
+            />
+            <Bar
+              dataKey="Timed Out"
+              stackId="status"
+              fill="var(--color-warning-500)"
+              radius={[0, 4, 4, 0]}
+            />
+          </BarChart>
+        </ResponsiveContainer>
+      )}
     </div>
   );
 }

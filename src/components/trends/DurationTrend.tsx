@@ -84,11 +84,11 @@ export default function DurationTrend({ history, onOpenGuide }: DurationTrendPro
 
       if (run.project_durations && Object.keys(run.project_durations).length > 0) {
         projectsList.forEach((proj) => {
-          item[proj] = run.project_durations?.[proj] ?? null;
+          item[proj] = run.project_durations?.[proj] ?? 0;
         });
       } else {
         projectsList.forEach((proj) => {
-          item[proj] = null;
+          item[proj] = 0;
         });
       }
       return item;

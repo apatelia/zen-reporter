@@ -239,6 +239,7 @@ export default function FailuresSection({
                   selectedOptions={filterTags}
                   onApply={setFilterTags}
                   showSearch={true}
+                  align="right"
                   getDisplayValue={() => 'Tags'}
                   disabled={noFailures}
                   icon={

@@ -1,6 +1,7 @@
 import LearnMoreButton from '@/components/shared/LearnMoreButton';
 import { formatDateParts } from '@/lib/formatters';
 import type { HistoryData } from '@/lib/types/history';
+import { computePassRate } from '@/lib/statsUtils';
 import {
   CartesianGrid,
   Line,
@@ -31,7 +32,10 @@ const renderTrendTooltip = (props: TooltipContentProps) => {
       <div className="font-bold text-xs">{dateLine}</div>
       <div className="text-[11px] text-text-body-mid dark:text-text-muted">{timeLine}</div>
       <div className="mt-1.5 text-xs font-medium">
-        Pass rate: <span className="font-bold text-success-600 dark:text-success-500">{rate}%</span>
+        Pass rate:{' '}
+        <span className="font-bold text-success-600 dark:text-success-500">
+          {rate != null ? `${rate}%` : 'N/A'}
+        </span>
       </div>
     </div>
   );
@@ -40,7 +44,15 @@ const renderTrendTooltip = (props: TooltipContentProps) => {
 export default function PassRateTrend({ history, onOpenGuide }: PassRateTrendProps) {
   const chartRuns = (history.runs || []).slice(-15).map((run) => ({
     ...run,
-    pass_rate: run.pass_rate ?? 0,
+    pass_rate: computePassRate({
+      total: run.run_total,
+      passed: run.run_passed,
+      failed: run.run_failed,
+      timedOut: run.run_timed_out,
+      skipped: run.run_skipped,
+      interrupted: run.run_interrupted,
+      duration: run.run_duration_ms,
+    }),
   }));
 
   return (

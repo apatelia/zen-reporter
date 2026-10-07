@@ -178,6 +178,14 @@ export function HistoryTestSection({
 
   const testsPag = usePagination(aggregatedTests.length, 10);
 
+  const hasRawTests = useMemo(() => {
+    return Boolean(
+      (history.tests && history.tests.length > 0) ||
+      (history.flaky && history.flaky.length > 0) ||
+      (history.slowest && history.slowest.length > 0)
+    );
+  }, [history]);
+
   const testColumns: ColumnDef<(typeof aggregatedTests)[0]>[] = useMemo(
     () => [
       {
@@ -300,49 +308,53 @@ export function HistoryTestSection({
             Individual test execution breakdown across test runs
           </p>
         </div>
-        <PageSizeControl
-          id="tests-history-page-size"
-          pageSize={testsPag.pageSize}
-          onPageSizeChange={testsPag.changePageSize}
-        />
+        {hasRawTests && aggregatedTests.length > 0 && (
+          <PageSizeControl
+            id="tests-history-page-size"
+            pageSize={testsPag.pageSize}
+            onPageSizeChange={testsPag.changePageSize}
+          />
+        )}
       </div>
 
-      <div className="pt-3 pb-3 border-b border-border-default/50 flex flex-col gap-3">
-        <DateFilterControl
-          onFilterChange={(range) => {
-            setTestFilterRange(range);
-            testsPag.setPage(1);
-          }}
-          availableTimestamps={availableTimestamps}
-        />
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <SearchInput
-            value={testSearchTerm}
-            onChange={(val) => {
-              setTestSearchTerm(val);
+      {hasRawTests && (
+        <div className="pt-3 pb-3 border-b border-border-default/50 flex flex-col gap-3">
+          <DateFilterControl
+            onFilterChange={(range) => {
+              setTestFilterRange(range);
               testsPag.setPage(1);
             }}
-            placeholder="Search test history by title, suite, spec file, or project..."
-            className="w-full sm:w-80 md:w-96"
+            availableTimestamps={availableTimestamps}
           />
-          {aggregatedTests.length > 0 && (
-            <ExportCsvButton
-              onClick={() =>
-                exportColumnsToCsv(
-                  () =>
-                    generateExportFilename('test_case_history', {
-                      dateRange: testFilterRange,
-                      searchTerm: testSearchTerm,
-                    }),
-                  aggregatedTests,
-                  testColumns
-                )
-              }
-              count={aggregatedTests.length}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <SearchInput
+              value={testSearchTerm}
+              onChange={(val) => {
+                setTestSearchTerm(val);
+                testsPag.setPage(1);
+              }}
+              placeholder="Search test history by title, suite, spec file, or project..."
+              className="w-full sm:w-80 md:w-96"
             />
-          )}
+            {aggregatedTests.length > 0 && (
+              <ExportCsvButton
+                onClick={() =>
+                  exportColumnsToCsv(
+                    () =>
+                      generateExportFilename('test_case_history', {
+                        dateRange: testFilterRange,
+                        searchTerm: testSearchTerm,
+                      }),
+                    aggregatedTests,
+                    testColumns
+                  )
+                }
+                count={aggregatedTests.length}
+              />
+            )}
+          </div>
         </div>
-      </div>
+      )}
 
       <DataTable
         data={pageTests}

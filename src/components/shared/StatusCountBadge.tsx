@@ -4,13 +4,19 @@ export interface StatusCountBadgeProps {
   count: number;
   type: StatusType;
   className?: string;
+  showZeroBadge?: boolean;
 }
 
 /**
  * Renders a pill badge displaying a test status count styled according to the status category theme.
  */
-export function StatusCountBadge({ count, type, className = '' }: StatusCountBadgeProps) {
-  if (count === 0) {
+export function StatusCountBadge({
+  count,
+  type,
+  className = '',
+  showZeroBadge = false,
+}: StatusCountBadgeProps) {
+  if (count === 0 && !showZeroBadge) {
     return <span className={`text-text-muted-soft dark:text-text-muted ${className}`}>0</span>;
   }
   return (
