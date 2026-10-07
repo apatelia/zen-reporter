@@ -6,16 +6,17 @@ import type {
   TestCase,
   TestResult,
 } from '@playwright/test/reporter';
-import { execFileSync, execSync } from 'child_process';
+import { execFileSync } from 'child_process';
 import * as fs from 'fs';
 import * as path from 'path';
 import { fileURLToPath } from 'url';
 import { convertPlaywrightSteps, sanitizeAnsi, setFsModule } from './codeHighlighting';
 import { generateTerminalSummaryTable } from './cryptoUtils';
-import { detectPackageManager, getViteBuildCommand } from './dataProcessor';
+import { detectPackageManager } from './dataProcessor';
 import { ProgressPrinter, type ProgressMode } from './progressPrinter';
 import { writeRunHistory } from './runHistoryWriter';
 import { buildSuitesFromCases } from './statsUtils';
+import { countStepCategories } from './stepCategoryClassifier';
 import type {
   ReportData,
   ResultSummary,
@@ -97,7 +98,7 @@ export function resolveConfig(
   const testRunName = rawTestRunName.replaceAll('{N}', String(runNumber));
   const singleSummaryFile = Boolean(rawConfig?.singleSummaryFile);
   const theme = rawConfig?.theme !== undefined ? String(rawConfig.theme) : 'Cafe';
-  const darkMode = Boolean(rawConfig?.darkMode);
+  const darkMode = rawConfig?.darkMode !== undefined ? Boolean(rawConfig.darkMode) : undefined;
   const minimalReport = Boolean(rawConfig?.minimalReport);
 
   let enableHistory: 'auto' | boolean = 'auto';
@@ -441,11 +442,36 @@ class ZenReporter implements Reporter {
       }
 
       if (!templateContent) {
-        const buildCmd = getViteBuildCommand(pm, packageRoot);
-        execSync(buildCmd, {
+        const isWin = process.platform === 'win32';
+        const bin = (name: string) => (isWin ? `${name}.cmd` : name);
+        const env = { ...process.env, PW_REPORTER_OUTPUT: outputDir };
+
+        let command: string;
+        let args: string[];
+
+        switch (pm) {
+          case 'pnpm':
+            command = bin('pnpm');
+            args = ['exec', 'vite', 'build'];
+            break;
+          case 'yarn':
+            command = bin('yarn');
+            args = ['exec', 'vite', 'build'];
+            break;
+          case 'bun':
+            command = bin('bun');
+            args = ['x', 'vite', 'build'];
+            break;
+          default:
+            command = bin('npx');
+            args = ['vite', 'build'];
+            break;
+        }
+
+        execFileSync(command, args, {
           cwd: packageRoot,
           stdio: 'pipe',
-          env: { ...process.env, PW_REPORTER_OUTPUT: outputDir },
+          env,
         });
 
         if (fs.existsSync(templatePath)) {
@@ -714,6 +740,7 @@ class ZenReporter implements Reporter {
     const wallClockDuration = Math.max(0, endTimeMs - startTimeMs);
     const summary = this.computeResultSummary(endTime, wallClockDuration);
     const suites = this.buildSuites();
+    const stepCategories = countStepCategories(suites);
 
     if (this.reportConfig.enableHistory !== false) {
       writeRunHistory({
@@ -725,6 +752,7 @@ class ZenReporter implements Reporter {
         summary,
         endedAt: endTime,
         testCases: this.testCases,
+        stepCategories,
       });
     }
 

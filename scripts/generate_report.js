@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { execSync } from 'child_process';
+import { execFileSync } from 'child_process';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'fs';
 import { dirname, resolve } from 'path';
 import { fileURLToPath } from 'url';
@@ -42,28 +42,6 @@ function detectPackageManager(cwd = process.cwd()) {
   }
 
   return 'npm';
-}
-
-/**
- * Returns the terminal command to build Vite assets for the detected package manager.
- *
- * @param {string} [pm] - Package manager name override.
- * @param {string} [cwd=process.cwd()] - Working directory.
- * @returns {string} Vite build command string.
- */
-function getViteBuildCommand(pm, cwd = process.cwd()) {
-  const manager = pm || detectPackageManager(cwd);
-
-  switch (manager) {
-    case 'pnpm':
-      return 'pnpm exec vite build';
-    case 'yarn':
-      return 'yarn exec vite build';
-    case 'bun':
-      return 'bunx vite build';
-    default:
-      return 'npx vite build';
-  }
 }
 
 /**
@@ -167,10 +145,34 @@ try {
   }
 
   if (!templateContent) {
-    const buildCmd = getViteBuildCommand(undefined, ROOT);
+    const isWin = process.platform === 'win32';
+    const bin = (name) => (isWin ? `${name}.cmd` : name);
+    const pm = detectPackageManager(ROOT);
+
+    let command;
+    let args;
+
+    switch (pm) {
+      case 'pnpm':
+        command = bin('pnpm');
+        args = ['exec', 'vite', 'build'];
+        break;
+      case 'yarn':
+        command = bin('yarn');
+        args = ['exec', 'vite', 'build'];
+        break;
+      case 'bun':
+        command = bin('bun');
+        args = ['x', 'vite', 'build'];
+        break;
+      default:
+        command = bin('npx');
+        args = ['vite', 'build'];
+        break;
+    }
 
     try {
-      execSync(buildCmd, { cwd: ROOT, stdio: 'pipe' });
+      execFileSync(command, args, { cwd: ROOT, stdio: 'pipe' });
     } catch (error) {
       const stdout = error?.stdout ? error.stdout.toString() : '';
       const stderr = error?.stderr ? error.stderr.toString() : '';

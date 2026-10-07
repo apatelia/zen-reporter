@@ -1,5 +1,5 @@
 import GuideModal from '@/components/shared/GuideModal';
-import { STEP_CATEGORIES } from './step-category/stepCategoryClassifier';
+import { STEP_CATEGORIES } from '@/lib/stepCategoryClassifier';
 
 interface TrendsGuidesProps {
   passRateModalOpen: boolean;

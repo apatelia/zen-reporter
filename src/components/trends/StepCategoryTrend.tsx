@@ -1,21 +1,21 @@
-import { useMemo, useState } from 'react';
 import LearnMoreButton from '@/components/shared/LearnMoreButton';
-import type { TestSuite } from '@/lib/types/report';
-import type { HistoryData } from '@/lib/types/history';
 import {
   countStepCategories,
   STEP_CATEGORIES,
   StepCategoryKey,
-} from './step-category/stepCategoryClassifier';
-import { StepCategoryChart } from './step-category/StepCategoryChart';
+} from '@/lib/stepCategoryClassifier';
+import type { HistoryData } from '@/lib/types/history';
+import type { TestSuite } from '@/lib/types/report';
+import { useMemo, useState } from 'react';
+import { StepCategoryChart, type StepCategoryChartPoint } from './step-category/StepCategoryChart';
 import { StepCategorySummaryCards } from './step-category/StepCategorySummaryCards';
 
-export type { StepCategoryKey, StepCategoryConfig } from './step-category/stepCategoryClassifier';
 export {
-  STEP_CATEGORIES,
   classifyStepTitle,
   countStepCategories,
-} from './step-category/stepCategoryClassifier';
+  STEP_CATEGORIES,
+} from '@/lib/stepCategoryClassifier';
+export type { StepCategoryConfig, StepCategoryKey } from '@/lib/stepCategoryClassifier';
 
 export interface StepCategoryTrendProps {
   suites: TestSuite[];
@@ -54,12 +54,13 @@ export default function StepCategoryTrend({
     return res;
   }, [currentCounts, totalCurrentSteps]);
 
-  const chartData = useMemo(() => {
+  const chartData = useMemo<StepCategoryChartPoint[]>(() => {
     const runsList = history?.runs && history.runs.length > 0 ? history.runs.slice(-15) : [];
 
     if (runsList.length === 0) {
-      const currentPoint: Record<string, unknown> = {
+      const currentPoint: StepCategoryChartPoint = {
         name: 'Current Run',
+        hasStepData: totalCurrentSteps > 0,
       };
 
       for (const cat of STEP_CATEGORIES) {
@@ -70,82 +71,41 @@ export default function StepCategoryTrend({
       return [currentPoint];
     }
 
-    // Default fallback baseline ratio if current run has 0 total steps
-    const defaultBaseline: Record<StepCategoryKey, number> = {
-      assertions: 45,
-      actions: 35,
-      network: 10,
-      hooks: 8,
-      waits: 2,
-      others: 0,
-    };
-
-    const hasCurrentData = totalCurrentSteps > 0;
-
     return runsList.map((run, idx) => {
       const isLatest = idx === runsList.length - 1;
       const name = isLatest ? 'Current Run' : run.started_at || run.run_name || `Run #${idx + 1}`;
 
-      const item: Record<string, unknown> = {
+      const item: StepCategoryChartPoint = {
         name,
         started_at: run.started_at,
         run_total: run.run_total,
       };
 
       if (isLatest) {
+        item.hasStepData = totalCurrentSteps > 0;
         for (const cat of STEP_CATEGORIES) {
           item[cat.label] =
             viewMode === 'percent' ? currentPercentages[cat.key] : currentCounts[cat.key];
         }
-      } else {
-        // Derive historical percentages based on current run's actual profile
-        const baseline = hasCurrentData ? currentPercentages : defaultBaseline;
-
-        // Apply slight pass-rate variance (e.g. slight increase in waits/failures when pass rate drops)
-        const passRate = run.pass_rate ?? 100;
-        const passFactor = (100 - passRate) * 0.05; // small adjustment factor
-
-        let assertionsPct = Math.max(0, baseline.assertions - passFactor);
-        let waitsPct = baseline.waits > 0 ? Math.max(0, baseline.waits + passFactor) : 0;
-        let actionsPct = baseline.actions;
-        let networkPct = baseline.network;
-        let hooksPct = baseline.hooks;
-        let othersPct = baseline.others;
-
-        const sum = assertionsPct + actionsPct + networkPct + hooksPct + waitsPct + othersPct;
-        if (sum > 0) {
-          assertionsPct = Math.round((assertionsPct / sum) * 100);
-          actionsPct = Math.round((actionsPct / sum) * 100);
-          networkPct = Math.round((networkPct / sum) * 100);
-          hooksPct = Math.round((hooksPct / sum) * 100);
-          waitsPct = Math.round((waitsPct / sum) * 100);
-          othersPct = Math.max(
-            0,
-            100 - (assertionsPct + actionsPct + networkPct + hooksPct + waitsPct)
-          );
-        }
-
-        const historicalPercents: Record<StepCategoryKey, number> = {
-          assertions: assertionsPct,
-          actions: actionsPct,
-          network: networkPct,
-          hooks: hooksPct,
-          waits: waitsPct,
-          others: othersPct,
-        };
-
-        const approxTotalSteps = hasCurrentData
-          ? Math.round(
-              (run.run_total /
-                Math.max(1, history?.runs[history.runs.length - 1]?.run_total || 1)) *
-                totalCurrentSteps
-            )
-          : run.run_total * 8;
+      } else if (run.step_categories) {
+        // Use exact recorded step category counts/percentages
+        const catCounts = run.step_categories;
+        const totalSteps = Object.values(catCounts).reduce((sum, n) => sum + n, 0);
+        item.hasStepData = totalSteps > 0;
 
         for (const cat of STEP_CATEGORIES) {
-          const pct = historicalPercents[cat.key];
-          item[cat.label] =
-            viewMode === 'percent' ? pct : Math.round((pct * approxTotalSteps) / 100);
+          const rawCount = catCounts[cat.key] || 0;
+          if (viewMode === 'percent') {
+            item[cat.label] = totalSteps > 0 ? Math.round((rawCount / totalSteps) * 1000) / 10 : 0;
+          } else {
+            item[cat.label] = rawCount;
+          }
+        }
+      } else {
+        // Historical runs recorded without step category breakdown
+        item.hasStepData = false;
+        for (const cat of STEP_CATEGORIES) {
+          item[cat.label] = 0;
         }
       }
 

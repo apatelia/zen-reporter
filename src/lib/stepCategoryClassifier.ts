@@ -1,5 +1,5 @@
-import type { TestStep, TestSuite } from '@/lib/types/report';
 import { collectAllCases } from '@/lib/statsUtils';
+import type { TestStep, TestSuite } from '@/lib/types/report';
 
 export type StepCategoryKey = 'assertions' | 'actions' | 'network' | 'hooks' | 'waits' | 'others';
 
@@ -93,7 +93,12 @@ export const STEP_CATEGORIES: StepCategoryConfig[] = [
   },
 ];
 
-/** Classifies a step title into a standardized step category key. */
+/**
+ * Classifies a step title into a standardized step category key.
+ *
+ * @param title - Step title text to evaluate.
+ * @returns Classified StepCategoryKey matching the step behavior.
+ */
 export function classifyStepTitle(title: string): StepCategoryKey {
   const lower = title.toLowerCase();
 
@@ -155,7 +160,29 @@ export function classifyStepTitle(title: string): StepCategoryKey {
   return 'others';
 }
 
-/** Recursively counts step categories for a set of test suites. */
+/**
+ * Recursively tallies category counts for a list of test steps and nested sub-steps.
+ *
+ * @param steps - Array of TestStep items to process.
+ * @param counts - Aggregator object tracking step counts per category.
+ */
+function processSteps(steps: TestStep[], counts: Record<StepCategoryKey, number>): void {
+  for (const step of steps) {
+    const cat = classifyStepTitle(step.title);
+    counts[cat]++;
+
+    if (step.subSteps && step.subSteps.length > 0) {
+      processSteps(step.subSteps, counts);
+    }
+  }
+}
+
+/**
+ * Recursively counts step categories for a set of test suites.
+ *
+ * @param suites - Array of top-level TestSuite objects.
+ * @returns Map of step category keys to their aggregated occurrence counts.
+ */
 export function countStepCategories(suites: TestSuite[]): Record<StepCategoryKey, number> {
   const counts: Record<StepCategoryKey, number> = {
     assertions: 0,
@@ -168,18 +195,9 @@ export function countStepCategories(suites: TestSuite[]): Record<StepCategoryKey
 
   const allCases = collectAllCases(suites);
   for (const tc of allCases) {
-    if (!tc.steps || tc.steps.length === 0) continue;
-
-    function processSteps(steps: TestStep[]) {
-      for (const step of steps) {
-        const cat = classifyStepTitle(step.title);
-        counts[cat]++;
-        if (step.subSteps && step.subSteps.length > 0) {
-          processSteps(step.subSteps);
-        }
-      }
+    if (tc.steps && tc.steps.length > 0) {
+      processSteps(tc.steps, counts);
     }
-    processSteps(tc.steps);
   }
 
   return counts;

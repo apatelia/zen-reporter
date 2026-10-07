@@ -1,4 +1,4 @@
-import { STEP_CATEGORIES, type StepCategoryKey } from './stepCategoryClassifier';
+import { STEP_CATEGORIES, type StepCategoryKey } from '@/lib/stepCategoryClassifier';
 
 export interface StepCategorySummaryCardsProps {
   currentPercentages: Record<StepCategoryKey, number>;

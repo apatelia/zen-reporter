@@ -1,3 +1,7 @@
+import LearnMoreButton from '@/components/shared/LearnMoreButton';
+import { formatDateParts, formatDuration } from '@/lib/formatters';
+import { getProjectColor } from '@/lib/theme';
+import type { HistoryData } from '@/lib/types/history';
 import { useMemo } from 'react';
 import {
   CartesianGrid,
@@ -10,9 +14,7 @@ import {
   XAxis,
   YAxis,
 } from 'recharts';
-import type { HistoryData } from '@/lib/types/history';
-import { formatDateParts, formatDuration } from '@/lib/formatters';
-import LearnMoreButton from '@/components/shared/LearnMoreButton';
+import { renderTrendTick } from './TrendTick';
 
 interface DurationTrendProps {
   history: HistoryData;
@@ -21,80 +23,6 @@ interface DurationTrendProps {
 
 const sectionClass = 'rounded-md border border-border-default bg-surface-50 p-5 shadow-xs';
 const headingClass = 'text-lg font-bold text-text-ink dark:text-text-on-primary';
-
-const PROJECT_BRAND_COLORS: Record<string, string> = {
-  chromium: 'var(--color-accent-green)',
-  firefox: 'var(--color-warning-500)',
-  webkit: 'var(--color-accent-gold)',
-  'desktop chrome': 'var(--color-accent-green)',
-  'desktop firefox': 'var(--color-warning-500)',
-  'desktop safari': 'var(--color-accent-gold)',
-  'mobile chrome': 'var(--color-accent-cafe)',
-  'mobile safari': 'var(--color-warning-600)',
-};
-
-const DISTINCT_PROJECT_COLORS = [
-  'var(--color-success-500)',
-  'var(--color-danger-500)',
-  'var(--color-warning-500)',
-  'var(--color-info-600)',
-  'var(--color-accent-house)',
-  'var(--color-accent-gold)',
-  'var(--color-accent-pink)',
-  'var(--color-accent-orange)',
-  'var(--color-success-700)',
-  'var(--color-danger-700)',
-  'var(--color-warning-700)',
-  'var(--color-info-700)',
-];
-
-function getProjectColor(project: string, index: number): string {
-  const normalized = project.toLowerCase().trim();
-  if (PROJECT_BRAND_COLORS[normalized]) {
-    return PROJECT_BRAND_COLORS[normalized];
-  }
-  for (const [key, val] of Object.entries(PROJECT_BRAND_COLORS)) {
-    if (key.length > 3 && normalized.includes(key)) return val;
-  }
-  return DISTINCT_PROJECT_COLORS[index % DISTINCT_PROJECT_COLORS.length];
-}
-
-const renderTrendTick = ({
-  x,
-  y,
-  payload,
-}: {
-  x: number | string;
-  y: number | string;
-  payload: { value: unknown };
-}) => {
-  const tickX = Number(x);
-  const tickY = Number(y);
-  const [dateLine, timeLine] = formatDateParts(String(payload.value));
-  return (
-    <g>
-      <text
-        x={tickX}
-        y={tickY + 10}
-        textAnchor="middle"
-        fontSize={11}
-        fontWeight={500}
-        fill="var(--color-text-ink)"
-      >
-        {dateLine}
-      </text>
-      <text
-        x={tickX}
-        y={tickY + 24}
-        textAnchor="middle"
-        fontSize={11}
-        fill="var(--color-text-body-mid)"
-      >
-        {timeLine}
-      </text>
-    </g>
-  );
-};
 
 const renderDurationTooltip = (props: TooltipContentProps) => {
   const { active, payload, label } = props;
@@ -136,13 +64,8 @@ export default function DurationTrend({ history, onOpenGuide }: DurationTrendPro
       }
     });
 
-    if (
-      projectSet.size === 0 &&
-      (history as unknown as { project_trends?: { project: string }[] }).project_trends
-    ) {
-      (history as unknown as { project_trends: { project: string }[] }).project_trends.forEach(
-        (pt) => pt.project && projectSet.add(pt.project)
-      );
+    if (projectSet.size === 0 && history.project_trends) {
+      history.project_trends.forEach((pt) => pt.project && projectSet.add(pt.project));
     }
 
     if (projectSet.size === 0) {

@@ -5,8 +5,8 @@ import FilesSection from '@/components/files/FilesSection';
 import HistorySection from '@/components/history/HistorySection';
 import Sidebar, { type TabKey } from '@/components/layout/Sidebar';
 import ThemeControls from '@/components/layout/ThemeControls';
-import SuitesSection from '@/components/suites/SuitesSection';
 import BackToTopButton from '@/components/shared/BackToTopButton';
+import SuitesSection from '@/components/suites/SuitesSection';
 import { formatDateRange, formatDuration } from '@/lib/formatters';
 import type { HistoryData } from '@/lib/types/history';
 import type { ReportData, TestRun, TestSuite } from '@/lib/types/report';
@@ -24,10 +24,7 @@ export default function App() {
 
     const params = new URLSearchParams(window.location.search);
 
-    return (
-      params.get('view') === 'summary' ||
-      Boolean((window as unknown as { __ZEN_SUMMARY_ONLY__?: boolean }).__ZEN_SUMMARY_ONLY__)
-    );
+    return params.get('view') === 'summary' || Boolean(window.__ZEN_SUMMARY_ONLY__);
   }, []);
 
   const [activeTabState, setActiveTabState] = useState<TabKey>('overview');

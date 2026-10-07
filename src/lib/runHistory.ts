@@ -20,6 +20,12 @@ export const RUN_ROW_FIELDS: string[] = [
   'run_interrupted',
   'run_workers',
   'run_projects',
+  'step_assertions',
+  'step_actions',
+  'step_network',
+  'step_hooks',
+  'step_waits',
+  'step_others',
   'file',
   'suite',
   'title',
@@ -91,7 +97,8 @@ export function flattenRunRows(
   projectName: string,
   summary: ResultSummary,
   endedAt: string,
-  testCases: TestCase[]
+  testCases: TestCase[],
+  stepCategories?: Record<string, number>
 ): Record<string, unknown>[] {
   const runLevel: Record<string, unknown> = {
     run_id: runId,
@@ -109,6 +116,12 @@ export function flattenRunRows(
     run_interrupted: summary.interrupted ?? 0,
     run_workers: summary.workers ?? null,
     run_projects: summary.numberOfProjects,
+    step_assertions: stepCategories?.assertions ?? 0,
+    step_actions: stepCategories?.actions ?? 0,
+    step_network: stepCategories?.network ?? 0,
+    step_hooks: stepCategories?.hooks ?? 0,
+    step_waits: stepCategories?.waits ?? 0,
+    step_others: stepCategories?.others ?? 0,
   };
 
   if (testCases.length === 0) {

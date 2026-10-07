@@ -106,3 +106,47 @@ export const STATUS_BADGE_STYLE_MAP: Record<StatusType, string> = {
   skipped:
     'bg-slate-200/80 text-slate-800 ring-1 ring-slate-300 dark:bg-slate-700/60 dark:text-slate-200 dark:ring-1 dark:ring-slate-600',
 };
+
+export const PROJECT_BRAND_COLORS: Record<string, string> = {
+  chromium: 'var(--color-accent-green)',
+  firefox: 'var(--color-warning-500)',
+  webkit: 'var(--color-accent-gold)',
+  'desktop chrome': 'var(--color-accent-green)',
+  'desktop firefox': 'var(--color-warning-500)',
+  'desktop safari': 'var(--color-accent-gold)',
+  'mobile chrome': 'var(--color-accent-cafe)',
+  'mobile safari': 'var(--color-warning-600)',
+};
+
+export const DISTINCT_PROJECT_COLORS = [
+  'var(--color-success-500)',
+  'var(--color-danger-500)',
+  'var(--color-warning-500)',
+  'var(--color-info-600)',
+  'var(--color-accent-house)',
+  'var(--color-accent-gold)',
+  'var(--color-accent-pink)',
+  'var(--color-accent-orange)',
+  'var(--color-success-700)',
+  'var(--color-danger-700)',
+  'var(--color-warning-700)',
+  'var(--color-info-700)',
+];
+
+/**
+ * Resolves a CSS color token for a Playwright project name, matching known brand colors or selecting a distinct palette color.
+ *
+ * @param project - Name of the Playwright project profile.
+ * @param index - Index fallback for selecting a distinct palette color.
+ * @returns CSS color variable token string.
+ */
+export function getProjectColor(project: string, index: number): string {
+  const normalized = project.toLowerCase().trim();
+  if (PROJECT_BRAND_COLORS[normalized]) {
+    return PROJECT_BRAND_COLORS[normalized];
+  }
+  for (const [key, val] of Object.entries(PROJECT_BRAND_COLORS)) {
+    if (key.length > 3 && normalized.includes(key)) return val;
+  }
+  return DISTINCT_PROJECT_COLORS[index % DISTINCT_PROJECT_COLORS.length];
+}

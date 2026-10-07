@@ -1,3 +1,4 @@
+import { STEP_CATEGORIES } from '@/lib/stepCategoryClassifier';
 import { useState } from 'react';
 import {
   Bar,
@@ -10,87 +11,33 @@ import {
   XAxis,
   YAxis,
 } from 'recharts';
-import { formatDateParts } from '@/lib/formatters';
-import { STEP_CATEGORIES } from './stepCategoryClassifier';
+import { parseTrendDateParts, renderTrendTick } from '../TrendTick';
+
+export interface StepCategoryChartPoint {
+  name: string;
+  started_at?: string;
+  run_total?: number;
+  hasStepData?: boolean;
+  [categoryLabel: string]: string | number | boolean | undefined;
+}
 
 export interface StepCategoryChartProps {
-  chartData: Record<string, unknown>[];
+  chartData: StepCategoryChartPoint[];
   viewMode: 'percent' | 'count';
 }
-
-function parseTrendDateParts(valStr: string): [string, string] | null {
-  if (!valStr || valStr === 'Current Run' || valStr.startsWith('Run')) {
-    return null;
-  }
-  if (valStr.includes('T') || (valStr.includes('-') && /\d/.test(valStr))) {
-    const timestamp = Date.parse(valStr);
-    if (!isNaN(timestamp)) {
-      return formatDateParts(valStr);
-    }
-  }
-  return null;
-}
-
-const renderTrendTick = ({
-  x,
-  y,
-  payload,
-}: {
-  x: number | string;
-  y: number | string;
-  payload: { value: unknown };
-}) => {
-  const tickX = Number(x);
-  const tickY = Number(y);
-  const valStr = String(payload.value);
-
-  const dateParts = parseTrendDateParts(valStr);
-  let dateLine = valStr;
-  let timeLine = '';
-
-  if (dateParts) {
-    dateLine = dateParts[0] || valStr;
-    timeLine = dateParts[1] || '';
-  } else if (valStr.includes(' ')) {
-    const spaceIdx = valStr.indexOf(' ');
-    dateLine = valStr.substring(0, spaceIdx);
-    timeLine = valStr.substring(spaceIdx + 1);
-  }
-
-  return (
-    <g>
-      <text
-        x={tickX}
-        y={tickY + 10}
-        textAnchor="middle"
-        fontSize={11}
-        fontWeight={500}
-        fill="var(--color-text-ink)"
-      >
-        {dateLine}
-      </text>
-      {timeLine ? (
-        <text
-          x={tickX}
-          y={tickY + 24}
-          textAnchor="middle"
-          fontSize={11}
-          fill="var(--color-text-body-mid)"
-        >
-          {timeLine}
-        </text>
-      ) : null}
-    </g>
-  );
-};
 
 const renderCategoryTooltip = (props: TooltipContentProps, viewMode: 'percent' | 'count') => {
   const { active, payload, label } = props;
   if (!active || !payload || payload.length === 0) return null;
+
+  const dataItem = payload[0]?.payload as StepCategoryChartPoint | undefined;
+  const hasStepData = dataItem?.hasStepData !== false;
+
   const valStr = String(label);
   const dateParts = parseTrendDateParts(valStr);
   let dateLine = valStr;
   let timeLine = '';
+
   if (dateParts) {
     dateLine = dateParts[0] || valStr;
     timeLine = dateParts[1] || '';
@@ -102,28 +49,34 @@ const renderCategoryTooltip = (props: TooltipContentProps, viewMode: 'percent' |
       {timeLine && (
         <div className="text-[11px] text-text-body-mid dark:text-text-muted mb-1.5">{timeLine}</div>
       )}
-      <div className="space-y-1 text-xs">
-        {payload.map((entry) => {
-          const val = Number(entry.value);
-          const formattedVal = viewMode === 'percent' ? `${val}%` : `${val} steps`;
-          const catConfig = STEP_CATEGORIES.find((c) => c.label === entry.name);
-          const color = catConfig ? catConfig.color : entry.color;
-          return (
-            <div
-              key={String(entry.name)}
-              className="flex items-center justify-between gap-4 font-medium"
-            >
-              <span className="flex items-center gap-1.5 text-text-ink dark:text-text-on-primary">
-                <span className="h-2 w-2 rounded-full" style={{ backgroundColor: color }} />
-                {entry.name}:
-              </span>
-              <span className="font-bold tabular-nums text-text-ink dark:text-text-on-primary">
-                {formattedVal}
-              </span>
-            </div>
-          );
-        })}
-      </div>
+      {!hasStepData ? (
+        <div className="text-xs italic text-text-body-mid dark:text-text-muted py-1">
+          No step category data recorded for this run
+        </div>
+      ) : (
+        <div className="space-y-1 text-xs">
+          {payload.map((entry) => {
+            const val = Number(entry.value);
+            const formattedVal = viewMode === 'percent' ? `${val}%` : `${val} steps`;
+            const catConfig = STEP_CATEGORIES.find((c) => c.label === entry.name);
+            const color = catConfig ? catConfig.color : entry.color;
+            return (
+              <div
+                key={String(entry.name)}
+                className="flex items-center justify-between gap-4 font-medium"
+              >
+                <span className="flex items-center gap-1.5 text-text-ink dark:text-text-on-primary">
+                  <span className="h-2 w-2 rounded-full" style={{ backgroundColor: color }} />
+                  {entry.name}:
+                </span>
+                <span className="font-bold tabular-nums text-text-ink dark:text-text-on-primary">
+                  {formattedVal}
+                </span>
+              </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 };

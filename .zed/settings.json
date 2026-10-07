@@ -12,7 +12,9 @@
       "formatter": "prettier"
     },
     "CSS": {
-      "language_servers": ["tailwindcss-language-server"]
+      "language_servers": [
+        "tailwindcss-language-server"
+      ]
     },
     "TypeScript": {
       "format_on_save": "on",
@@ -25,7 +27,11 @@
         },
         "prettier"
       ],
-      "language_servers": ["vtsls", "eslint", "cspell"]
+      "language_servers": [
+        "vtsls",
+        "eslint",
+        "cspell"
+      ]
     },
     "JavaScript": {
       "format_on_save": "on",
@@ -38,7 +44,11 @@
         },
         "prettier"
       ],
-      "language_servers": ["vtsls", "eslint", "cspell"]
+      "language_servers": [
+        "vtsls",
+        "eslint",
+        "cspell"
+      ]
     },
     "JSON": {
       "format_on_save": "on",

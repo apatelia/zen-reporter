@@ -74,6 +74,7 @@ zen-reporter/
 │   │   ├── DurationTrend.tsx
 │   │   ├── PassRateTrend.tsx
 │   │   ├── StepCategoryTrend.tsx
+│   │   ├── TrendTick.tsx      # Consolidated SVG trend tick renderer & timestamp parser
 │   │   ├── TrendsGuides.tsx   # Guide modal for Trends tab
 │   │   └── TrendsSection.tsx
 │   └── visual-regression/     # Visual regression diff viewer components
@@ -97,7 +98,7 @@ zen-reporter/
 │   ├── runHistoryWriter.ts    # Self-contained per-run JSONL persistence helper under <outputDir>/runs/
 │   ├── statsUtils.ts          # Single-pass O(N) project stats calculator & executive KPI generator
 │   ├── tagColors.ts           # Deterministic HSL color generator for tags
-│   └── theme.ts               # Unified UI theme tokens & health status color palette maps
+│   └── theme.ts               # Unified UI theme tokens, brand color maps & status color palettes
 ├── App.tsx                    # Root component with theme/darkMode initial loading, version title header & tab routing
 ├── app.css                    # Design system CSS with theme palettes (Cafe, Concept, Sentinel), WCAG contrast tokens & dark mode styles
 ├── main.tsx                   # React application entry point
@@ -109,7 +110,7 @@ zen-reporter/
 │   │   ├── env.js             # System environment diagnostics handler ('zr env')
 │   │   ├── help.js            # Help and usage documentation renderer
 │   │   ├── history.js         # History report and query engine handler ('zr history ...')
-│   │   ├── show.js            # Local report server launcher ('zr show')
+│   │   ├── show.js            # Internal 127.0.0.1 static HTTP report server launcher ('zr show')
 │   │   └── summary.js         # Markdown summary snippet generator ('zr summary')
 │   └── zen-reporter.js        # Executable CLI entry point delegating to bin/commands/
 ├── zen-report/                # Generated self-contained report bundle folder

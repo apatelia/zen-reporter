@@ -1,3 +1,6 @@
+import LearnMoreButton from '@/components/shared/LearnMoreButton';
+import { formatDateParts } from '@/lib/formatters';
+import type { HistoryData } from '@/lib/types/history';
 import {
   CartesianGrid,
   Line,
@@ -8,9 +11,7 @@ import {
   XAxis,
   YAxis,
 } from 'recharts';
-import type { HistoryData } from '@/lib/types/history';
-import { formatDateParts } from '@/lib/formatters';
-import LearnMoreButton from '@/components/shared/LearnMoreButton';
+import { renderTrendTick } from './TrendTick';
 
 interface PassRateTrendProps {
   history: HistoryData;
@@ -19,43 +20,6 @@ interface PassRateTrendProps {
 
 const sectionClass = 'rounded-md border border-border-default bg-surface-50 p-5 shadow-xs';
 const headingClass = 'text-lg font-bold text-text-ink dark:text-text-on-primary';
-
-const renderTrendTick = ({
-  x,
-  y,
-  payload,
-}: {
-  x: number | string;
-  y: number | string;
-  payload: { value: unknown };
-}) => {
-  const tickX = Number(x);
-  const tickY = Number(y);
-  const [dateLine, timeLine] = formatDateParts(String(payload.value));
-  return (
-    <g>
-      <text
-        x={tickX}
-        y={tickY + 10}
-        textAnchor="middle"
-        fontSize={11}
-        fontWeight={500}
-        fill="var(--color-text-ink)"
-      >
-        {dateLine}
-      </text>
-      <text
-        x={tickX}
-        y={tickY + 24}
-        textAnchor="middle"
-        fontSize={11}
-        fill="var(--color-text-body-mid)"
-      >
-        {timeLine}
-      </text>
-    </g>
-  );
-};
 
 const renderTrendTooltip = (props: TooltipContentProps) => {
   const { active, payload, label } = props;

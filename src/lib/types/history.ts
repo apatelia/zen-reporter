@@ -16,6 +16,7 @@ export interface HistoryRun {
   run_interrupted: number;
   pass_rate: number | null;
   project_durations?: Record<string, number>;
+  step_categories?: Record<string, number>;
 }
 
 export interface HistoryFlakyRow {
@@ -90,6 +91,7 @@ export interface HistoryData {
   flaky: HistoryFlakyRow[];
   regressions: HistoryRegressionRow[];
   slowest: HistorySlowRow[];
+  project_trends?: { project: string }[];
   files?: HistoryFileRow[];
   tests?: HistoryTestRow[];
 }

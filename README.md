@@ -20,14 +20,14 @@ Dark mode:
 
 ## Features
 
-- **High-Level Test Dashboard**: Visual summary metrics featuring pass rate radial indicators, execution efficiency, health breakdowns, run environment details (duration, projects, suites, test counts, worker threads), and calculation tooltips.
+- **High-Level Test Dashboard**: Visual summary metrics featuring pass rate radial indicators, execution efficiency, test stability and flakiness, test run details (duration, projects, suites, test counts, worker threads), and calculation tooltips.
 - **Per-Project Execution Analytics**: Detailed status bar charts, volume and coverage distribution, and project detail cards comparing Playwright project profiles.
 - **Suite & Spec File Explorer**: Interactive, searchable tree view container for nested `describe` suites with collapsible nodes, bulk expand/collapse controls, retry badges, test case cards, and paginated spec file summary tables.
 - **Deep-Dive Failure Analysis**: Detailed root cause analysis with two grouping modes (file grouping and error signature clustering to group identical root causes into Shared Issue clusters), step-by-step execution traces with target indicators (`▶`), source code snippets with syntax highlighting, diff stack traces (`Expected` vs `Received`), and retry attempt tabs (`Run`, `Retry #1`).
 - **Visual Regression Diff Viewer**: Built-in side-by-side snapshot comparison for visual regression testing, allowing interactive comparison of `actual`, `expected` (baseline), and overlay `diff` image attachments.
 - **Execution History Archiving**: Archive historical test runs with details on run metadata, execution modes (`Parallel, N workers` vs `Serial`), wall-clock duration, pass/fail ratios, and automated quality ratings (`Excellent`, `Needs improvement`, `Critical`).
 - **File & Test Case History**: Dedicated **File History** and **Test History** views to analyze long-term spec file stability, individual test case pass/fail rates, run counts, average execution durations, date-range filtering, and text search across historical runs.
-- **Export to CSV**: Lightweight, RFC 4180-compliant UTF-8 CSV exporter for all report tables (Files, History, Insights). Respects active filters/date ranges and exports un-paginated full datasets for easy data sharing and external analysis.
+- **Export to CSV**: Lightweight, UTF-8 CSV exporter for all report tables (Files, History, Insights). Respects active filters/date ranges and exports un-paginated full datasets for easy data sharing and external analysis.
 - **Visual Quality Trends**: Track pass rate percentages over time, multi-project execution duration trends per project profile, and step category trends across historical runs.
 - **DuckDB-Powered Test Intelligence**: Embedded analytics engine for advanced test suite intelligence:
   - **Flaky Intelligence**: Detect tests fluctuating between pass and fail across historical runs.
@@ -35,7 +35,7 @@ Dark mode:
   - **Slowest Tests Analysis**: Rank top slowest test cases by average execution duration across runs.
   - **P95 Duration & Latency**: Analyze 95th percentile completion thresholds per project profile.
 - **Core Platform Capabilities**:
-  - **Themes & Dark Mode**: Multiple design themes (`Cafe`, `Concept`, `Sentinel`) with light and dark mode toggles, built with WCAG-compliant color tokens and configurable default states.
+  - **Themes & Dark Mode**: Multiple design themes (`Cafe`, `Concept`, `Sentinel`) with light, dark, and auto system mode toggles (following OS preferences), built with WCAG-compliant color tokens and configurable default states.
   - **Self-Contained Report Bundle Output**: Generates an interactive HTML dashboard (`index.html`) backed by per-run JSONL execution history (`runs/`) and test attachments (`attachments/`) for easy CI/CD artifact storage. Optionally creates a lightweight standalone `summary.html` dedicated to executive dashboards.
 
 > **Note**: Designed and built with AI pair-programming tools; fully tested, maintained, and quality-assured by human hands.
@@ -82,7 +82,7 @@ export default defineConfig({
         projectName: 'My E2E Project', // Optional: Project name displayed in the top bar header
         testRunName: 'Nightly Build #42', // Optional: Test run / build name displayed in the top bar header
         theme: 'Cafe', // Optional: Theme applied on initial load ("Cafe" | "Concept" | "Sentinel", default: "Cafe")
-        darkMode: false, // Optional: Initial dark mode state (default: false)
+        darkMode: 'system', // Optional: Initial dark mode state (boolean | "system", default: "system")
         singleSummaryFile: true, // Optional: Generates a standalone summary.html file alongside index.html
         minimalReport: false, // Optional: Produces a lightweight, basic report (disables history, hides analytical charts & secondary tabs, default: false)
         enableHistory: 'auto', // Optional: History recording mode ("auto" | boolean, default: "auto")
@@ -101,7 +101,7 @@ export default defineConfig({
 | `projectName`       | `string`                               | `"Test Automation Project"` | Project name displayed prominently in the top bar of the dashboard.                                                                         |
 | `testRunName`       | `string`                               | `"Test Run #{N}"`           | Test run or build name displayed in top bar. `{N}` is replaced dynamically by run number.                                                   |
 | `theme`             | `string`                               | `"Cafe"`                    | Theme applied on first load (`"Cafe"`, `"Concept"`, `"Sentinel"`).                                                                          |
-| `darkMode`          | `boolean`                              | `false`                     | When set to `true`, the report loads in dark mode on first load.                                                                            |
+| `darkMode`          | `boolean \| 'system'`                  | `"system"`                  | Initial dark mode state (`true`, `false`, or `"system"` to automatically match OS theme setting).                                           |
 | `singleSummaryFile` | `boolean`                              | `false`                     | Generates a standalone `summary.html` for executive summary views.                                                                          |
 | `minimalReport`     | `boolean`                              | `false`                     | When `true`, disables history recording and hides analytical charts/secondary tabs (Projects, History, Trends, Insights) for a lean report. |
 | `enableHistory`     | `'auto' \| boolean`                    | `"auto"`                    | Controls history execution archiving (`"auto"`, `true`, `false`). Forced to `false` when `minimalReport` is `true`.                         |

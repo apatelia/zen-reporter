@@ -46,28 +46,6 @@ export function detectPackageManager(cwd: string = process.cwd()): string {
   return 'npm';
 }
 
-/**
- * Returns the terminal command string for running Vite build using the detected package manager.
- *
- * @param pm - Optional package manager override.
- * @param cwd - Working directory.
- * @returns Command string (e.g. `pnpm exec vite build`).
- */
-export function getViteBuildCommand(pm?: string, cwd: string = process.cwd()): string {
-  const manager = pm || detectPackageManager(cwd);
-
-  switch (manager) {
-    case 'pnpm':
-      return 'pnpm exec vite build';
-    case 'yarn':
-      return 'yarn exec vite build';
-    case 'bun':
-      return 'bunx vite build';
-    default:
-      return 'npx vite build';
-  }
-}
-
 interface RawTestStep {
   title: string;
   subtitle?: string;

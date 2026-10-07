@@ -13,6 +13,7 @@ export interface WriteRunHistoryOptions {
   summary: ResultSummary;
   endedAt: string;
   testCases: TestCaseModel[];
+  stepCategories?: Record<string, number>;
 }
 
 /**
@@ -44,7 +45,8 @@ export function writeRunHistory(options: WriteRunHistoryOptions): void {
       options.projectName,
       options.summary,
       options.endedAt,
-      options.testCases
+      options.testCases,
+      options.stepCategories
     );
 
     fs.mkdirSync(runsDir, { recursive: true });

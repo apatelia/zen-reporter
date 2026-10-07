@@ -29,7 +29,7 @@ import { printHelp } from './help.js';
  */
 export async function generateHistoryReport(conn, historyDir, cwd = process.cwd()) {
   const runsGlob = `${resolve(cwd, historyDir, 'runs')}/*.jsonl`;
-  const runsSql = `SELECT DISTINCT run_id, run_name, started_at, run_duration_ms, coalesce(max(run_sequential_duration_ms), sum(duration_ms)) AS run_sequential_duration_ms, max(run_workers) AS run_workers, run_total, run_passed, run_failed, run_timed_out, run_skipped, run_interrupted, round(100.0 * run_passed / nullif(run_total, 0), 1) AS pass_rate FROM ${SRC} GROUP BY run_id, run_name, started_at, run_duration_ms, run_total, run_passed, run_failed, run_timed_out, run_skipped, run_interrupted ORDER BY started_at ASC`;
+  const runsSql = `SELECT DISTINCT run_id, run_name, started_at, run_duration_ms, coalesce(max(run_sequential_duration_ms), sum(duration_ms)) AS run_sequential_duration_ms, max(run_workers) AS run_workers, run_total, run_passed, run_failed, run_timed_out, run_skipped, run_interrupted, round(100.0 * run_passed / nullif(run_total, 0), 1) AS pass_rate, max(coalesce(step_assertions, 0)) AS step_assertions, max(coalesce(step_actions, 0)) AS step_actions, max(coalesce(step_network, 0)) AS step_network, max(coalesce(step_hooks, 0)) AS step_hooks, max(coalesce(step_waits, 0)) AS step_waits, max(coalesce(step_others, 0)) AS step_others FROM ${SRC} GROUP BY run_id, run_name, started_at, run_duration_ms, run_total, run_passed, run_failed, run_timed_out, run_skipped, run_interrupted ORDER BY started_at ASC`;
 
   const [
     runsResult,
@@ -59,10 +59,41 @@ export async function generateHistoryReport(conn, historyDir, cwd = process.cwd(
     projectDurationsByRun[row.run_id][row.project] = row.duration_sec;
   }
 
-  const runs = runsResult.rows.map((run) => ({
-    ...run,
-    project_durations: projectDurationsByRun[run.run_id] || {},
-  }));
+  const runs = runsResult.rows.map((run) => {
+    const {
+      step_assertions,
+      step_actions,
+      step_network,
+      step_hooks,
+      step_waits,
+      step_others,
+      ...rest
+    } = run;
+
+    const hasStepCategories =
+      (step_assertions || 0) +
+        (step_actions || 0) +
+        (step_network || 0) +
+        (step_hooks || 0) +
+        (step_waits || 0) +
+        (step_others || 0) >
+      0;
+
+    return {
+      ...rest,
+      project_durations: projectDurationsByRun[run.run_id] || {},
+      step_categories: hasStepCategories
+        ? {
+            assertions: step_assertions || 0,
+            actions: step_actions || 0,
+            network: step_network || 0,
+            hooks: step_hooks || 0,
+            waits: step_waits || 0,
+            others: step_others || 0,
+          }
+        : undefined,
+    };
+  });
 
   const history = {
     generated_at: new Date().toISOString(),
