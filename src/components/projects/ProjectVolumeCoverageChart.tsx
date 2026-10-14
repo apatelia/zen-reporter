@@ -19,13 +19,13 @@ export interface ProjectVolumeCoverageChartProps {
 }
 
 const colorMap: Record<string, string> = {
-  Executed: 'var(--color-success-500)',
-  Skipped: 'var(--color-text-muted)',
+  Executed: 'var(--color-status-chart-passed)',
+  Skipped: 'var(--color-status-chart-skipped)',
 };
 
 const LegendFormatter = (value: string) => {
   return (
-    <span style={{ color: colorMap[value] || 'var(--color-text-muted)', fontSize: '12px' }}>
+    <span style={{ color: 'var(--color-text-ink)', fontSize: '12px', fontWeight: 500 }}>
       {value}
     </span>
   );
@@ -55,14 +55,20 @@ const renderTooltip = (props: TooltipContentProps) => {
         </div>
         <div className="flex justify-between gap-4">
           <span className="flex items-center gap-1.5 text-success-600 dark:text-success-500">
-            <span className="h-2 w-2 rounded-full bg-success-500" />
+            <span
+              className="h-2 w-2 rounded-full"
+              style={{ backgroundColor: colorMap['Executed'] }}
+            />
             Executed Tests:
           </span>
           <span className="font-bold tabular-nums">{data.Executed}</span>
         </div>
         <div className="flex justify-between gap-4">
           <span className="flex items-center gap-1.5 text-slate-500 dark:text-slate-400">
-            <span className="h-2 w-2 rounded-full bg-slate-400" />
+            <span
+              className="h-2 w-2 rounded-full"
+              style={{ backgroundColor: colorMap['Skipped'] }}
+            />
             Skipped Tests:
           </span>
           <span className="font-bold tabular-nums">{data.Skipped}</span>
@@ -166,13 +172,13 @@ export default function ProjectVolumeCoverageChart({
             <Bar
               dataKey="Executed"
               stackId="a"
-              fill="var(--color-success-500)"
+              fill="var(--color-status-chart-passed)"
               radius={[0, 0, 0, 0]}
             />
             <Bar
               dataKey="Skipped"
               stackId="a"
-              fill="var(--color-border-chart)"
+              fill="var(--color-status-chart-skipped)"
               radius={[0, 4, 4, 0]}
             />
           </BarChart>

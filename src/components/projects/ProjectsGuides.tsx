@@ -46,15 +46,16 @@ export default function ProjectsGuides({
               assertion failures or unhandled runtime exceptions.
             </li>
             <li>
-              <strong className="text-warning-600 dark:text-warning-500">Timed Out:</strong> Tests
+              <strong className="text-danger-700 dark:text-danger-400">Timed Out:</strong> Tests
               exceeding the configured Playwright project timeout limit.
             </li>
             <li>
-              <strong className="text-danger-700 dark:text-danger-400">Interrupted:</strong> Tests
+              <strong className="text-amber-600 dark:text-amber-500">Interrupted:</strong> Tests
               cancelled due to worker signals or parent run aborts.
             </li>
             <li>
-              <strong className="text-text-muted">Skipped:</strong> Tests conditionally bypassed (
+              <strong className="text-slate-600 dark:text-slate-400">Skipped:</strong> Tests
+              conditionally bypassed (
               <code className="font-mono bg-surface-100 px-1 py-0.5 rounded text-[10px]">
                 test.skip()
               </code>

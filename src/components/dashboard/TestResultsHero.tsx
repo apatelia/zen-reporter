@@ -64,8 +64,8 @@ export default function TestResultsHero({ summary, suites }: TestResultsHeroProp
       value: summary.timedOut,
       pct: statusPcts.timedOut,
       color: 'bg-danger-600 dark:bg-danger-400',
-      text: 'text-danger-600 dark:text-danger-500',
-      bg: 'bg-danger-500/5 dark:bg-danger-500/10 border-danger-500/20',
+      text: 'text-danger-700 dark:text-danger-400',
+      bg: 'bg-danger-600/5 dark:bg-danger-400/10 border-danger-600/25 dark:border-danger-400/25',
       icon: (
         <svg
           className="h-4 w-4"
@@ -109,9 +109,9 @@ export default function TestResultsHero({ summary, suites }: TestResultsHeroProp
       label: 'Skipped',
       value: summary.skipped,
       pct: statusPcts.skipped,
-      color: 'bg-warning-500',
-      text: 'text-warning-600 dark:text-warning-500',
-      bg: 'bg-warning-500/5 dark:bg-warning-500/10 border-warning-500/20',
+      color: 'bg-slate-400 dark:bg-slate-500',
+      text: 'text-slate-600 dark:text-slate-400',
+      bg: 'bg-slate-500/5 dark:bg-slate-400/10 border-slate-500/20 dark:border-slate-400/20',
       icon: (
         <svg
           className="h-4 w-4"

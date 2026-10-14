@@ -17,7 +17,7 @@ test-results/
 
 # Reports
 playwright-report/
-zen-report/
+zen-report*/
 
 # Environment files
 .env

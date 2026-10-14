@@ -186,40 +186,39 @@ export function highlightJsTokens(code: string): string {
  *
  * @param codeLine - Code line string with optional prefix.
  * @param status - Step execution status.
+ * @param lineNoWidth - Minimum width (padding) for line number column.
  * @returns HTML string for the code line.
  */
-export function highlightCodeLine(codeLine: string, status?: string): string {
+export function highlightCodeLine(codeLine: string, status?: string, lineNoWidth = 4): string {
   if (!codeLine) return '';
 
   const isTarget = codeLine.startsWith('>');
   const pipeIdx = codeLine.indexOf('|');
 
-  let prefixHtml = '';
-  let codePart: string;
-
-  const isFailedStatus = status === 'failed' || status === 'timedOut' || status === 'interrupted';
-
   if (pipeIdx !== -1) {
-    const rawPrefix = codeLine.slice(0, pipeIdx + 1);
-    codePart = codeLine.slice(pipeIdx + 1);
+    const rawPrefix = codeLine.slice(0, pipeIdx);
+    const lineNo = rawPrefix.replace('>', '').trim();
+    const codePart = codeLine.slice(pipeIdx + 1);
 
-    if (isTarget) {
-      const lineNo = rawPrefix.slice(1, pipeIdx).trim();
-      const indicatorColorClass = isFailedStatus
-        ? 'text-danger-600 dark:text-danger-400'
-        : 'text-success-600 dark:text-success-400';
-      prefixHtml = `<span class="inline-flex items-center gap-1 font-bold ${indicatorColorClass}"><span class="font-black">▶</span>${lineNo.padStart(4, ' ')} |</span>`;
-    } else {
-      const lineNo = rawPrefix.slice(0, pipeIdx).trim();
-      prefixHtml = `<span class="text-text-muted/70 dark:text-slate-500 font-mono">${lineNo.padStart(5, ' ')} |</span>`;
-    }
-  } else {
-    codePart = codeLine;
+    const isCaretLine = lineNo === '' && codePart.includes('^');
+    const isFailedStatus =
+      status === 'failed' || status === 'timedOut' || status === 'interrupted' || isCaretLine;
+    const indicatorColorClass = isFailedStatus
+      ? 'text-danger-600 dark:text-danger-400'
+      : 'text-success-600 dark:text-success-400';
+
+    const paddedLineNo = lineNo ? lineNo.padStart(lineNoWidth, ' ') : ' '.repeat(lineNoWidth);
+
+    const gutterHtml = `<span class="inline-flex items-center shrink-0 select-none font-mono"><span class="w-3.5 shrink-0 inline-flex items-center justify-center font-black ${isTarget ? indicatorColorClass : 'invisible'}" aria-hidden="true">▶</span><span class="whitespace-pre font-mono ${isTarget ? `${indicatorColorClass} font-bold` : 'text-text-muted/70 dark:text-slate-500'}">${paddedLineNo}</span><span class="mx-2 font-mono ${isTarget ? `${indicatorColorClass} font-bold` : 'text-text-muted/70 dark:text-slate-500'}">|</span></span>`;
+
+    const codeHtml = isCaretLine
+      ? `<span class="whitespace-pre font-bold ${indicatorColorClass}">${escapeHTML(codePart)}</span>`
+      : `<span class="whitespace-pre">${highlightJsTokens(codePart)}</span>`;
+
+    return `<div class="flex items-center px-2 py-0.5 font-mono text-[12px] leading-relaxed min-w-fit">${gutterHtml}${codeHtml}</div>`;
   }
 
-  const highlightedCode = highlightJsTokens(codePart);
-
-  return `<div class="flex items-center gap-2 px-2 py-0.5 font-mono text-[12px] leading-relaxed">${prefixHtml} <span>${highlightedCode}</span></div>`;
+  return `<div class="flex items-center px-2 py-0.5 font-mono text-[12px] leading-relaxed min-w-fit"><span class="whitespace-pre">${highlightJsTokens(codeLine)}</span></div>`;
 }
 
 /**
@@ -232,10 +231,19 @@ export function highlightCodeLine(codeLine: string, status?: string): string {
 export function highlightCodeSnippet(snippet: string, status?: string): string {
   if (!snippet) return '';
 
-  return snippet
-    .split(/\r?\n/)
-    .map((line) => highlightCodeLine(line, status))
-    .join('');
+  const lines = snippet.split(/\r?\n/);
+  let maxLineNoWidth = 3;
+  for (const line of lines) {
+    const pipeIdx = line.indexOf('|');
+    if (pipeIdx !== -1) {
+      const lineNo = line.slice(0, pipeIdx).replace('>', '').trim();
+      if (lineNo) {
+        maxLineNoWidth = Math.max(maxLineNoWidth, lineNo.length);
+      }
+    }
+  }
+
+  return lines.map((line) => highlightCodeLine(line, status, maxLineNoWidth)).join('');
 }
 
 /**

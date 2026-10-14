@@ -15,7 +15,7 @@ export default defineConfig([
       'test-results',
       '.playwright',
       'playwright-report',
-      'zen-report',
+      'zen-report*',
     ],
   },
   {

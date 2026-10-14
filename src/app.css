@@ -87,10 +87,20 @@
 
 :root {
   color-scheme: light;
+  --color-status-chart-passed: var(--color-success-500);
+  --color-status-chart-failed: var(--color-danger-500);
+  --color-status-chart-timed-out: var(--color-danger-600);
+  --color-status-chart-interrupted: #d97706; /* amber-600 */
+  --color-status-chart-skipped: #94a3b8; /* slate-400 */
 }
 
 html.dark {
   color-scheme: dark;
+  --color-status-chart-passed: var(--color-success-500);
+  --color-status-chart-failed: var(--color-danger-500);
+  --color-status-chart-timed-out: var(--color-danger-400, #f87171);
+  --color-status-chart-interrupted: #f59e0b; /* amber-500 */
+  --color-status-chart-skipped: #64748b; /* slate-500 */
 }
 
 /* ── Dark mode variant definition ─ */

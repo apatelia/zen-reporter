@@ -4,41 +4,6 @@ import { platform, type } from 'os';
 import { resolve } from 'path';
 
 /**
- * Detects the package manager used in the specified directory based on lockfiles or package.json settings.
- *
- * @param {string} [cwd=process.cwd()] - Working directory to inspect.
- * @returns {string} Detected package manager ('pnpm', 'yarn', 'bun', or 'npm').
- */
-export function detectPackageManager(cwd = process.cwd()) {
-  const lockfiles = [
-    ['pnpm-lock.yaml', 'pnpm'],
-    ['yarn.lock', 'yarn'],
-    ['bun.lock', 'bun'],
-    ['package-lock.json', 'npm'],
-  ];
-
-  for (const [file, manager] of lockfiles) {
-    if (existsSync(resolve(cwd, file))) return manager;
-  }
-
-  if (existsSync(resolve(cwd, '.npmrc'))) return 'npm';
-
-  try {
-    const pkgPath = resolve(cwd, 'package.json');
-
-    if (existsSync(pkgPath)) {
-      const pkgJson = JSON.parse(readFileSync(pkgPath, 'utf8'));
-
-      if (pkgJson.packageManager) return pkgJson.packageManager.split('@')[0];
-    }
-  } catch {
-    /* ignore */
-  }
-
-  return 'npm';
-}
-
-/**
  * Formats a duration in milliseconds into a concise human-readable string (e.g. "45s", "2m 15s").
  *
  * @param {number|null|undefined} ms - Duration in milliseconds.
@@ -65,7 +30,7 @@ export function formatDuration(ms) {
  * @param {string} str - Input string.
  * @returns {string} Proper case string.
  */
-export function toProperCase(str) {
+function toProperCase(str) {
   return str
     .split('_')
     .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
@@ -78,7 +43,7 @@ export function toProperCase(str) {
  * @param {unknown} val - Value to check.
  * @returns {boolean} True if the value is numeric or formatted numeric.
  */
-export function isNumericValue(val) {
+function isNumericValue(val) {
   if (val === null || val === undefined) return false;
 
   if (typeof val === 'number') return true;

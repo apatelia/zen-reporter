@@ -253,7 +253,9 @@ export default function FileMetricsSection({ suites, isMinimalReport }: FileMetr
                   </h3>
                   <InfoTooltip text="Durations reflect cumulative sequential effort (total test runtime within the file), helping identify the heaviest execution bottlenecks regardless of worker allocation." />
                 </div>
-                <span className="text-xs text-text-muted font-mono">Top 5 by Duration</span>
+                <span className="text-xs text-text-muted font-mono">
+                  {totalFiles < 5 ? `Top ${totalFiles} by Duration` : 'Top 5 by Duration'}
+                </span>
               </div>
 
               <div className="space-y-2.5">

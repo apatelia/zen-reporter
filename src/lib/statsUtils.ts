@@ -524,22 +524,6 @@ export function computeFastestTest(allCases: TestCase[]): number {
   return Math.min(...executedCases.map((tc) => tc.duration));
 }
 
-/**
- * Counts unique tags present across all test cases.
- *
- * @param allCases - Array of test cases.
- * @returns Number of unique tags.
- */
-export function getTotalTags(allCases: TestCase[]): number {
-  const tagSet = new Set<string>();
-  for (const tc of allCases) {
-    for (const tag of tc.tags || []) {
-      tagSet.add(tag);
-    }
-  }
-  return tagSet.size;
-}
-
 export interface FileStats {
   fileName: string;
   total: number;

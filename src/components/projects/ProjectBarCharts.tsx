@@ -166,31 +166,31 @@ export default function ProjectBarCharts({
             <Bar
               dataKey="Passed"
               stackId="status"
-              fill="var(--color-success-500)"
+              fill="var(--color-status-chart-passed)"
               radius={[0, 0, 0, 0]}
             />
             <Bar
               dataKey="Failed"
               stackId="status"
-              fill="var(--color-danger-500)"
-              radius={[0, 0, 0, 0]}
-            />
-            <Bar
-              dataKey="Interrupted"
-              stackId="status"
-              fill="var(--color-danger-600)"
-              radius={[0, 0, 0, 0]}
-            />
-            <Bar
-              dataKey="Skipped"
-              stackId="status"
-              fill="var(--color-text-muted)"
+              fill="var(--color-status-chart-failed)"
               radius={[0, 0, 0, 0]}
             />
             <Bar
               dataKey="Timed Out"
               stackId="status"
-              fill="var(--color-warning-500)"
+              fill="var(--color-status-chart-timed-out)"
+              radius={[0, 0, 0, 0]}
+            />
+            <Bar
+              dataKey="Interrupted"
+              stackId="status"
+              fill="var(--color-status-chart-interrupted)"
+              radius={[0, 0, 0, 0]}
+            />
+            <Bar
+              dataKey="Skipped"
+              stackId="status"
+              fill="var(--color-status-chart-skipped)"
               radius={[0, 4, 4, 0]}
             />
           </BarChart>

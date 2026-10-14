@@ -2,20 +2,17 @@
  * Unified UI Theme Tokens & Status Color Palette Maps.
  * Single source of truth for health status indicators, card styling, and chart colors.
  */
-
-export type SummaryCardColor = 'success' | 'danger' | 'warning' | 'info';
-
 export const TEST_STATUS_COLOR_MAP: Record<string, string> = {
-  Passed: 'var(--color-success-500)',
-  Failed: 'var(--color-danger-500)',
-  Interrupted: 'var(--color-danger-600)',
-  Skipped: 'var(--color-text-muted)',
-  'Timed Out': 'var(--color-warning-500)',
-  passed: 'var(--color-success-500)',
-  failed: 'var(--color-danger-500)',
-  interrupted: 'var(--color-danger-600)',
-  skipped: 'var(--color-text-muted)',
-  timedOut: 'var(--color-warning-500)',
+  Passed: 'var(--color-status-chart-passed)',
+  Failed: 'var(--color-status-chart-failed)',
+  Interrupted: 'var(--color-status-chart-interrupted)',
+  Skipped: 'var(--color-status-chart-skipped)',
+  'Timed Out': 'var(--color-status-chart-timed-out)',
+  passed: 'var(--color-status-chart-passed)',
+  failed: 'var(--color-status-chart-failed)',
+  interrupted: 'var(--color-status-chart-interrupted)',
+  skipped: 'var(--color-status-chart-skipped)',
+  timedOut: 'var(--color-status-chart-timed-out)',
 };
 
 export const HEALTH_CATEGORY_CONFIG = {
@@ -65,32 +62,6 @@ export const HEALTH_CATEGORY_CONFIG = {
     active: (passRate: number) => passRate < 60,
   },
 } as const;
-
-export const SUMMARY_CARD_THEME: Record<
-  SummaryCardColor,
-  { bg: string; text: string; progressBg: string }
-> = {
-  success: {
-    bg: 'bg-success-50 border-success-200 dark:bg-success-50/20 dark:border-success-500/30',
-    text: 'text-success-600 dark:text-success-500',
-    progressBg: 'bg-success-500',
-  },
-  danger: {
-    bg: 'bg-danger-50 border-danger-200 dark:bg-danger-50/20 dark:border-danger-500/30',
-    text: 'text-danger-600 dark:text-danger-500',
-    progressBg: 'bg-danger-500',
-  },
-  warning: {
-    bg: 'bg-warning-50 border-warning-200 dark:bg-warning-50/20 dark:border-warning-500/30',
-    text: 'text-warning-500 dark:text-warning-500',
-    progressBg: 'bg-warning-500',
-  },
-  info: {
-    bg: 'bg-info-50 border-info-200 dark:bg-info-50/20 dark:border-info-500/30',
-    text: 'text-info-600 dark:text-info-500',
-    progressBg: 'bg-info-500',
-  },
-};
 
 export type StatusType = 'passed' | 'failed' | 'timedOut' | 'interrupted' | 'skipped';
 
