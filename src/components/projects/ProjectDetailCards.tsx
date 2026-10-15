@@ -56,16 +56,21 @@ export default function ProjectDetailCards({ projectStats, onOpenGuide }: Projec
     <div className="w-full rounded-lg bg-canvas border border-border-default p-5 shadow-sm space-y-4">
       {/* Cohesive Section Header & Filter Controls */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border-b border-border-default pb-4">
-        <div className="flex items-center gap-2.5 min-w-0 flex-wrap">
-          <h3 className="text-base font-bold text-text-ink dark:text-text-on-primary shrink-0">
-            Project Health & Breakdown
-          </h3>
-          {projectStats.length > 0 && (
-            <span className="rounded-full bg-surface-100 dark:bg-surface-100 px-2.5 py-0.5 text-xs font-semibold text-text-body-mid dark:text-text-muted border border-border-default">
-              {filteredAndSortedProjects.length} Projects
-            </span>
-          )}
-          <LearnMoreButton onClick={onOpenGuide} />
+        <div>
+          <div className="flex items-center gap-2.5 min-w-0 flex-wrap">
+            <h3 className="text-base font-bold text-text-ink dark:text-text-on-primary shrink-0">
+              Project Health & Breakdown
+            </h3>
+            {projectStats.length > 0 && (
+              <span className="rounded-full bg-surface-100 dark:bg-surface-100 px-2.5 py-0.5 text-xs font-semibold text-text-body-mid dark:text-text-muted border border-border-default">
+                {filteredAndSortedProjects.length} Projects
+              </span>
+            )}
+            <LearnMoreButton onClick={onOpenGuide} />
+          </div>
+          <p className="mt-1 text-xs text-text-body-mid dark:text-text-muted">
+            Detailed performance metrics, pass rates, and failure breakdowns per project target
+          </p>
         </div>
 
         {projectStats.length > 0 && (

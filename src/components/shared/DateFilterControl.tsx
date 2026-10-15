@@ -340,7 +340,7 @@ export default function DateFilterControl({
             onClick={handleClearFilter}
             className={`flex items-center gap-1.5 px-3 py-1 rounded transition-colors cursor-pointer disabled:cursor-not-allowed ${
               mode === 'all'
-                ? 'bg-canvas dark:bg-surface-200 border border-border-active text-text-ink dark:text-text-on-primary shadow-xs font-bold'
+                ? 'bg-canvas text-accent-blue dark:bg-accent-blue/25 dark:text-accent-blue shadow-sm shadow-black/8 ring-1 ring-border-default/80 dark:ring-accent-blue/30 font-bold'
                 : 'border border-transparent text-text-body-mid hover:text-text-ink dark:text-text-muted dark:hover:text-text-on-primary font-medium'
             }`}
           >
@@ -356,7 +356,7 @@ export default function DateFilterControl({
             }}
             className={`flex items-center gap-1.5 px-3 py-1 rounded transition-colors cursor-pointer disabled:cursor-not-allowed ${
               mode === 'month'
-                ? 'bg-canvas dark:bg-surface-200 border border-border-active text-text-ink dark:text-text-on-primary shadow-xs font-bold'
+                ? 'bg-canvas text-accent-blue dark:bg-accent-blue/25 dark:text-accent-blue shadow-sm shadow-black/8 ring-1 ring-border-default/80 dark:ring-accent-blue/30 font-bold'
                 : 'border border-transparent text-text-body-mid hover:text-text-ink dark:text-text-muted dark:hover:text-text-on-primary font-medium'
             }`}
           >
@@ -385,7 +385,7 @@ export default function DateFilterControl({
             }}
             className={`flex items-center gap-1.5 px-3 py-1 rounded transition-colors cursor-pointer disabled:cursor-not-allowed ${
               mode === 'range'
-                ? 'bg-canvas dark:bg-surface-200 border border-border-active text-text-ink dark:text-text-on-primary shadow-xs font-bold'
+                ? 'bg-canvas text-accent-blue dark:bg-accent-blue/25 dark:text-accent-blue shadow-sm shadow-black/8 ring-1 ring-border-default/80 dark:ring-accent-blue/30 font-bold'
                 : 'border border-transparent text-text-body-mid hover:text-text-ink dark:text-text-muted dark:hover:text-text-on-primary font-medium'
             }`}
           >

@@ -182,6 +182,178 @@ export function highlightJsTokens(code: string): string {
 }
 
 /**
+ * Applies syntax highlighting for a JSON line (keys, string values, numbers, booleans, null, punctuation).
+ *
+ * @param line - Raw line of JSON text.
+ * @returns HTML string with syntax highlighting spans.
+ */
+export function highlightJsonLine(line: string): string {
+  if (!line) return '';
+
+  // Matches:
+  // 1: JSON Key ("key"\s*:)
+  // 2: JSON String value ("(?:\\.|[^"\\])*")
+  // 3: Number or boolean or null (\b(?:true|false|null|-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?)\b)
+  // 4: Brackets / punctuation ([{}[\]:,])
+  const regex =
+    /("(?:\\.|[^"\\])*"(?=\s*:))|("(?:\\.|[^"\\])*")|(\b(?:true|false|null|-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?)\b)|([{}[\]:,])/g;
+
+  let result = '';
+  let lastIndex = 0;
+  let match: RegExpExecArray | null;
+
+  while ((match = regex.exec(line)) !== null) {
+    result += escapeHTML(line.slice(lastIndex, match.index));
+    lastIndex = regex.lastIndex;
+
+    const [fullMatch, key, strVal, litVal, punct] = match;
+
+    if (key) {
+      result += `<span class="text-sky-700 dark:text-sky-300 font-semibold">${escapeHTML(key)}</span>`;
+    } else if (strVal) {
+      result += `<span class="text-emerald-700 dark:text-emerald-300 font-medium">${escapeHTML(strVal)}</span>`;
+    } else if (litVal) {
+      result += `<span class="text-amber-700 dark:text-amber-300 font-mono">${escapeHTML(litVal)}</span>`;
+    } else if (punct) {
+      result += `<span class="text-slate-500 dark:text-slate-400 font-medium">${escapeHTML(punct)}</span>`;
+    } else {
+      result += escapeHTML(fullMatch);
+    }
+  }
+
+  result += escapeHTML(line.slice(lastIndex));
+  return result;
+}
+
+/**
+ * Applies syntax highlighting for a line of Markdown (headers, code blocks, quotes, lists, bold/italic, links).
+ *
+ * @param line - Raw line of Markdown text.
+ * @returns HTML string with syntax highlighting spans.
+ */
+export function highlightMarkdownLine(line: string): string {
+  if (!line) return '';
+
+  // 1. Code fences
+  if (/^```/.test(line)) {
+    return `<span class="text-purple-700 dark:text-purple-400 font-bold font-mono">${escapeHTML(line)}</span>`;
+  }
+
+  // 2. Headings (# Header)
+  const headingMatch = line.match(/^(\s{0,3}#{1,6}\s+)(.*)$/);
+  if (headingMatch) {
+    return `<span class="text-purple-700 dark:text-purple-400 font-bold">${escapeHTML(headingMatch[1])}</span><span class="text-accent-blue font-bold">${escapeHTML(headingMatch[2])}</span>`;
+  }
+
+  // 3. Blockquotes (> quote)
+  const quoteMatch = line.match(/^(\s{0,3}>\s*)(.*)$/);
+  if (quoteMatch) {
+    return `<span class="text-slate-500 dark:text-slate-400 font-bold">${escapeHTML(quoteMatch[1])}</span><span class="text-slate-600 dark:text-slate-300 italic">${highlightMarkdownInlines(quoteMatch[2])}</span>`;
+  }
+
+  // 4. Bullet & numbered lists (- item, * item, 1. item)
+  const listMatch = line.match(/^(\s{0,4}(?:[-*+]|\d+\.)\s+)(.*)$/);
+  if (listMatch) {
+    return `<span class="text-amber-700 dark:text-amber-400 font-bold">${escapeHTML(listMatch[1])}</span>${highlightMarkdownInlines(listMatch[2])}`;
+  }
+
+  return highlightMarkdownInlines(line);
+}
+
+/**
+ * Highlights inline Markdown tokens: backticks, bold/italic, links.
+ *
+ * @param text - Text without block-level prefixes.
+ * @returns HTML string with inline formatting spans.
+ */
+function highlightMarkdownInlines(text: string): string {
+  if (!text) return '';
+
+  // Matches:
+  // 1: Inline code (`...`)
+  // 2: Bold / Italic (**...** or *...*)
+  // 3: Markdown link [label](url)
+  const regex = /(`[^`\n]+`)|(\*{1,3}[^*\n]+\*{1,3}|_{1,3}[^_\n]+_{1,3})|(\[[^\]]+\]\([^)]+\))/g;
+
+  let result = '';
+  let lastIndex = 0;
+  let match: RegExpExecArray | null;
+
+  while ((match = regex.exec(text)) !== null) {
+    result += escapeHTML(text.slice(lastIndex, match.index));
+    lastIndex = regex.lastIndex;
+
+    const [fullMatch, code, boldItalic, link] = match;
+
+    if (code) {
+      result += `<span class="text-purple-700 dark:text-purple-300 bg-surface-200/60 dark:bg-surface-200/20 px-1 rounded font-mono">${escapeHTML(code)}</span>`;
+    } else if (boldItalic) {
+      result += `<span class="text-text-ink dark:text-text-on-primary font-bold">${escapeHTML(boldItalic)}</span>`;
+    } else if (link) {
+      result += `<span class="text-accent-blue underline">${escapeHTML(link)}</span>`;
+    } else {
+      result += escapeHTML(fullMatch);
+    }
+  }
+
+  result += escapeHTML(text.slice(lastIndex));
+  return result;
+}
+
+/**
+ * Detects language from filename or contentType.
+ *
+ * @param fileName - File or title string.
+ * @param contentType - Optional MIME type string.
+ * @returns Language identifier ('json' | 'markdown' | 'javascript' | 'typescript' | 'html' | 'css' | 'plain')
+ */
+export function detectLanguage(fileName?: string, contentType?: string): string {
+  const name = (fileName || '').toLowerCase();
+  const mime = (contentType || '').toLowerCase();
+
+  if (name.endsWith('.json') || mime.includes('json')) return 'json';
+  if (name.endsWith('.md') || name.endsWith('.markdown') || mime.includes('markdown'))
+    return 'markdown';
+  if (name.endsWith('.ts') || name.endsWith('.tsx') || mime.includes('typescript'))
+    return 'typescript';
+  if (
+    name.endsWith('.js') ||
+    name.endsWith('.jsx') ||
+    name.endsWith('.mjs') ||
+    name.endsWith('.cjs') ||
+    mime.includes('javascript')
+  )
+    return 'javascript';
+  if (name.endsWith('.html') || name.endsWith('.htm') || mime.includes('html')) return 'html';
+  if (name.endsWith('.css') || mime.includes('css')) return 'css';
+
+  return 'plain';
+}
+
+/**
+ * Dispatches line syntax highlighting according to language.
+ *
+ * @param line - Raw line text.
+ * @param language - Target language ('json' | 'markdown' | 'javascript' | 'typescript' | 'plain').
+ * @returns Safe HTML string with syntax highlighting.
+ */
+export function highlightSyntaxLine(line: string, language?: string): string {
+  if (!line) return '';
+
+  switch (language) {
+    case 'json':
+      return highlightJsonLine(line);
+    case 'markdown':
+      return highlightMarkdownLine(line);
+    case 'javascript':
+    case 'typescript':
+      return highlightJsTokens(line);
+    default:
+      return escapeHTML(line);
+  }
+}
+
+/**
  * Renders a single code line into HTML with status indicators and syntax highlighting.
  *
  * @param codeLine - Code line string with optional prefix.

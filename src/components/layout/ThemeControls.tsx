@@ -12,17 +12,17 @@ export function ThemeControls({ theme, setTheme, darkMode, setDarkMode }: ThemeC
     {
       id: 'cafe' as const,
       label: 'Cafe',
-      colorDot: 'bg-[#006241]',
+      colorDot: 'bg-[#006241] dark:bg-[#4ade80] ring-1 ring-black/10 dark:ring-white/20',
     },
     {
       id: 'concept' as const,
       label: 'Concept',
-      colorDot: 'bg-[#0075de]',
+      colorDot: 'bg-[#0075de] dark:bg-[#38bdf8] ring-1 ring-black/10 dark:ring-white/20',
     },
     {
       id: 'sentinel' as const,
       label: 'Sentinel',
-      colorDot: 'bg-[#6a5fc1]',
+      colorDot: 'bg-[#6a5fc1] dark:bg-[#c2ef4e] ring-1 ring-black/10 dark:ring-white/20',
     },
   ];
 
@@ -36,10 +36,10 @@ export function ThemeControls({ theme, setTheme, darkMode, setDarkMode }: ThemeC
             <button
               key={t.id}
               onClick={() => setTheme(t.id)}
-              className={`inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-md transition-all duration-150 cursor-pointer ${
+              className={`inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold rounded-md transition-all duration-150 cursor-pointer ${
                 isActive
-                  ? 'bg-canvas dark:bg-surface-200 border border-border-active text-text-ink dark:text-text-on-primary shadow-xs font-bold'
-                  : 'border border-transparent text-text-body-mid hover:text-text-ink hover:bg-surface-200/40 dark:text-text-muted dark:hover:text-text-on-primary'
+                  ? 'bg-canvas text-accent-blue dark:bg-accent-blue/25 dark:text-accent-blue shadow-sm shadow-black/8 ring-1 ring-border-default/80 dark:ring-accent-blue/30 font-bold'
+                  : 'border border-transparent text-text-body-mid hover:text-text-ink hover:bg-surface-200/40 dark:text-text-muted dark:hover:text-text-on-primary font-medium'
               }`}
               title={`Switch theme to ${t.label}`}
             >
@@ -56,7 +56,7 @@ export function ThemeControls({ theme, setTheme, darkMode, setDarkMode }: ThemeC
           onClick={() => setDarkMode('system')}
           className={`inline-flex items-center justify-center p-1.5 rounded-md transition-all duration-150 cursor-pointer ${
             darkMode === 'system'
-              ? 'bg-canvas dark:bg-surface-200 border border-border-active text-text-ink dark:text-text-on-primary shadow-xs font-bold'
+              ? 'bg-canvas text-accent-blue dark:bg-accent-blue/25 dark:text-accent-blue shadow-sm shadow-black/8 ring-1 ring-border-default/80 dark:ring-accent-blue/30 font-bold'
               : 'border border-transparent text-text-body-mid hover:text-text-ink hover:bg-surface-200/40 dark:text-text-muted dark:hover:text-text-on-primary'
           }`}
           title="Switch to System Theme (follows OS setting)"
@@ -81,7 +81,7 @@ export function ThemeControls({ theme, setTheme, darkMode, setDarkMode }: ThemeC
           onClick={() => setDarkMode('light')}
           className={`inline-flex items-center justify-center p-1.5 rounded-md transition-all duration-150 cursor-pointer ${
             darkMode === 'light'
-              ? 'bg-canvas dark:bg-surface-200 border border-border-active text-amber-600 dark:text-amber-400 shadow-xs font-bold'
+              ? 'bg-canvas text-accent-blue dark:bg-accent-blue/25 dark:text-accent-blue shadow-sm shadow-black/8 ring-1 ring-border-default/80 dark:ring-accent-blue/30 font-bold'
               : 'border border-transparent text-text-body-mid hover:text-text-ink hover:bg-surface-200/40 dark:text-text-muted dark:hover:text-text-on-primary'
           }`}
           title="Switch to Light Mode"
@@ -106,7 +106,7 @@ export function ThemeControls({ theme, setTheme, darkMode, setDarkMode }: ThemeC
           onClick={() => setDarkMode('dark')}
           className={`inline-flex items-center justify-center p-1.5 rounded-md transition-all duration-150 cursor-pointer ${
             darkMode === 'dark'
-              ? 'bg-canvas dark:bg-surface-200 border border-border-active text-info-600 dark:text-info-400 shadow-xs font-bold'
+              ? 'bg-canvas text-accent-blue dark:bg-accent-blue/25 dark:text-accent-blue shadow-sm shadow-black/8 ring-1 ring-border-default/80 dark:ring-accent-blue/30 font-bold'
               : 'border border-transparent text-text-body-mid hover:text-text-ink hover:bg-surface-200/40 dark:text-text-muted dark:hover:text-text-on-primary'
           }`}
           title="Switch to Dark Mode"

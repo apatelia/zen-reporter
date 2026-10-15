@@ -256,9 +256,14 @@ export function HistoryRunsTableSection({
   return (
     <section className={sectionClass}>
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-3 border-b border-border-default">
-        <div className="flex items-center gap-3">
-          <h2 className={headingClass}>Execution Runs History</h2>
-          <LearnMoreButton onClick={onOpenGuide} />
+        <div>
+          <div className="flex items-center gap-3">
+            <h2 className={headingClass}>Execution Runs History</h2>
+            <LearnMoreButton onClick={onOpenGuide} />
+          </div>
+          <p className="mt-1 text-xs text-text-body-mid dark:text-text-muted">
+            Audit log of recorded test runs with performance, duration, and outcome metrics
+          </p>
         </div>
         {rawRuns.length > 0 && runs.length > 0 && (
           <PageSizeControl

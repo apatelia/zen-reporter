@@ -645,9 +645,14 @@ export default function InsightsSection({
           {/* 4. Slowest Tests Section */}
           <section className={sectionClass}>
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-3 border-b border-border-default">
-              <div className="flex items-center gap-2">
-                <h2 className={headingClass}>Slowest tests</h2>
-                <LearnMoreButton onClick={() => setActiveModal('slowest-tests')} />
+              <div>
+                <div className="flex items-center gap-2">
+                  <h2 className={headingClass}>Slowest tests</h2>
+                  <LearnMoreButton onClick={() => setActiveModal('slowest-tests')} />
+                </div>
+                <p className="mt-1 text-xs font-medium text-text-body-mid dark:text-text-muted">
+                  Top test cases with the highest average execution duration across historical runs
+                </p>
               </div>
             </div>
             {history.slowest.length === 0 ? (

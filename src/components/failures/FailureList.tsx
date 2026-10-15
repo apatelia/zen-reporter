@@ -191,7 +191,7 @@ export default function FailureList({
                 }}
                 className={`flex items-center gap-1.5 px-3 py-1 rounded transition-colors cursor-pointer ${
                   groupBy === 'file'
-                    ? 'bg-canvas dark:bg-surface-200 border border-border-active text-text-ink dark:text-text-on-primary shadow-xs font-bold'
+                    ? 'bg-canvas text-accent-blue dark:bg-accent-blue/25 dark:text-accent-blue shadow-sm shadow-black/8 ring-1 ring-border-default/80 dark:ring-accent-blue/30 font-bold'
                     : 'border border-transparent text-text-body-mid hover:text-text-ink dark:text-text-muted dark:hover:text-text-on-primary font-medium'
                 }`}
               >
@@ -218,7 +218,7 @@ export default function FailureList({
                 }}
                 className={`flex items-center gap-1.5 px-3 py-1 rounded transition-colors cursor-pointer ${
                   groupBy === 'signature'
-                    ? 'bg-canvas dark:bg-surface-200 border border-border-active text-text-ink dark:text-text-on-primary shadow-xs font-bold'
+                    ? 'bg-canvas text-accent-blue dark:bg-accent-blue/25 dark:text-accent-blue shadow-sm shadow-black/8 ring-1 ring-border-default/80 dark:ring-accent-blue/30 font-bold'
                     : 'border border-transparent text-text-body-mid hover:text-text-ink dark:text-text-muted dark:hover:text-text-on-primary font-medium'
                 }`}
               >
@@ -370,20 +370,7 @@ export default function FailureList({
                       d="M19.5 8.25l-7.5 7.5-7.5-7.5"
                     />
                   </svg>
-                  <svg
-                    className="h-4 w-4 shrink-0 text-primary-500"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                    strokeWidth={2}
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"
-                    />
-                  </svg>
-                  <span className="truncate font-mono text-xs font-bold text-text-ink dark:text-text-on-primary">
+                  <span className="truncate text-sm font-bold text-text-ink dark:text-text-on-primary">
                     {fileName}
                   </span>
                 </div>
@@ -441,7 +428,7 @@ export default function FailureList({
                   </svg>
                   <div className="space-y-1.5 min-w-0">
                     {/* 1st Line: Error Message Text */}
-                    <p className="font-mono text-xs font-bold text-danger-600 dark:text-danger-400 line-clamp-2 break-all">
+                    <p className="text-xs text-danger-700 dark:text-danger-400 font-medium line-clamp-2 break-all">
                       {cluster.representativeMessage}
                     </p>
 

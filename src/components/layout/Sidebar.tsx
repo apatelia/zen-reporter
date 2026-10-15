@@ -190,7 +190,7 @@ function SidebarItem({
         isCollapsed ? 'justify-center px-2 py-2.5' : 'gap-3 px-3 py-2.5'
       } rounded-md text-sm font-semibold transition-all duration-150 ${
         isActive
-          ? 'bg-accent-blue/15 text-accent-blue shadow-sm dark:bg-accent-blue/25 dark:text-accent-blue'
+          ? 'bg-canvas text-accent-blue shadow-sm shadow-black/8 ring-1 ring-border-default/80 dark:ring-accent-blue/40 dark:bg-accent-blue/25 dark:text-accent-blue'
           : 'text-text-body-mid hover:bg-surface-100 hover:text-text-ink dark:text-text-body-mid dark:hover:bg-surface-100 dark:hover:text-text-on-primary font-medium'
       }`}
     >

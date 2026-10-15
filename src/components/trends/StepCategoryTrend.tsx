@@ -131,14 +131,14 @@ export default function StepCategoryTrend({
         </div>
 
         {/* View Mode Toggle */}
-        <div className="inline-flex items-center rounded-md border border-border-default bg-surface-100 p-0.5 text-xs font-semibold shrink-0">
+        <div className="inline-flex items-center rounded-lg border border-border-default bg-surface-100 p-0.5 text-xs font-semibold shrink-0 shadow-2xs">
           <button
             type="button"
             onClick={() => setViewMode('percent')}
-            className={`px-3 py-1 rounded transition-colors cursor-pointer ${
+            className={`px-3 py-1 text-xs font-semibold rounded-md transition-all duration-150 cursor-pointer ${
               viewMode === 'percent'
-                ? 'bg-canvas dark:bg-surface-200 border border-border-active text-text-ink dark:text-text-on-primary shadow-xs font-bold'
-                : 'border border-transparent text-text-body-mid hover:text-text-ink dark:text-text-on-primary font-medium'
+                ? 'bg-canvas text-accent-blue dark:bg-accent-blue/25 dark:text-accent-blue shadow-sm shadow-black/8 ring-1 ring-border-default/80 dark:ring-accent-blue/30 font-bold'
+                : 'border border-transparent text-text-body-mid hover:text-text-ink hover:bg-surface-200/40 dark:text-text-muted dark:hover:text-text-on-primary font-medium'
             }`}
           >
             % Normalized
@@ -146,10 +146,10 @@ export default function StepCategoryTrend({
           <button
             type="button"
             onClick={() => setViewMode('count')}
-            className={`px-3 py-1 rounded transition-colors cursor-pointer ${
+            className={`px-3 py-1 text-xs font-semibold rounded-md transition-all duration-150 cursor-pointer ${
               viewMode === 'count'
-                ? 'bg-canvas dark:bg-surface-200 border border-border-active text-text-ink dark:text-text-on-primary shadow-xs font-bold'
-                : 'border border-transparent text-text-body-mid hover:text-text-ink dark:text-text-on-primary font-medium'
+                ? 'bg-canvas text-accent-blue dark:bg-accent-blue/25 dark:text-accent-blue shadow-sm shadow-black/8 ring-1 ring-border-default/80 dark:ring-accent-blue/30 font-bold'
+                : 'border border-transparent text-text-body-mid hover:text-text-ink hover:bg-surface-200/40 dark:text-text-muted dark:hover:text-text-on-primary font-medium'
             }`}
           >
             Step Count

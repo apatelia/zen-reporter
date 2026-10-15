@@ -273,14 +273,42 @@ class ZenReporter implements Reporter {
         try {
           fs.mkdirSync(attachmentsDir, { recursive: true });
 
-          let ext = '.bin';
-          if (att.contentType === 'image/png') ext = '.png';
-          else if (att.contentType === 'image/jpeg') ext = '.jpg';
-          else if (att.contentType === 'text/plain') ext = '.txt';
-          else if (att.contentType === 'text/html' || att.name?.endsWith('.html')) ext = '.html';
-          else if (att.contentType === 'application/json' || att.name?.endsWith('.json'))
+          let ext = '';
+          const nameExt = att.name ? path.extname(att.name) : '';
+          if (nameExt && nameExt.length > 1) {
+            ext = nameExt;
+          } else if (att.contentType === 'image/png') {
+            ext = '.png';
+          } else if (att.contentType === 'image/jpeg') {
+            ext = '.jpg';
+          } else if (att.contentType === 'image/webp') {
+            ext = '.webp';
+          } else if (att.contentType === 'image/svg+xml') {
+            ext = '.svg';
+          } else if (att.contentType === 'video/webm') {
+            ext = '.webm';
+          } else if (att.contentType === 'video/mp4') {
+            ext = '.mp4';
+          } else if (att.contentType === 'application/zip') {
+            ext = '.zip';
+          } else if (att.contentType === 'application/json' || att.name?.endsWith('.json')) {
             ext = '.json';
-          else if (isText) ext = '.txt';
+          } else if (att.contentType === 'text/html' || att.name?.endsWith('.html')) {
+            ext = '.html';
+          } else if (att.contentType === 'text/markdown' || att.name?.endsWith('.md')) {
+            ext = '.md';
+          } else if (
+            att.contentType === 'text/javascript' ||
+            att.contentType === 'application/javascript'
+          ) {
+            ext = '.js';
+          } else if (att.contentType === 'text/plain') {
+            ext = '.txt';
+          } else if (isText) {
+            ext = '.txt';
+          } else {
+            ext = '.bin';
+          }
 
           const safeTestId = testId.replace(/[^a-zA-Z0-9_-]/g, '_');
           const targetFilename = `${safeTestId}_att${attIdx}${ext}`;
@@ -346,6 +374,30 @@ class ZenReporter implements Reporter {
         cause: (resultError.cause as unknown as TestError) || null,
       },
     ];
+  }
+
+  /**
+   * Normalizes stdout/stderr chunks into discrete lines.
+   * Strips an optional trailing newline so standard log statements don't produce an extra empty line.
+   *
+   * @param entries - Array of string or Buffer output chunks from Playwright test result.
+   * @returns Array of discrete line strings, or undefined if empty.
+   */
+  private processOutputEntries(entries: (string | Buffer)[] | undefined): string[] | undefined {
+    if (!entries || entries.length === 0) return undefined;
+
+    const fullText = entries
+      .map((entry) => (typeof entry === 'string' ? entry : entry.toString('utf8')))
+      .join('');
+
+    if (!fullText) return undefined;
+
+    const lines = fullText.split(/\r?\n/);
+    if (lines.length > 0 && lines[lines.length - 1] === '') {
+      lines.pop();
+    }
+
+    return lines.length > 0 ? lines : undefined;
   }
 
   /**
@@ -664,12 +716,8 @@ class ZenReporter implements Reporter {
       }));
     }
 
-    const attemptStdout = (result.stdout || []).map((entry) =>
-      typeof entry === 'string' ? entry : entry.toString('utf8')
-    );
-    const attemptStderr = (result.stderr || []).map((entry) =>
-      typeof entry === 'string' ? entry : entry.toString('utf8')
-    );
+    const attemptStdout = this.processOutputEntries(result.stdout);
+    const attemptStderr = this.processOutputEntries(result.stderr);
 
     const attemptAttachments = this.processAttachments(test.id, result.attachments);
     testCase.attachments = attemptAttachments;
@@ -686,15 +734,15 @@ class ZenReporter implements Reporter {
         duration: attemptDuration,
         error: testCase.errors && testCase.errors.length > 0 ? testCase.errors[0] : null,
         steps: attemptSteps,
-        stdout: attemptStdout.length > 0 ? attemptStdout : undefined,
-        stderr: attemptStderr.length > 0 ? attemptStderr : undefined,
+        stdout: attemptStdout,
+        stderr: attemptStderr,
         attachments: attemptAttachments,
       });
     }
 
     testCase.steps = attemptSteps;
-    testCase.stdout = attemptStdout.length > 0 ? attemptStdout : undefined;
-    testCase.stderr = attemptStderr.length > 0 ? attemptStderr : undefined;
+    testCase.stdout = attemptStdout;
+    testCase.stderr = attemptStderr;
 
     const status = testCase.status;
     const projStr =

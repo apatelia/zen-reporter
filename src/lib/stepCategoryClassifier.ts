@@ -16,8 +16,8 @@ export const STEP_CATEGORIES: StepCategoryConfig[] = [
   {
     key: 'assertions',
     label: 'Assertions',
-    color: 'var(--color-success-500, #00754a)',
-    borderColor: 'var(--color-success-600, #006241)',
+    color: 'var(--color-step-cat-assertions, var(--color-success-500, #00754a))',
+    borderColor: 'var(--color-step-cat-assertions-border, var(--color-success-600, #006241))',
     description:
       'Validation steps that verify expected application state, element visibility, text values, or status codes.',
     examples: [
@@ -29,8 +29,8 @@ export const STEP_CATEGORIES: StepCategoryConfig[] = [
   {
     key: 'hooks',
     label: 'Hooks & Setup',
-    color: 'var(--color-success-200, #94cfbd)',
-    borderColor: 'var(--color-success-500, #00754a)',
+    color: 'var(--color-step-cat-hooks, var(--color-success-200, #94cfbd))',
+    borderColor: 'var(--color-step-cat-hooks-border, var(--color-success-500, #00754a))',
     description:
       'Lifecycle hooks and fixture initializations that prepare or clean up test context before/after runs.',
     examples: [
@@ -42,8 +42,8 @@ export const STEP_CATEGORIES: StepCategoryConfig[] = [
   {
     key: 'network',
     label: 'Network & API',
-    color: 'var(--color-warning-500, #cba258)',
-    borderColor: 'var(--color-warning-600, #6d4c0f)',
+    color: 'var(--color-step-cat-network, var(--color-warning-500, #cba258))',
+    borderColor: 'var(--color-step-cat-network-border, var(--color-warning-600, #6d4c0f))',
     description:
       'Steps making HTTP API requests, intercepting network routes, or waiting for explicit network responses.',
     examples: [
@@ -55,8 +55,8 @@ export const STEP_CATEGORIES: StepCategoryConfig[] = [
   {
     key: 'actions',
     label: 'User Actions',
-    color: 'var(--color-info-600, #1e3932)',
-    borderColor: 'var(--color-info-700, #0d1a17)',
+    color: 'var(--color-step-cat-actions, var(--color-info-600, #1e3932))',
+    borderColor: 'var(--color-step-cat-actions-border, var(--color-info-700, #0d1a17))',
     description:
       'Direct browser interactions simulating user behavior such as navigation, clicks, keystrokes, and form inputs.',
     examples: [
@@ -68,8 +68,8 @@ export const STEP_CATEGORIES: StepCategoryConfig[] = [
   {
     key: 'waits',
     label: 'Waits & Sync',
-    color: 'var(--color-accent-orange, #ff6b00)',
-    borderColor: 'var(--color-warning-700, #593c09)',
+    color: 'var(--color-step-cat-waits, var(--color-accent-orange, #ff6b00))',
+    borderColor: 'var(--color-step-cat-waits-border, var(--color-warning-700, #593c09))',
     description:
       'Explicit delays, element state waits, or idle pauses used for dynamic UI synchronization.',
     examples: [
@@ -81,8 +81,8 @@ export const STEP_CATEGORIES: StepCategoryConfig[] = [
   {
     key: 'others',
     label: 'Other Steps',
-    color: 'var(--color-surface-700, #d5d2cb)',
-    borderColor: 'var(--color-surface-800, #b4bcc1)',
+    color: 'var(--color-step-cat-others, var(--color-surface-700, #d5d2cb))',
+    borderColor: 'var(--color-step-cat-others-border, var(--color-surface-800, #b4bcc1))',
     description:
       'Custom test steps, logging statements, or uncategorized auxiliary execution logic.',
     examples: [
@@ -100,20 +100,51 @@ export const STEP_CATEGORIES: StepCategoryConfig[] = [
  * @returns Classified StepCategoryKey matching the step behavior.
  */
 export function classifyStepTitle(title: string): StepCategoryKey {
-  const lower = title.toLowerCase();
+  const lower = title.toLowerCase().trim();
 
   if (lower.startsWith('expect') || lower.includes('expect(') || lower.includes('assert')) {
     return 'assertions';
   }
 
+  // Locators and navigation actions should not be misclassified as network
   if (
-    lower.includes('waitforresponse') ||
-    lower.includes('waitforrequest') ||
-    lower.includes('request.') ||
-    lower.includes('fetch') ||
-    lower.includes('apirequestcontext') ||
-    lower.includes('http')
+    lower.includes('goto') ||
+    lower.includes('navigate') ||
+    lower.includes('getby') ||
+    lower.includes('get by')
   ) {
+    return 'actions';
+  }
+
+  const isHttpMethod =
+    /^(get|post|put|delete|patch|head|options)$/i.test(lower) ||
+    /^(post|put|delete|patch|head|options)\s+/i.test(lower) ||
+    (/^get\s+(https?:\/\/|\/|\S*api|\S*endpoint)/i.test(lower) &&
+      !lower.startsWith('get by') &&
+      !lower.startsWith('getby') &&
+      !lower.startsWith('get started'));
+
+  const isNetworkKeyword =
+    (lower.includes('network') && !lower.includes('networkidle')) ||
+    /\bapi\b/.test(lower) ||
+    lower.includes('graphql') ||
+    lower.includes('websocket') ||
+    lower.includes('xhr') ||
+    lower.startsWith('http') ||
+    /\bhttps?\s+(request|call|endpoint|response)\b/i.test(lower);
+
+  const isNetworkOperation =
+    lower.includes('response') ||
+    lower.includes('route') ||
+    lower.includes('fetch') ||
+    lower.includes('apirequest') ||
+    lower.includes('request.') ||
+    lower.includes('request context') ||
+    lower.includes('waitforrequest') ||
+    lower.includes('wait for request') ||
+    lower.includes('wait for event "request"');
+
+  if (isHttpMethod || isNetworkKeyword || isNetworkOperation) {
     return 'network';
   }
 
@@ -152,7 +183,8 @@ export function classifyStepTitle(title: string): StepCategoryKey {
     lower.includes('select') ||
     lower.includes('drag') ||
     lower.includes('navigate') ||
-    lower.includes('scroll')
+    lower.includes('scroll') ||
+    lower.includes('locator')
   ) {
     return 'actions';
   }

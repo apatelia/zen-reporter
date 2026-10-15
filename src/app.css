@@ -92,6 +92,20 @@
   --color-status-chart-timed-out: var(--color-danger-600);
   --color-status-chart-interrupted: #d97706; /* amber-600 */
   --color-status-chart-skipped: #94a3b8; /* slate-400 */
+
+  /* ── Step Category Composition Palette (Cafe / Default Light) ─ */
+  --color-step-cat-assertions: var(--color-success-500);
+  --color-step-cat-assertions-border: var(--color-success-600);
+  --color-step-cat-hooks: var(--color-success-200);
+  --color-step-cat-hooks-border: var(--color-success-500);
+  --color-step-cat-network: var(--color-warning-500);
+  --color-step-cat-network-border: var(--color-warning-600);
+  --color-step-cat-actions: var(--color-info-600);
+  --color-step-cat-actions-border: var(--color-info-700);
+  --color-step-cat-waits: var(--color-accent-orange);
+  --color-step-cat-waits-border: #ea580c;
+  --color-step-cat-others: var(--color-surface-700);
+  --color-step-cat-others-border: var(--color-surface-800);
 }
 
 html.dark {
@@ -101,6 +115,20 @@ html.dark {
   --color-status-chart-timed-out: var(--color-danger-400, #f87171);
   --color-status-chart-interrupted: #f59e0b; /* amber-500 */
   --color-status-chart-skipped: #64748b; /* slate-500 */
+
+  /* ── Step Category Composition Palette (Cafe Dark) ─ */
+  --color-step-cat-assertions: #4ade80;
+  --color-step-cat-assertions-border: #22c55e;
+  --color-step-cat-hooks: #86efac;
+  --color-step-cat-hooks-border: #4ade80;
+  --color-step-cat-network: #fcd34d;
+  --color-step-cat-network-border: #f59e0b;
+  --color-step-cat-actions: #38bdf8;
+  --color-step-cat-actions-border: #0284c7;
+  --color-step-cat-waits: #fb923c;
+  --color-step-cat-waits-border: #ea580c;
+  --color-step-cat-others: #94a3b8;
+  --color-step-cat-others-border: #64748b;
 }
 
 /* ── Dark mode variant definition ─ */
@@ -152,6 +180,7 @@ html[data-theme='cafe'].dark {
   --color-danger-50: #361210;
   --color-danger-100: #4a1917;
   --color-danger-300: #fca5a5;
+  --color-danger-400: #f87171;
   --color-danger-500: #fca5a5;
   --color-danger-600: #ef4444;
   --color-danger-700: #f87171;
@@ -262,14 +291,28 @@ html[data-theme='concept'] {
   --color-accent-cafe: #0075de;
   --color-accent-green: #1aae39;
   --color-accent-house: #213183;
-  --color-accent-gold: #dd5b00;
+  --color-accent-gold: #eab308;
   --color-accent-pink: #ff64c8;
   --color-accent-blue: #0075de;
   --color-accent-blue-deep: #005bab;
   --color-accent-blue-info: #62aef0;
-  --color-accent-orange: #dd5b00;
-  --color-accent-yellow: #dd5b00;
+  --color-accent-orange: #ff5500;
+  --color-accent-yellow: #eab308;
   --color-accent-red: #e03e3e;
+
+  /* ── Step Category Composition Palette (Concept Light) ─ */
+  --color-step-cat-assertions: #1aae39;
+  --color-step-cat-assertions-border: #15932f;
+  --color-step-cat-hooks: #93e2a2;
+  --color-step-cat-hooks-border: #1aae39;
+  --color-step-cat-network: #eab308;
+  --color-step-cat-network-border: #ca8a04;
+  --color-step-cat-actions: #0075de;
+  --color-step-cat-actions-border: #005bab;
+  --color-step-cat-waits: #ff5500;
+  --color-step-cat-waits-border: #cc4400;
+  --color-step-cat-others: #213183;
+  --color-step-cat-others-border: #19235d;
 
   /* Tooltip */
   --color-tooltip-bg: #213183;
@@ -322,6 +365,7 @@ html[data-theme='concept'].dark,
   --color-danger-50: #38122c;
   --color-danger-100: #521841;
   --color-danger-300: #ffa8e5;
+  --color-danger-400: #ff85d5;
   --color-danger-500: #ff64c8;
   --color-danger-600: #e04bb0;
   --color-danger-700: #bf3494;
@@ -346,14 +390,28 @@ html[data-theme='concept'].dark,
   --color-accent-cafe: #62aef0;
   --color-accent-green: #2aae44;
   --color-accent-house: #d6b6f6;
-  --color-accent-gold: #f56c18;
+  --color-accent-gold: #facc15;
   --color-accent-pink: #ff64c8;
   --color-accent-blue: #62aef0;
   --color-accent-blue-deep: #3b95e6;
   --color-accent-blue-info: #62aef0;
-  --color-accent-orange: #f56c18;
-  --color-accent-yellow: #f56c18;
+  --color-accent-orange: #ff6b22;
+  --color-accent-yellow: #facc15;
   --color-accent-red: #ff64c8;
+
+  /* ── Step Category Composition Palette (Concept Dark) ─ */
+  --color-step-cat-assertions: #2aae44;
+  --color-step-cat-assertions-border: #219337;
+  --color-step-cat-hooks: #a3e635;
+  --color-step-cat-hooks-border: #2aae44;
+  --color-step-cat-network: #facc15;
+  --color-step-cat-network-border: #eab308;
+  --color-step-cat-actions: #62aef0;
+  --color-step-cat-actions-border: #3b95e6;
+  --color-step-cat-waits: #ff6b22;
+  --color-step-cat-waits-border: #e0520e;
+  --color-step-cat-others: #938ba1;
+  --color-step-cat-others-border: #7c6f93;
 
   /* Tooltip */
   --color-tooltip-bg: #2f3444;
@@ -436,14 +494,28 @@ html[data-theme='sentinel'],
   --color-accent-cafe: #150f23;
   --color-accent-green: #709600;
   --color-accent-house: #1f1633;
-  --color-accent-gold: #d97706;
+  --color-accent-gold: #eab308;
   --color-accent-pink: #fa7faa;
   --color-accent-blue: #6a5fc1;
   --color-accent-blue-deep: #422082;
   --color-accent-blue-info: #6a5fc1;
-  --color-accent-orange: #d97706;
+  --color-accent-orange: #ea580c;
   --color-accent-yellow: #c2ef4e;
   --color-accent-red: #d93d75;
+
+  /* ── Step Category Composition Palette (Sentinel Light) ─ */
+  --color-step-cat-assertions: #709600;
+  --color-step-cat-assertions-border: #587700;
+  --color-step-cat-hooks: #c2ef4e;
+  --color-step-cat-hooks-border: #709600;
+  --color-step-cat-network: #eab308;
+  --color-step-cat-network-border: #ca8a04;
+  --color-step-cat-actions: #6a5fc1;
+  --color-step-cat-actions-border: #5449aa;
+  --color-step-cat-waits: #ea580c;
+  --color-step-cat-waits-border: #c2410c;
+  --color-step-cat-others: #79628c;
+  --color-step-cat-others-border: #422082;
 
   /* Tooltip */
   --color-tooltip-bg: #422082;
@@ -497,6 +569,7 @@ html[data-theme='sentinel'].dark,
   --color-danger-50: #380f20;
   --color-danger-100: #521730;
   --color-danger-300: #fdb5ce;
+  --color-danger-400: #fc9abf;
   --color-danger-500: #fa7faa;
   --color-danger-600: #f85590;
   --color-danger-700: #f52b75;
@@ -521,14 +594,28 @@ html[data-theme='sentinel'].dark,
   --color-accent-cafe: #c2ef4e;
   --color-accent-green: #c2ef4e;
   --color-accent-house: #79628c;
-  --color-accent-gold: #fbbf24;
+  --color-accent-gold: #facc15;
   --color-accent-pink: #fa7faa;
   --color-accent-blue: #c8c2ff;
   --color-accent-blue-deep: #a49beb;
   --color-accent-blue-info: #c8c2ff;
-  --color-accent-orange: #fbbf24;
+  --color-accent-orange: #ff6b00;
   --color-accent-yellow: #c2ef4e;
   --color-accent-red: #fa7faa;
+
+  /* ── Step Category Composition Palette (Sentinel Dark) ─ */
+  --color-step-cat-assertions: #c2ef4e;
+  --color-step-cat-assertions-border: #a9d936;
+  --color-step-cat-hooks: #709600;
+  --color-step-cat-hooks-border: #587700;
+  --color-step-cat-network: #facc15;
+  --color-step-cat-network-border: #eab308;
+  --color-step-cat-actions: #c8c2ff;
+  --color-step-cat-actions-border: #a49beb;
+  --color-step-cat-waits: #ff6b00;
+  --color-step-cat-waits-border: #e05e00;
+  --color-step-cat-others: #a89bb8;
+  --color-step-cat-others-border: #79628c;
 
   /* Tooltip */
   --color-tooltip-bg: #362d59;

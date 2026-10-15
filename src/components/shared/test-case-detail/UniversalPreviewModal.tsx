@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo, useCallback } from 'react';
 import BaseModal from '../BaseModal';
 import type { Attachment } from '@/lib/types/report';
 import type { AttemptView } from './AttemptView';
+import { detectLanguage, highlightSyntaxLine } from '@/lib/codeHighlighting';
 
 export interface UniversalPreviewItem {
   id: string;
@@ -17,6 +18,7 @@ export interface UniversalPreviewItem {
   downloadUrl?: string;
   contentType?: string;
   attachment?: Attachment;
+  language?: string;
 }
 
 export interface UniversalPreviewModalProps {
@@ -47,6 +49,63 @@ export function isTextAttachment(att: Attachment): boolean {
   );
 }
 
+export function isArchiveAttachment(att: Attachment): boolean {
+  return (
+    (att.contentType &&
+      /(zip|tar|gzip|x-tar|x-gzip|x-7z-compressed|x-rar-compressed|x-bzip2|vnd\.rar)/i.test(
+        att.contentType
+      )) ||
+    /\.(zip|tar(\.gz|\.bz2|\.xz)?|tgz|gz|7z|rar|bz2|xz)$/i.test(att.name || att.path || '')
+  );
+}
+
+/**
+ * Resolves the display filename with appropriate file extension for any attachment.
+ *
+ * @param att - Attachment object.
+ * @returns Human-readable file name guaranteed to include its extension if known.
+ */
+export function getAttachmentDisplayName(att: Attachment): string {
+  const displayName = att.name || 'Attachment';
+
+  // 1. If displayName already has a valid file extension, do not append another extension
+  if (/\.[a-zA-Z0-9]{1,8}$/.test(displayName)) {
+    return displayName;
+  }
+
+  // 2. Check if att.path has a clear file extension
+  if (att.path) {
+    const cleanPath = att.path.split('?')[0].split('#')[0];
+    const lastPart = cleanPath.substring(cleanPath.lastIndexOf('/') + 1);
+    const dotIdx = lastPart.lastIndexOf('.');
+    if (dotIdx !== -1) {
+      const ext = lastPart.substring(dotIdx);
+      if (!displayName.toLowerCase().endsWith(ext.toLowerCase())) {
+        return `${displayName}${ext}`;
+      }
+      return displayName;
+    }
+  }
+
+  // 3. Fallback to MIME type extension resolution
+  if (att.contentType) {
+    const mime = att.contentType.toLowerCase();
+    if (mime === 'application/zip') return `${displayName}.zip`;
+    if (mime === 'image/png') return `${displayName}.png`;
+    if (mime === 'image/jpeg') return `${displayName}.jpg`;
+    if (mime === 'image/webp') return `${displayName}.webp`;
+    if (mime === 'image/svg+xml') return `${displayName}.svg`;
+    if (mime === 'video/webm') return `${displayName}.webm`;
+    if (mime === 'video/mp4') return `${displayName}.mp4`;
+    if (mime === 'text/plain') return `${displayName}.txt`;
+    if (mime === 'text/markdown') return `${displayName}.md`;
+    if (mime === 'application/json') return `${displayName}.json`;
+    if (mime === 'text/html') return `${displayName}.html`;
+  }
+
+  return displayName;
+}
+
 export function buildAttemptPreviewItems(
   attempt: AttemptView,
   attachments: Attachment[],
@@ -62,6 +121,7 @@ export function buildAttemptPreviewItems(
       subtitle: 'Log',
       lines: attempt.stdout,
       downloadFileName: 'test-stdout.log',
+      language: 'plain',
     });
   }
 
@@ -73,6 +133,7 @@ export function buildAttemptPreviewItems(
       subtitle: 'Error Log',
       lines: attempt.stderr,
       downloadFileName: 'test-stderr.log',
+      language: 'plain',
     });
   }
 
@@ -90,6 +151,8 @@ export function buildAttemptPreviewItems(
     } else if (isTextAttachment(att)) {
       type = 'text';
       subtitle = 'Text';
+    } else if (isArchiveAttachment(att)) {
+      subtitle = 'Archive';
     }
 
     let initialContent: string | undefined = undefined;
@@ -105,17 +168,25 @@ export function buildAttemptPreviewItems(
       }
     }
 
+    const displayName = getAttachmentDisplayName(att);
+
+    const language =
+      type === 'text'
+        ? detectLanguage(att.name || att.path || undefined, att.contentType)
+        : undefined;
+
     items.push({
       id: `att-${idx}-${att.name || att.path || 'file'}`,
       type,
-      title: att.name || 'Attachment',
+      title: displayName,
       subtitle,
       url,
       downloadUrl: url,
-      downloadFileName: att.name || (type === 'text' ? 'attachment.txt' : 'attachment'),
+      downloadFileName: displayName || (type === 'text' ? 'attachment.txt' : 'attachment'),
       contentType: att.contentType,
       lines: initialContent ? initialContent.split('\n') : undefined,
       attachment: att,
+      language,
     });
   });
 
@@ -385,65 +456,65 @@ export function UniversalPreviewModal({
             {activeItem.title}
           </h4>
 
-          {/* Item Count & Subtitle Badges */}
-          {activeItem.type === 'text' && !currentTextState.isLoading && !currentTextState.error && (
-            <span className="rounded-full bg-surface-200 dark:bg-surface-200/50 px-2.5 py-0.5 text-xs font-mono font-medium text-text-body-mid shrink-0">
-              {currentTextState.lines.length} lines
-            </span>
-          )}
-
+          {/* Subtitle / Type Badge (always next to title) */}
           {activeItem.subtitle && (
-            <span className="rounded-full bg-accent-blue/10 text-accent-blue px-2.5 py-0.5 text-xs font-medium shrink-0">
+            <span className="inline-flex items-center justify-center rounded-full bg-accent-blue/10 text-accent-blue px-2.5 py-1 text-xs font-medium leading-none shrink-0">
               {activeItem.subtitle}
             </span>
           )}
 
-          {items.length > 1 && (
-            <span className="text-xs text-text-body-mid dark:text-text-muted shrink-0 font-medium">
-              ({currentIndex + 1} of {items.length})
+          {/* Item Count / Lines Badge */}
+          {activeItem.type === 'text' && !currentTextState.isLoading && !currentTextState.error && (
+            <span className="inline-flex items-center justify-center rounded-full bg-surface-200 dark:bg-surface-200/50 px-2.5 py-1 text-xs font-mono font-medium leading-none text-text-body-mid shrink-0">
+              {currentTextState.lines.length} lines
             </span>
           )}
         </div>
       }
       headerActions={
         <div className="flex items-center gap-2.5">
-          {/* Previous / Next Navigation */}
+          {/* Previous / Next Navigation & Counter Group */}
           {items.length > 1 && (
-            <div className="flex items-center gap-1 border-r border-border-default pr-2 mr-0.5">
-              <button
-                type="button"
-                onClick={handlePrev}
-                disabled={currentIndex <= 0}
-                className="rounded-md p-1.5 text-text-body-mid hover:bg-surface-100 hover:text-text-ink dark:text-text-muted dark:hover:bg-surface-200/50 dark:hover:text-text-on-primary disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
-                title="Previous artifact (←)"
-              >
-                <svg
-                  className="h-4 w-4"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                  strokeWidth={2}
+            <div className="flex items-center gap-2 border-r border-border-default pr-2.5">
+              <span className="text-xs text-text-body-mid dark:text-text-muted shrink-0 font-medium">
+                {currentIndex + 1} of {items.length}
+              </span>
+              <div className="flex items-center gap-0.5">
+                <button
+                  type="button"
+                  onClick={handlePrev}
+                  disabled={currentIndex <= 0}
+                  className="rounded-md p-1.5 text-text-body-mid hover:bg-surface-100 hover:text-text-ink dark:text-text-muted dark:hover:bg-surface-200/50 dark:hover:text-text-on-primary disabled:opacity-30 disabled:cursor-not-allowed transition-colors cursor-pointer"
+                  title="Previous artifact (←)"
                 >
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-                </svg>
-              </button>
-              <button
-                type="button"
-                onClick={handleNext}
-                disabled={currentIndex >= items.length - 1}
-                className="rounded-md p-1.5 text-text-body-mid hover:bg-surface-100 hover:text-text-ink dark:text-text-muted dark:hover:bg-surface-200/50 dark:hover:text-text-on-primary disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
-                title="Next artifact (→)"
-              >
-                <svg
-                  className="h-4 w-4"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                  strokeWidth={2}
+                  <svg
+                    className="h-4 w-4"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    strokeWidth={2}
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+                  </svg>
+                </button>
+                <button
+                  type="button"
+                  onClick={handleNext}
+                  disabled={currentIndex >= items.length - 1}
+                  className="rounded-md p-1.5 text-text-body-mid hover:bg-surface-100 hover:text-text-ink dark:text-text-muted dark:hover:bg-surface-200/50 dark:hover:text-text-on-primary disabled:opacity-30 disabled:cursor-not-allowed transition-colors cursor-pointer"
+                  title="Next artifact (→)"
                 >
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-                </svg>
-              </button>
+                  <svg
+                    className="h-4 w-4"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    strokeWidth={2}
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                  </svg>
+                </button>
+              </div>
             </div>
           )}
 
@@ -451,7 +522,7 @@ export function UniversalPreviewModal({
           <button
             type="button"
             onClick={handleDownload}
-            className="rounded-full px-3 py-1.5 text-xs font-semibold text-text-on-primary dark:text-surface-950 bg-accent-blue hover:bg-accent-blue/90 transition-colors flex items-center gap-1.5 shadow-xs cursor-pointer"
+            className="rounded-full px-3 py-1.5 text-xs font-semibold text-text-on-primary dark:text-surface-950 bg-accent-blue hover:bg-accent-blue/90 transition-colors inline-flex items-center gap-1.5 shadow-xs cursor-pointer"
             title="Download file"
           >
             <svg
@@ -593,17 +664,32 @@ export function UniversalPreviewModal({
                 </div>
               ) : (
                 <div className="table w-full border-collapse">
-                  {filteredLines.map(({ originalLineNum, text }) => (
-                    <div
-                      key={`text-line-${originalLineNum}`}
-                      className="table-row hover:bg-surface-200/50 dark:hover:bg-surface-900/60"
-                    >
-                      <span className="table-cell pr-4 text-right select-none font-mono text-[11px] font-medium text-text-muted dark:text-slate-500 w-12 border-r border-border-default/60 dark:border-slate-800">
-                        {originalLineNum}
-                      </span>
-                      <span className="table-cell pl-4 whitespace-pre-wrap break-all">{text}</span>
-                    </div>
-                  ))}
+                  {filteredLines.map(({ originalLineNum, text }) => {
+                    const currentLanguage =
+                      activeItem.language ||
+                      detectLanguage(
+                        activeItem.downloadFileName || activeItem.title,
+                        activeItem.contentType
+                      );
+
+                    return (
+                      <div
+                        key={`text-line-${originalLineNum}`}
+                        className="table-row hover:bg-surface-200 dark:hover:bg-surface-200/50 transition-colors"
+                      >
+                        <span className="table-cell pr-4 text-right select-none font-mono text-[11px] font-medium text-text-muted dark:text-slate-500 w-12 border-r border-border-default/60 dark:border-slate-800">
+                          {originalLineNum}
+                        </span>
+                        <span
+                          className="table-cell pl-4 whitespace-pre-wrap break-all"
+                          /* eslint-disable-next-line @eslint-react/dom-no-dangerously-set-innerhtml */
+                          dangerouslySetInnerHTML={{
+                            __html: highlightSyntaxLine(text, currentLanguage),
+                          }}
+                        />
+                      </div>
+                    );
+                  })}
                 </div>
               )}
             </div>
@@ -703,19 +789,42 @@ export function UniversalPreviewModal({
         {activeItem.type === 'binary' && (
           <div className="h-full flex flex-col items-center justify-center rounded-md bg-surface-100 dark:bg-surface-950 p-8 border border-border-default dark:border-border-subtle text-center">
             <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-accent-blue/10 text-accent-blue mb-4 shadow-inner">
-              <svg
-                className="h-8 w-8"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                strokeWidth={2}
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"
-                />
-              </svg>
+              {(activeItem.attachment && isArchiveAttachment(activeItem.attachment)) ||
+              (activeItem.contentType &&
+                /(zip|tar|gzip|x-tar|x-gzip|x-7z-compressed|x-rar-compressed|x-bzip2|vnd\.rar)/i.test(
+                  activeItem.contentType
+                )) ||
+              /\.(zip|tar(\.gz|\.bz2|\.xz)?|tgz|gz|7z|rar|bz2|xz)$/i.test(
+                activeItem.downloadFileName || activeItem.title
+              ) ? (
+                <svg
+                  className="h-8 w-8"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={2}
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5M10 11.25h4M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z"
+                  />
+                </svg>
+              ) : (
+                <svg
+                  className="h-8 w-8"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={2}
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"
+                  />
+                </svg>
+              )}
             </div>
             <h3 className="text-base font-bold text-text-ink dark:text-text-on-primary mb-1 truncate max-w-md">
               {activeItem.title}
@@ -747,7 +856,7 @@ export function UniversalPreviewModal({
                   d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
                 />
               </svg>
-              Download Attachment
+              Download
             </button>
           </div>
         )}

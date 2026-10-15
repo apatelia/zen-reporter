@@ -113,11 +113,14 @@ export default function FileSummary({ suites, title }: FileSummaryProps) {
   return (
     <div className="overflow-hidden rounded-md bg-canvas border border-border-default shadow-sm p-4">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-3 border-b border-border-default">
-        {title ? (
-          <h3 className="text-lg font-bold text-text-ink dark:text-text-on-primary">{title}</h3>
-        ) : (
-          <div></div>
-        )}
+        <div>
+          {title && (
+            <h3 className="text-lg font-bold text-text-ink dark:text-text-on-primary">{title}</h3>
+          )}
+          <p className="mt-1 text-xs text-text-body-mid dark:text-text-muted">
+            Test results and execution breakdown per test file
+          </p>
+        </div>
         {fileStats.length > 0 && filteredFiles.length > 0 && (
           <PageSizeControl
             id="files-page-size"

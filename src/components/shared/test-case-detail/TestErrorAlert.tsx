@@ -94,7 +94,7 @@ export function TestErrorAlert({ error, status }: TestErrorAlertProps) {
           </div>
           <div className="px-3 py-2">
             <p className="text-sm text-danger-700 dark:text-danger-400 font-medium">
-              {error.message}
+              {error.message?.split('\n')[0] || error.message}
             </p>
 
             {error.cause && (

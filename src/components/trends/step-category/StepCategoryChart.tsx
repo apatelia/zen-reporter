@@ -43,6 +43,12 @@ const renderCategoryTooltip = (props: TooltipContentProps, viewMode: 'percent' |
     timeLine = dateParts[1] || '';
   }
 
+  const sortedPayload = [...payload].sort((a, b) => {
+    const idxA = STEP_CATEGORIES.findIndex((c) => c.label === a.name);
+    const idxB = STEP_CATEGORIES.findIndex((c) => c.label === b.name);
+    return (idxA === -1 ? 99 : idxA) - (idxB === -1 ? 99 : idxB);
+  });
+
   return (
     <div className="p-2.5 text-text-ink dark:text-text-on-primary">
       <div className="font-bold text-xs">{dateLine}</div>
@@ -55,7 +61,7 @@ const renderCategoryTooltip = (props: TooltipContentProps, viewMode: 'percent' |
         </div>
       ) : (
         <div className="space-y-1 text-xs">
-          {payload.map((entry) => {
+          {sortedPayload.map((entry) => {
             const val = Number(entry.value);
             const formattedVal = viewMode === 'percent' ? `${val}%` : `${val} steps`;
             const catConfig = STEP_CATEGORIES.find((c) => c.label === entry.name);
@@ -102,7 +108,7 @@ export function StepCategoryChart({ chartData, viewMode }: StepCategoryChartProp
   return (
     <div className="h-72 w-full pt-2">
       <ResponsiveContainer width="100%" height="100%">
-        <BarChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 20 }}>
+        <BarChart data={chartData} margin={{ top: 10, right: 10, left: 0, bottom: 20 }}>
           <CartesianGrid
             strokeDasharray="3 3"
             vertical={false}
@@ -118,7 +124,10 @@ export function StepCategoryChart({ chartData, viewMode }: StepCategoryChartProp
           />
           <YAxis
             domain={viewMode === 'percent' ? [0, 100] : [0, 'auto']}
-            tickFormatter={(val) => (viewMode === 'percent' ? `${val}%` : `${val}`)}
+            ticks={viewMode === 'percent' ? [0, 30, 60, 100] : undefined}
+            tickFormatter={(val) =>
+              viewMode === 'percent' ? `${Math.round(Number(val))}%` : `${val}`
+            }
             axisLine={false}
             tickLine={false}
             tick={{ fill: 'var(--color-text-body-mid)', fontSize: 11 }}
@@ -134,27 +143,38 @@ export function StepCategoryChart({ chartData, viewMode }: StepCategoryChartProp
             }}
           />
           <Legend
-            wrapperStyle={{ paddingTop: '10px', fontSize: '12px' }}
-            onClick={(e) => {
-              if (e && e.dataKey) {
-                handleLegendClick(String(e.dataKey));
-              }
-            }}
-            formatter={(value) => {
-              const isHidden = hiddenCategories.has(value);
-              return (
-                <span
-                  className={`font-medium font-sans cursor-pointer transition-opacity select-none ${
-                    isHidden
-                      ? 'line-through text-text-body-mid/40 dark:text-text-muted/40'
-                      : 'text-text-body-mid dark:text-text-muted hover:text-text-ink dark:hover:text-text-on-primary'
-                  }`}
-                  title={isHidden ? `Show ${value}` : `Hide ${value}`}
-                >
-                  {value}
-                </span>
-              );
-            }}
+            content={() => (
+              <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1.5 pt-3 text-xs">
+                {STEP_CATEGORIES.map((cat) => {
+                  const isHidden = hiddenCategories.has(cat.label);
+                  return (
+                    <button
+                      key={cat.key}
+                      type="button"
+                      onClick={() => handleLegendClick(cat.label)}
+                      className="inline-flex items-center gap-1.5 cursor-pointer select-none font-medium transition-opacity"
+                      title={isHidden ? `Show ${cat.label}` : `Hide ${cat.label}`}
+                    >
+                      <span
+                        className={`h-2.5 w-2.5 rounded-xs shrink-0 transition-opacity ${
+                          isHidden ? 'opacity-30' : 'opacity-100'
+                        }`}
+                        style={{ backgroundColor: cat.color }}
+                      />
+                      <span
+                        className={
+                          isHidden
+                            ? 'line-through text-text-body-mid/40 dark:text-text-muted/40'
+                            : 'text-text-body-mid dark:text-text-muted hover:text-text-ink dark:hover:text-text-on-primary'
+                        }
+                      >
+                        {cat.label}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
           />
           {STEP_CATEGORIES.map((cat) => (
             <Bar
