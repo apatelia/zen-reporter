@@ -43,7 +43,6 @@
     "build": "ZEN_REPORTER_DATA_FREE=true vite build && vite build --config vite.reporter.config.ts && tsc -p tsconfig.lib.json",
     "preview": "vite preview",
     "test": "npx playwright test",
-    "report": "npm run build && node scripts/generate_report.js",
     "show": "node bin/zen-reporter.js show",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",

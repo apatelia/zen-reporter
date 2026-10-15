@@ -160,13 +160,8 @@ flowchart TD
     Structured JSON dataset containing testRun & summary
                          │
                          ▼
-       Report Pipeline (scripts/generate_report.js)
-  Processes raw test data (src/lib/dataProcessor.ts)
-  Triggers Vite compilation (npx vite build)
-                         │
-                         ▼
-    Vite Data Injector (src/vite-plugin-inject-data.ts)
-  Inlines report.json into <script id="report-data"> tag in HTML
+        HTML Generation (ZenReporter.generateHtmlReport)
+  Inlines report.json & history.json into <script id="report-data">
                          │
                          ▼
          <outputDir>/index.html (Report Dashboard)
