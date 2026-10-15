@@ -3,13 +3,23 @@ import { expect, test } from '@playwright/test';
 test.fail(
   'should fail',
   {
-    tag: ['@failure'],
+    tag: ['@failure', '@explicit-wait'],
   },
-  async () => {
+  async ({ page }) => {
     console.log('This test should fail');
-    expect(true).toBe(true);
-    console.error('True can never be False');
-    expect(true).toBe(false);
+
+    // Go to Zen Reporter's home page
+    await page.goto('https://zen-reporter.vercel.app');
+
+    // Wait for "Getting Started" link-button to be visible
+    await page
+      .getByRole('link', { name: 'Getting Started' })
+      .waitFor({ state: 'visible', timeout: 10_000 });
+
+    // Expect a "GitHub" button on homepage
+    const githubButton = page.getByRole('button', { name: 'GitHub' });
+    console.error('There should not be any "GitHub" button on the page.');
+    await expect(githubButton).toBeVisible();
   }
 );
 
@@ -40,10 +50,19 @@ test.fail(
   {
     tag: ['@timeout'],
   },
-  async () => {
-    console.debug('timed out test');
-    await test.step('timed out', async () => {
-      await new Promise((resolve) => setTimeout(resolve, 32_000));
-    });
+  async ({ page, browserName }) => {
+    test.skip(browserName === 'chromium', 'skipping test intentionally in chromium');
+
+    // Go to Zen Reporter's home page
+    await page.goto('https://zen-reporter.vercel.app');
+
+    // Wait for "Getting Started" link-button to be visible
+    await page
+      .getByRole('link', { name: 'Getting Started' })
+      .waitFor({ state: 'visible', timeout: 10_000 });
+
+    // Expect a "GitHub" button on homepage
+    const githubButton = page.getByRole('button', { name: 'GitHub' });
+    await expect(githubButton).toBeVisible({ timeout: 45_000 });
   }
 );

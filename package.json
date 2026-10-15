@@ -79,6 +79,7 @@
     }
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.13.0",
     "@duckdb/node-api": "^1.5.6-r.1",
     "@eslint-react/eslint-plugin": "^5.26.5",
     "@eslint/js": "^10.0.1",

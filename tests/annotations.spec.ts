@@ -1,42 +1,37 @@
+import AxeBuilder from '@axe-core/playwright';
 import { expect, test } from '@playwright/test';
 
 test(
-  'has title',
+  'Test a webpage AFTER FIXING accessibility issues',
   {
-    tag: ['@title'],
+    tag: ['@accessibility'],
     annotation: [
       {
-        type: 'test',
-        description: 'Verifies that the page title contains "Playwright"',
+        type: 'accessibility test',
+        description: 'Tests a page for accessibility issues',
       },
     ],
   },
-  async ({ page }) => {
-    await page.goto('https://playwright.dev/');
+  async ({ page }, testInfo) => {
+    test.skip(process.env.CI != undefined, 'Skipping failing accessibility test on CI');
 
-    // Expect a title "to contain" a substring.
-    await expect(page).toHaveTitle(/Playwright/);
-  }
-);
+    await page.goto('https://www.washington.edu/accesscomputing/AU/after.html');
+    await page
+      .getByRole('button', { name: 'Short list of accessibility issues, opens in a dialog' })
+      .waitFor({ state: 'visible', timeout: 10_000 });
 
-test(
-  'get started link',
-  {
-    tag: ['@link', '@heading'],
-    annotation: [
-      {
-        type: 'test',
-        description: 'Verifies that get started link redirects to the Installation instructions',
-      },
-    ],
-  },
-  async ({ page }) => {
-    await page.goto('https://playwright.dev/');
+    // Run the automated accessibility tests
+    const accessibilityScanResults = await new AxeBuilder({ page })
+      .withTags(['wcag2aa', 'wcag21aa'])
+      .analyze();
 
-    // Click the get started link.
-    await page.getByRole('link', { name: 'Get started' }).click();
+    // Attach accessibility test results to test report, in JSON format.
+    await testInfo.attach('accessibility-scan-results.json', {
+      body: JSON.stringify(accessibilityScanResults, null, 2),
+      contentType: 'application/json',
+    });
 
-    // Expects page to have a heading with the name of Installation.
-    await expect(page.getByRole('heading', { name: 'Installation' })).toBeVisible();
+    // Verify that there is no WCAG violation.
+    expect(accessibilityScanResults.violations).toEqual([]);
   }
 );

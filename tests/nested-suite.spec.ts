@@ -27,6 +27,12 @@ test.describe('Tests in nested suite', () => {
         await page.goto('https://playwright.dev/');
       });
 
+      await test.step('Wait for the get started link to be visible', async () => {
+        await page
+          .getByRole('link', { name: 'Get started' })
+          .waitFor({ state: 'visible', timeout: 10_000 });
+      });
+
       await test.step('Click the get started link', async () => {
         await page.getByRole('link', { name: 'Get started' }).click();
       });
