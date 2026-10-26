@@ -116,4 +116,5 @@ export interface ReporterConfig {
   darkMode?: boolean;
   enableHistory?: 'auto' | boolean;
   minimalReport?: boolean;
+  openAutomatically?: 'always' | 'never' | 'on-failure-only';
 }

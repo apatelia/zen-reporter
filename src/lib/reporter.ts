@@ -6,7 +6,7 @@ import type {
   TestCase,
   TestResult,
 } from '@playwright/test/reporter';
-import { execFileSync } from 'child_process';
+import { execFileSync, spawn } from 'child_process';
 import * as fs from 'fs';
 import * as path from 'path';
 import { fileURLToPath } from 'url';
@@ -62,6 +62,7 @@ export interface ReporterConfig {
   enableHistory: 'auto' | boolean;
   minimalReport?: boolean;
   consoleProgress: 'auto' | 'line' | 'dot' | boolean;
+  openAutomatically: 'always' | 'never' | 'on-failure-only';
 }
 
 /**
@@ -127,6 +128,16 @@ export function resolveConfig(
     }
   }
 
+  let openAutomatically: 'always' | 'never' | 'on-failure-only' = 'never';
+
+  if (
+    rawConfig?.openAutomatically === 'always' ||
+    rawConfig?.openAutomatically === 'never' ||
+    rawConfig?.openAutomatically === 'on-failure-only'
+  ) {
+    openAutomatically = rawConfig.openAutomatically;
+  }
+
   return {
     outputDir,
     packageManager,
@@ -138,6 +149,7 @@ export function resolveConfig(
     enableHistory,
     minimalReport,
     consoleProgress,
+    openAutomatically,
   };
 }
 
@@ -432,27 +444,39 @@ class ZenReporter implements Reporter {
     };
   }
 
-  /** Executes history CLI subcommand to update history data files and HTML embeddings. */
-  private refreshHistory(): void {
-    try {
-      const moduleFile =
-        typeof __filename !== 'undefined' ? __filename : fileURLToPath(import.meta.url);
-      let dir = path.dirname(moduleFile);
-      let binPath: string | null = null;
+  /**
+   * Finds the absolute path to `bin/zen-reporter.js` by checking current and parent directories.
+   *
+   * @returns Absolute path to `bin/zen-reporter.js`, or `null` if not found.
+   */
+  private findBinPath(): string | null {
+    const moduleFile =
+      typeof __filename !== 'undefined' ? __filename : fileURLToPath(import.meta.url);
+    let dir = path.dirname(moduleFile);
 
-      for (let i = 0; i < 4; i++) {
-        const candidate = path.join(dir, 'bin', 'zen-reporter.js');
-        if (fs.existsSync(candidate)) {
-          binPath = candidate;
-          break;
-        }
-
-        const parent = path.dirname(dir);
-        if (parent === dir) break;
-
-        dir = parent;
+    for (let i = 0; i < 4; i++) {
+      const candidate = path.join(dir, 'bin', 'zen-reporter.js');
+      if (fs.existsSync(candidate)) {
+        return candidate;
       }
 
+      const parent = path.dirname(dir);
+      if (parent === dir) break;
+
+      dir = parent;
+    }
+
+    return null;
+  }
+
+  /**
+   * Executes history CLI subcommand to update history data files and HTML embeddings.
+   *
+   * @returns Void.
+   */
+  private refreshHistory(): void {
+    try {
+      const binPath = this.findBinPath();
       if (!binPath) return;
 
       execFileSync(process.execPath, [binPath, 'history', 'report'], {
@@ -466,12 +490,51 @@ class ZenReporter implements Reporter {
   }
 
   /**
+   * Automatically opens the generated report using `zr show` if configured.
+   *
+   * @param summary - Result summary containing passed/failed/timedOut/interrupted counts.
+   * @returns Boolean indicating whether the report was opened automatically.
+   */
+  private maybeOpenReport(summary: ResultSummary): boolean {
+    const mode = this.reportConfig.openAutomatically;
+    if (mode === 'never') return false;
+
+    const hasFailure =
+      (summary.failed || 0) > 0 || (summary.timedOut || 0) > 0 || (summary.interrupted || 0) > 0;
+
+    if (mode === 'on-failure-only' && !hasFailure) {
+      return false;
+    }
+
+    const binPath = this.findBinPath();
+    if (!binPath) return false;
+
+    try {
+      const child = spawn(process.execPath, [binPath, 'show'], {
+        cwd: process.cwd(),
+        detached: true,
+        stdio: 'ignore',
+        env: { ...process.env, PW_REPORTER_OUTPUT: this.reportConfig.outputDir },
+      });
+      child.unref();
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  /**
    * Generates `index.html` (and optional `summary.html`) from template assets and JSON payloads.
    *
    * @param outputDir - Target output directory path.
    * @param reportData - Complete report data model payload.
+   * @param summary - Result summary containing passed/failed/timedOut/interrupted counts.
    */
-  private generateHtmlReport(outputDir: string, reportData: ReportData): void {
+  private generateHtmlReport(
+    outputDir: string,
+    reportData: ReportData,
+    summary: ResultSummary
+  ): void {
     try {
       const pm = this.reportConfig.packageManager;
       const moduleFile =
@@ -563,7 +626,17 @@ class ZenReporter implements Reporter {
         fs.writeFileSync(destHtml, finalHtml, 'utf8');
 
         console.debug(`\n✓ Report generated: ${destHtml}`);
-        console.log(`\n💡 Run "${getShowReportCommand(pm)}" to view the report in web browser.\n`);
+
+        const openedAutomatically = this.maybeOpenReport(summary);
+        if (openedAutomatically) {
+          console.log(
+            '\n✓ Report opened automatically in your web browser as per configuration.\n'
+          );
+        } else {
+          console.log(
+            `\n💡 Run "${getShowReportCommand(pm)}" to view the report in web browser.\n`
+          );
+        }
 
         if (this.reportConfig.enableHistory !== false) {
           this.refreshHistory();
@@ -832,7 +905,7 @@ class ZenReporter implements Reporter {
     );
     console.log('\n' + summaryTable);
 
-    this.generateHtmlReport(outputDir, reportData);
+    this.generateHtmlReport(outputDir, reportData, summary);
   }
 }
 

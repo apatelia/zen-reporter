@@ -5,13 +5,11 @@ zen-reporter/
 ├── src/
 ├── components/
 │   ├── dashboard/             # Dashboard / Overview tab components
-│   │   ├── ExecutionEfficiencyCard.tsx
+│   │   ├── ExecutionTimingEfficiencyCard.tsx
 │   │   ├── Overview.tsx       # Main Overview layout
 │   │   ├── PassRateRing.tsx   # Radial pass rate chart (using theme tokens)
-│   │   ├── QuickStats.tsx     # KPI stat counters
-│   │   ├── RunInfoCard.tsx    # Run metadata cards
-│   │   ├── SummaryCard.tsx    # High-level summary metrics
-│   │   └── TestHealthCard.tsx # Test health breakdown
+│   │   ├── TestHealthCard.tsx # Test health breakdown
+│   │   └── TestResultsHero.tsx # Header summary metrics & run metadata cards
 │   ├── failures/              # Failures tab components
 │   │   ├── FailureList.tsx    # Failure lists with trace & error details
 │   │   └── FailuresSection.tsx# Failure view with search & grouping
@@ -50,15 +48,22 @@ zen-reporter/
 │   │   │   ├── StepItem.tsx           # Step execution tree row & accordion
 │   │   │   ├── TestAttachments.tsx    # Attachment grid & preview modal
 │   │   │   ├── TestErrorAlert.tsx     # Failure details & stack trace alert box
-│   │   │   └── TestStdOutput.tsx      # Console stdout/stderr output blocks
+│   │   │   ├── TestStdOutput.tsx      # Console stdout/stderr output blocks
+│   │   │   └── UniversalPreviewModal.tsx # Universal attachment preview modal (images, video, text, zip)
+│   │   ├── BackToTopButton.tsx # Back to top floating button
+│   │   ├── BaseModal.tsx      # Accessible base modal dialog component
 │   │   ├── DataTable.tsx      # Reusable styled data table component
 │   │   ├── DateFilterControl.tsx # Date-range filter selector control
+│   │   ├── DatePicker.tsx     # Custom date picker component
 │   │   ├── GuideModal.tsx     # Reusable modal for feature documentation
 │   │   ├── HistoryDisabledBanner.tsx # Alert banner shown when history recording is disabled
+│   │   ├── InfoTooltip.tsx    # Tooltip component
 │   │   ├── LearnMoreButton.tsx
 │   │   ├── MultiSelectFilter.tsx
+│   │   ├── PassRateBadge.tsx  # Color-coded pass rate badge
 │   │   ├── SearchInput.tsx    # Shared real-time text search filter input component
 │   │   ├── StatCard.tsx
+│   │   ├── StatusCountBadge.tsx # Test status badge
 │   │   ├── TagCloudModal.tsx  # Searchable tag cloud & multi-select modal dialog
 │   │   ├── TestCaseCard.tsx
 │   │   └── TestCaseDetail.tsx # Lightweight modal container
@@ -69,7 +74,6 @@ zen-reporter/
 │   ├── trends/                # Quality & duration trends tab
 │   │   ├── step-category/     # Step category trend sub-components
 │   │   │   ├── StepCategoryChart.tsx        # Recharts stacked bar chart
-│   │   │   ├── stepCategoryClassifier.ts    # Title classification & category counter
 │   │   │   └── StepCategorySummaryCards.tsx # Ratio KPI summary cards
 │   │   ├── DurationTrend.tsx
 │   │   ├── PassRateTrend.tsx
@@ -90,6 +94,7 @@ zen-reporter/
 │   ├── codeHighlighting.ts    # Syntax highlighting for step code snippets & error stack traces
 │   ├── cryptoUtils.ts         # MD5/SHA-256 hashing & error signature clustering
 │   ├── dataProcessor.ts       # Raw data conversion, duration calculations & package manager detection
+│   ├── exportFilename.ts      # Sanitized export filename builder
 │   ├── exportToCsv.ts         # Zero-dependency RFC 4180 CSV exporter with UTF-8 BOM
 │   ├── formatters.ts          # Duration, timestamp, text & file path formatting helpers
 │   ├── progressPrinter.ts     # Dedicated TTY console progress rendering ('line' | 'dot' | 'none')
@@ -97,6 +102,7 @@ zen-reporter/
 │   ├── runHistory.ts          # Run identifier builder & DuckDB row flattening utilities
 │   ├── runHistoryWriter.ts    # Self-contained per-run JSONL persistence helper under <outputDir>/runs/
 │   ├── statsUtils.ts          # Single-pass O(N) project stats calculator & executive KPI generator
+│   ├── stepCategoryClassifier.ts # Title classification & category counter for steps
 │   ├── tagColors.ts           # Deterministic HSL color generator for tags
 │   └── theme.ts               # Unified UI theme tokens, brand color maps & status color palettes
 ├── App.tsx                    # Root component with theme/darkMode initial loading, version title header & tab routing

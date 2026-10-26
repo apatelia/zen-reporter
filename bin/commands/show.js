@@ -92,6 +92,8 @@ export function handleShow(cwd = process.cwd()) {
   const host = '127.0.0.1';
 
   const startServer = (port) => {
+    server.removeAllListeners('listening');
+
     server.once('error', (err) => {
       if (err.code === 'EADDRINUSE') {
         startServer(port + 1);

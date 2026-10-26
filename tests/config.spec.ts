@@ -75,4 +75,22 @@ test.describe('Zen Reporter Configuration Tests', () => {
     expect(minimalConfig.minimalReport).toBe(true);
     expect(minimalConfig.enableHistory).toBe(false);
   });
+
+  test('resolves openAutomatically configuration option', () => {
+    const defaultConfig = resolveConfig();
+    expect(defaultConfig.openAutomatically).toBe('never');
+
+    const alwaysConfig = resolveConfig({ openAutomatically: 'always' });
+    expect(alwaysConfig.openAutomatically).toBe('always');
+
+    const failureOnlyConfig = resolveConfig({ openAutomatically: 'on-failure-only' });
+    expect(failureOnlyConfig.openAutomatically).toBe('on-failure-only');
+
+    const neverConfig = resolveConfig({ openAutomatically: 'never' });
+    expect(neverConfig.openAutomatically).toBe('never');
+
+    // Invalid or unknown values fallback to 'never'
+    const invalidConfig = resolveConfig({ openAutomatically: 'invalid' });
+    expect(invalidConfig.openAutomatically).toBe('never');
+  });
 });
