@@ -1,4 +1,4 @@
-import { exec } from 'child_process';
+import { spawn } from 'child_process';
 import { createReadStream, existsSync, statSync } from 'fs';
 import { createServer } from 'http';
 import { extname, join, normalize, resolve } from 'path';
@@ -26,14 +26,24 @@ const MIME_TYPES = {
  * @param {string} url - Local server HTTP URL to open.
  */
 function openBrowser(url) {
-  const start =
-    process.platform === 'darwin'
-      ? `open "${url}"`
-      : process.platform === 'win32'
-        ? `start "" "${url}"`
-        : `xdg-open "${url}"`;
-
-  exec(start, () => {});
+  try {
+    let child;
+    if (process.platform === 'darwin') {
+      child = spawn('open', [url], { stdio: 'ignore', detached: true });
+    } else if (process.platform === 'win32') {
+      child = spawn('cmd.exe', ['/c', 'start', '""', url], {
+        stdio: 'ignore',
+        detached: true,
+        windowsVerbatimArguments: true,
+      });
+    } else {
+      child = spawn('xdg-open', [url], { stdio: 'ignore', detached: true });
+    }
+    child.on('error', () => {});
+    child.unref();
+  } catch {
+    /* ignore browser launch errors */
+  }
 }
 
 /**

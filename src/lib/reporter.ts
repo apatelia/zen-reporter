@@ -6,8 +6,10 @@ import type {
   TestCase,
   TestResult,
 } from '@playwright/test/reporter';
-import { execFileSync, spawn } from 'child_process';
+import { spawn } from 'child_process';
 import * as fs from 'fs';
+import { createRequire } from 'module';
+import { platform, type as osType } from 'os';
 import * as path from 'path';
 import { fileURLToPath } from 'url';
 import { convertPlaywrightSteps, sanitizeAnsi, setFsModule } from './codeHighlighting';
@@ -413,6 +415,49 @@ class ZenReporter implements Reporter {
   }
 
   /**
+   * Returns OS friendly name for system diagnostic and report metadata.
+   *
+   * @returns Operating system name (e.g. 'macOS', 'Windows', 'Arch Linux').
+   */
+  private getOsName(): string {
+    const p = platform();
+
+    if (p === 'darwin') return 'macOS';
+    if (p === 'win32') return 'Windows';
+    if (p === 'linux') {
+      try {
+        if (fs.existsSync('/etc/os-release')) {
+          const content = fs.readFileSync('/etc/os-release', 'utf8');
+          const match = content.match(/^PRETTY_NAME="?([^"\n]+)"?/m);
+
+          if (match && match[1]) return match[1];
+        }
+      } catch {
+        /* ignore */
+      }
+
+      return 'Linux';
+    }
+
+    return osType();
+  }
+
+  /**
+   * Detects installed @playwright/test package version in the project.
+   *
+   * @returns Installed Playwright version string or undefined if not found.
+   */
+  private getPlaywrightVersion(): string | undefined {
+    try {
+      const customRequire = createRequire(path.resolve(process.cwd(), 'package.json'));
+      const pwPkg = customRequire('@playwright/test/package.json');
+      return pwPkg.version || undefined;
+    } catch {
+      return undefined;
+    }
+  }
+
+  /**
    * Computes high-level result summary statistics for the completed test run.
    *
    * @param endTime - ISO timestamp of completion.
@@ -441,6 +486,8 @@ class ZenReporter implements Reporter {
       totalSequentialDuration,
       numberOfProjects,
       workers: this.config?.workers,
+      playwrightVersion: this.getPlaywrightVersion(),
+      osName: this.getOsName(),
     };
   }
 
@@ -470,20 +517,32 @@ class ZenReporter implements Reporter {
   }
 
   /**
-   * Executes history CLI subcommand to update history data files and HTML embeddings.
+   * Updates history data files and HTML embeddings.
    *
    * @returns Void.
    */
   private refreshHistory(): void {
     try {
-      const binPath = this.findBinPath();
-      if (!binPath) return;
+      const moduleFile =
+        typeof __filename !== 'undefined' ? __filename : fileURLToPath(import.meta.url);
+      const moduleDir = path.dirname(moduleFile);
+      const packageRoot =
+        moduleDir.endsWith(path.join('src', 'lib')) || moduleDir.endsWith('src/lib')
+          ? path.resolve(moduleDir, '..', '..')
+          : path.resolve(moduleDir, '..');
 
-      execFileSync(process.execPath, [binPath, 'history', 'report'], {
-        cwd: process.cwd(),
-        stdio: 'inherit',
-        env: { ...process.env, PW_REPORTER_OUTPUT: this.reportConfig.outputDir },
-      });
+      const historyModulePath = path.join(packageRoot, 'bin', 'commands', 'history.js');
+      if (!fs.existsSync(historyModulePath)) return;
+
+      import(historyModulePath)
+        .then(({ handleHistory }) => {
+          handleHistory(['report'], process.cwd()).catch(() => {
+            console.warn('History refresh skipped (keeping existing history data).');
+          });
+        })
+        .catch(() => {
+          console.warn('History refresh skipped (keeping existing history data).');
+        });
     } catch {
       console.warn('History refresh skipped (keeping existing history data).');
     }
@@ -557,45 +616,10 @@ class ZenReporter implements Reporter {
       }
 
       if (!templateContent) {
-        const isWin = process.platform === 'win32';
-        const bin = (name: string) => (isWin ? `${name}.cmd` : name);
-        const env = { ...process.env, PW_REPORTER_OUTPUT: outputDir };
-
-        let command: string;
-        let args: string[];
-
-        switch (pm) {
-          case 'pnpm':
-            command = bin('pnpm');
-            args = ['exec', 'vite', 'build'];
-            break;
-          case 'yarn':
-            command = bin('yarn');
-            args = ['exec', 'vite', 'build'];
-            break;
-          case 'bun':
-            command = bin('bun');
-            args = ['x', 'vite', 'build'];
-            break;
-          default:
-            command = bin('npx');
-            args = ['vite', 'build'];
-            break;
-        }
-
-        execFileSync(command, args, {
-          cwd: packageRoot,
-          stdio: 'pipe',
-          env,
-        });
-
-        if (fs.existsSync(templatePath)) {
-          try {
-            templateContent = fs.readFileSync(templatePath, 'utf8');
-          } catch {
-            /* ignore */
-          }
-        }
+        console.error(
+          `Zen Reporter template not found at "${templatePath}". Ensure the package is properly built.`
+        );
+        return;
       }
 
       if (templateContent) {

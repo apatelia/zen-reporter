@@ -106,7 +106,7 @@ zen-reporter/
 │   ├── tagColors.ts           # Deterministic HSL color generator for tags
 │   └── theme.ts               # Unified UI theme tokens, brand color maps & status color palettes
 ├── App.tsx                    # Root component with theme/darkMode initial loading, version title header & tab routing
-├── app.css                    # Design system CSS with theme palettes (Cafe, Concept, Sentinel), WCAG contrast tokens & dark mode styles
+├── app.css                    # Design system CSS with theme palettes (Cafe, Sentinel, Streak), WCAG contrast tokens & dark mode styles
 ├── main.tsx                   # React application entry point
 ├── vite-env.d.ts              # Vite type declarations
 └── vite-plugin-inject-data.ts # Vite plugin to inline report.json & history.json into HTML

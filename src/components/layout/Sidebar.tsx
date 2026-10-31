@@ -1,3 +1,4 @@
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import logoRaw from '@/assets/logo.svg?raw';
 import logoDarkRaw from '@/assets/logo-dark.svg?raw';
 import pkg from '../../../package.json';
@@ -164,6 +165,7 @@ const TABS: { key: TabKey; label: string; icon: React.ReactNode }[] = [
 ];
 
 function SidebarItem({
+  buttonRef,
   icon,
   label,
   isActive,
@@ -172,6 +174,7 @@ function SidebarItem({
   disabledBadge,
   isCollapsed,
 }: {
+  buttonRef?: (el: HTMLButtonElement | null) => void;
   icon: React.ReactNode;
   label: string;
   isActive: boolean;
@@ -182,21 +185,19 @@ function SidebarItem({
 }) {
   return (
     <button
+      ref={buttonRef}
       onClick={onClick}
       title={
         isCollapsed ? (disabledBadge ? `${label} (History recording disabled)` : label) : undefined
       }
-      className={`group relative flex w-full items-center ${
+      className={`group relative z-10 flex w-full items-center ${
         isCollapsed ? 'justify-center px-2 py-2.5' : 'gap-3 px-3 py-2.5'
-      } rounded-md text-sm font-semibold transition-all duration-150 ${
+      } rounded-md text-sm font-semibold transition-colors duration-150 cursor-pointer ${
         isActive
-          ? 'bg-canvas text-accent-blue shadow-sm shadow-black/8 ring-1 ring-border-default/80 dark:ring-accent-blue/40 dark:bg-accent-blue/25 dark:text-accent-blue'
+          ? 'text-accent-blue dark:text-accent-blue font-bold'
           : 'text-text-body-mid hover:bg-surface-100 hover:text-text-ink dark:text-text-body-mid dark:hover:bg-surface-100 dark:hover:text-text-on-primary font-medium'
       }`}
     >
-      {isActive && (
-        <span className="absolute left-0 top-1.5 bottom-1.5 w-1 rounded-r-full bg-accent-blue dark:bg-accent-blue" />
-      )}
       <span
         className={`shrink-0 transition-colors ${
           isActive
@@ -276,6 +277,14 @@ export default function Sidebar({
   isHistoryDisabled,
   isMinimalReport,
 }: SidebarProps) {
+  const navContainerRef = useRef<HTMLElement>(null);
+  const tabButtonsRef = useRef<Record<string, HTMLButtonElement | null>>({});
+  const [indicatorStyle, setIndicatorStyle] = useState<{
+    top: number;
+    height: number;
+    opacity: number;
+  }>({ top: 0, height: 0, opacity: 0 });
+
   const visibleTabs = isMinimalReport
     ? TABS.filter(
         (t) =>
@@ -283,124 +292,109 @@ export default function Sidebar({
       )
     : TABS;
 
+  const updateIndicator = useCallback(() => {
+    const container = navContainerRef.current;
+    const activeButton = tabButtonsRef.current[activeTab];
+    if (!container || !activeButton) return;
+
+    const containerRect = container.getBoundingClientRect();
+    const activeRect = activeButton.getBoundingClientRect();
+
+    setIndicatorStyle({
+      top: activeRect.top - containerRect.top,
+      height: activeRect.height,
+      opacity: 1,
+    });
+  }, [activeTab]);
+
+  useEffect(() => {
+    updateIndicator();
+    window.addEventListener('resize', updateIndicator);
+    return () => window.removeEventListener('resize', updateIndicator);
+  }, [updateIndicator, visibleTabs]);
+
   return (
     <aside
       className={`flex flex-col border-r border-border-default bg-surface-50 transition-all duration-200 ${
         isCollapsed ? 'w-16 min-w-16 shrink-0' : 'w-52 min-w-52 shrink-0'
       }`}
     >
-      {/* Sidebar Header & Collapse Toggle */}
+      {/* Sidebar Header (Aligned with Main Top Bar) */}
       <div
-        className={`flex items-center ${
-          isCollapsed ? 'flex-col gap-3 py-3' : 'justify-between min-w-0 px-4 py-3.5'
+        className={`flex h-16 items-center border-b border-border-default ${
+          isCollapsed ? 'justify-center px-2' : 'justify-start min-w-0 px-4'
         }`}
       >
-        {!isCollapsed ? (
-          <>
-            <a
-              href="https://zen-reporter.vercel.app"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-2.5 min-w-0 group cursor-pointer"
-              title={`Zen Reporter v${pkg.version}`}
-            >
-              <img
-                src={logo}
-                alt="Zen Reporter"
-                className="h-7 w-7 shrink-0 object-contain drop-shadow-xs transition-transform group-hover:scale-105 dark:hidden"
-              />
-              <img
-                src={logoDark}
-                alt="Zen Reporter"
-                className="h-7 w-7 shrink-0 object-contain drop-shadow-xs transition-transform group-hover:scale-105 hidden dark:block"
-              />
-              <div className="flex flex-col min-w-0">
-                <span className="inline-flex items-center gap-1 text-sm font-bold tracking-tight text-accent-blue dark:text-accent-blue group-hover:underline truncate leading-tight transition-colors">
-                  Zen Reporter
-                  <svg
-                    className="h-3 w-3 shrink-0 text-text-muted group-hover:opacity-100 transition-opacity"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                    strokeWidth={2}
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
-                    <polyline points="15 3 21 3 21 9" />
-                    <line x1="10" y1="14" x2="21" y2="3" />
-                  </svg>
-                </span>
-                <span className="text-[10px] font-medium text-text-muted truncate leading-tight">
-                  v{pkg.version}
-                </span>
-              </div>
-            </a>
-            <button
-              onClick={() => setIsCollapsed(true)}
-              className="p-1.5 rounded-md text-text-body-mid hover:text-text-ink hover:bg-surface-100 transition-colors shrink-0"
-              title="Collapse sidebar"
-            >
-              <svg
-                className="h-5 w-5"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                strokeWidth={1.5}
-              >
-                <path
+        <a
+          href="https://zen-reporter.vercel.app"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center gap-2.5 min-w-0 group cursor-pointer"
+          title={`Zen Reporter v${pkg.version}`}
+        >
+          <img
+            src={logo}
+            alt="Zen Reporter"
+            className="h-7 w-7 shrink-0 object-contain drop-shadow-xs transition-transform group-hover:scale-105 dark:hidden"
+          />
+          <img
+            src={logoDark}
+            alt="Zen Reporter"
+            className="h-7 w-7 shrink-0 object-contain drop-shadow-xs transition-transform group-hover:scale-105 hidden dark:block"
+          />
+          {!isCollapsed && (
+            <div className="flex flex-col min-w-0">
+              <span className="inline-flex items-center gap-1 text-sm font-bold tracking-tight text-accent-blue dark:text-accent-blue group-hover:underline truncate leading-tight transition-colors">
+                Zen Reporter
+                <svg
+                  className="h-3 w-3 shrink-0 text-text-muted group-hover:opacity-100 transition-opacity"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={2}
                   strokeLinecap="round"
                   strokeLinejoin="round"
-                  d="M15.75 19.5L8.25 12l7.5-7.5"
-                />
-              </svg>
-            </button>
-          </>
-        ) : (
-          <>
-            <a
-              href="https://zen-reporter.vercel.app"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="p-1 rounded-md hover:bg-surface-100 transition-colors block shrink-0"
-              title={`Zen Reporter v${pkg.version}`}
-            >
-              <img
-                src={logo}
-                alt="Zen Reporter"
-                className="h-7 w-7 object-contain drop-shadow-xs dark:hidden"
-              />
-              <img
-                src={logoDark}
-                alt="Zen Reporter"
-                className="h-7 w-7 object-contain drop-shadow-xs hidden dark:block"
-              />
-            </a>
-            <button
-              onClick={() => setIsCollapsed(false)}
-              className="p-1.5 rounded-md text-text-body-mid hover:text-text-ink hover:bg-surface-100 transition-colors"
-              title="Expand sidebar"
-            >
-              <svg
-                className="h-5 w-5"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                strokeWidth={1.5}
-              >
-                <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
-              </svg>
-            </button>
-          </>
-        )}
+                >
+                  <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+                  <polyline points="15 3 21 3 21 9" />
+                  <line x1="10" y1="14" x2="21" y2="3" />
+                </svg>
+              </span>
+              <span className="text-[10px] font-medium text-text-muted truncate leading-tight">
+                v{pkg.version}
+              </span>
+            </div>
+          )}
+        </a>
       </div>
-      <div className="mx-3 h-px bg-border-default"></div>
 
       {/* Nav */}
-      <nav className={`flex-1 space-y-1 ${isCollapsed ? 'px-2' : 'px-3'} py-2`}>
+      <nav
+        ref={navContainerRef}
+        className={`relative flex-1 space-y-1 ${isCollapsed ? 'px-2' : 'px-3'} py-2 overflow-hidden`}
+      >
+        {/* Sliding Active Pill Indicator */}
+        <div
+          aria-hidden="true"
+          style={{
+            transform: `translate3d(0, ${indicatorStyle.top}px, 0)`,
+            top: 0,
+            left: isCollapsed ? 8 : 12,
+            right: isCollapsed ? 8 : 12,
+            height: `${indicatorStyle.height}px`,
+            opacity: indicatorStyle.opacity,
+          }}
+          className="pointer-events-none absolute rounded-md bg-canvas shadow-sm shadow-black/8 ring-1 ring-border-default/80 dark:bg-accent-blue/25 dark:ring-accent-blue/40 transition-transform duration-250 ease-[cubic-bezier(0.2,0,0,1)]"
+        >
+          <span className="absolute left-0 top-1.5 bottom-1.5 w-1 rounded-r-full bg-accent-blue dark:bg-accent-blue" />
+        </div>
+
         {visibleTabs.map((tab) => (
           <SidebarItem
             key={tab.key}
+            buttonRef={(el) => {
+              tabButtonsRef.current[tab.key] = el;
+            }}
             icon={tab.icon}
             label={tab.label}
             isActive={activeTab === tab.key}
@@ -416,6 +410,31 @@ export default function Sidebar({
           />
         ))}
       </nav>
+
+      {/* Sidebar Footer with Collapse/Expand Toggle */}
+      <div className="border-t border-border-default p-2">
+        <button
+          type="button"
+          onClick={() => setIsCollapsed(!isCollapsed)}
+          className={`flex w-full items-center ${
+            isCollapsed ? 'justify-center p-2' : 'justify-between px-3 py-2'
+          } rounded-md text-xs font-semibold text-text-body-mid hover:bg-surface-100 hover:text-text-ink dark:text-text-muted dark:hover:bg-surface-100 dark:hover:text-text-on-primary transition-colors cursor-pointer`}
+          title={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+        >
+          {!isCollapsed && <span className="truncate">Collapse</span>}
+          <svg
+            className={`h-4 w-4 shrink-0 transition-transform duration-200 ${
+              isCollapsed ? '' : 'rotate-180'
+            }`}
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            strokeWidth={1.75}
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+          </svg>
+        </button>
+      </div>
     </aside>
   );
 }

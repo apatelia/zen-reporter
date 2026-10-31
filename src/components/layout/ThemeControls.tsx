@@ -1,13 +1,33 @@
-import React from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 
 export interface ThemeControlsProps {
-  theme: 'cafe' | 'concept' | 'sentinel';
-  setTheme: (theme: 'cafe' | 'concept' | 'sentinel') => void;
+  theme: 'cafe' | 'sentinel' | 'streak';
+  setTheme: (theme: 'cafe' | 'sentinel' | 'streak') => void;
   darkMode: 'system' | 'light' | 'dark';
   setDarkMode: (mode: 'system' | 'light' | 'dark') => void;
 }
 
 export function ThemeControls({ theme, setTheme, darkMode, setDarkMode }: ThemeControlsProps) {
+  const themeContainerRef = useRef<HTMLDivElement>(null);
+  const themeButtonsRef = useRef<Record<string, HTMLButtonElement | null>>({});
+  const [themeIndicator, setThemeIndicator] = useState<{
+    left: number;
+    top: number;
+    width: number;
+    height: number;
+    opacity: number;
+  }>({ left: 0, top: 0, width: 0, height: 0, opacity: 0 });
+
+  const modeContainerRef = useRef<HTMLDivElement>(null);
+  const modeButtonsRef = useRef<Record<string, HTMLButtonElement | null>>({});
+  const [modeIndicator, setModeIndicator] = useState<{
+    left: number;
+    top: number;
+    width: number;
+    height: number;
+    opacity: number;
+  }>({ left: 0, top: 0, width: 0, height: 0, opacity: 0 });
+
   const themes = [
     {
       id: 'cafe' as const,
@@ -15,31 +35,95 @@ export function ThemeControls({ theme, setTheme, darkMode, setDarkMode }: ThemeC
       colorDot: 'bg-[#006241] dark:bg-[#4ade80] ring-1 ring-black/10 dark:ring-white/20',
     },
     {
-      id: 'concept' as const,
-      label: 'Concept',
-      colorDot: 'bg-[#0075de] dark:bg-[#38bdf8] ring-1 ring-black/10 dark:ring-white/20',
-    },
-    {
       id: 'sentinel' as const,
       label: 'Sentinel',
       colorDot: 'bg-[#6a5fc1] dark:bg-[#c2ef4e] ring-1 ring-black/10 dark:ring-white/20',
     },
+    {
+      id: 'streak' as const,
+      label: 'Streak',
+      colorDot: 'bg-[#533afd] dark:bg-[#665efd] ring-1 ring-black/10 dark:ring-white/20',
+    },
   ];
+
+  useEffect(() => {
+    const updateThemeIndicator = () => {
+      const container = themeContainerRef.current;
+      const activeButton = themeButtonsRef.current[theme];
+      if (!container || !activeButton) return;
+
+      const containerRect = container.getBoundingClientRect();
+      const activeRect = activeButton.getBoundingClientRect();
+
+      setThemeIndicator({
+        left: activeRect.left - containerRect.left - container.clientLeft,
+        top: activeRect.top - containerRect.top - container.clientTop,
+        width: activeRect.width,
+        height: activeRect.height,
+        opacity: 1,
+      });
+    };
+
+    updateThemeIndicator();
+    window.addEventListener('resize', updateThemeIndicator);
+    return () => window.removeEventListener('resize', updateThemeIndicator);
+  }, [theme]);
+
+  useEffect(() => {
+    const updateModeIndicator = () => {
+      const container = modeContainerRef.current;
+      const activeButton = modeButtonsRef.current[darkMode];
+      if (!container || !activeButton) return;
+
+      const containerRect = container.getBoundingClientRect();
+      const activeRect = activeButton.getBoundingClientRect();
+
+      setModeIndicator({
+        left: activeRect.left - containerRect.left - container.clientLeft,
+        top: activeRect.top - containerRect.top - container.clientTop,
+        width: activeRect.width,
+        height: activeRect.height,
+        opacity: 1,
+      });
+    };
+
+    updateModeIndicator();
+    window.addEventListener('resize', updateModeIndicator);
+    return () => window.removeEventListener('resize', updateModeIndicator);
+  }, [darkMode]);
 
   return (
     <div className="flex items-center gap-2 shrink-0">
       {/* Theme Segmented Control */}
-      <div className="inline-flex items-center rounded-lg border border-border-default bg-surface-100 p-0.5 shadow-2xs">
+      <div
+        ref={themeContainerRef}
+        className="relative inline-flex items-center rounded-lg border border-border-default bg-surface-100 p-0.5 shadow-2xs"
+      >
+        {/* Sliding Indicator */}
+        <div
+          aria-hidden="true"
+          style={{
+            transform: `translate3d(${themeIndicator.left}px, ${themeIndicator.top}px, 0)`,
+            width: `${themeIndicator.width}px`,
+            height: `${themeIndicator.height}px`,
+            opacity: themeIndicator.opacity,
+          }}
+          className="pointer-events-none absolute left-0 top-0 rounded-md bg-canvas shadow-sm shadow-black/8 ring-1 ring-border-default/80 dark:bg-accent-blue/25 dark:ring-accent-blue/30 transition-all duration-250 ease-[cubic-bezier(0.2,0,0,1)]"
+        />
+
         {themes.map((t) => {
           const isActive = theme === t.id;
           return (
             <button
               key={t.id}
+              ref={(el) => {
+                themeButtonsRef.current[t.id] = el;
+              }}
               onClick={() => setTheme(t.id)}
-              className={`inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold rounded-md transition-all duration-150 cursor-pointer ${
+              className={`relative z-10 inline-flex items-center gap-1.5 px-2.5 py-1 text-xs rounded-md transition-colors duration-150 cursor-pointer ${
                 isActive
-                  ? 'bg-canvas text-accent-blue dark:bg-accent-blue/25 dark:text-accent-blue shadow-sm shadow-black/8 ring-1 ring-border-default/80 dark:ring-accent-blue/30 font-bold'
-                  : 'border border-transparent text-text-body-mid hover:text-text-ink hover:bg-surface-200/40 dark:text-text-muted dark:hover:text-text-on-primary font-medium'
+                  ? 'text-accent-blue dark:text-accent-blue font-bold'
+                  : 'text-text-body-mid hover:text-text-ink hover:bg-surface-200/40 dark:text-text-muted dark:hover:text-text-on-primary font-medium'
               }`}
               title={`Switch theme to ${t.label}`}
             >
@@ -51,13 +135,31 @@ export function ThemeControls({ theme, setTheme, darkMode, setDarkMode }: ThemeC
       </div>
 
       {/* Mode Segmented Toggle */}
-      <div className="inline-flex items-center rounded-lg border border-border-default bg-surface-100 p-0.5 shadow-2xs">
+      <div
+        ref={modeContainerRef}
+        className="relative inline-flex items-center rounded-lg border border-border-default bg-surface-100 p-0.5 shadow-2xs"
+      >
+        {/* Sliding Indicator */}
+        <div
+          aria-hidden="true"
+          style={{
+            transform: `translate3d(${modeIndicator.left}px, ${modeIndicator.top}px, 0)`,
+            width: `${modeIndicator.width}px`,
+            height: `${modeIndicator.height}px`,
+            opacity: modeIndicator.opacity,
+          }}
+          className="pointer-events-none absolute left-0 top-0 rounded-md bg-canvas shadow-sm shadow-black/8 ring-1 ring-border-default/80 dark:bg-accent-blue/25 dark:ring-accent-blue/30 transition-all duration-250 ease-[cubic-bezier(0.2,0,0,1)]"
+        />
+
         <button
+          ref={(el) => {
+            modeButtonsRef.current['system'] = el;
+          }}
           onClick={() => setDarkMode('system')}
-          className={`inline-flex items-center justify-center p-1.5 rounded-md transition-all duration-150 cursor-pointer ${
+          className={`relative z-10 inline-flex items-center justify-center p-1.5 rounded-md transition-colors duration-150 cursor-pointer ${
             darkMode === 'system'
-              ? 'bg-canvas text-accent-blue dark:bg-accent-blue/25 dark:text-accent-blue shadow-sm shadow-black/8 ring-1 ring-border-default/80 dark:ring-accent-blue/30 font-bold'
-              : 'border border-transparent text-text-body-mid hover:text-text-ink hover:bg-surface-200/40 dark:text-text-muted dark:hover:text-text-on-primary'
+              ? 'text-accent-blue dark:text-accent-blue font-bold'
+              : 'text-text-body-mid hover:text-text-ink hover:bg-surface-200/40 dark:text-text-muted dark:hover:text-text-on-primary'
           }`}
           title="Switch to System Theme (follows OS setting)"
           aria-label="System Theme"
@@ -78,11 +180,14 @@ export function ThemeControls({ theme, setTheme, darkMode, setDarkMode }: ThemeC
         </button>
 
         <button
+          ref={(el) => {
+            modeButtonsRef.current['light'] = el;
+          }}
           onClick={() => setDarkMode('light')}
-          className={`inline-flex items-center justify-center p-1.5 rounded-md transition-all duration-150 cursor-pointer ${
+          className={`relative z-10 inline-flex items-center justify-center p-1.5 rounded-md transition-colors duration-150 cursor-pointer ${
             darkMode === 'light'
-              ? 'bg-canvas text-accent-blue dark:bg-accent-blue/25 dark:text-accent-blue shadow-sm shadow-black/8 ring-1 ring-border-default/80 dark:ring-accent-blue/30 font-bold'
-              : 'border border-transparent text-text-body-mid hover:text-text-ink hover:bg-surface-200/40 dark:text-text-muted dark:hover:text-text-on-primary'
+              ? 'text-accent-blue dark:text-accent-blue font-bold'
+              : 'text-text-body-mid hover:text-text-ink hover:bg-surface-200/40 dark:text-text-muted dark:hover:text-text-on-primary'
           }`}
           title="Switch to Light Mode"
           aria-label="Light Mode"
@@ -103,11 +208,14 @@ export function ThemeControls({ theme, setTheme, darkMode, setDarkMode }: ThemeC
         </button>
 
         <button
+          ref={(el) => {
+            modeButtonsRef.current['dark'] = el;
+          }}
           onClick={() => setDarkMode('dark')}
-          className={`inline-flex items-center justify-center p-1.5 rounded-md transition-all duration-150 cursor-pointer ${
+          className={`relative z-10 inline-flex items-center justify-center p-1.5 rounded-md transition-colors duration-150 cursor-pointer ${
             darkMode === 'dark'
-              ? 'bg-canvas text-accent-blue dark:bg-accent-blue/25 dark:text-accent-blue shadow-sm shadow-black/8 ring-1 ring-border-default/80 dark:ring-accent-blue/30 font-bold'
-              : 'border border-transparent text-text-body-mid hover:text-text-ink hover:bg-surface-200/40 dark:text-text-muted dark:hover:text-text-on-primary'
+              ? 'text-accent-blue dark:text-accent-blue font-bold'
+              : 'text-text-body-mid hover:text-text-ink hover:bg-surface-200/40 dark:text-text-muted dark:hover:text-text-on-primary'
           }`}
           title="Switch to Dark Mode"
           aria-label="Dark Mode"

@@ -29,7 +29,7 @@ export function TestErrorAlert({ error, status }: TestErrorAlertProps) {
         Test Failures
       </h5>
       <div className="space-y-2">
-        <div className="rounded-md border border-danger-300/80 dark:border-danger-500/40 bg-white dark:bg-surface-100/40 overflow-hidden shadow-xs">
+        <div className="rounded-md border border-danger-300/80 dark:border-danger-500/40 bg-canvas dark:bg-surface-100/40 overflow-hidden shadow-xs">
           <div className="flex items-center justify-between gap-2 border-b border-danger-200 dark:border-danger-500/30 bg-danger-50 dark:bg-danger-500/10 px-3 py-1.5">
             <div className="flex items-center gap-2 min-w-0 pr-2">
               <svg
@@ -55,7 +55,7 @@ export function TestErrorAlert({ error, status }: TestErrorAlertProps) {
               className={`inline-flex items-center gap-1.5 rounded px-2.5 py-1 text-xs font-semibold border transition-colors cursor-pointer shrink-0 shadow-2xs ${
                 copied
                   ? 'border-success-400 dark:border-success-500/60 bg-success-500 text-white dark:bg-success-500 dark:text-surface-950 font-bold'
-                  : 'border-border-default dark:border-danger-500/40 bg-white dark:bg-danger-500/20 text-text-ink dark:text-text-ink hover:bg-surface-100 dark:hover:bg-danger-500/30 hover:border-accent-blue dark:hover:border-danger-500/60'
+                  : 'border-border-default dark:border-danger-500/40 bg-canvas dark:bg-danger-500/20 text-text-ink dark:text-text-ink hover:bg-surface-100 dark:hover:bg-danger-500/30 hover:border-accent-blue dark:hover:border-danger-500/60'
               }`}
               title="Copy stack trace"
             >

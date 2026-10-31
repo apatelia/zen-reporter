@@ -1,7 +1,7 @@
 @import 'tailwindcss';
 
 /* ==========================================================================
-   DEFAULT THEME: CAFE (CAFE INSPIRED COLORS)
+   DEFAULT THEME: CAFE
    ========================================================================== */
 @theme {
   /* ── Brand Primary ───────────────────────────── */
@@ -28,7 +28,7 @@
   --color-text-on-primary: #ffffff;
 
   /* ── Border / Hairline ───────────────────────── */
-  --color-border-default: #d6dbde;
+  --color-border-default: #c2beba;
   --color-border-subtle: #edebe9;
   --color-border-chart: #b4bcc1;
   --color-border-active: #1e3932;
@@ -38,6 +38,7 @@
   --color-success-50: #d4e9e2;
   --color-success-100: #c2e3d8;
   --color-success-200: #94cfbd;
+  --color-success-400: #4ade80;
   --color-success-500: #00754a;
   --color-success-600: #006241;
   --color-success-700: #1e3932;
@@ -134,12 +135,6 @@ html.dark {
 /* ── Dark mode variant definition ─ */
 @custom-variant dark (&:where(.dark, .dark *));
 
-/* ==========================================================================
-   THEME 1: CAFE (Default / html[data-theme="cafe"] or no attribute)
-   ========================================================================== */
-
-/* Cafe Light Mode default variables are set in @theme above */
-
 /* Cafe Dark Mode */
 html.dark,
 html[data-theme='cafe'].dark {
@@ -172,6 +167,7 @@ html[data-theme='cafe'].dark {
   --color-success: #4ade80;
   --color-success-50: #112922;
   --color-success-100: #183a30;
+  --color-success-400: #4ade80;
   --color-success-500: #4ade80;
   --color-success-600: #22c55e;
   --color-success-700: #16a34a;
@@ -218,209 +214,7 @@ html[data-theme='cafe'].dark {
 }
 
 /* ==========================================================================
-   THEME 2: CONCEPT (html[data-theme="concept"])
-   ========================================================================== */
-
-/* Concept Light Mode */
-html[data-theme='concept'] {
-  /* ── Brand Primary ─────── */
-  --color-ink: #0075de;
-  --color-ink-strong: #005bab;
-
-  /* ── Surface Palette ── */
-  --color-canvas: #f2f0eb;
-  --color-surface-50: #e8e5df;
-  --color-surface-100: #dfdcd6;
-  --color-surface-200: #d5d2cb;
-  --color-surface-700: #615d59;
-  --color-surface-800: #31302e;
-  --color-surface-900: #213183;
-  --color-surface-950: #19235d;
-
-  /* ── Text Colors ─────────────────────────────── */
-  --color-text-ink: #000000;
-  --color-text-ink-strong: #000000;
-  --color-text-body: #000000;
-  --color-text-body-mid: #31302e;
-  --color-text-muted: #615d59;
-  --color-text-muted-soft: #a39e98;
-  --color-text-on-primary: #ffffff;
-
-  /* ── Border / Hairline ───────────────────────── */
-  --color-border-default: #d6dbde;
-  --color-border-subtle: #edebe9;
-  --color-border-chart: #b4bcc1;
-  --color-border-active: #31302e;
-
-  /* ── Semantic: Success ─ */
-  --color-success: #1aae39;
-  --color-success-50: #eaf8ed;
-  --color-success-100: #c9f0d1;
-  --color-success-200: #93e2a2;
-  --color-success-500: #1aae39;
-  --color-success-600: #15932f;
-  --color-success-700: #107524;
-
-  /* ── Semantic: Danger ────── */
-  --color-danger: #e03e3e;
-  --color-danger-50: #fdf2f2;
-  --color-danger-100: #fbe8e8;
-  --color-danger-200: #f7c5c5;
-  --color-danger-500: #e03e3e;
-  --color-danger-600: #c42b2b;
-  --color-danger-700: #9e1c1c;
-
-  /* ── Semantic: Warning ─ */
-  --color-warning: #d97706;
-  --color-warning-50: #fffbeb;
-  --color-warning-100: #fef3c7;
-  --color-warning-200: #fde68a;
-  --color-warning-500: #d97706;
-  --color-warning-600: #b45309;
-  --color-warning-700: #92400e;
-
-  /* ── Semantic: Info ────── */
-  --color-info: #0075de;
-  --color-info-50: #edf6fd;
-  --color-info-100: #d4e8fa;
-  --color-info-500: #0075de;
-  --color-info-600: #005bab;
-  --color-info-700: #004582;
-
-  /* ── Accent Palette ──── */
-  --color-accent-cafe: #0075de;
-  --color-accent-green: #1aae39;
-  --color-accent-house: #213183;
-  --color-accent-gold: #eab308;
-  --color-accent-pink: #ff64c8;
-  --color-accent-blue: #0075de;
-  --color-accent-blue-deep: #005bab;
-  --color-accent-blue-info: #62aef0;
-  --color-accent-orange: #ff5500;
-  --color-accent-yellow: #eab308;
-  --color-accent-red: #e03e3e;
-
-  /* ── Step Category Composition Palette (Concept Light) ─ */
-  --color-step-cat-assertions: #1aae39;
-  --color-step-cat-assertions-border: #15932f;
-  --color-step-cat-hooks: #93e2a2;
-  --color-step-cat-hooks-border: #1aae39;
-  --color-step-cat-network: #eab308;
-  --color-step-cat-network-border: #ca8a04;
-  --color-step-cat-actions: #0075de;
-  --color-step-cat-actions-border: #005bab;
-  --color-step-cat-waits: #ff5500;
-  --color-step-cat-waits-border: #cc4400;
-  --color-step-cat-others: #213183;
-  --color-step-cat-others-border: #19235d;
-
-  /* Tooltip */
-  --color-tooltip-bg: #213183;
-  --color-tooltip-text: #ffffff;
-  --color-tooltip-border: #364595;
-}
-
-/* Concept Dark Mode */
-html[data-theme='concept'].dark,
-[data-theme='concept'] .dark {
-  /* ── Brand Primary ───────────────────────────── */
-  --color-ink: #62aef0;
-  --color-ink-strong: #ffffff;
-
-  /* ── Surface Palette (Deep Indigo Hero Canvas) ─ */
-  --color-canvas: #191b22;
-  --color-surface-50: #1f222c;
-  --color-surface-100: #252935;
-  --color-surface-200: #2f3444;
-  --color-surface-700: #a39e98;
-  --color-surface-800: #f0eee9;
-  --color-surface-900: #f6f5f4;
-  --color-surface-950: #12141a;
-
-  /* ── Text Colors ─────────────────────────────── */
-  --color-text-ink: #ffffff;
-  --color-text-ink-strong: #ffffff;
-  --color-text-body: rgba(255, 255, 255, 0.92);
-  --color-text-body-mid: rgba(255, 255, 255, 0.84);
-  --color-text-muted: rgba(255, 255, 255, 0.75);
-  --color-text-muted-soft: rgba(255, 255, 255, 0.65);
-  --color-text-on-primary: #ffffff;
-
-  /* ── Border / Hairline ───────────────────────── */
-  --color-border-default: #363b4d;
-  --color-border-subtle: #2b2f3d;
-  --color-border-chart: #484f67;
-  --color-border-active: #f0eee9;
-
-  /* ── Semantic: Success ───────────────────────── */
-  --color-success: #2aae44;
-  --color-success-50: #112918;
-  --color-success-100: #193c23;
-  --color-success-500: #2aae44;
-  --color-success-600: #219337;
-  --color-success-700: #18752b;
-
-  /* ── Semantic: Danger ─────── */
-  --color-danger: #ff64c8;
-  --color-danger-50: #38122c;
-  --color-danger-100: #521841;
-  --color-danger-300: #ffa8e5;
-  --color-danger-400: #ff85d5;
-  --color-danger-500: #ff64c8;
-  --color-danger-600: #e04bb0;
-  --color-danger-700: #bf3494;
-
-  /* ── Semantic: Warning ──────── */
-  --color-warning: #f56c18;
-  --color-warning-50: #36190a;
-  --color-warning-100: #4a2410;
-  --color-warning-500: #f56c18;
-  --color-warning-600: #d4560b;
-  --color-warning-700: #b04305;
-
-  /* ── Semantic: Info ──────────────────────────── */
-  --color-info: #62aef0;
-  --color-info-50: #132438;
-  --color-info-100: #1a324d;
-  --color-info-500: #62aef0;
-  --color-info-600: #3b95e6;
-  --color-info-700: #1d7bcf;
-
-  /* ── Accent Palette ──────────────────────────── */
-  --color-accent-cafe: #62aef0;
-  --color-accent-green: #2aae44;
-  --color-accent-house: #d6b6f6;
-  --color-accent-gold: #facc15;
-  --color-accent-pink: #ff64c8;
-  --color-accent-blue: #62aef0;
-  --color-accent-blue-deep: #3b95e6;
-  --color-accent-blue-info: #62aef0;
-  --color-accent-orange: #ff6b22;
-  --color-accent-yellow: #facc15;
-  --color-accent-red: #ff64c8;
-
-  /* ── Step Category Composition Palette (Concept Dark) ─ */
-  --color-step-cat-assertions: #2aae44;
-  --color-step-cat-assertions-border: #219337;
-  --color-step-cat-hooks: #a3e635;
-  --color-step-cat-hooks-border: #2aae44;
-  --color-step-cat-network: #facc15;
-  --color-step-cat-network-border: #eab308;
-  --color-step-cat-actions: #62aef0;
-  --color-step-cat-actions-border: #3b95e6;
-  --color-step-cat-waits: #ff6b22;
-  --color-step-cat-waits-border: #e0520e;
-  --color-step-cat-others: #938ba1;
-  --color-step-cat-others-border: #7c6f93;
-
-  /* Tooltip */
-  --color-tooltip-bg: #2f3444;
-  --color-tooltip-text: #ffffff;
-  --color-tooltip-border: #484f67;
-}
-
-/* ==========================================================================
-   THEME 3: SENTINEL (html[data-theme="sentinel"])
+   THEME 2: SENTINEL (html[data-theme="sentinel"])
    ========================================================================== */
 
 /* Sentinel Light Mode */
@@ -460,6 +254,7 @@ html[data-theme='sentinel'],
   --color-success-50: #f4fce8;
   --color-success-100: #e6f7c6;
   --color-success-200: #c2ef4e;
+  --color-success-400: #a9d936;
   --color-success-500: #709600;
   --color-success-600: #587700;
   --color-success-700: #425a00;
@@ -560,6 +355,7 @@ html[data-theme='sentinel'].dark,
   --color-success-50: #182206;
   --color-success-100: #26380a;
   --color-success-200: #709600;
+  --color-success-400: #c2ef4e;
   --color-success-500: #c2ef4e;
   --color-success-600: #a9d936;
   --color-success-700: #8ec41f;
@@ -621,6 +417,212 @@ html[data-theme='sentinel'].dark,
   --color-tooltip-bg: #362d59;
   --color-tooltip-text: #ffffff;
   --color-tooltip-border: #544975;
+}
+
+/* ==========================================================================
+   THEME 3: STREAK (html[data-theme="streak"]) - Stripe Inspired
+   ========================================================================== */
+
+/* Streak Light Mode */
+html[data-theme='streak'],
+[data-theme='streak'] {
+  /* ── Brand Primary ───────────────────────────── */
+  --color-ink: #533afd;
+  --color-ink-strong: #0d253d;
+
+  /* ── Surface Palette ─────────────────────────── */
+  --color-canvas: #ffffff;
+  --color-surface-50: #f6f9fc;
+  --color-surface-100: #eef2f8;
+  --color-surface-200: #e3e8ee;
+  --color-surface-700: #64748d;
+  --color-surface-800: #273951;
+  --color-surface-900: #1c1e54;
+  --color-surface-950: #0d253d;
+
+  /* ── Text Colors (WCAG compliant) ────────────── */
+  --color-text-ink: #0d253d;
+  --color-text-ink-strong: #0a1b2d;
+  --color-text-body: #0d253d;
+  --color-text-body-mid: #273951;
+  --color-text-muted: #64748d;
+  --color-text-muted-soft: #8898aa;
+  --color-text-on-primary: #ffffff;
+
+  /* ── Border / Hairline ───────────────────────── */
+  --color-border-default: #cfd7df;
+  --color-border-subtle: #edf2f7;
+  --color-border-chart: #cfd7df;
+  --color-border-active: #533afd;
+
+  /* ── Semantic: Success ───────────────────────── */
+  --color-success: #00875a;
+  --color-success-50: #e3fcef;
+  --color-success-100: #c1f3d8;
+  --color-success-200: #79e2b1;
+  --color-success-400: #36b37e;
+  --color-success-500: #00875a;
+  --color-success-600: #006644;
+  --color-success-700: #004d33;
+
+  /* ── Semantic: Danger (Ruby accent) ──────────── */
+  --color-danger: #ea2261;
+  --color-danger-50: #fef0f4;
+  --color-danger-100: #fcd4e2;
+  --color-danger-200: #f99bbd;
+  --color-danger-500: #ea2261;
+  --color-danger-600: #c9104b;
+  --color-danger-700: #9e0736;
+
+  /* ── Semantic: Warning (Lemon/Amber accent) ───── */
+  --color-warning: #9b6829;
+  --color-warning-50: #fbf6ee;
+  --color-warning-100: #f5e9d4;
+  --color-warning-200: #e6cb9d;
+  --color-warning-500: #b87a28;
+  --color-warning-600: #9b6829;
+  --color-warning-700: #754c18;
+
+  /* ── Semantic: Info (Signature Indigo) ───────── */
+  --color-info: #533afd;
+  --color-info-50: #f4f3ff;
+  --color-info-100: #e6e3ff;
+  --color-info-500: #533afd;
+  --color-info-600: #4434d4;
+  --color-info-700: #2e2b8c;
+
+  /* ── Accent Palette ──────────────────────────── */
+  --color-accent-cafe: #533afd;
+  --color-accent-green: #00875a;
+  --color-accent-house: #1c1e54;
+  --color-accent-gold: #b87a28;
+  --color-accent-pink: #f96bee;
+  --color-accent-blue: #533afd;
+  --color-accent-blue-deep: #4434d4;
+  --color-accent-blue-info: #665efd;
+  --color-accent-orange: #ea580c;
+  --color-accent-yellow: #b87a28;
+  --color-accent-red: #ea2261;
+
+  /* ── Step Category Composition Palette (Streak Light) ─ */
+  --color-step-cat-assertions: #00875a;
+  --color-step-cat-assertions-border: #006644;
+  --color-step-cat-hooks: #79e2b1;
+  --color-step-cat-hooks-border: #00875a;
+  --color-step-cat-network: #b87a28;
+  --color-step-cat-network-border: #9b6829;
+  --color-step-cat-actions: #533afd;
+  --color-step-cat-actions-border: #4434d4;
+  --color-step-cat-waits: #ea2261;
+  --color-step-cat-waits-border: #c9104b;
+  --color-step-cat-others: #64748d;
+  --color-step-cat-others-border: #273951;
+
+  /* Tooltip */
+  --color-tooltip-bg: #0d253d;
+  --color-tooltip-text: #ffffff;
+  --color-tooltip-border: #1c1e54;
+}
+
+/* Streak Dark Mode (Deep Navy Track: Brand Dark 900 / #0d253d / #1c1e54) */
+html[data-theme='streak'].dark,
+[data-theme='streak'] .dark {
+  /* ── Brand Primary ───────────────────────────── */
+  --color-ink: #665efd;
+  --color-ink-strong: #ffffff;
+
+  /* ── Surface Palette ─────────────────────────── */
+  --color-canvas: #0a101d;
+  --color-surface-50: #0d192b;
+  --color-surface-100: #14233a;
+  --color-surface-200: #1d314f;
+  --color-surface-700: #8898aa;
+  --color-surface-800: #cfd7df;
+  --color-surface-900: #f6f9fc;
+  --color-surface-950: #050a12;
+
+  /* ── Text Colors ─────────────────────────────── */
+  --color-text-ink: #ffffff;
+  --color-text-ink-strong: #ffffff;
+  --color-text-body: rgba(255, 255, 255, 0.93);
+  --color-text-body-mid: rgba(255, 255, 255, 0.82);
+  --color-text-muted: #8898aa;
+  --color-text-muted-soft: #64748d;
+  --color-text-on-primary: #ffffff;
+
+  /* ── Border / Hairline ───────────────────────── */
+  --color-border-default: #23354d;
+  --color-border-subtle: #192739;
+  --color-border-chart: #304764;
+  --color-border-active: #665efd;
+
+  /* ── Semantic: Success ───────────────────────── */
+  --color-success: #36b37e;
+  --color-success-50: #0e2e21;
+  --color-success-100: #144431;
+  --color-success-200: #57d9a3;
+  --color-success-400: #57d9a3;
+  --color-success-500: #36b37e;
+  --color-success-600: #00875a;
+  --color-success-700: #006644;
+
+  /* ── Semantic: Danger (Ruby accent) ──────────── */
+  --color-danger: #ff4d88;
+  --color-danger-50: #3a0d1b;
+  --color-danger-100: #541126;
+  --color-danger-300: #ff85ad;
+  --color-danger-400: #ff6699;
+  --color-danger-500: #ff4d88;
+  --color-danger-600: #ea2261;
+  --color-danger-700: #c9104b;
+
+  /* ── Semantic: Warning (Warm Lemon/Orange) ───── */
+  --color-warning: #f5a623;
+  --color-warning-50: #382405;
+  --color-warning-100: #52350a;
+  --color-warning-500: #f5a623;
+  --color-warning-600: #d98816;
+  --color-warning-700: #b87a28;
+
+  /* ── Semantic: Info (Soft Indigo) ────────────── */
+  --color-info: #857dfd;
+  --color-info-50: #18193f;
+  --color-info-100: #23255c;
+  --color-info-500: #857dfd;
+  --color-info-600: #665efd;
+  --color-info-700: #533afd;
+
+  /* ── Accent Palette ──────────────────────────── */
+  --color-accent-cafe: #665efd;
+  --color-accent-green: #36b37e;
+  --color-accent-house: #b9b9f9;
+  --color-accent-gold: #f5a623;
+  --color-accent-pink: #f96bee;
+  --color-accent-blue: #857dfd;
+  --color-accent-blue-deep: #665efd;
+  --color-accent-blue-info: #857dfd;
+  --color-accent-orange: #fb923c;
+  --color-accent-yellow: #f5a623;
+  --color-accent-red: #ff4d88;
+
+  /* ── Step Category Composition Palette (Streak Dark) ─ */
+  --color-step-cat-assertions: #36b37e;
+  --color-step-cat-assertions-border: #00875a;
+  --color-step-cat-hooks: #79e2b1;
+  --color-step-cat-hooks-border: #36b37e;
+  --color-step-cat-network: #f5a623;
+  --color-step-cat-network-border: #d98816;
+  --color-step-cat-actions: #857dfd;
+  --color-step-cat-actions-border: #665efd;
+  --color-step-cat-waits: #ff4d88;
+  --color-step-cat-waits-border: #ea2261;
+  --color-step-cat-others: #8898aa;
+  --color-step-cat-others-border: #64748d;
+
+  /* Tooltip */
+  --color-tooltip-bg: #14233a;
+  --color-tooltip-text: #ffffff;
+  --color-tooltip-border: #23354d;
 }
 
 body {

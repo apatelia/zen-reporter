@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react';
-import type { Attachment, TestCase } from '@/lib/types/report';
+import type { Attachment, TestCase, TestStep } from '@/lib/types/report';
 import { extractVisualDiffPairs } from '@/lib/cryptoUtils';
+import SearchInput from './SearchInput';
 import { VisualDiffViewer } from '../visual-regression/VisualDiffViewer';
 import { buildAttempts, collectAttemptAttachments } from './test-case-detail/AttemptView';
 import { AttemptTabSelector } from './test-case-detail/AttemptTabSelector';
@@ -23,6 +24,7 @@ export default function TestCaseDetail({ testCase, showSteps = true }: TestCaseD
   const [activeAttemptIdx, setActiveAttemptIdx] = useState(attempts.length - 1);
   const activeAttempt = attempts[Math.max(0, Math.min(activeAttemptIdx, attempts.length - 1))];
   const [previewModalIndex, setPreviewModalIndex] = useState<number | null>(null);
+  const [stepSearchTerm, setStepSearchTerm] = useState('');
 
   const caseAnnotations = testCase.annotations || [];
   const validAnnotations = caseAnnotations.filter(
@@ -57,6 +59,33 @@ export default function TestCaseDetail({ testCase, showSteps = true }: TestCaseD
     () => buildAttemptPreviewItems(activeAttempt, attachments, getAttachmentUrl),
     [activeAttempt, attachments]
   );
+
+  const filteredSteps = useMemo(() => {
+    if (!activeAttempt.steps) return [];
+    const query = stepSearchTerm.trim().toLowerCase();
+    if (!query) return activeAttempt.steps;
+
+    const matchesStep = (step: TestStep): boolean => {
+      if (step.title && step.title.toLowerCase().includes(query)) {
+        return true;
+      }
+      if (step.params && Object.keys(step.params).length > 0) {
+        const paramsText = Object.values(step.params)
+          .map((val) => (typeof val === 'object' ? JSON.stringify(val) : String(val)))
+          .join(', ')
+          .toLowerCase();
+        if (paramsText.includes(query)) {
+          return true;
+        }
+      }
+      if (step.subSteps && step.subSteps.length > 0) {
+        return step.subSteps.some(matchesStep);
+      }
+      return false;
+    };
+
+    return activeAttempt.steps.filter(matchesStep);
+  }, [activeAttempt.steps, stepSearchTerm]);
 
   const hasNoDetails =
     !activeAttempt.steps &&
@@ -100,21 +129,35 @@ export default function TestCaseDetail({ testCase, showSteps = true }: TestCaseD
         onSelectAttempt={setActiveAttemptIdx}
       />
 
-      {/* Execution Steps */}
+      {/* Execution Steps Filter & Steps */}
       {showSteps && activeAttempt.steps && activeAttempt.steps.length > 0 && (
         <div className="mb-4">
-          <h5 className="mb-2 text-xs font-bold uppercase tracking-wider text-text-body-mid dark:text-text-muted">
-            Execution Steps
-          </h5>
-          <div className="space-y-2">
-            {activeAttempt.steps.map((step, idx) => (
-              <StepItem
-                key={`step-${step.title}-${step.duration}-${step.location?.line || ''}`}
-                step={step}
-                idx={idx}
-              />
-            ))}
+          <div className="mb-2 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <h5 className="text-xs font-bold uppercase tracking-wider text-text-body-mid dark:text-text-muted">
+              Execution Steps
+            </h5>
+            <SearchInput
+              value={stepSearchTerm}
+              onChange={setStepSearchTerm}
+              placeholder="Filter steps by title or arguments..."
+              className="w-full sm:w-64"
+            />
           </div>
+          {filteredSteps.length > 0 ? (
+            <div className="space-y-2">
+              {filteredSteps.map((step, idx) => (
+                <StepItem
+                  key={`step-${step.title}-${step.duration}-${step.location?.line || ''}`}
+                  step={step}
+                  idx={idx}
+                />
+              ))}
+            </div>
+          ) : (
+            <p className="text-xs text-text-body-mid dark:text-text-muted italic py-2">
+              No execution steps match "{stepSearchTerm}".
+            </p>
+          )}
         </div>
       )}
 

@@ -458,14 +458,14 @@ export function UniversalPreviewModal({
 
           {/* Subtitle / Type Badge (always next to title) */}
           {activeItem.subtitle && (
-            <span className="inline-flex items-center justify-center rounded-full bg-accent-blue/10 text-accent-blue px-2.5 py-1 text-xs font-medium leading-none shrink-0">
+            <span className="inline-flex items-center justify-center rounded-full bg-accent-blue/10 text-accent-blue px-2.5 py-0.5 text-xs font-medium shrink-0">
               {activeItem.subtitle}
             </span>
           )}
 
           {/* Item Count / Lines Badge */}
           {activeItem.type === 'text' && !currentTextState.isLoading && !currentTextState.error && (
-            <span className="inline-flex items-center justify-center rounded-full bg-surface-200 dark:bg-surface-200/50 px-2.5 py-1 text-xs font-mono font-medium leading-none text-text-body-mid shrink-0">
+            <span className="inline-flex items-center justify-center rounded-full bg-surface-200 dark:bg-surface-200/50 px-2.5 pt-1 pb-0.5 text-xs font-mono font-medium text-text-body-mid shrink-0">
               {currentTextState.lines.length} lines
             </span>
           )}

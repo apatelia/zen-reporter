@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 
 export type ViewMode = 'slider' | 'side-by-side' | 'diff' | 'onion';
 
@@ -13,6 +13,16 @@ export const ViewModeSelector: React.FC<ViewModeSelectorProps> = ({
   onModeChange,
   hasDiffImage,
 }) => {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const buttonsRef = useRef<Record<string, HTMLButtonElement | null>>({});
+  const [indicatorStyle, setIndicatorStyle] = useState<{
+    left: number;
+    top: number;
+    width: number;
+    height: number;
+    opacity: number;
+  }>({ left: 0, top: 0, width: 0, height: 0, opacity: 0 });
+
   const modes: { id: ViewMode; label: string; icon: React.ReactNode; disabled?: boolean }[] = [
     {
       id: 'slider',
@@ -86,20 +96,61 @@ export const ViewModeSelector: React.FC<ViewModeSelectorProps> = ({
     },
   ];
 
+  useEffect(() => {
+    const updateIndicator = () => {
+      const container = containerRef.current;
+      const activeButton = buttonsRef.current[mode];
+      if (!container || !activeButton) return;
+
+      const containerRect = container.getBoundingClientRect();
+      const activeRect = activeButton.getBoundingClientRect();
+
+      setIndicatorStyle({
+        left: activeRect.left - containerRect.left - container.clientLeft,
+        top: activeRect.top - containerRect.top - container.clientTop,
+        width: activeRect.width,
+        height: activeRect.height,
+        opacity: 1,
+      });
+    };
+
+    updateIndicator();
+    window.addEventListener('resize', updateIndicator);
+    return () => window.removeEventListener('resize', updateIndicator);
+  }, [mode]);
+
   return (
-    <div className="inline-flex items-center rounded-md border border-border-default bg-surface-100 p-0.5 text-xs font-semibold shrink-0">
+    <div
+      ref={containerRef}
+      className="relative inline-flex items-center rounded-lg border border-border-default bg-surface-100 p-0.5 text-xs font-semibold shrink-0 shadow-2xs"
+    >
+      {/* Sliding Active Pill Indicator */}
+      <div
+        aria-hidden="true"
+        style={{
+          transform: `translate3d(${indicatorStyle.left}px, ${indicatorStyle.top}px, 0)`,
+          width: `${indicatorStyle.width}px`,
+          height: `${indicatorStyle.height}px`,
+          opacity: indicatorStyle.opacity,
+        }}
+        className="pointer-events-none absolute left-0 top-0 rounded-md bg-canvas shadow-sm shadow-black/8 ring-1 ring-border-default/80 dark:bg-accent-blue/25 dark:ring-accent-blue/30 transition-all duration-250 ease-[cubic-bezier(0.2,0,0,1)]"
+      />
+
       {modes.map((m) => {
         const active = mode === m.id;
         return (
           <button
             key={m.id}
+            ref={(el) => {
+              buttonsRef.current[m.id] = el;
+            }}
             type="button"
             disabled={m.disabled}
             onClick={() => onModeChange(m.id)}
-            className={`flex items-center gap-1.5 px-3 py-1 rounded transition-colors ${
+            className={`relative z-10 inline-flex items-center gap-1.5 px-2.5 py-1 text-xs rounded-md transition-colors duration-150 ${
               active
-                ? 'bg-canvas dark:bg-surface-200 border border-border-active text-text-ink dark:text-text-on-primary shadow-xs font-bold'
-                : 'border border-transparent text-text-body-mid hover:text-text-ink dark:text-text-muted dark:hover:text-text-on-primary font-medium'
+                ? 'text-accent-blue dark:text-accent-blue font-bold'
+                : 'text-text-body-mid hover:text-text-ink hover:bg-surface-200/40 dark:text-text-muted dark:hover:text-text-on-primary font-medium'
             } ${m.disabled ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer'}`}
             title={m.id === 'diff' && !hasDiffImage ? 'Uses CSS difference blend mode' : m.label}
           >

@@ -197,6 +197,34 @@ export default function TestResultsHero({ summary, suites }: TestResultsHeroProp
                   {isParallel ? `${summary.workers} Workers` : '1 Worker'}
                 </span>
               </div>
+
+              {summary.playwrightVersion && (
+                <>
+                  <div className="h-3.5 w-px bg-border-default/80" />
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-text-body-mid dark:text-text-muted font-semibold">
+                      Playwright:
+                    </span>
+                    <span className="text-sm font-extrabold text-text-ink dark:text-text-on-primary">
+                      v{summary.playwrightVersion}
+                    </span>
+                  </div>
+                </>
+              )}
+
+              {summary.osName && (
+                <>
+                  <div className="h-3.5 w-px bg-border-default/80" />
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-text-body-mid dark:text-text-muted font-semibold">
+                      OS:
+                    </span>
+                    <span className="text-sm font-extrabold text-text-ink dark:text-text-on-primary">
+                      {summary.osName}
+                    </span>
+                  </div>
+                </>
+              )}
             </div>
           </div>
 

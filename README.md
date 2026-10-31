@@ -20,7 +20,7 @@ Dark mode:
 
 ## Features
 
-- **High-Level Test Dashboard**: Visual summary metrics featuring pass rate radial indicators, execution efficiency, test stability and flakiness, test run details (duration, projects, suites, test counts, worker threads), and calculation tooltips.
+- **High-Level Test Dashboard**: Visual summary metrics featuring pass rate radial indicators, execution efficiency, test stability and flakiness, test run details (duration, projects, suites, test counts, worker threads, Playwright version, operating system), and calculation tooltips.
 - **Per-Project Execution Analytics**: Detailed status bar charts, volume and coverage distribution, and project detail cards comparing Playwright project profiles.
 - **Suite & Spec File Explorer**: Interactive, searchable tree view container for nested `describe` suites with collapsible nodes, bulk expand/collapse controls, retry badges, test case cards, and paginated spec file summary tables.
 - **Deep-Dive Failure Analysis**: Detailed root cause analysis with two grouping modes (file grouping and error signature clustering to group identical root causes into Shared Issue clusters), step-by-step execution traces with target indicators (`▶`), source code snippets with syntax highlighting, diff stack traces (`Expected` vs `Received`), and retry attempt tabs (`Run`, `Retry #1`).
@@ -35,7 +35,7 @@ Dark mode:
   - **Slowest Tests Analysis**: Rank top slowest test cases by average execution duration across runs.
   - **P95 Duration & Latency**: Analyze 95th percentile completion thresholds per project profile.
 - **Core Platform Capabilities**:
-  - **Themes & Dark Mode**: Multiple design themes (`Cafe`, `Concept`, `Sentinel`) with light, dark, and auto system mode toggles (following OS preferences), built with WCAG-compliant color tokens and configurable default states.
+  - **Themes & Dark Mode**: Multiple design themes (`Cafe`, `Sentinel`, `Streak`) with light, dark, and auto system mode toggles (following OS preferences), built with WCAG-compliant color tokens and configurable default states.
   - **Self-Contained Report Bundle Output**: Generates an interactive HTML dashboard (`index.html`) backed by per-run JSONL execution history (`runs/`) and test attachments (`attachments/`) for easy CI/CD artifact storage. Optionally creates a lightweight standalone `summary.html` dedicated to executive dashboards.
 
 > **Note**: Designed and built with AI pair-programming tools; fully tested, maintained, and quality-assured by human hands.
@@ -81,7 +81,7 @@ export default defineConfig({
         outputDir: 'zen-report', // Optional: Output directory where report files will be generated (default: "zen-report")
         projectName: 'My E2E Project', // Optional: Project name displayed in the top bar header
         testRunName: 'Nightly Build #42', // Optional: Test run / build name displayed in the top bar header
-        theme: 'Cafe', // Optional: Theme applied on initial load ("Cafe" | "Concept" | "Sentinel", default: "Cafe")
+        theme: 'Cafe', // Optional: Theme applied on initial load ("Cafe" | "Sentinel" | "Streak", default: "Cafe")
         darkMode: 'system', // Optional: Initial dark mode state (boolean | "system", default: "system")
         singleSummaryFile: true, // Optional: Generates a standalone summary.html file alongside index.html
         minimalReport: false, // Optional: Produces a lightweight, basic report (disables history, hides analytical charts & secondary tabs, default: false)
@@ -101,7 +101,7 @@ export default defineConfig({
 | `outputDir`         | `string`                                   | `"zen-report"`              | Directory where final report files are saved.                                                                                               |
 | `projectName`       | `string`                                   | `"Test Automation Project"` | Project name displayed prominently in the top bar of the dashboard.                                                                         |
 | `testRunName`       | `string`                                   | `"Test Run #{N}"`           | Test run or build name displayed in top bar. `{N}` is replaced dynamically by run number.                                                   |
-| `theme`             | `string`                                   | `"Cafe"`                    | Theme applied on first load (`"Cafe"`, `"Concept"`, `"Sentinel"`).                                                                          |
+| `theme`             | `string`                                   | `"Cafe"`                    | Theme applied on first load (`"Cafe"`, `"Sentinel"`, `"Streak"`).                                                                           |
 | `darkMode`          | `boolean \| 'system'`                      | `"system"`                  | Initial dark mode state (`true`, `false`, or `"system"` to automatically match OS theme setting).                                           |
 | `singleSummaryFile` | `boolean`                                  | `false`                     | Generates a standalone `summary.html` for executive summary views.                                                                          |
 | `minimalReport`     | `boolean`                                  | `false`                     | When `true`, disables history recording and hides analytical charts/secondary tabs (Projects, History, Trends, Insights) for a lean report. |

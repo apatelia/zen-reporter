@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef, useEffect } from 'react';
 import type { FailedTest } from '@/lib/statsUtils';
 import { getErrorSignature } from '@/lib/cryptoUtils';
 import TestCaseCard from '@/components/shared/TestCaseCard';
@@ -94,6 +94,39 @@ export default function FailureList({
     return currentGroupKeys.length > 0 && currentGroupKeys.every((k) => expandedKeys[k]);
   }, [currentGroupKeys, expandedKeys]);
 
+  const groupByContainerRef = useRef<HTMLDivElement>(null);
+  const groupByButtonsRef = useRef<Record<string, HTMLButtonElement | null>>({});
+  const [groupByIndicator, setGroupByIndicator] = useState<{
+    left: number;
+    top: number;
+    width: number;
+    height: number;
+    opacity: number;
+  }>({ left: 0, top: 0, width: 0, height: 0, opacity: 0 });
+
+  useEffect(() => {
+    const updateIndicator = () => {
+      const container = groupByContainerRef.current;
+      const activeButton = groupByButtonsRef.current[groupBy];
+      if (!container || !activeButton) return;
+
+      const containerRect = container.getBoundingClientRect();
+      const activeRect = activeButton.getBoundingClientRect();
+
+      setGroupByIndicator({
+        left: activeRect.left - containerRect.left - container.clientLeft,
+        top: activeRect.top - containerRect.top - container.clientTop,
+        width: activeRect.width,
+        height: activeRect.height,
+        opacity: 1,
+      });
+    };
+
+    updateIndicator();
+    window.addEventListener('resize', updateIndicator);
+    return () => window.removeEventListener('resize', updateIndicator);
+  }, [groupBy]);
+
   if (failedTests.length === 0) {
     if (totalFailuresCount !== undefined && totalFailuresCount > 0) {
       return (
@@ -182,17 +215,35 @@ export default function FailureList({
             <span className="text-xs font-semibold text-text-body-mid dark:text-text-muted">
               Group by:
             </span>
-            <div className="inline-flex items-center rounded-md border border-border-default bg-surface-100 p-0.5 text-xs font-semibold shrink-0">
+            <div
+              ref={groupByContainerRef}
+              className="relative inline-flex items-center rounded-md border border-border-default bg-surface-100 p-0.5 text-xs font-semibold shrink-0 shadow-2xs"
+            >
+              {/* Sliding Active Pill Indicator */}
+              <div
+                aria-hidden="true"
+                style={{
+                  transform: `translate3d(${groupByIndicator.left}px, ${groupByIndicator.top}px, 0)`,
+                  width: `${groupByIndicator.width}px`,
+                  height: `${groupByIndicator.height}px`,
+                  opacity: groupByIndicator.opacity,
+                }}
+                className="pointer-events-none absolute left-0 top-0 rounded-md bg-canvas shadow-sm shadow-black/8 ring-1 ring-border-default/80 dark:bg-accent-blue/25 dark:ring-accent-blue/30 transition-all duration-250 ease-[cubic-bezier(0.2,0,0,1)]"
+              />
+
               <button
+                ref={(el) => {
+                  groupByButtonsRef.current['file'] = el;
+                }}
                 type="button"
                 onClick={() => {
                   setGroupBy('file');
                   setExpandedKeys({});
                 }}
-                className={`flex items-center gap-1.5 px-3 py-1 rounded transition-colors cursor-pointer ${
+                className={`relative z-10 inline-flex items-center gap-1.5 px-3 py-1 rounded-md transition-colors duration-150 cursor-pointer ${
                   groupBy === 'file'
-                    ? 'bg-canvas text-accent-blue dark:bg-accent-blue/25 dark:text-accent-blue shadow-sm shadow-black/8 ring-1 ring-border-default/80 dark:ring-accent-blue/30 font-bold'
-                    : 'border border-transparent text-text-body-mid hover:text-text-ink dark:text-text-muted dark:hover:text-text-on-primary font-medium'
+                    ? 'text-accent-blue dark:text-accent-blue font-bold'
+                    : 'text-text-body-mid hover:text-text-ink hover:bg-surface-200/40 dark:text-text-muted dark:hover:text-text-on-primary font-medium'
                 }`}
               >
                 <svg
@@ -211,15 +262,18 @@ export default function FailureList({
                 File
               </button>
               <button
+                ref={(el) => {
+                  groupByButtonsRef.current['signature'] = el;
+                }}
                 type="button"
                 onClick={() => {
                   setGroupBy('signature');
                   setExpandedKeys({});
                 }}
-                className={`flex items-center gap-1.5 px-3 py-1 rounded transition-colors cursor-pointer ${
+                className={`relative z-10 inline-flex items-center gap-1.5 px-3 py-1 rounded-md transition-colors duration-150 cursor-pointer ${
                   groupBy === 'signature'
-                    ? 'bg-canvas text-accent-blue dark:bg-accent-blue/25 dark:text-accent-blue shadow-sm shadow-black/8 ring-1 ring-border-default/80 dark:ring-accent-blue/30 font-bold'
-                    : 'border border-transparent text-text-body-mid hover:text-text-ink dark:text-text-muted dark:hover:text-text-on-primary font-medium'
+                    ? 'text-accent-blue dark:text-accent-blue font-bold'
+                    : 'text-text-body-mid hover:text-text-ink hover:bg-surface-200/40 dark:text-text-muted dark:hover:text-text-on-primary font-medium'
                 }`}
               >
                 <svg
@@ -352,7 +406,7 @@ export default function FailureList({
               <button
                 type="button"
                 onClick={() => toggleExpanded(fileName)}
-                className="w-full flex items-center justify-between p-3 text-left hover:bg-surface-50 dark:hover:bg-surface-200/30 transition-colors"
+                className="w-full flex items-center justify-between p-3 text-left hover:bg-surface-50 dark:hover:bg-surface-200/30 transition-colors cursor-pointer select-none"
               >
                 <div className="flex items-center gap-2.5 min-w-0">
                   <svg
@@ -380,7 +434,7 @@ export default function FailureList({
               </button>
 
               {isExpanded && (
-                <div className="p-3 space-y-2 border-t border-border-default bg-surface-50/50 dark:bg-surface-200/20">
+                <div className="p-3 space-y-2 border-t border-border-default">
                   {tests.map((test) => (
                     <TestCaseCard
                       key={`${test.testCase.project}-${test.testCase.fileName}-${test.testCase.title}`}
@@ -408,7 +462,7 @@ export default function FailureList({
               <button
                 type="button"
                 onClick={() => toggleExpanded(cluster.hash)}
-                className="w-full flex items-start justify-between p-3.5 text-left hover:bg-surface-50 dark:hover:bg-surface-200/30 transition-colors"
+                className="w-full flex items-start justify-between p-3.5 text-left hover:bg-surface-50 dark:hover:bg-surface-200/30 transition-colors cursor-pointer select-none"
               >
                 <div className="flex items-start gap-3 min-w-0 pr-4">
                   <svg
@@ -456,7 +510,7 @@ export default function FailureList({
 
               {/* Cluster Body */}
               {isExpanded && (
-                <div className="p-3.5 space-y-2.5 border-t border-border-default bg-surface-50/50 dark:bg-surface-200/20">
+                <div className="p-3.5 space-y-2.5 border-t border-border-default">
                   <div className="mb-2 text-xs font-semibold text-text-body-mid dark:text-text-muted">
                     Affected Test Cases ({cluster.tests.length}):
                   </div>

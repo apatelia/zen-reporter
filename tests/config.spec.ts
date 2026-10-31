@@ -56,10 +56,10 @@ test.describe('Zen Reporter Configuration Tests', () => {
 
   test('resolves custom theme and darkMode configuration options', () => {
     const config = resolveConfig({
-      theme: 'Concept',
+      theme: 'Streak',
       darkMode: true,
     });
-    expect(config.theme).toBe('Concept');
+    expect(config.theme).toBe('Streak');
     expect(config.darkMode).toBe(true);
   });
 

@@ -13,7 +13,7 @@ export function StepItem({ step, idx }: StepItemProps) {
   const snippetContent = step.snippet || getStepCodeSnippet(step.location);
 
   return (
-    <div className="rounded-md border border-border-default bg-white dark:bg-surface-100/40 p-2.5 text-sm shadow-xs transition-colors hover:border-accent-blue/70 hover:bg-surface-50 dark:hover:bg-surface-200/40">
+    <div className="rounded-md border border-border-default bg-canvas dark:bg-surface-100/40 p-2.5 text-sm shadow-xs transition-colors hover:border-accent-blue/70 hover:bg-surface-100/50 dark:hover:bg-surface-200/40">
       <div
         className="flex items-center justify-between gap-2.5 cursor-pointer select-none"
         onClick={() => setIsExpanded(!isExpanded)}

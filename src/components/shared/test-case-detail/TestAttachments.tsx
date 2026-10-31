@@ -144,7 +144,7 @@ export function TestAttachments({
           return (
             <div
               key={att.path || att.name || `${att.contentType}-${att.body?.length || 'file'}`}
-              className="flex items-center justify-between gap-3 rounded-md border border-border-default bg-white dark:bg-surface-100/40 p-2.5 text-sm hover:border-accent-blue transition-colors shadow-xs group"
+              className="flex items-center justify-between gap-3 rounded-md border border-border-default bg-canvas dark:bg-surface-100/40 p-2.5 text-sm hover:border-accent-blue transition-colors shadow-xs group"
             >
               <button
                 type="button"

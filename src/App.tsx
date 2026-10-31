@@ -51,21 +51,21 @@ export default function App() {
     return null;
   }, []);
 
-  const [theme, setTheme] = useState<'cafe' | 'concept' | 'sentinel'>(() => {
+  const [theme, setTheme] = useState<'cafe' | 'sentinel' | 'streak'>(() => {
     const testRun = initialReportData?.testRun as
       (TestRun & { theme?: string; darkMode?: boolean }) | undefined;
     const configuredTheme = testRun?.theme;
 
     if (configuredTheme) {
       const lower = configuredTheme.toLowerCase();
-      if (lower === 'cafe' || lower === 'concept' || lower === 'sentinel') {
+      if (lower === 'cafe' || lower === 'sentinel' || lower === 'streak') {
         return lower;
       }
     }
 
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem('zen-theme');
-      if (saved === 'cafe' || saved === 'concept' || saved === 'sentinel') {
+      if (saved === 'cafe' || saved === 'sentinel' || saved === 'streak') {
         return saved;
       }
     }
@@ -97,8 +97,8 @@ export default function App() {
     if (testRun) {
       if (testRun.theme) {
         const lower = testRun.theme.toLowerCase();
-        if (lower === 'cafe' || lower === 'concept' || lower === 'sentinel') {
-          setTheme(lower as 'cafe' | 'concept' | 'sentinel');
+        if (lower === 'cafe' || lower === 'sentinel' || lower === 'streak') {
+          setTheme(lower as 'cafe' | 'sentinel' | 'streak');
         }
       }
       if (
@@ -286,7 +286,7 @@ export default function App() {
       {/* Main Content */}
       <main className="flex-1 flex flex-col min-w-0 overflow-hidden bg-canvas">
         {/* Top Bar with Project/Run Name & Theme Switch */}
-        <header className="border-b border-border-default bg-surface-50/50 px-6 py-2.5 shrink-0 flex items-center justify-between gap-4">
+        <header className="h-16 border-b border-border-default bg-surface-50/50 px-6 shrink-0 flex items-center justify-between gap-4">
           <div className="flex items-center gap-3 min-w-0">
             <div className="min-w-0 flex flex-col justify-center">
               <h1 className="text-base font-bold tracking-tight text-text-ink dark:text-text-on-primary sm:text-lg truncate leading-tight">

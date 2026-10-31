@@ -59,6 +59,8 @@ export interface ResultSummary {
   totalSequentialDuration?: number;
   numberOfProjects: number;
   workers?: number;
+  playwrightVersion?: string;
+  osName?: string;
 }
 
 export interface TestRun {
