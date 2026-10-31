@@ -217,7 +217,7 @@ export default function FailureList({
             </span>
             <div
               ref={groupByContainerRef}
-              className="relative inline-flex items-center rounded-md border border-border-default bg-surface-100 p-0.5 text-xs font-semibold shrink-0 shadow-2xs"
+              className="relative inline-flex items-center rounded-lg border border-border-default bg-surface-100 dark:bg-surface-950/70 p-0.5 text-xs font-semibold shrink-0 shadow-2xs"
             >
               {/* Sliding Active Pill Indicator */}
               <div
@@ -228,7 +228,7 @@ export default function FailureList({
                   height: `${groupByIndicator.height}px`,
                   opacity: groupByIndicator.opacity,
                 }}
-                className="pointer-events-none absolute left-0 top-0 rounded-md bg-canvas shadow-sm shadow-black/8 ring-1 ring-border-default/80 dark:bg-accent-blue/25 dark:ring-accent-blue/30 transition-all duration-250 ease-[cubic-bezier(0.2,0,0,1)]"
+                className="pointer-events-none absolute left-0 top-0 rounded-md bg-canvas shadow-xs ring-1 ring-border-default/80 dark:bg-surface-200 dark:ring-1 dark:ring-white/20 dark:shadow-md transition-all duration-250 ease-[cubic-bezier(0.2,0,0,1)]"
               />
 
               <button
@@ -240,10 +240,10 @@ export default function FailureList({
                   setGroupBy('file');
                   setExpandedKeys({});
                 }}
-                className={`relative z-10 inline-flex items-center gap-1.5 px-3 py-1 rounded-md transition-colors duration-150 cursor-pointer ${
+                className={`relative z-10 inline-flex items-center gap-1.5 px-3 py-1.5 font-semibold rounded-md transition-colors duration-150 cursor-pointer ${
                   groupBy === 'file'
-                    ? 'text-accent-blue dark:text-accent-blue font-bold'
-                    : 'text-text-body-mid hover:text-text-ink hover:bg-surface-200/40 dark:text-text-muted dark:hover:text-text-on-primary font-medium'
+                    ? 'text-text-ink dark:text-text-on-primary'
+                    : 'text-text-body-mid hover:text-text-ink hover:bg-surface-200/40 dark:text-text-muted dark:hover:text-text-on-primary'
                 }`}
               >
                 <svg
@@ -270,10 +270,10 @@ export default function FailureList({
                   setGroupBy('signature');
                   setExpandedKeys({});
                 }}
-                className={`relative z-10 inline-flex items-center gap-1.5 px-3 py-1 rounded-md transition-colors duration-150 cursor-pointer ${
+                className={`relative z-10 inline-flex items-center gap-1.5 px-3 py-1.5 font-semibold rounded-md transition-colors duration-150 cursor-pointer ${
                   groupBy === 'signature'
-                    ? 'text-accent-blue dark:text-accent-blue font-bold'
-                    : 'text-text-body-mid hover:text-text-ink hover:bg-surface-200/40 dark:text-text-muted dark:hover:text-text-on-primary font-medium'
+                    ? 'text-text-ink dark:text-text-on-primary'
+                    : 'text-text-body-mid hover:text-text-ink hover:bg-surface-200/40 dark:text-text-muted dark:hover:text-text-on-primary'
                 }`}
               >
                 <svg

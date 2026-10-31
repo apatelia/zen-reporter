@@ -1,7 +1,0 @@
-version: 2
-projectIgnorePaths:
-  - tests/**
-github:
-  pullRequestAlerts: true
-issueRules:
-  shellAccess: false

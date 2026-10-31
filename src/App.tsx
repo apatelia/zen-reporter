@@ -91,6 +91,8 @@ export default function App() {
     return 'system';
   });
 
+  const [commitCopied, setCommitCopied] = useState(false);
+
   const applyThemeAndDarkMode = (data: ReportData) => {
     const testRun = data?.testRun as (TestRun & { theme?: string; darkMode?: boolean }) | undefined;
 
@@ -286,7 +288,7 @@ export default function App() {
       {/* Main Content */}
       <main className="flex-1 flex flex-col min-w-0 overflow-hidden bg-canvas">
         {/* Top Bar with Project/Run Name & Theme Switch */}
-        <header className="h-16 border-b border-border-default bg-surface-50/50 px-6 shrink-0 flex items-center justify-between gap-4">
+        <header className="h-16 border-b border-border-default bg-surface-50/50 px-6 sm:px-8 shrink-0 flex items-center justify-between gap-4">
           <div className="flex items-center gap-3 min-w-0">
             <div className="min-w-0 flex flex-col justify-center">
               <h1 className="text-base font-bold tracking-tight text-text-ink dark:text-text-on-primary sm:text-lg truncate leading-tight">
@@ -336,6 +338,98 @@ export default function App() {
                       </svg>
                       <span>{formatDuration(summary.duration)}</span>
                     </span>
+                    {(summary.gitBranch || summary.gitCommit) && (
+                      <>
+                        <span className="text-text-muted/60 font-medium">·</span>
+                        <div className="flex items-center gap-1.5">
+                          {summary.gitBranch && (
+                            <span
+                              className="inline-flex items-center gap-1 rounded-full bg-surface-100 dark:bg-surface-200 border border-border-default px-2 py-0.5 text-[11px] font-semibold text-text-ink dark:text-text-on-primary shadow-2xs max-w-44 truncate"
+                              title={`Branch: ${summary.gitBranch}`}
+                            >
+                              <svg
+                                className="h-3 w-3 text-accent-blue shrink-0"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                                stroke="currentColor"
+                                strokeWidth={2}
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                              >
+                                <line x1="6" y1="3" x2="6" y2="15" />
+                                <circle cx="18" cy="6" r="3" />
+                                <circle cx="6" cy="18" r="3" />
+                                <path d="M18 9a9 9 0 0 1-9 9" />
+                              </svg>
+                              <span className="truncate">{summary.gitBranch}</span>
+                            </span>
+                          )}
+                          {summary.gitCommit && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const commitToCopy = summary.gitCommitFull || summary.gitCommit;
+                                if (commitToCopy && navigator.clipboard?.writeText) {
+                                  navigator.clipboard
+                                    .writeText(commitToCopy)
+                                    .then(() => {
+                                      setCommitCopied(true);
+                                      setTimeout(() => setCommitCopied(false), 2000);
+                                    })
+                                    .catch(() => {
+                                      /* Ignore clipboard rejection */
+                                    });
+                                }
+                              }}
+                              className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-mono font-semibold transition-all cursor-pointer shadow-2xs ${
+                                commitCopied
+                                  ? 'border-success-500 bg-success-500/15 text-success-700 dark:text-success-400 dark:border-success-500/40'
+                                  : 'border-border-default bg-surface-100 dark:bg-surface-200 text-text-ink dark:text-text-on-primary hover:border-accent-blue hover:text-accent-blue dark:hover:border-accent-blue dark:hover:text-accent-blue'
+                              }`}
+                              title={
+                                commitCopied
+                                  ? 'Copied full commit SHA!'
+                                  : `Click to copy commit SHA (${summary.gitCommitFull || summary.gitCommit})`
+                              }
+                            >
+                              {commitCopied ? (
+                                <>
+                                  <svg
+                                    className="h-3 w-3 text-success-600 dark:text-success-400 shrink-0"
+                                    fill="none"
+                                    viewBox="0 0 24 24"
+                                    stroke="currentColor"
+                                    strokeWidth={2.5}
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                  >
+                                    <polyline points="20 6 9 17 4 12" />
+                                  </svg>
+                                  <span>Copied!</span>
+                                </>
+                              ) : (
+                                <>
+                                  <svg
+                                    className="h-3 w-3 text-text-muted shrink-0"
+                                    fill="none"
+                                    viewBox="0 0 24 24"
+                                    stroke="currentColor"
+                                    strokeWidth={2}
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                  >
+                                    <circle cx="12" cy="12" r="4" />
+                                    <line x1="1.05" y1="12" x2="7" y2="12" />
+                                    <line x1="17.05" y1="12" x2="22.95" y2="12" />
+                                  </svg>
+                                  <span>{summary.gitCommit}</span>
+                                </>
+                              )}
+                            </button>
+                          )}
+                        </div>
+                      </>
+                    )}
                   </>
                 )}
               </div>

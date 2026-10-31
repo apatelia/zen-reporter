@@ -6,7 +6,7 @@ import {
 } from '@/lib/stepCategoryClassifier';
 import type { HistoryData } from '@/lib/types/history';
 import type { TestSuite } from '@/lib/types/report';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { StepCategoryChart, type StepCategoryChartPoint } from './step-category/StepCategoryChart';
 import { StepCategorySummaryCards } from './step-category/StepCategorySummaryCards';
 
@@ -29,12 +29,54 @@ export default function StepCategoryTrend({
   onOpenGuide,
 }: StepCategoryTrendProps) {
   const [viewMode, setViewMode] = useState<'percent' | 'count'>('percent');
+  const viewModeContainerRef = useRef<HTMLDivElement>(null);
+  const viewModeButtonsRef = useRef<Record<string, HTMLButtonElement | null>>({});
+  const [viewModeIndicator, setViewModeIndicator] = useState<{
+    left: number;
+    top: number;
+    width: number;
+    height: number;
+    opacity: number;
+  }>({ left: 0, top: 0, width: 0, height: 0, opacity: 0 });
+
+  useEffect(() => {
+    const updateIndicator = () => {
+      const container = viewModeContainerRef.current;
+      const activeButton = viewModeButtonsRef.current[viewMode];
+      if (!container || !activeButton) return;
+
+      const containerRect = container.getBoundingClientRect();
+      const activeRect = activeButton.getBoundingClientRect();
+
+      setViewModeIndicator({
+        left: activeRect.left - containerRect.left - container.clientLeft,
+        top: activeRect.top - containerRect.top - container.clientTop,
+        width: activeRect.width,
+        height: activeRect.height,
+        opacity: 1,
+      });
+    };
+
+    updateIndicator();
+    window.addEventListener('resize', updateIndicator);
+    return () => window.removeEventListener('resize', updateIndicator);
+  }, [viewMode]);
 
   const currentCounts = useMemo(() => countStepCategories(suites), [suites]);
 
   const totalCurrentSteps = useMemo(() => {
     return Object.values(currentCounts).reduce((sum, n) => sum + n, 0);
   }, [currentCounts]);
+
+  const hasHistoricalStepData = useMemo(() => {
+    if (!history?.runs || history.runs.length === 0) return false;
+    return history.runs.some((run) => {
+      if (!run.step_categories) return false;
+      return Object.values(run.step_categories).reduce((sum, n) => sum + n, 0) > 0;
+    });
+  }, [history]);
+
+  const hasAnyStepData = totalCurrentSteps > 0 || hasHistoricalStepData;
 
   const currentPercentages = useMemo(() => {
     if (totalCurrentSteps === 0) {
@@ -131,25 +173,46 @@ export default function StepCategoryTrend({
         </div>
 
         {/* View Mode Toggle */}
-        <div className="inline-flex items-center rounded-lg border border-border-default bg-surface-100 p-0.5 text-xs font-semibold shrink-0 shadow-2xs">
+        <div
+          ref={viewModeContainerRef}
+          className="relative inline-flex items-center rounded-lg border border-border-default bg-surface-100 dark:bg-surface-950/70 p-0.5 text-xs font-semibold shrink-0 shadow-2xs"
+        >
+          {/* Sliding Active Pill Indicator */}
+          <div
+            aria-hidden="true"
+            style={{
+              transform: `translate3d(${viewModeIndicator.left}px, ${viewModeIndicator.top}px, 0)`,
+              width: `${viewModeIndicator.width}px`,
+              height: `${viewModeIndicator.height}px`,
+              opacity: viewModeIndicator.opacity,
+            }}
+            className="pointer-events-none absolute left-0 top-0 rounded-md bg-canvas shadow-xs ring-1 ring-border-default/80 dark:bg-surface-200 dark:ring-1 dark:ring-white/20 dark:shadow-md transition-all duration-250 ease-[cubic-bezier(0.2,0,0,1)]"
+          />
+
           <button
+            ref={(el) => {
+              viewModeButtonsRef.current['percent'] = el;
+            }}
             type="button"
             onClick={() => setViewMode('percent')}
-            className={`px-3 py-1 text-xs font-semibold rounded-md transition-all duration-150 cursor-pointer ${
+            className={`relative z-10 px-3 py-1 text-xs font-semibold rounded-md transition-colors duration-150 cursor-pointer ${
               viewMode === 'percent'
-                ? 'bg-canvas text-accent-blue dark:bg-accent-blue/25 dark:text-accent-blue shadow-sm shadow-black/8 ring-1 ring-border-default/80 dark:ring-accent-blue/30 font-bold'
-                : 'border border-transparent text-text-body-mid hover:text-text-ink hover:bg-surface-200/40 dark:text-text-muted dark:hover:text-text-on-primary font-medium'
+                ? 'text-text-ink dark:text-text-on-primary'
+                : 'text-text-body-mid hover:text-text-ink hover:bg-surface-200/40 dark:text-text-muted dark:hover:text-text-on-primary'
             }`}
           >
             % Normalized
           </button>
           <button
+            ref={(el) => {
+              viewModeButtonsRef.current['count'] = el;
+            }}
             type="button"
             onClick={() => setViewMode('count')}
-            className={`px-3 py-1 text-xs font-semibold rounded-md transition-all duration-150 cursor-pointer ${
+            className={`relative z-10 px-3 py-1 text-xs font-semibold rounded-md transition-colors duration-150 cursor-pointer ${
               viewMode === 'count'
-                ? 'bg-canvas text-accent-blue dark:bg-accent-blue/25 dark:text-accent-blue shadow-sm shadow-black/8 ring-1 ring-border-default/80 dark:ring-accent-blue/30 font-bold'
-                : 'border border-transparent text-text-body-mid hover:text-text-ink hover:bg-surface-200/40 dark:text-text-muted dark:hover:text-text-on-primary font-medium'
+                ? 'text-text-ink dark:text-text-on-primary'
+                : 'text-text-body-mid hover:text-text-ink hover:bg-surface-200/40 dark:text-text-muted dark:hover:text-text-on-primary'
             }`}
           >
             Step Count
@@ -157,15 +220,43 @@ export default function StepCategoryTrend({
         </div>
       </div>
 
-      {/* Summary Cards */}
-      <StepCategorySummaryCards
-        currentPercentages={currentPercentages}
-        currentCounts={currentCounts}
-        totalCurrentSteps={totalCurrentSteps}
-      />
+      {/* Summary Cards - only shown when there are steps detected */}
+      {hasAnyStepData && (
+        <StepCategorySummaryCards
+          currentPercentages={currentPercentages}
+          currentCounts={currentCounts}
+          totalCurrentSteps={totalCurrentSteps}
+        />
+      )}
 
-      {/* Recharts Stacked Bar Trend Chart */}
-      <StepCategoryChart chartData={chartData} viewMode={viewMode} />
+      {/* Recharts Stacked Bar Trend Chart or Empty State */}
+      {!hasAnyStepData ? (
+        <div className="flex h-72 flex-col items-center justify-center rounded-md border border-dashed border-border-default bg-surface-100/50 p-6 text-center">
+          <div className="mx-auto mb-2 flex h-10 w-10 items-center justify-center rounded-full bg-surface-200 text-text-muted">
+            <svg
+              className="h-5 w-5 text-text-body-mid dark:text-text-muted"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={1.5}
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M3.75 3v11.25A2.25 2.25 0 006 16.5h2.25M3.75 3h-1.5m1.5 0h16.5m0 0h1.5m-1.5 0v11.25A2.25 2.25 0 0118 16.5h-2.25m-7.5 0h7.5m-7.5 0l-1 3m8.5-3l1 3m0 0l.5 1.5m-.5-1.5h-9.5m0 0l-.5 1.5m.75-9l3-3 2.143 2.143L15.75 6"
+              />
+            </svg>
+          </div>
+          <p className="text-sm font-semibold text-text-ink dark:text-text-on-primary">
+            No step data available
+          </p>
+          <p className="mt-1 text-xs text-text-body-mid dark:text-text-muted">
+            No test steps were executed or recorded for this run.
+          </p>
+        </div>
+      ) : (
+        <StepCategoryChart chartData={chartData} viewMode={viewMode} />
+      )}
     </section>
   );
 }

@@ -34,7 +34,7 @@ export default function ExecutionTimingEfficiencyCard({
   const fastestTest = computeFastestTest(allCases);
 
   return (
-    <div className="flex flex-col justify-between w-full h-full rounded-md bg-canvas border border-border-default p-5 shadow-xs">
+    <div className="flex flex-col justify-between w-full h-full rounded-md bg-surface-50 border border-border-default p-5 shadow-xs">
       {/* Header */}
       <div>
         <div className="flex items-center justify-between gap-2">
@@ -135,7 +135,7 @@ export default function ExecutionTimingEfficiencyCard({
               {formatDuration(sequentialMs)}
             </span>
           </div>
-          <div className="h-2.5 w-full rounded-full bg-surface-200 dark:bg-surface-200 border border-border-default/50 overflow-hidden">
+          <div className="h-2.5 w-full rounded-full bg-surface-200 dark:bg-surface-200 border border-border-default overflow-hidden">
             <div
               className="h-full rounded-full bg-slate-600 dark:bg-slate-300 transition-all duration-500"
               style={{ width: `${seqWidthPct}%` }}
@@ -151,7 +151,7 @@ export default function ExecutionTimingEfficiencyCard({
               {formatDuration(parallelMs)}
             </span>
           </div>
-          <div className="h-2.5 w-full rounded-full bg-surface-200 dark:bg-surface-200 border border-border-default/50 overflow-hidden">
+          <div className="h-2.5 w-full rounded-full bg-surface-200 dark:bg-surface-200 border border-border-default overflow-hidden">
             <div
               className={`h-full rounded-full transition-all duration-500 ${
                 hasSavings ? 'bg-success-500' : isOverhead ? 'bg-amber-500' : 'bg-accent-blue'
@@ -163,30 +163,69 @@ export default function ExecutionTimingEfficiencyCard({
       </div>
 
       {/* Timing Metric Badges Grid */}
-      <div className="grid grid-cols-3 gap-2 pt-2 border-t border-border-default/60">
-        <div className="flex flex-col rounded-md border border-border-default/50 bg-surface-100/50 p-2 dark:bg-surface-100/30">
-          <span className="text-[11px] font-semibold text-text-body-mid dark:text-text-muted uppercase tracking-wider">
-            Avg Duration
-          </span>
-          <span className="text-sm font-bold text-text-ink dark:text-text-on-primary">
+      <div className="grid grid-cols-3 gap-2.5 pt-3 border-t border-border-default dark:border-white/15">
+        <div className="flex flex-col justify-between rounded-md border border-border-default bg-surface-100 dark:bg-surface-100 p-2.5 sm:p-3 shadow-2xs">
+          <div className="flex items-center justify-between text-[11px] font-semibold text-text-body-mid dark:text-text-muted uppercase tracking-wider">
+            <span>Avg Duration</span>
+            <svg
+              className="h-3.5 w-3.5 text-accent-blue"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={2}
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z"
+              />
+            </svg>
+          </div>
+          <span className="mt-1.5 font-mono font-bold text-sm text-text-ink dark:text-text-on-primary">
             {formatDuration(avgDuration)}
           </span>
         </div>
 
-        <div className="flex flex-col rounded-md border border-border-default/50 bg-surface-100/50 p-2 dark:bg-surface-100/30">
-          <span className="text-[11px] font-semibold text-text-body-mid dark:text-text-muted uppercase tracking-wider">
-            Slowest Test
-          </span>
-          <span className="text-sm font-bold text-text-ink dark:text-text-on-primary">
+        <div className="flex flex-col justify-between rounded-md border border-border-default bg-surface-100 dark:bg-surface-100 p-2.5 sm:p-3 shadow-2xs">
+          <div className="flex items-center justify-between text-[11px] font-semibold text-text-body-mid dark:text-text-muted uppercase tracking-wider">
+            <span>Slowest Test</span>
+            <svg
+              className="h-3.5 w-3.5 text-amber-500"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={2}
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z"
+              />
+            </svg>
+          </div>
+          <span className="mt-1.5 font-mono font-bold text-sm text-text-ink dark:text-text-on-primary">
             {formatDuration(slowestTest)}
           </span>
         </div>
 
-        <div className="flex flex-col rounded-md border border-border-default/50 bg-surface-100/50 p-2 dark:bg-surface-100/30">
-          <span className="text-[11px] font-semibold text-text-body-mid dark:text-text-muted uppercase tracking-wider">
-            Fastest Test
-          </span>
-          <span className="text-sm font-bold text-text-ink dark:text-text-on-primary">
+        <div className="flex flex-col justify-between rounded-md border border-border-default bg-surface-100 dark:bg-surface-100 p-2.5 sm:p-3 shadow-2xs">
+          <div className="flex items-center justify-between text-[11px] font-semibold text-text-body-mid dark:text-text-muted uppercase tracking-wider">
+            <span>Fastest Test</span>
+            <svg
+              className="h-3.5 w-3.5 text-success-500"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={2}
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z"
+              />
+            </svg>
+          </div>
+          <span className="mt-1.5 font-mono font-bold text-sm text-text-ink dark:text-text-on-primary">
             {formatDuration(fastestTest)}
           </span>
         </div>

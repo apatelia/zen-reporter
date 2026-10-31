@@ -53,7 +53,7 @@ export default function ProjectDetailCards({ projectStats, onOpenGuide }: Projec
   }, [projectStats, searchTerm, sortBy]);
 
   return (
-    <div className="w-full rounded-lg bg-canvas border border-border-default p-5 shadow-sm space-y-4">
+    <div className="w-full rounded-md bg-surface-50 border border-border-default p-5 shadow-xs space-y-4">
       {/* Cohesive Section Header & Filter Controls */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border-b border-border-default pb-4">
         <div>
@@ -95,7 +95,7 @@ export default function ProjectDetailCards({ projectStats, onOpenGuide }: Projec
                   id="project-sort-select"
                   value={sortBy}
                   onChange={(e) => setSortBy(e.target.value as SortOption)}
-                  className="appearance-none rounded-md border border-border-default bg-surface-50 pl-3 pr-8 py-1.5 text-xs text-text-ink focus:border-accent-blue focus:outline-none dark:bg-surface-50 dark:text-text-on-primary font-medium cursor-pointer"
+                  className="appearance-none rounded-md border border-border-default bg-surface-100 pl-3 pr-8 py-1.5 text-xs text-text-ink focus:border-accent-blue focus:outline-none dark:bg-surface-200 dark:text-text-on-primary font-medium cursor-pointer"
                 >
                   <option value="passRate">Highest Pass Rate</option>
                   <option value="duration">Longest Duration</option>
@@ -123,17 +123,47 @@ export default function ProjectDetailCards({ projectStats, onOpenGuide }: Projec
       </div>
 
       {projectStats.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-12 text-center rounded-md border border-dashed border-border-default bg-surface-100/50 p-6 space-y-1.5">
-          <p className="text-xs font-semibold text-text-ink dark:text-text-on-primary">
+        <div className="flex flex-col items-center justify-center py-12 text-center rounded-md border border-dashed border-border-default bg-surface-100/50 p-6">
+          <div className="mx-auto mb-2 flex h-10 w-10 items-center justify-center rounded-full bg-surface-200 text-text-muted">
+            <svg
+              className="h-5 w-5 text-text-body-mid dark:text-text-muted"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={1.5}
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M3.75 12h16.5m-16.5 3.75h16.5M3.75 19.5h16.5M3.75 4.5h16.5m-16.5 3.75h16.5"
+              />
+            </svg>
+          </div>
+          <p className="text-sm font-semibold text-text-ink dark:text-text-on-primary">
             No project data available for current run
           </p>
-          <p className="text-[11px] text-text-body-mid dark:text-text-muted">
+          <p className="mt-1 text-xs text-text-body-mid dark:text-text-muted">
             No test cases were executed or matched the criteria.
           </p>
         </div>
       ) : filteredAndSortedProjects.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-8 text-center rounded-md border border-dashed border-border-default bg-surface-100/50 p-6">
-          <p className="text-xs font-semibold text-text-ink dark:text-text-on-primary">
+          <div className="mx-auto mb-2 flex h-10 w-10 items-center justify-center rounded-full bg-surface-200 text-text-muted">
+            <svg
+              className="h-5 w-5 text-text-body-mid dark:text-text-muted"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={1.5}
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M3.75 12h16.5m-16.5 3.75h16.5M3.75 19.5h16.5M3.75 4.5h16.5m-16.5 3.75h16.5"
+              />
+            </svg>
+          </div>
+          <p className="text-sm font-semibold text-text-ink dark:text-text-on-primary">
             No matching projects found
           </p>
         </div>
@@ -186,13 +216,13 @@ export default function ProjectDetailCards({ projectStats, onOpenGuide }: Projec
             return (
               <div
                 key={project.name}
-                className="rounded-md bg-surface-50/50 border border-border-default shadow-xs transition-all duration-150 overflow-hidden"
+                className="rounded-md bg-surface-100/60 dark:bg-surface-100/40 border border-border-default shadow-xs transition-all duration-150 overflow-hidden"
               >
                 {/* Card Main Header */}
                 <div className="p-5">
                   <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <div className="flex items-center gap-3">
-                      <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-surface-100 border border-border-default shrink-0">
+                      <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-surface-100 dark:bg-surface-200 border border-border-default shrink-0">
                         <svg
                           className="h-5 w-5 text-accent-blue"
                           fill="none"
@@ -257,7 +287,7 @@ export default function ProjectDetailCards({ projectStats, onOpenGuide }: Projec
                   {/* Status & Performance Metrics Pills Grid */}
                   <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-6 text-xs">
                     {/* Status Breakdown Pills */}
-                    <div className="rounded bg-canvas border border-border-default px-3 py-2">
+                    <div className="rounded-md bg-canvas dark:bg-canvas border border-border-default px-3 py-2 shadow-2xs">
                       <span className="text-[10px] font-semibold text-text-muted uppercase block">
                         Status Breakdown
                       </span>
@@ -282,7 +312,7 @@ export default function ProjectDetailCards({ projectStats, onOpenGuide }: Projec
                     </div>
 
                     {/* Duration & Latency */}
-                    <div className="rounded bg-canvas border border-border-default px-3 py-2">
+                    <div className="rounded-md bg-canvas dark:bg-canvas border border-border-default px-3 py-2 shadow-2xs">
                       <span className="text-[10px] font-semibold text-text-muted uppercase block">
                         Total Duration
                       </span>
@@ -291,7 +321,7 @@ export default function ProjectDetailCards({ projectStats, onOpenGuide }: Projec
                       </span>
                     </div>
 
-                    <div className="rounded bg-canvas border border-border-default px-3 py-2">
+                    <div className="rounded-md bg-canvas dark:bg-canvas border border-border-default px-3 py-2 shadow-2xs">
                       <span className="text-[10px] font-semibold text-text-muted uppercase block">
                         Avg / Test
                       </span>
@@ -300,7 +330,7 @@ export default function ProjectDetailCards({ projectStats, onOpenGuide }: Projec
                       </span>
                     </div>
 
-                    <div className="rounded bg-canvas border border-border-default px-3 py-2">
+                    <div className="rounded-md bg-canvas dark:bg-canvas border border-border-default px-3 py-2 shadow-2xs">
                       <span className="text-[10px] font-semibold text-text-muted uppercase block">
                         P95 Latency
                       </span>
@@ -310,7 +340,7 @@ export default function ProjectDetailCards({ projectStats, onOpenGuide }: Projec
                     </div>
 
                     {/* Flakiness */}
-                    <div className="rounded bg-canvas border border-border-default px-3 py-2">
+                    <div className="rounded-md bg-canvas dark:bg-canvas border border-border-default px-3 py-2 shadow-2xs">
                       <span className="text-[10px] font-semibold text-text-muted uppercase block">
                         Flaky / Retries
                       </span>
@@ -326,7 +356,7 @@ export default function ProjectDetailCards({ projectStats, onOpenGuide }: Projec
                     </div>
 
                     {/* Scope / Tags */}
-                    <div className="rounded bg-canvas border border-border-default px-3 py-2">
+                    <div className="rounded-md bg-canvas dark:bg-canvas border border-border-default px-3 py-2 shadow-2xs">
                       <span className="text-[10px] font-semibold text-text-muted uppercase block">
                         Scope & Tags
                       </span>

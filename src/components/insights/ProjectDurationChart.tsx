@@ -28,16 +28,12 @@ interface ChartDataItem {
   totalRawMs: number;
 }
 
-const colorMap: Record<string, string> = {
-  'Avg Duration (s)': 'var(--color-accent-green)',
-  'P95 Duration (s)': 'var(--color-accent-house)',
-};
-
 const LegendFormatter = (value: string) => {
   return (
     <span
+      className="inline-flex items-center align-middle"
       style={{
-        color: colorMap[value] || 'var(--color-text-ink)',
+        color: 'var(--color-text-ink)',
         fontSize: '12px',
         fontWeight: 500,
       }}
@@ -77,15 +73,14 @@ export default function ProjectDurationChart({
 
   return (
     <div className={className}>
-      <div className="mb-3 flex items-start justify-between gap-2">
-        <div>
+      <div className="mb-3">
+        <div className="flex items-center gap-2">
           <h3 className="text-lg font-semibold text-text-ink dark:text-text-on-primary">{title}</h3>
-          <p className="text-xs text-text-body-mid dark:text-text-muted mt-0.5">
-            Average vs P95 execution duration per test case across projects
-          </p>
+          {onOpenGuide && <LearnMoreButton onClick={onOpenGuide} />}
         </div>
-
-        {onOpenGuide && <LearnMoreButton onClick={onOpenGuide} />}
+        <p className="text-xs text-text-body-mid dark:text-text-muted mt-0.5">
+          Average vs P95 execution duration per test case across projects
+        </p>
       </div>
 
       {!hasDurationData ? (
@@ -144,10 +139,11 @@ export default function ProjectDurationChart({
             />
             <Tooltip
               contentStyle={{
-                backgroundColor: 'var(--color-surface-100)',
+                backgroundColor: 'var(--color-canvas)',
                 border: '1px solid var(--color-border-default)',
                 borderRadius: '0.5rem',
-                boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+                boxShadow:
+                  '0 10px 25px -5px rgba(0, 0, 0, 0.25), 0 8px 10px -6px rgba(0, 0, 0, 0.25)',
               }}
               formatter={(value, name, item) => {
                 const valNum = typeof value === 'number' ? value : Number(value);

@@ -26,7 +26,7 @@ export default function Overview({ summary, suites, isMinimalReport }: OverviewP
             <span className="text-sm font-bold uppercase tracking-wider text-text-muted">
               Performance & Stability Analytics
             </span>
-            <div className="flex-1 h-px bg-border-default" />
+            <div className="flex-1 h-px bg-border-default dark:bg-white/15" />
           </div>
 
           <div className="grid grid-cols-1 items-stretch gap-4 lg:grid-cols-2">

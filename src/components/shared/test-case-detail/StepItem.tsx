@@ -63,7 +63,7 @@ export function StepItem({ step, idx }: StepItemProps) {
       </div>
 
       {isExpanded && (
-        <div className="mt-2.5 pt-2 border-t border-border-default/60 dark:border-border-default/40">
+        <div className="mt-2.5 pt-2 border-t border-border-default">
           {/* Step Code Snippet with Syntax Highlighting */}
           {snippetContent ? (
             <div className="mt-1 mb-1.5">

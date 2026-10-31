@@ -11,8 +11,8 @@
   /* ── Surface Palette (Cafe Warm Canvas) ──── */
   --color-canvas: #f2f0eb;
   --color-surface-50: #e8e5df;
-  --color-surface-100: #dfdcd6;
-  --color-surface-200: #d5d2cb;
+  --color-surface-100: #dad6ce;
+  --color-surface-200: #cfcbbf;
   --color-surface-700: #2b5148;
   --color-surface-800: #1e3932;
   --color-surface-900: #142622;
@@ -48,6 +48,8 @@
   --color-danger-50: #fdf2f2;
   --color-danger-100: #fbe8e8;
   --color-danger-200: #f5c2c2;
+  --color-danger-300: #fca5a5;
+  --color-danger-400: #f87171;
   --color-danger-500: #c82014;
   --color-danger-600: #a81107;
   --color-danger-700: #8c0c05;
@@ -143,8 +145,8 @@ html[data-theme='cafe'].dark {
 
   --color-canvas: #142622;
   --color-surface-50: #1c352e;
-  --color-surface-100: #203c34;
-  --color-surface-200: #284b41;
+  --color-surface-100: #25473e;
+  --color-surface-200: #2e574c;
   --color-surface-700: #d4e9e2;
   --color-surface-800: #edebe9;
   --color-surface-900: #f2f0eb;
@@ -158,8 +160,8 @@ html[data-theme='cafe'].dark {
   --color-text-muted-soft: rgba(255, 255, 255, 0.76);
   --color-text-on-primary: #ffffff;
 
-  --color-border-default: #2b5148;
-  --color-border-subtle: #213e37;
+  --color-border-default: #3d6f63;
+  --color-border-subtle: #2b5148;
   --color-border-chart: #385d54;
   --color-border-active: #d4e9e2;
 
@@ -227,8 +229,8 @@ html[data-theme='sentinel'],
   /* ── Surface Palette ───── */
   --color-canvas: #ffffff;
   --color-surface-50: #f8f7fa;
-  --color-surface-100: #f0edf5;
-  --color-surface-200: #e5e1eb;
+  --color-surface-100: #eeeaf4;
+  --color-surface-200: #e0d8eb;
   --color-surface-700: #422082;
   --color-surface-800: #1f1633;
   --color-surface-900: #150f23;
@@ -264,6 +266,8 @@ html[data-theme='sentinel'],
   --color-danger-50: #fef0f5;
   --color-danger-100: #fce0ec;
   --color-danger-200: #fa7faa;
+  --color-danger-300: #f896b8;
+  --color-danger-400: #f4628f;
   --color-danger-500: #d93d75;
   --color-danger-600: #b82b5c;
   --color-danger-700: #941d46;
@@ -345,8 +349,8 @@ html[data-theme='sentinel'].dark,
   --color-text-on-primary: #ffffff;
 
   /* ── Border / Hairline ───────────────────────── */
-  --color-border-default: #362d59;
-  --color-border-subtle: #2a1f42;
+  --color-border-default: #4f4277;
+  --color-border-subtle: #3a2c58;
   --color-border-chart: #544975;
   --color-border-active: #e5e1eb;
 
@@ -433,8 +437,8 @@ html[data-theme='streak'],
   /* ── Surface Palette ─────────────────────────── */
   --color-canvas: #ffffff;
   --color-surface-50: #f6f9fc;
-  --color-surface-100: #eef2f8;
-  --color-surface-200: #e3e8ee;
+  --color-surface-100: #e7edf5;
+  --color-surface-200: #d8e2ee;
   --color-surface-700: #64748d;
   --color-surface-800: #273951;
   --color-surface-900: #1c1e54;
@@ -470,6 +474,8 @@ html[data-theme='streak'],
   --color-danger-50: #fef0f4;
   --color-danger-100: #fcd4e2;
   --color-danger-200: #f99bbd;
+  --color-danger-300: #f7709a;
+  --color-danger-400: #f24176;
   --color-danger-500: #ea2261;
   --color-danger-600: #c9104b;
   --color-danger-700: #9e0736;
@@ -534,12 +540,12 @@ html[data-theme='streak'].dark,
   /* ── Surface Palette ─────────────────────────── */
   --color-canvas: #0a101d;
   --color-surface-50: #0d192b;
-  --color-surface-100: #14233a;
-  --color-surface-200: #1d314f;
+  --color-surface-100: #182a45;
+  --color-surface-200: #233a5e;
   --color-surface-700: #8898aa;
   --color-surface-800: #cfd7df;
   --color-surface-900: #f6f9fc;
-  --color-surface-950: #050a12;
+  --color-surface-950: #0f172a;
 
   /* ── Text Colors ─────────────────────────────── */
   --color-text-ink: #ffffff;
@@ -551,8 +557,8 @@ html[data-theme='streak'].dark,
   --color-text-on-primary: #ffffff;
 
   /* ── Border / Hairline ───────────────────────── */
-  --color-border-default: #23354d;
-  --color-border-subtle: #192739;
+  --color-border-default: #3b5375;
+  --color-border-subtle: #293d58;
   --color-border-chart: #304764;
   --color-border-active: #665efd;
 
@@ -712,6 +718,18 @@ input[type='range'].onion-opacity-slider::-moz-range-track {
 
 input[type='range'].onion-opacity-slider::-webkit-slider-thumb {
   margin-top: -5px;
+}
+
+/* Recharts Legend Alignment */
+.recharts-legend-item {
+  display: inline-flex !important;
+  align-items: center !important;
+  vertical-align: middle !important;
+}
+
+.recharts-legend-item svg {
+  display: inline-block !important;
+  vertical-align: middle !important;
 }
 
 /* 3D Elevation & Ambient Highlight Enhancements for Dark Mode Cards */

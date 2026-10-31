@@ -94,7 +94,7 @@ export default function ProjectBarCharts({
   const chartHeight = Math.max(300, projectStats.length * 40 + 80);
 
   return (
-    <div className="rounded-md bg-canvas border border-border-default px-6 py-6 shadow-sm flex flex-col justify-between">
+    <div className="rounded-md bg-surface-50 border border-border-default p-5 shadow-xs flex flex-col justify-between">
       <div className="mb-3">
         <div className="flex items-center gap-2.5">
           <h3 className="text-lg font-semibold text-text-ink dark:text-text-on-primary">{title}</h3>
@@ -106,11 +106,26 @@ export default function ProjectBarCharts({
       </div>
 
       {projectStats.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-12 text-center rounded-md border border-dashed border-border-default bg-surface-100/50 p-6 space-y-1.5 mt-2">
-          <p className="text-xs font-semibold text-text-ink dark:text-text-on-primary">
+        <div className="flex h-75 flex-col items-center justify-center text-center rounded-md border border-dashed border-border-default bg-surface-100/50 p-6">
+          <div className="mx-auto mb-2 flex h-10 w-10 items-center justify-center rounded-full bg-surface-200 text-text-muted">
+            <svg
+              className="h-5 w-5 text-text-body-mid dark:text-text-muted"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={1.5}
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M3.75 12h16.5m-16.5 3.75h16.5M3.75 19.5h16.5M3.75 4.5h16.5m-16.5 3.75h16.5"
+              />
+            </svg>
+          </div>
+          <p className="text-sm font-semibold text-text-ink dark:text-text-on-primary">
             No project data available for current run
           </p>
-          <p className="text-[11px] text-text-body-mid dark:text-text-muted">
+          <p className="mt-1 text-xs text-text-body-mid dark:text-text-muted">
             No test cases were executed or matched the criteria.
           </p>
         </div>
@@ -146,10 +161,11 @@ export default function ProjectBarCharts({
             <Tooltip
               content={renderProjectSummaryTooltip}
               wrapperStyle={{
-                backgroundColor: 'var(--color-surface-100)',
+                backgroundColor: 'var(--color-canvas)',
                 border: '1px solid var(--color-border-default)',
                 borderRadius: '0.5rem',
-                boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+                boxShadow:
+                  '0 10px 25px -5px rgba(0, 0, 0, 0.25), 0 8px 10px -6px rgba(0, 0, 0, 0.25)',
                 outline: 'none',
               }}
             />

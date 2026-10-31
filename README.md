@@ -20,7 +20,7 @@ Dark mode:
 
 ## Features
 
-- **High-Level Test Dashboard**: Visual summary metrics featuring pass rate radial indicators, execution efficiency, test stability and flakiness, test run details (duration, projects, suites, test counts, worker threads, Playwright version, operating system), and calculation tooltips.
+- **High-Level Test Dashboard**: Visual summary metrics featuring pass rate radial indicators, execution efficiency, test stability and flakiness, test run details (duration, Git branch & commit hash with one-click copy, projects, suites, test counts, worker threads, Playwright version, operating system), and calculation tooltips.
 - **Per-Project Execution Analytics**: Detailed status bar charts, volume and coverage distribution, and project detail cards comparing Playwright project profiles.
 - **Suite & Spec File Explorer**: Interactive, searchable tree view container for nested `describe` suites with collapsible nodes, bulk expand/collapse controls, retry badges, test case cards, and paginated spec file summary tables.
 - **Deep-Dive Failure Analysis**: Detailed root cause analysis with two grouping modes (file grouping and error signature clustering to group identical root causes into Shared Issue clusters), step-by-step execution traces with target indicators (`▶`), source code snippets with syntax highlighting, diff stack traces (`Expected` vs `Received`), and retry attempt tabs (`Run`, `Retry #1`).

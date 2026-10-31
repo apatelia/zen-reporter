@@ -97,7 +97,7 @@ export function ThemeControls({ theme, setTheme, darkMode, setDarkMode }: ThemeC
       {/* Theme Segmented Control */}
       <div
         ref={themeContainerRef}
-        className="relative inline-flex items-center rounded-lg border border-border-default bg-surface-100 p-0.5 shadow-2xs"
+        className="relative inline-flex items-center h-8.5 rounded-lg border border-border-default bg-surface-100 dark:bg-surface-950/70 p-0.5 shadow-2xs"
       >
         {/* Sliding Indicator */}
         <div
@@ -108,7 +108,7 @@ export function ThemeControls({ theme, setTheme, darkMode, setDarkMode }: ThemeC
             height: `${themeIndicator.height}px`,
             opacity: themeIndicator.opacity,
           }}
-          className="pointer-events-none absolute left-0 top-0 rounded-md bg-canvas shadow-sm shadow-black/8 ring-1 ring-border-default/80 dark:bg-accent-blue/25 dark:ring-accent-blue/30 transition-all duration-250 ease-[cubic-bezier(0.2,0,0,1)]"
+          className="pointer-events-none absolute left-0 top-0 rounded-md bg-canvas shadow-xs ring-1 ring-border-default/80 dark:bg-surface-200 dark:ring-1 dark:ring-white/20 dark:shadow-md transition-all duration-250 ease-[cubic-bezier(0.2,0,0,1)]"
         />
 
         {themes.map((t) => {
@@ -120,14 +120,14 @@ export function ThemeControls({ theme, setTheme, darkMode, setDarkMode }: ThemeC
                 themeButtonsRef.current[t.id] = el;
               }}
               onClick={() => setTheme(t.id)}
-              className={`relative z-10 inline-flex items-center gap-1.5 px-2.5 py-1 text-xs rounded-md transition-colors duration-150 cursor-pointer ${
+              className={`relative z-10 inline-flex items-center h-full gap-1.5 px-3 text-xs font-semibold rounded-md transition-colors duration-150 cursor-pointer ${
                 isActive
-                  ? 'text-accent-blue dark:text-accent-blue font-bold'
-                  : 'text-text-body-mid hover:text-text-ink hover:bg-surface-200/40 dark:text-text-muted dark:hover:text-text-on-primary font-medium'
+                  ? 'text-text-ink dark:text-text-on-primary'
+                  : 'text-text-body-mid hover:text-text-ink hover:bg-surface-200/40 dark:text-text-muted dark:hover:text-text-on-primary'
               }`}
               title={`Switch theme to ${t.label}`}
             >
-              <span className={`h-2 w-2 rounded-full ${t.colorDot} shrink-0`} />
+              <span className={`h-2.5 w-2.5 rounded-full ${t.colorDot} shrink-0`} />
               <span>{t.label}</span>
             </button>
           );
@@ -137,7 +137,7 @@ export function ThemeControls({ theme, setTheme, darkMode, setDarkMode }: ThemeC
       {/* Mode Segmented Toggle */}
       <div
         ref={modeContainerRef}
-        className="relative inline-flex items-center rounded-lg border border-border-default bg-surface-100 p-0.5 shadow-2xs"
+        className="relative inline-flex items-center h-8.5 rounded-lg border border-border-default bg-surface-100 dark:bg-surface-950/70 p-0.5 shadow-2xs"
       >
         {/* Sliding Indicator */}
         <div
@@ -148,7 +148,7 @@ export function ThemeControls({ theme, setTheme, darkMode, setDarkMode }: ThemeC
             height: `${modeIndicator.height}px`,
             opacity: modeIndicator.opacity,
           }}
-          className="pointer-events-none absolute left-0 top-0 rounded-md bg-canvas shadow-sm shadow-black/8 ring-1 ring-border-default/80 dark:bg-accent-blue/25 dark:ring-accent-blue/30 transition-all duration-250 ease-[cubic-bezier(0.2,0,0,1)]"
+          className="pointer-events-none absolute left-0 top-0 rounded-md bg-canvas shadow-xs ring-1 ring-border-default/80 dark:bg-surface-200 dark:ring-1 dark:ring-white/20 dark:shadow-md transition-all duration-250 ease-[cubic-bezier(0.2,0,0,1)]"
         />
 
         <button
@@ -156,16 +156,16 @@ export function ThemeControls({ theme, setTheme, darkMode, setDarkMode }: ThemeC
             modeButtonsRef.current['system'] = el;
           }}
           onClick={() => setDarkMode('system')}
-          className={`relative z-10 inline-flex items-center justify-center p-1.5 rounded-md transition-colors duration-150 cursor-pointer ${
+          className={`relative z-10 inline-flex items-center justify-center h-full px-2.5 rounded-md transition-colors duration-150 cursor-pointer ${
             darkMode === 'system'
-              ? 'text-accent-blue dark:text-accent-blue font-bold'
+              ? 'text-text-ink dark:text-text-on-primary'
               : 'text-text-body-mid hover:text-text-ink hover:bg-surface-200/40 dark:text-text-muted dark:hover:text-text-on-primary'
           }`}
           title="Switch to System Theme (follows OS setting)"
           aria-label="System Theme"
         >
           <svg
-            className="h-3.5 w-3.5"
+            className="h-4 w-4"
             fill="none"
             viewBox="0 0 24 24"
             stroke="currentColor"
@@ -184,16 +184,16 @@ export function ThemeControls({ theme, setTheme, darkMode, setDarkMode }: ThemeC
             modeButtonsRef.current['light'] = el;
           }}
           onClick={() => setDarkMode('light')}
-          className={`relative z-10 inline-flex items-center justify-center p-1.5 rounded-md transition-colors duration-150 cursor-pointer ${
+          className={`relative z-10 inline-flex items-center justify-center h-full px-2.5 rounded-md transition-colors duration-150 cursor-pointer ${
             darkMode === 'light'
-              ? 'text-accent-blue dark:text-accent-blue font-bold'
+              ? 'text-text-ink dark:text-text-on-primary'
               : 'text-text-body-mid hover:text-text-ink hover:bg-surface-200/40 dark:text-text-muted dark:hover:text-text-on-primary'
           }`}
           title="Switch to Light Mode"
           aria-label="Light Mode"
         >
           <svg
-            className="h-3.5 w-3.5"
+            className="h-4 w-4"
             fill="none"
             viewBox="0 0 24 24"
             stroke="currentColor"
@@ -212,16 +212,16 @@ export function ThemeControls({ theme, setTheme, darkMode, setDarkMode }: ThemeC
             modeButtonsRef.current['dark'] = el;
           }}
           onClick={() => setDarkMode('dark')}
-          className={`relative z-10 inline-flex items-center justify-center p-1.5 rounded-md transition-colors duration-150 cursor-pointer ${
+          className={`relative z-10 inline-flex items-center justify-center h-full px-2.5 rounded-md transition-colors duration-150 cursor-pointer ${
             darkMode === 'dark'
-              ? 'text-accent-blue dark:text-accent-blue font-bold'
+              ? 'text-text-ink dark:text-text-on-primary'
               : 'text-text-body-mid hover:text-text-ink hover:bg-surface-200/40 dark:text-text-muted dark:hover:text-text-on-primary'
           }`}
           title="Switch to Dark Mode"
           aria-label="Dark Mode"
         >
           <svg
-            className="h-3.5 w-3.5"
+            className="h-4 w-4"
             fill="none"
             viewBox="0 0 24 24"
             stroke="currentColor"

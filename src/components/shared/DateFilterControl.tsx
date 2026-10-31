@@ -172,6 +172,38 @@ export default function DateFilterControl({
   const [isDirty, setIsDirty] = useState<boolean>(false);
 
   const monthPopoverRef = useRef<HTMLDivElement>(null);
+  const modeContainerRef = useRef<HTMLDivElement>(null);
+  const modeButtonsRef = useRef<Record<string, HTMLButtonElement | null>>({});
+  const [modeIndicator, setModeIndicator] = useState<{
+    left: number;
+    top: number;
+    width: number;
+    height: number;
+    opacity: number;
+  }>({ left: 0, top: 0, width: 0, height: 0, opacity: 0 });
+
+  useEffect(() => {
+    const updateIndicator = () => {
+      const container = modeContainerRef.current;
+      const activeButton = modeButtonsRef.current[mode];
+      if (!container || !activeButton) return;
+
+      const containerRect = container.getBoundingClientRect();
+      const activeRect = activeButton.getBoundingClientRect();
+
+      setModeIndicator({
+        left: activeRect.left - containerRect.left - container.clientLeft,
+        top: activeRect.top - containerRect.top - container.clientTop,
+        width: activeRect.width,
+        height: activeRect.height,
+        opacity: 1,
+      });
+    };
+
+    updateIndicator();
+    window.addEventListener('resize', updateIndicator);
+    return () => window.removeEventListener('resize', updateIndicator);
+  }, [mode]);
 
   // Close popover when clicking outside
   useEffect(() => {
@@ -333,31 +365,52 @@ export default function DateFilterControl({
       {/* Primary Row: Mode Tabs, Date Inputs & Action Buttons */}
       <div className="flex flex-wrap items-center gap-2">
         {/* Segmented Mode Selector */}
-        <div className="inline-flex items-center rounded-md border border-border-default bg-surface-100 p-0.5 text-xs font-semibold shrink-0">
+        <div
+          ref={modeContainerRef}
+          className="relative inline-flex items-center rounded-lg border border-border-default bg-surface-100 dark:bg-surface-950/70 p-0.5 text-xs font-semibold shrink-0 shadow-2xs"
+        >
+          {/* Sliding Active Pill Indicator */}
+          <div
+            aria-hidden="true"
+            style={{
+              transform: `translate3d(${modeIndicator.left}px, ${modeIndicator.top}px, 0)`,
+              width: `${modeIndicator.width}px`,
+              height: `${modeIndicator.height}px`,
+              opacity: modeIndicator.opacity,
+            }}
+            className="pointer-events-none absolute left-0 top-0 rounded-md bg-canvas shadow-xs ring-1 ring-border-default/80 dark:bg-surface-200 dark:ring-1 dark:ring-white/20 dark:shadow-md transition-all duration-250 ease-[cubic-bezier(0.2,0,0,1)]"
+          />
+
           <button
+            ref={(el) => {
+              modeButtonsRef.current['all'] = el;
+            }}
             type="button"
             disabled={disabled}
             onClick={handleClearFilter}
-            className={`flex items-center gap-1.5 px-3 py-1 rounded transition-colors cursor-pointer disabled:cursor-not-allowed ${
+            className={`relative z-10 flex items-center gap-1.5 px-3 py-1 font-semibold rounded-md transition-colors duration-150 cursor-pointer disabled:cursor-not-allowed ${
               mode === 'all'
-                ? 'bg-canvas text-accent-blue dark:bg-accent-blue/25 dark:text-accent-blue shadow-sm shadow-black/8 ring-1 ring-border-default/80 dark:ring-accent-blue/30 font-bold'
-                : 'border border-transparent text-text-body-mid hover:text-text-ink dark:text-text-muted dark:hover:text-text-on-primary font-medium'
+                ? 'text-text-ink dark:text-text-on-primary'
+                : 'text-text-body-mid hover:text-text-ink hover:bg-surface-200/40 dark:text-text-muted dark:hover:text-text-on-primary'
             }`}
           >
             <span>All Time</span>
           </button>
 
           <button
+            ref={(el) => {
+              modeButtonsRef.current['month'] = el;
+            }}
             type="button"
             disabled={disabled}
             onClick={() => {
               setMode('month');
               setIsMonthPopoverOpen(true);
             }}
-            className={`flex items-center gap-1.5 px-3 py-1 rounded transition-colors cursor-pointer disabled:cursor-not-allowed ${
+            className={`relative z-10 flex items-center gap-1.5 px-3 py-1 font-semibold rounded-md transition-colors duration-150 cursor-pointer disabled:cursor-not-allowed ${
               mode === 'month'
-                ? 'bg-canvas text-accent-blue dark:bg-accent-blue/25 dark:text-accent-blue shadow-sm shadow-black/8 ring-1 ring-border-default/80 dark:ring-accent-blue/30 font-bold'
-                : 'border border-transparent text-text-body-mid hover:text-text-ink dark:text-text-muted dark:hover:text-text-on-primary font-medium'
+                ? 'text-text-ink dark:text-text-on-primary'
+                : 'text-text-body-mid hover:text-text-ink hover:bg-surface-200/40 dark:text-text-muted dark:hover:text-text-on-primary'
             }`}
           >
             <svg
@@ -377,16 +430,19 @@ export default function DateFilterControl({
           </button>
 
           <button
+            ref={(el) => {
+              modeButtonsRef.current['range'] = el;
+            }}
             type="button"
             disabled={disabled}
             onClick={() => {
               setMode('range');
               setIsMonthPopoverOpen(false);
             }}
-            className={`flex items-center gap-1.5 px-3 py-1 rounded transition-colors cursor-pointer disabled:cursor-not-allowed ${
+            className={`relative z-10 flex items-center gap-1.5 px-3 py-1 font-semibold rounded-md transition-colors duration-150 cursor-pointer disabled:cursor-not-allowed ${
               mode === 'range'
-                ? 'bg-canvas text-accent-blue dark:bg-accent-blue/25 dark:text-accent-blue shadow-sm shadow-black/8 ring-1 ring-border-default/80 dark:ring-accent-blue/30 font-bold'
-                : 'border border-transparent text-text-body-mid hover:text-text-ink dark:text-text-muted dark:hover:text-text-on-primary font-medium'
+                ? 'text-text-ink dark:text-text-on-primary'
+                : 'text-text-body-mid hover:text-text-ink hover:bg-surface-200/40 dark:text-text-muted dark:hover:text-text-on-primary'
             }`}
           >
             <svg
@@ -568,7 +624,7 @@ export default function DateFilterControl({
           <button
             type="button"
             onClick={handleClearFilter}
-            className="inline-flex items-center gap-1.5 rounded-md bg-danger-600 text-white font-bold px-3 py-1.5 text-xs shadow-xs hover:bg-danger-700 transition-colors cursor-pointer"
+            className="inline-flex items-center gap-1.5 rounded-md border border-danger-500/30 bg-danger-500/15 text-danger-600 dark:border-danger-500/40 dark:bg-danger-500/20 dark:text-danger-400 font-bold px-3 py-1.5 text-xs shadow-xs hover:bg-danger-500/25 dark:hover:bg-danger-500/30 transition-colors cursor-pointer"
           >
             <svg
               className="h-3.5 w-3.5"
@@ -588,7 +644,7 @@ export default function DateFilterControl({
           datasetYearsMonths.has7DaysData ||
           datasetYearsMonths.has30DaysData ||
           datasetYearsMonths.has90DaysData) && (
-          <div className="flex items-center gap-1.5 border-l border-border-default/60 pl-2 ml-1">
+          <div className="flex items-center gap-1.5 border-l border-border-default pl-2 ml-1">
             {datasetYearsMonths.hasThisMonthData && (
               <button
                 type="button"
@@ -596,8 +652,8 @@ export default function DateFilterControl({
                 onClick={() => handlePreset('thisMonth')}
                 className={`inline-flex items-center gap-1 rounded-md border px-2.5 py-1 text-xs font-semibold transition-colors cursor-pointer disabled:cursor-not-allowed ${
                   activePreset === 'thisMonth'
-                    ? 'border-success-600 bg-success-600 text-white dark:bg-success-600 dark:text-white shadow-xs font-bold'
-                    : 'border-border-default bg-surface-50 text-text-body-mid hover:border-accent-blue hover:text-text-ink dark:hover:text-text-on-primary'
+                    ? 'border-transparent bg-accent-blue text-text-on-primary dark:text-surface-950 shadow-xs font-bold'
+                    : 'border-border-default bg-surface-100 text-text-ink dark:text-text-muted hover:border-accent-blue hover:text-text-ink dark:hover:text-text-on-primary hover:bg-surface-200'
                 }`}
               >
                 <span>This Month</span>
@@ -622,8 +678,8 @@ export default function DateFilterControl({
                 onClick={() => handlePreset('last7Days')}
                 className={`inline-flex items-center gap-1 rounded-md border px-2.5 py-1 text-xs font-semibold transition-colors cursor-pointer disabled:cursor-not-allowed ${
                   activePreset === 'last7Days'
-                    ? 'border-success-600 bg-success-600 text-white dark:bg-success-600 dark:text-white shadow-xs font-bold'
-                    : 'border-border-default bg-surface-50 text-text-body-mid hover:border-accent-blue hover:text-text-ink dark:hover:text-text-on-primary'
+                    ? 'border-transparent bg-accent-blue text-text-on-primary dark:text-surface-950 shadow-xs font-bold'
+                    : 'border-border-default bg-surface-100 text-text-ink dark:text-text-muted hover:border-accent-blue hover:text-text-ink dark:hover:text-text-on-primary hover:bg-surface-200'
                 }`}
               >
                 <span>Last 7 Days</span>
@@ -648,8 +704,8 @@ export default function DateFilterControl({
                 onClick={() => handlePreset('last30Days')}
                 className={`inline-flex items-center gap-1 rounded-md border px-2.5 py-1 text-xs font-semibold transition-colors cursor-pointer disabled:cursor-not-allowed ${
                   activePreset === 'last30Days'
-                    ? 'border-success-600 bg-success-600 text-white dark:bg-success-600 dark:text-white shadow-xs font-bold'
-                    : 'border-border-default bg-surface-50 text-text-body-mid hover:border-accent-blue hover:text-text-ink dark:hover:text-text-on-primary'
+                    ? 'border-transparent bg-accent-blue text-text-on-primary dark:text-surface-950 shadow-xs font-bold'
+                    : 'border-border-default bg-surface-100 text-text-ink dark:text-text-muted hover:border-accent-blue hover:text-text-ink dark:hover:text-text-on-primary hover:bg-surface-200'
                 }`}
               >
                 <span>Last 30 Days</span>
@@ -674,8 +730,8 @@ export default function DateFilterControl({
                 onClick={() => handlePreset('last90Days')}
                 className={`inline-flex items-center gap-1 rounded-md border px-2.5 py-1 text-xs font-semibold transition-colors cursor-pointer disabled:cursor-not-allowed ${
                   activePreset === 'last90Days'
-                    ? 'border-success-600 bg-success-600 text-white dark:bg-success-600 dark:text-white shadow-xs font-bold'
-                    : 'border-border-default bg-surface-50 text-text-body-mid hover:border-accent-blue hover:text-text-ink dark:hover:text-text-on-primary'
+                    ? 'border-transparent bg-accent-blue text-text-on-primary dark:text-surface-950 shadow-xs font-bold'
+                    : 'border-border-default bg-surface-100 text-text-ink dark:text-text-muted hover:border-accent-blue hover:text-text-ink dark:hover:text-text-on-primary hover:bg-surface-200'
                 }`}
               >
                 <span>Last 90 Days</span>

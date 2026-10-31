@@ -59,7 +59,7 @@ export function AttemptTabSelector({
     <div className="mb-4">
       <div
         ref={containerRef}
-        className="relative inline-flex items-center flex-wrap rounded-lg border border-border-default bg-surface-100 p-0.5 shadow-2xs"
+        className="relative inline-flex items-center flex-wrap rounded-lg border border-border-default bg-surface-100 dark:bg-surface-950/70 p-0.5 shadow-2xs"
       >
         {/* Sliding Active Pill Indicator */}
         <div
@@ -70,7 +70,7 @@ export function AttemptTabSelector({
             height: `${indicatorStyle.height}px`,
             opacity: indicatorStyle.opacity,
           }}
-          className="pointer-events-none absolute left-0 top-0 rounded-md bg-canvas shadow-sm shadow-black/8 ring-1 ring-border-default/80 dark:bg-accent-blue/25 dark:ring-accent-blue/30 transition-all duration-250 ease-[cubic-bezier(0.2,0,0,1)]"
+          className="pointer-events-none absolute left-0 top-0 rounded-md bg-canvas shadow-xs ring-1 ring-border-default/80 dark:bg-surface-200 dark:ring-1 dark:ring-white/25 dark:shadow-md transition-all duration-250 ease-[cubic-bezier(0.2,0,0,1)]"
         />
 
         {attempts.map((attempt, idx) => {
@@ -85,17 +85,23 @@ export function AttemptTabSelector({
               type="button"
               onClick={() => onSelectAttempt(idx)}
               title={idx === 0 ? 'Original run details' : `Retry #${idx} details`}
-              className={`relative z-10 inline-flex items-center gap-1.5 px-2.5 py-1 text-xs rounded-md transition-colors duration-150 cursor-pointer ${
+              className={`relative z-10 inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold rounded-md transition-colors duration-150 cursor-pointer ${
                 isActive
-                  ? 'text-accent-blue dark:text-accent-blue font-bold'
-                  : 'text-text-body-mid hover:text-text-ink hover:bg-surface-200/40 dark:text-text-muted dark:hover:text-text-on-primary font-medium'
+                  ? 'text-text-ink dark:text-text-on-primary'
+                  : 'text-text-body-mid hover:text-text-ink hover:bg-surface-200/40 dark:text-text-muted dark:hover:text-text-on-primary'
               }`}
             >
               <span
                 className={`h-2 w-2 shrink-0 rounded-full ${statusConfig[attempt.status].dot}`}
               />
               <span>{tabTitle}</span>
-              <span className="font-normal text-[11px] opacity-80 tabular-nums">
+              <span
+                className={`text-[11px] tabular-nums ${
+                  isActive
+                    ? 'font-medium text-text-body-mid dark:text-text-muted'
+                    : 'font-normal opacity-75'
+                }`}
+              >
                 {statusLabel(attempt.status)} · {formatDurationVerbose(getAttemptDuration(attempt))}
               </span>
             </button>

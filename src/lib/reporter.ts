@@ -6,7 +6,7 @@ import type {
   TestCase,
   TestResult,
 } from '@playwright/test/reporter';
-import { spawn } from 'child_process';
+import { execFileSync, spawn } from 'child_process';
 import * as fs from 'fs';
 import { createRequire } from 'module';
 import { platform, type as osType } from 'os';
@@ -458,6 +458,78 @@ class ZenReporter implements Reporter {
   }
 
   /**
+   * Resolves current Git branch name from CI environment variables or local Git CLI.
+   *
+   * @returns Current Git branch name, or undefined if not in a repository.
+   */
+  private getGitBranch(): string | undefined {
+    // 1. Check common CI environment variables
+    const ciBranch =
+      process.env.GITHUB_HEAD_REF || // Pull request target branch in GitHub Actions
+      process.env.GITHUB_REF_NAME || // Branch or tag name in GitHub Actions
+      process.env.CI_COMMIT_REF_NAME || // GitLab CI
+      process.env.GIT_BRANCH || // Jenkins / Generic
+      process.env.BRANCH_NAME; // Generic CI
+
+    if (ciBranch && ciBranch.trim()) {
+      return ciBranch.trim();
+    }
+
+    // 2. Fall back to local git CLI invocation
+    try {
+      const branch = execFileSync('git', ['rev-parse', '--abbrev-ref', 'HEAD'], {
+        stdio: ['ignore', 'pipe', 'ignore'],
+        encoding: 'utf8',
+        timeout: 2000,
+      }).trim();
+
+      if (branch && branch !== 'HEAD') {
+        return branch;
+      }
+    } catch {
+      /* ignore git failure */
+    }
+
+    return undefined;
+  }
+
+  /**
+   * Resolves current Git short and full commit hashes from CI environment variables or local Git CLI.
+   *
+   * @returns Object containing short (7-char) and full (40-char) commit hashes, or empty object if not in a repository.
+   */
+  private getGitCommit(): { short?: string; full?: string } {
+    // 1. Check common CI environment variables
+    const ciSha =
+      process.env.GITHUB_SHA ||
+      process.env.CI_COMMIT_SHA ||
+      process.env.GIT_COMMIT ||
+      process.env.COMMIT_SHA;
+
+    if (ciSha && ciSha.trim()) {
+      const full = ciSha.trim();
+      return { short: full.slice(0, 7), full };
+    }
+
+    // 2. Fall back to local git CLI invocation
+    try {
+      const full = execFileSync('git', ['rev-parse', 'HEAD'], {
+        stdio: ['ignore', 'pipe', 'ignore'],
+        encoding: 'utf8',
+        timeout: 2000,
+      }).trim();
+
+      if (full) {
+        return { short: full.slice(0, 7), full };
+      }
+    } catch {
+      /* ignore git failure */
+    }
+
+    return {};
+  }
+
+  /**
    * Computes high-level result summary statistics for the completed test run.
    *
    * @param endTime - ISO timestamp of completion.
@@ -472,6 +544,8 @@ class ZenReporter implements Reporter {
     const interrupted = this.testCases.filter((tc) => tc.status === 'interrupted').length;
     const numberOfProjects = this.config.projects.length;
     const totalSequentialDuration = this.testCases.reduce((sum, tc) => sum + (tc.duration || 0), 0);
+
+    const gitCommitInfo = this.getGitCommit();
 
     return {
       total: this.testCases.length,
@@ -488,6 +562,9 @@ class ZenReporter implements Reporter {
       workers: this.config?.workers,
       playwrightVersion: this.getPlaywrightVersion(),
       osName: this.getOsName(),
+      gitBranch: this.getGitBranch(),
+      gitCommit: gitCommitInfo.short,
+      gitCommitFull: gitCommitInfo.full,
     };
   }
 

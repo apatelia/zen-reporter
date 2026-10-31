@@ -24,7 +24,7 @@ export interface HistoryFileSectionProps {
 }
 
 const sectionClass =
-  'overflow-hidden rounded-md bg-canvas border border-border-default shadow-sm p-4';
+  'overflow-hidden rounded-md bg-surface-50 border border-border-default shadow-xs p-4';
 const headingClass = 'text-lg font-bold text-text-ink dark:text-text-on-primary';
 
 export function HistoryFileSection({
@@ -230,7 +230,7 @@ export function HistoryFileSection({
       </div>
 
       {rawFiles.length > 0 && (
-        <div className="pt-3 pb-3 border-b border-border-default/50 flex flex-col gap-3">
+        <div className="pt-3 pb-3 border-b border-border-default flex flex-col gap-3">
           <DateFilterControl
             onFilterChange={(range) => {
               setFileFilterRange(range);

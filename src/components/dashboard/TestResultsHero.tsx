@@ -127,17 +127,17 @@ export default function TestResultsHero({ summary, suites }: TestResultsHeroProp
   ];
 
   return (
-    <div className="w-full rounded-md border border-border-default bg-canvas p-5 shadow-xs">
+    <div className="w-full rounded-md border border-border-default bg-surface-50 p-5 shadow-xs">
       <div className="flex flex-col gap-6 lg:flex-row lg:items-stretch">
         {/* Left Side: Pass Rate Gauge */}
-        <div className="flex flex-col items-center justify-between border-b border-border-default/60 pb-5 lg:w-64 lg:border-b-0 lg:border-r lg:pb-0 lg:pr-6">
+        <div className="flex flex-col items-center justify-between border-b border-border-default pb-5 lg:w-64 lg:border-b-0 lg:border-r lg:pb-0 lg:pr-6 dark:border-white/15">
           <PassRateRing passRate={statusPcts.passRate} />
         </div>
 
         {/* Right Side: Integrated Unbordered Metadata Strip + Execution Breakdown */}
         <div className="flex-1 flex flex-col justify-between">
           {/* Integrated Test Run Info Header */}
-          <div className="border-b border-border-default/60 pb-2.5 mb-2 space-y-1.5">
+          <div className="border-b border-border-default pb-2.5 mb-2 space-y-1.5 dark:border-white/15">
             <div className="flex items-center">
               <h3 className="text-base font-semibold text-text-ink dark:text-text-on-primary">
                 Test Run Info
@@ -154,7 +154,7 @@ export default function TestResultsHero({ summary, suites }: TestResultsHeroProp
                 </span>
               </div>
 
-              <div className="h-3.5 w-px bg-border-default/80" />
+              <div className="h-3.5 w-px bg-border-default dark:bg-white/20" />
 
               <div className="flex items-center gap-1.5">
                 <span className="text-text-body-mid dark:text-text-muted font-semibold">
@@ -165,7 +165,7 @@ export default function TestResultsHero({ summary, suites }: TestResultsHeroProp
                 </span>
               </div>
 
-              <div className="h-3.5 w-px bg-border-default/80" />
+              <div className="h-3.5 w-px bg-border-default dark:bg-white/20" />
 
               <div className="flex items-center gap-1.5">
                 <span className="text-text-body-mid dark:text-text-muted font-semibold">
@@ -176,7 +176,7 @@ export default function TestResultsHero({ summary, suites }: TestResultsHeroProp
                 </span>
               </div>
 
-              <div className="h-3.5 w-px bg-border-default/80" />
+              <div className="h-3.5 w-px bg-border-default dark:bg-white/20" />
 
               <div className="flex items-center gap-1.5">
                 <span className="text-text-body-mid dark:text-text-muted font-semibold">
@@ -187,7 +187,7 @@ export default function TestResultsHero({ summary, suites }: TestResultsHeroProp
                 </span>
               </div>
 
-              <div className="h-3.5 w-px bg-border-default/80" />
+              <div className="h-3.5 w-px bg-border-default dark:bg-white/20" />
 
               <div className="flex items-center gap-1.5">
                 <span className="text-text-body-mid dark:text-text-muted font-semibold">
@@ -200,7 +200,7 @@ export default function TestResultsHero({ summary, suites }: TestResultsHeroProp
 
               {summary.playwrightVersion && (
                 <>
-                  <div className="h-3.5 w-px bg-border-default/80" />
+                  <div className="h-3.5 w-px bg-border-default dark:bg-white/20" />
                   <div className="flex items-center gap-1.5">
                     <span className="text-text-body-mid dark:text-text-muted font-semibold">
                       Playwright:
@@ -214,7 +214,7 @@ export default function TestResultsHero({ summary, suites }: TestResultsHeroProp
 
               {summary.osName && (
                 <>
-                  <div className="h-3.5 w-px bg-border-default/80" />
+                  <div className="h-3.5 w-px bg-border-default dark:bg-white/20" />
                   <div className="flex items-center gap-1.5">
                     <span className="text-text-body-mid dark:text-text-muted font-semibold">
                       OS:

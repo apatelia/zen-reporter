@@ -24,12 +24,16 @@ zen-reporter/
 │   │   ├── HistorySection.tsx            # Main History tab container
 │   │   └── HistoryTestSection.tsx        # Individual test case history breakdown
 │   ├── insights/              # Insights tab components
+│   │   ├── FlakyTestsTableSection.tsx    # Paginated flaky tests table with date filtering & CSV export
 │   │   ├── InsightsGuides.tsx # Guide modal for Insights tab
 │   │   ├── InsightsSection.tsx
 │   │   ├── ProjectDurationChart.tsx
-│   │   └── ProjectFlakyRateChart.tsx
+│   │   ├── ProjectFlakyRateChart.tsx
+│   │   ├── RegressionsTableSection.tsx   # Paginated regressions table with date filtering & CSV export
+│   │   └── SlowestTestsTableSection.tsx  # Paginated slowest tests table with CSV export
 │   ├── layout/                # Layout & navigation components
-│   │   └── Sidebar.tsx        # Navigation sidebar layout component
+│   │   ├── Sidebar.tsx        # Navigation sidebar layout component
+│   │   └── ThemeControls.tsx  # Theme selector & dark mode toggle controls
 │   ├── pagination/            # Centralized pagination components & hooks
 │   │   ├── PageSizeControl.tsx
 │   │   ├── PaginationFooter.tsx

@@ -122,7 +122,7 @@ export const ViewModeSelector: React.FC<ViewModeSelectorProps> = ({
   return (
     <div
       ref={containerRef}
-      className="relative inline-flex items-center rounded-lg border border-border-default bg-surface-100 p-0.5 text-xs font-semibold shrink-0 shadow-2xs"
+      className="relative inline-flex items-center rounded-lg border border-border-default bg-surface-100 dark:bg-surface-950/70 p-0.5 text-xs font-semibold shrink-0 shadow-2xs"
     >
       {/* Sliding Active Pill Indicator */}
       <div
@@ -133,7 +133,7 @@ export const ViewModeSelector: React.FC<ViewModeSelectorProps> = ({
           height: `${indicatorStyle.height}px`,
           opacity: indicatorStyle.opacity,
         }}
-        className="pointer-events-none absolute left-0 top-0 rounded-md bg-canvas shadow-sm shadow-black/8 ring-1 ring-border-default/80 dark:bg-accent-blue/25 dark:ring-accent-blue/30 transition-all duration-250 ease-[cubic-bezier(0.2,0,0,1)]"
+        className="pointer-events-none absolute left-0 top-0 rounded-md bg-canvas shadow-xs ring-1 ring-border-default/80 dark:bg-surface-200 dark:ring-1 dark:ring-white/20 dark:shadow-md transition-all duration-250 ease-[cubic-bezier(0.2,0,0,1)]"
       />
 
       {modes.map((m) => {
@@ -147,10 +147,10 @@ export const ViewModeSelector: React.FC<ViewModeSelectorProps> = ({
             type="button"
             disabled={m.disabled}
             onClick={() => onModeChange(m.id)}
-            className={`relative z-10 inline-flex items-center gap-1.5 px-2.5 py-1 text-xs rounded-md transition-colors duration-150 ${
+            className={`relative z-10 inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold rounded-md transition-colors duration-150 ${
               active
-                ? 'text-accent-blue dark:text-accent-blue font-bold'
-                : 'text-text-body-mid hover:text-text-ink hover:bg-surface-200/40 dark:text-text-muted dark:hover:text-text-on-primary font-medium'
+                ? 'text-text-ink dark:text-text-on-primary'
+                : 'text-text-body-mid hover:text-text-ink hover:bg-surface-200/40 dark:text-text-muted dark:hover:text-text-on-primary'
             } ${m.disabled ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer'}`}
             title={m.id === 'diff' && !hasDiffImage ? 'Uses CSS difference blend mode' : m.label}
           >

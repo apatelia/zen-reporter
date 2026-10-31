@@ -64,6 +64,21 @@ const renderTooltip = (props: TooltipContentProps) => {
   );
 };
 
+const LegendFormatter = (value: string) => {
+  return (
+    <span
+      className="inline-flex items-center align-middle"
+      style={{
+        color: 'var(--color-text-ink)',
+        fontSize: '12px',
+        fontWeight: 500,
+      }}
+    >
+      {value}
+    </span>
+  );
+};
+
 export default function ProjectFlakyRateChart({
   suites,
   title = 'Flaky Test Count & Retry Rate by Project',
@@ -87,19 +102,18 @@ export default function ProjectFlakyRateChart({
 
   return (
     <div className="rounded-md bg-surface-50 border border-border-default p-5 shadow-xs flex flex-col justify-between">
-      <div className="mb-3 flex items-start justify-between gap-2">
-        <div>
+      <div className="mb-3">
+        <div className="flex items-center gap-2">
           <h3 className="text-lg font-bold text-text-ink dark:text-text-on-primary">{title}</h3>
-          <p className="text-xs text-text-body-mid dark:text-text-muted mt-0.5">
-            Cross-project comparison of unstable/flaky test occurrences and retry dependency
-          </p>
+          {onOpenGuide && <LearnMoreButton onClick={onOpenGuide} />}
         </div>
-
-        {onOpenGuide && <LearnMoreButton onClick={onOpenGuide} />}
+        <p className="text-xs text-text-body-mid dark:text-text-muted mt-0.5">
+          Cross-project comparison of unstable/flaky test occurrences and retry dependency
+        </p>
       </div>
 
       {!hasFlakyData ? (
-        <div className="flex h-65 flex-col items-center justify-center rounded-md border border-dashed border-border-default bg-surface-100/50 p-6 text-center">
+        <div className="flex h-75 flex-col items-center justify-center rounded-md border border-dashed border-border-default bg-surface-100/50 p-6 text-center">
           <div className="mx-auto mb-2 flex h-10 w-10 items-center justify-center rounded-full bg-surface-200 text-text-muted">
             <svg
               className="h-5 w-5 text-text-body-mid dark:text-text-muted"
@@ -146,17 +160,23 @@ export default function ProjectFlakyRateChart({
             <Tooltip
               content={renderTooltip}
               wrapperStyle={{
-                backgroundColor: 'var(--color-surface-100)',
+                backgroundColor: 'var(--color-canvas)',
                 border: '1px solid var(--color-border-default)',
                 borderRadius: '0.5rem',
-                boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+                boxShadow:
+                  '0 10px 25px -5px rgba(0, 0, 0, 0.25), 0 8px 10px -6px rgba(0, 0, 0, 0.25)',
                 outline: 'none',
               }}
             />
             <Legend
-              verticalAlign="bottom"
-              align="center"
-              wrapperStyle={{ paddingTop: '10px', fontSize: '12px' }}
+              iconType="circle"
+              formatter={LegendFormatter}
+              wrapperStyle={{
+                paddingTop: '8px',
+                textAlign: 'center',
+                width: '100%',
+                fontSize: '12px',
+              }}
             />
             <Bar dataKey="Flaky Tests" fill="var(--color-warning-500)" radius={[0, 4, 4, 0]} />
           </BarChart>

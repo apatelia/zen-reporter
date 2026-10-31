@@ -50,7 +50,7 @@ export default function TestHealthCard({ suites }: TestHealthCardProps) {
   }
 
   return (
-    <div className="flex flex-col justify-between w-full h-full rounded-md bg-canvas border border-border-default p-5 shadow-xs">
+    <div className="flex flex-col justify-between w-full h-full rounded-md bg-surface-50 border border-border-default p-5 shadow-xs">
       {/* Header */}
       <div>
         <div className="flex items-center justify-between">
@@ -79,52 +79,52 @@ export default function TestHealthCard({ suites }: TestHealthCardProps) {
       </div>
 
       {/* Stability breakdown badges */}
-      <div className="flex w-full flex-col gap-y-1 mt-auto">
-        <div className="flex w-full items-center justify-between rounded-md border border-border-default/50 px-2.5 py-1.5 bg-surface-100/50 dark:bg-surface-100/30">
+      <div className="flex w-full flex-col gap-y-1.5 mt-auto">
+        <div className="flex w-full items-center justify-between rounded-md border border-border-default px-3 py-2 bg-surface-100 dark:bg-surface-100 shadow-2xs transition-colors">
           <div className="flex items-center">
-            <span className="mr-2 inline-block h-2 w-2 rounded-full bg-success-500" />
+            <span className="mr-2.5 inline-block h-2 w-2 rounded-full bg-success-500 ring-2 ring-success-500/20" />
             <span className="text-xs font-medium text-text-ink dark:text-text-on-primary">
               Direct Passes
             </span>
           </div>
-          <span className="text-xs font-mono font-medium text-text-body-mid dark:text-text-muted">
+          <span className="inline-flex items-center justify-center min-w-7 px-2 py-0.5 rounded-full text-xs font-bold font-mono bg-success-500/15 text-success-700 dark:text-success-400 tabular-nums">
             {directPassCount}
           </span>
         </div>
 
-        <div className="flex w-full items-center justify-between rounded-md border border-border-default/50 px-2.5 py-1.5 bg-surface-100/50 dark:bg-surface-100/30">
+        <div className="flex w-full items-center justify-between rounded-md border border-border-default px-3 py-2 bg-surface-100 dark:bg-surface-100 shadow-2xs transition-colors">
           <div className="flex items-center">
-            <span className="mr-2 inline-block h-2 w-2 rounded-full bg-warning-500" />
+            <span className="mr-2.5 inline-block h-2 w-2 rounded-full bg-warning-500 ring-2 ring-warning-500/20" />
             <span className="text-xs font-medium text-text-ink dark:text-text-on-primary">
               Flaky / Recovered
             </span>
           </div>
-          <span className="text-xs font-mono font-medium text-text-body-mid dark:text-text-muted">
+          <span className="inline-flex items-center justify-center min-w-7 px-2 py-0.5 rounded-full text-xs font-bold font-mono bg-warning-500/15 text-warning-700 dark:text-warning-400 tabular-nums">
             {flakyCount}
           </span>
         </div>
 
-        <div className="flex w-full items-center justify-between rounded-md border border-border-default/50 px-2.5 py-1.5 bg-surface-100/50 dark:bg-surface-100/30">
+        <div className="flex w-full items-center justify-between rounded-md border border-border-default px-3 py-2 bg-surface-100 dark:bg-surface-100 shadow-2xs transition-colors">
           <div className="flex items-center">
-            <span className="mr-2 inline-block h-2 w-2 rounded-full bg-danger-500" />
+            <span className="mr-2.5 inline-block h-2 w-2 rounded-full bg-danger-500 ring-2 ring-danger-500/20" />
             <span className="text-xs font-medium text-text-ink dark:text-text-on-primary">
               Unresolved Failures
             </span>
           </div>
-          <span className="text-xs font-mono font-medium text-text-body-mid dark:text-text-muted">
+          <span className="inline-flex items-center justify-center min-w-7 px-2 py-0.5 rounded-full text-xs font-bold font-mono bg-danger-500/15 text-danger-700 dark:text-danger-400 tabular-nums">
             {hardFailCount}
           </span>
         </div>
 
         {skippedCount > 0 && (
-          <div className="flex w-full items-center justify-between rounded-md border border-border-default/50 px-2.5 py-1.5 bg-surface-100/50 dark:bg-surface-100/30">
+          <div className="flex w-full items-center justify-between rounded-md border border-border-default px-3 py-2 bg-surface-100 dark:bg-surface-100 shadow-2xs transition-colors">
             <div className="flex items-center">
-              <span className="mr-2 inline-block h-2 w-2 rounded-full bg-slate-400 dark:bg-slate-500" />
+              <span className="mr-2.5 inline-block h-2 w-2 rounded-full bg-slate-400 dark:bg-slate-500 ring-2 ring-slate-400/20" />
               <span className="text-xs font-medium text-text-ink dark:text-text-on-primary">
                 Skipped (Unexecuted)
               </span>
             </div>
-            <span className="text-xs font-mono font-medium text-text-body-mid dark:text-text-muted">
+            <span className="inline-flex items-center justify-center min-w-7 px-2 py-0.5 rounded-full text-xs font-bold font-mono bg-surface-200 text-text-body-mid dark:text-text-muted tabular-nums">
               {skippedCount}
             </span>
           </div>

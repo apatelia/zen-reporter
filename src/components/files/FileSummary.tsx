@@ -111,7 +111,7 @@ export default function FileSummary({ suites, title }: FileSummaryProps) {
   ];
 
   return (
-    <div className="overflow-hidden rounded-md bg-canvas border border-border-default shadow-sm p-4">
+    <div className="overflow-hidden rounded-md bg-surface-50 border border-border-default shadow-xs p-4">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-3 border-b border-border-default">
         <div>
           {title && (
@@ -131,7 +131,7 @@ export default function FileSummary({ suites, title }: FileSummaryProps) {
       </div>
 
       {fileStats.length > 0 && (
-        <div className="pt-3 pb-3 border-b border-border-default/50 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="pt-3 pb-3 border-b border-border-default flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <SearchInput
             value={fileSearchTerm}
             onChange={(val) => {

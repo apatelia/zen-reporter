@@ -159,10 +159,11 @@ export default function DurationTrend({ history, onOpenGuide }: DurationTrendPro
               <Tooltip
                 content={renderDurationTooltip}
                 wrapperStyle={{
-                  backgroundColor: 'var(--color-surface-100)',
+                  backgroundColor: 'var(--color-canvas)',
                   border: '1px solid var(--color-border-default)',
                   borderRadius: '0.5rem',
-                  boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+                  boxShadow:
+                    '0 10px 25px -5px rgba(0, 0, 0, 0.25), 0 8px 10px -6px rgba(0, 0, 0, 0.25)',
                   outline: 'none',
                 }}
               />

@@ -29,8 +29,8 @@ export function TestErrorAlert({ error, status }: TestErrorAlertProps) {
         Test Failures
       </h5>
       <div className="space-y-2">
-        <div className="rounded-md border border-danger-300/80 dark:border-danger-500/40 bg-canvas dark:bg-surface-100/40 overflow-hidden shadow-xs">
-          <div className="flex items-center justify-between gap-2 border-b border-danger-200 dark:border-danger-500/30 bg-danger-50 dark:bg-danger-500/10 px-3 py-1.5">
+        <div className="rounded-md border border-border-default bg-surface-50 dark:bg-surface-50 overflow-hidden shadow-xs">
+          <div className="flex items-center justify-between gap-2 border-b border-border-default bg-surface-100 dark:bg-surface-100 px-3 py-1.5">
             <div className="flex items-center gap-2 min-w-0 pr-2">
               <svg
                 className="h-3.5 w-3.5 text-danger-500 shrink-0"
@@ -45,17 +45,17 @@ export function TestErrorAlert({ error, status }: TestErrorAlertProps) {
                   d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
                 />
               </svg>
-              <span className="text-sm font-bold text-danger-700 dark:text-danger-400 truncate">
+              <span className="text-sm font-bold text-danger-600 dark:text-danger-400 truncate">
                 {error.name}
               </span>
             </div>
             <button
               type="button"
               onClick={handleCopy}
-              className={`inline-flex items-center gap-1.5 rounded px-2.5 py-1 text-xs font-semibold border transition-colors cursor-pointer shrink-0 shadow-2xs ${
+              className={`inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-semibold border transition-colors cursor-pointer shrink-0 shadow-2xs ${
                 copied
-                  ? 'border-success-400 dark:border-success-500/60 bg-success-500 text-white dark:bg-success-500 dark:text-surface-950 font-bold'
-                  : 'border-border-default dark:border-danger-500/40 bg-canvas dark:bg-danger-500/20 text-text-ink dark:text-text-ink hover:bg-surface-100 dark:hover:bg-danger-500/30 hover:border-accent-blue dark:hover:border-danger-500/60'
+                  ? 'border-success-500 bg-success-500 text-white dark:border-success-500 dark:bg-success-500 dark:text-surface-950 font-bold'
+                  : 'border-border-default bg-canvas hover:bg-surface-100 text-text-ink hover:border-accent-blue/60 dark:border-white/35 dark:bg-surface-200 dark:text-text-on-primary dark:hover:bg-surface-200/80 dark:hover:border-white/60'
               }`}
               title="Copy stack trace"
             >
@@ -75,7 +75,7 @@ export function TestErrorAlert({ error, status }: TestErrorAlertProps) {
               ) : (
                 <>
                   <svg
-                    className="h-3.5 w-3.5 text-text-body-mid dark:text-text-ink"
+                    className="h-3.5 w-3.5 text-text-body-mid dark:text-text-muted"
                     fill="none"
                     viewBox="0 0 24 24"
                     stroke="currentColor"

@@ -172,7 +172,7 @@ export default function FailuresSection({
 
       {/* Filter & Command Bar Container */}
       {!noFailures && (
-        <div className="mt-6 mb-6 rounded-lg border border-border-default bg-canvas p-3 shadow-2xs">
+        <div className="mt-6 mb-6 rounded-lg border border-border-default bg-surface-50 p-3 shadow-xs">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             {/* Left: Search Bar */}
             <SearchInput

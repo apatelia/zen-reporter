@@ -34,7 +34,7 @@ export function PaginationFooter({
   currentPage,
   totalPages,
   onPageChange,
-  className = 'mt-4 flex items-center justify-between text-xs font-medium text-text-ink dark:text-text-on-primary',
+  className = 'mt-4 flex items-center justify-between text-xs font-medium text-text-body-mid dark:text-text-muted',
 }: PaginationFooterProps) {
   const [prevPage, setPrevPage] = useState(currentPage);
   const [inputVal, setInputVal] = useState(() => String(currentPage));
@@ -75,7 +75,13 @@ export function PaginationFooter({
   return (
     <div className={className}>
       <span>
-        Showing {start + 1}–{start + pageLength} of {total} {label}
+        Showing{' '}
+        <strong className="font-semibold text-text-ink dark:text-text-on-primary">
+          {start + 1}–{start + pageLength}
+        </strong>{' '}
+        of{' '}
+        <strong className="font-semibold text-text-ink dark:text-text-on-primary">{total}</strong>{' '}
+        {label}
       </span>
       <div className="flex items-center gap-3">
         <button
@@ -88,8 +94,8 @@ export function PaginationFooter({
           Previous
         </button>
 
-        <div className="flex items-center gap-1.5 font-semibold select-none">
-          <span>Page</span>
+        <div className="flex items-center gap-1.5 text-xs select-none">
+          <span className="text-text-body-mid dark:text-text-muted">Page</span>
           <input
             type="text"
             inputMode="numeric"
@@ -100,9 +106,14 @@ export function PaginationFooter({
             onKeyDown={handleKeyDown}
             aria-label="Page number"
             title={`Enter page number (1 to ${totalPages})`}
-            className="w-11 text-center rounded border border-border-default bg-surface-100 py-0.5 px-1 font-bold text-xs text-text-ink dark:bg-surface-200 dark:text-text-on-primary focus:outline-none focus:ring-2 focus:ring-success-500 focus:border-success-500 shadow-2xs tabular-nums"
+            className="h-7 w-12 text-center rounded-md border border-border-default bg-canvas dark:bg-canvas px-1 text-xs font-semibold text-text-ink dark:text-text-on-primary cursor-text hover:border-border-chart focus:border-accent-blue focus:outline-hidden focus:ring-2 focus:ring-accent-blue/30 shadow-xs tabular-nums transition-colors"
           />
-          <span>of {totalPages}</span>
+          <span className="text-text-body-mid dark:text-text-muted">
+            of{' '}
+            <strong className="font-semibold text-text-ink dark:text-text-on-primary">
+              {totalPages}
+            </strong>
+          </span>
         </div>
 
         <button

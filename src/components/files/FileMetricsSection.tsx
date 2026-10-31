@@ -188,7 +188,7 @@ export default function FileMetricsSection({ suites, isMinimalReport }: FileMetr
       {!isMinimalReport && totalFiles > 0 && (
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           {/* Spec File Density & Distribution */}
-          <div className="rounded-md bg-canvas border border-border-default p-4 shadow-sm flex flex-col justify-between">
+          <div className="rounded-md bg-surface-50 border border-border-default p-4 shadow-xs flex flex-col justify-between">
             <div>
               <h3 className="text-sm font-semibold uppercase tracking-wider text-text-body-mid dark:text-text-muted mb-3">
                 File Density & Distribution
@@ -201,7 +201,7 @@ export default function FileMetricsSection({ suites, isMinimalReport }: FileMetr
                   return (
                     <div
                       key={card.title}
-                      className="rounded border border-border-default dark:border-border-subtle bg-canvas-subtle p-3 flex flex-col justify-between"
+                      className="rounded-md border border-border-default bg-surface-100 dark:bg-surface-100 p-3 flex flex-col justify-between shadow-2xs"
                     >
                       <div className="flex items-center justify-between gap-1">
                         <p className="text-xs font-medium text-text-body-mid dark:text-text-muted">
@@ -244,7 +244,7 @@ export default function FileMetricsSection({ suites, isMinimalReport }: FileMetr
           </div>
 
           {/* Top Bottleneck Spec Files */}
-          <div className="rounded-md bg-canvas border border-border-default p-4 shadow-sm flex flex-col justify-between">
+          <div className="rounded-md bg-surface-50 border border-border-default p-4 shadow-xs flex flex-col justify-between">
             <div>
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-1.5">

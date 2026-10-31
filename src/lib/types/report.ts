@@ -61,6 +61,9 @@ export interface ResultSummary {
   workers?: number;
   playwrightVersion?: string;
   osName?: string;
+  gitBranch?: string;
+  gitCommit?: string;
+  gitCommitFull?: string;
 }
 
 export interface TestRun {
