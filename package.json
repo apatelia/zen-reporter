@@ -40,7 +40,7 @@
   ],
   "scripts": {
     "dev": "vite",
-    "build": "ZEN_REPORTER_DATA_FREE=true vite build && vite build --config vite.reporter.config.ts && tsc -p tsconfig.lib.json",
+    "build": "cross-env ZEN_REPORTER_DATA_FREE=true vite build && vite build --config vite.reporter.config.ts && tsc -p tsconfig.lib.json",
     "preview": "vite preview",
     "test": "npx playwright test",
     "show": "node bin/zen-reporter.js show",
@@ -89,6 +89,7 @@
     "@types/node": "^26.6.6",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
+    "cross-env": "^10.1.0",
     "@vitejs/plugin-react": "^6.1.2",
     "autoprefixer": "^10.6.2",
     "eslint": "^10.14.0",
