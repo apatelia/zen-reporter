@@ -8,6 +8,7 @@ export interface HistoryRun {
   run_duration_ms: number;
   run_sequential_duration_ms?: number | null;
   run_workers?: number;
+  run_files?: number;
   run_total: number;
   run_passed: number;
   run_failed: number;

@@ -126,6 +126,7 @@ interface RawTestCase {
   steps?: RawTestStep[];
   errors?: RawError[];
   tags?: string[];
+  describePath?: string[];
 }
 
 interface RawPlaywrightData {
@@ -183,7 +184,7 @@ function convertRawTestCase(test: RawTestCase, cwd: string): TestCase {
     duration,
     steps,
     errors: (test.errors ?? []).map(makeTestError),
-    describePath: (test as unknown as Record<string, unknown>).describePath as string[] | undefined,
+    describePath: test.describePath,
   };
 }
 

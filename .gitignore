@@ -40,4 +40,4 @@ Thumbs.db
 logs/*.log
 
 # Package build output
-zen-reporter-*.tgz
+arpanp-zen-reporter-*.tgz

@@ -9,17 +9,37 @@ const cwd = process.cwd();
 const args = process.argv.slice(2);
 const command = args[0] || 'show';
 
-if (command === 'show') {
-  handleShow(cwd);
-} else if (command === 'summary') {
-  handleSummary(cwd);
-} else if (command === 'env') {
-  handleEnv(cwd);
-} else if (command === 'history') {
-  handleHistory(args.slice(1), cwd).catch((e) => {
-    console.error('✗ history command failed:', e?.message || e);
-    process.exit(1);
-  });
-} else {
-  printHelp();
+/**
+ * Central CLI entrypoint dispatching commands and handling top-level errors.
+ *
+ * @returns {Promise<void>} Resolves when command execution completes.
+ */
+async function main() {
+  try {
+    if (command === 'show') {
+      await handleShow(cwd);
+    } else if (command === 'summary') {
+      await handleSummary(cwd);
+    } else if (command === 'env') {
+      await handleEnv(cwd);
+    } else if (command === 'history') {
+      await handleHistory(args.slice(1), cwd);
+    } else if (command === 'help' || command === '--help' || command === '-h') {
+      printHelp();
+    } else {
+      console.error(`✗ Unknown command: "${command}"\n`);
+      printHelp();
+      process.exitCode = 1;
+    }
+  } catch (err) {
+    const msg = err?.message || String(err);
+    if (msg.startsWith('✗')) {
+      console.error(msg);
+    } else {
+      console.error(`✗ ${msg}`);
+    }
+    process.exitCode = 1;
+  }
 }
+
+main();

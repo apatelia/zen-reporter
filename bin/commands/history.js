@@ -29,7 +29,7 @@ import { printHelp } from './help.js';
  */
 export async function generateHistoryReport(conn, historyDir, cwd = process.cwd()) {
   const runsGlob = `${resolve(cwd, historyDir, 'runs')}/*.jsonl`;
-  const runsSql = `SELECT DISTINCT run_id, run_name, started_at, run_duration_ms, coalesce(max(run_sequential_duration_ms), sum(duration_ms)) AS run_sequential_duration_ms, max(run_workers) AS run_workers, run_total, run_passed, run_failed, run_timed_out, run_skipped, run_interrupted, round(100.0 * run_passed / nullif(run_total, 0), 1) AS pass_rate, max(coalesce(step_assertions, 0)) AS step_assertions, max(coalesce(step_actions, 0)) AS step_actions, max(coalesce(step_network, 0)) AS step_network, max(coalesce(step_hooks, 0)) AS step_hooks, max(coalesce(step_waits, 0)) AS step_waits, max(coalesce(step_others, 0)) AS step_others FROM ${SRC} GROUP BY run_id, run_name, started_at, run_duration_ms, run_total, run_passed, run_failed, run_timed_out, run_skipped, run_interrupted ORDER BY started_at ASC`;
+  const runsSql = `SELECT DISTINCT run_id, run_name, started_at, run_duration_ms, coalesce(max(run_sequential_duration_ms), sum(duration_ms)) AS run_sequential_duration_ms, max(run_workers) AS run_workers, count(DISTINCT file) AS run_files, run_total, run_passed, run_failed, run_timed_out, run_skipped, run_interrupted, round(100.0 * run_passed / nullif(run_total, 0), 1) AS pass_rate, max(coalesce(step_assertions, 0)) AS step_assertions, max(coalesce(step_actions, 0)) AS step_actions, max(coalesce(step_network, 0)) AS step_network, max(coalesce(step_hooks, 0)) AS step_hooks, max(coalesce(step_waits, 0)) AS step_waits, max(coalesce(step_others, 0)) AS step_others FROM ${SRC} GROUP BY run_id, run_name, started_at, run_duration_ms, run_total, run_passed, run_failed, run_timed_out, run_skipped, run_interrupted ORDER BY started_at ASC`;
 
   const [
     runsResult,
@@ -141,9 +141,10 @@ export async function handleHistory(subArgs, cwd = process.cwd()) {
   const runsDirPath = resolve(cwd, historyDir, 'runs');
   const runsGlob = `${runsDirPath}/*.jsonl`;
   const sub = subArgs[0] || 'runs';
-  const conn = await openDuckDb();
 
   findRunFiles(runsDirPath, historyDir);
+
+  const conn = await openDuckDb();
 
   try {
     switch (sub) {
@@ -211,8 +212,7 @@ export async function handleHistory(subArgs, cwd = process.cwd()) {
       case 'query': {
         const sqlText = subArgs.slice(1).join(' ').trim();
         if (!sqlText) {
-          console.error('✗ Usage: zr history query "<SQL>"');
-          process.exit(1);
+          throw new Error('Usage: zr history query "<SQL>"');
         }
         const usesReadJson = sqlText.includes('read_json');
         const sql = usesReadJson
@@ -222,8 +222,7 @@ export async function handleHistory(subArgs, cwd = process.cwd()) {
         try {
           printTable(await runQuery(conn, sql, params), 'No matching records found.', 'records');
         } catch (e) {
-          console.error('✗ Query failed:', e?.message || e);
-          process.exit(1);
+          throw new Error(`Query failed: ${e?.message || e}`, { cause: e });
         }
         break;
       }
@@ -232,10 +231,12 @@ export async function handleHistory(subArgs, cwd = process.cwd()) {
         printHelp();
     }
   } finally {
-    try {
-      conn.closeSync();
-    } catch {
-      /* ignore */
+    if (conn) {
+      try {
+        conn.closeSync();
+      } catch {
+        /* ignore cleanup error on exit */
+      }
     }
   }
 }

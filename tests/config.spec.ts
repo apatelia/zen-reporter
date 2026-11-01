@@ -1,6 +1,6 @@
+import { expect, test } from '@playwright/test';
 import * as fs from 'fs';
 import * as path from 'path';
-import { expect, test } from '@playwright/test';
 import { resolveConfig } from '../src/lib/reporter';
 
 test.describe('Zen Reporter Configuration Tests', () => {

@@ -57,10 +57,9 @@ export function handleShow(cwd = process.cwd()) {
   const indexPath = join(reportDir, 'index.html');
 
   if (!existsSync(indexPath)) {
-    console.error(`✗ Report file not found at "${outputDir}/index.html".`);
-    console.error(`  Make sure you have run your Playwright tests first.`);
-
-    process.exit(1);
+    throw new Error(
+      `Report file not found at "${outputDir}/index.html".\n  Make sure you have run your Playwright tests first.`
+    );
   }
 
   const server = createServer((req, res) => {
@@ -109,7 +108,7 @@ export function handleShow(cwd = process.cwd()) {
         startServer(port + 1);
       } else {
         console.error('✗ Failed to start report server:', err.message || err);
-        process.exit(1);
+        process.exitCode = 1;
       }
     });
 

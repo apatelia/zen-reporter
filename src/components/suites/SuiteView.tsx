@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import type { TestSuite, TestCase } from '@/lib/types/report';
 import { formatDurationVerbose } from '@/lib/formatters';
 import TestCaseCard from '@/components/shared/TestCaseCard';
@@ -225,47 +225,43 @@ export default function SuiteView({
   forceOpen,
   expandKey,
 }: SuiteViewProps) {
-  const [isOpen, setIsOpen] = useState<boolean>(() => {
+  const [internalIsOpen, setInternalIsOpen] = useState<boolean>(() => {
     if (typeof propIsOpen === 'boolean') return propIsOpen;
     if (typeof forceOpen === 'boolean') return forceOpen;
     return false;
   });
 
-  const [prevProps, setPrevProps] = useState({ propIsOpen, forceOpen, expandKey });
-  if (
-    prevProps.propIsOpen !== propIsOpen ||
-    prevProps.forceOpen !== forceOpen ||
-    prevProps.expandKey !== expandKey
-  ) {
-    setPrevProps({ propIsOpen, forceOpen, expandKey });
-    if (typeof propIsOpen === 'boolean') {
-      setIsOpen(propIsOpen);
-    } else if (typeof forceOpen === 'boolean') {
-      setIsOpen(forceOpen);
-    }
-  }
+  const isControlled = typeof propIsOpen === 'boolean';
+  const isOpen = isControlled ? propIsOpen : internalIsOpen;
 
   const handleToggle = (open: boolean) => {
-    setIsOpen(open);
+    if (!isControlled) {
+      setInternalIsOpen(open);
+    }
     onToggle?.(open);
   };
 
-  const filteredSuite =
-    filterStatuses.length > 0 ||
-    filterProjects.length > 0 ||
-    filterTags.length > 0 ||
-    filterFiles.length > 0 ||
-    Boolean(fileSearchTerm?.trim())
+  const filteredSuite = useMemo(() => {
+    return filterStatuses.length > 0 ||
+      filterProjects.length > 0 ||
+      filterTags.length > 0 ||
+      filterFiles.length > 0 ||
+      Boolean(fileSearchTerm?.trim())
       ? filterSuite(suite, filterStatuses, filterProjects, filterTags, filterFiles, fileSearchTerm)
       : suite;
+  }, [suite, filterStatuses, filterProjects, filterTags, filterFiles, fileSearchTerm]);
 
-  const { total, passed, failed, skipped, timedOut, interrupted, duration } = countCases(
-    filteredSuite,
-    filterStatuses,
-    filterProjects,
-    filterTags,
-    filterFiles,
-    fileSearchTerm
+  const { total, passed, failed, skipped, timedOut, interrupted, duration } = useMemo(
+    () =>
+      countCases(
+        filteredSuite,
+        filterStatuses,
+        filterProjects,
+        filterTags,
+        filterFiles,
+        fileSearchTerm
+      ),
+    [filteredSuite, filterStatuses, filterProjects, filterTags, filterFiles, fileSearchTerm]
   );
   const passRate = total > 0 ? Math.round((passed / total) * 100) : 100;
 

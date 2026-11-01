@@ -1,4 +1,3 @@
-import React from 'react';
 import GuideModal from '@/components/shared/GuideModal';
 
 interface HistoryGuidesProps {
@@ -50,6 +49,12 @@ export default function HistoryGuides({
               sequential effort (e.g. ⚡ 3m 45s saved with 4.2x speedup). When parallel execution
               overhead exceeds sequential effort, it displays the extra time spent (e.g. ⚠️ +12s
               with 0.8x speedup).
+            </li>
+            <li>
+              <strong>Files:</strong> Total number of distinct test spec files executed in the run.
+            </li>
+            <li>
+              <strong>Tests:</strong> Total number of individual test cases executed in the run.
             </li>
             <li>
               <strong>Status Breakdown:</strong> Counts for Passed, Failed, Skipped, Timed Out, and

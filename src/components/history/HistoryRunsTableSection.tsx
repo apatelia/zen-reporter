@@ -171,8 +171,16 @@ export function HistoryRunsTableSection({
         },
       },
       {
+        key: 'files',
+        header: 'Files',
+        align: 'center',
+        className: 'font-medium',
+        cell: (run) => run.run_files ?? '—',
+        csvValue: (run) => run.run_files ?? '',
+      },
+      {
         key: 'total',
-        header: 'Total',
+        header: 'Tests',
         align: 'center',
         className: 'font-medium',
         cell: (run) =>

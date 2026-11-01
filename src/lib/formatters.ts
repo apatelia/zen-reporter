@@ -199,19 +199,21 @@ export function truncateFileName(fileName: string, maxLength: number = 40): stri
 export function truncateMiddlePath(filePath: string): string {
   if (!filePath) return '';
 
-  const parts = filePath.split('/');
+  const sep = filePath.includes('\\') ? '\\' : '/';
+  const normalized = filePath.replace(/\\/g, '/');
+  const parts = normalized.split('/');
   if (parts.length <= 2) return filePath;
 
   const fileName = parts[parts.length - 1];
-  const rootDir = parts[0] ? parts[0] : parts[1] ? `/${parts[1]}` : '';
+  const rootDir = parts[0] ? parts[0] : parts[1] ? `${sep}${parts[1]}` : '';
 
   if (parts.length > 3) {
-    return `${rootDir}/.../${fileName}`;
+    return `${rootDir}${sep}...${sep}${fileName}`;
   }
 
   if (parts[0] === '') {
     return filePath;
   }
 
-  return `${parts[0]}/.../${fileName}`;
+  return `${parts[0]}${sep}...${sep}${fileName}`;
 }

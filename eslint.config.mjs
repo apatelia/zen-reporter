@@ -1,3 +1,4 @@
+import cSpellConfigs from '@cspell/eslint-plugin/configs';
 import eslintReact from '@eslint-react/eslint-plugin';
 import js from '@eslint/js';
 import json from '@eslint/json';
@@ -60,4 +61,5 @@ export default defineConfig([
     extends: ['markdown/recommended'],
   },
   eslintConfigPrettier,
+  cSpellConfigs.recommended,
 ]);

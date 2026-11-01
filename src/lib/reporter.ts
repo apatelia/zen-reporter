@@ -6,15 +6,15 @@ import type {
   TestCase,
   TestResult,
 } from '@playwright/test/reporter';
-import { execFileSync, spawn } from 'child_process';
 import * as fs from 'fs';
-import { createRequire } from 'module';
-import os, { platform, type as osType } from 'os';
 import * as path from 'path';
-import { fileURLToPath } from 'url';
+import { getOsName, getPlaywrightVersion } from '../../bin/commands/system.js';
+import { processAttachments } from './attachmentManager';
 import { convertPlaywrightSteps, sanitizeAnsi, setFsModule } from './codeHighlighting';
 import { generateTerminalSummaryTable } from './cryptoUtils';
 import { detectPackageManager } from './dataProcessor';
+import { getGitBranch, getGitCommit } from './gitUtils';
+import { generateHtmlReport, getShowReportCommand } from './htmlReportGenerator';
 import { ProgressPrinter, type ProgressMode } from './progressPrinter';
 import { writeRunHistory } from './runHistoryWriter';
 import { buildSuitesFromCases } from './statsUtils';
@@ -245,125 +245,6 @@ class ZenReporter implements Reporter {
   }
 
   /**
-   * Copies test result attachments to output directory and formats attachment models.
-   *
-   * @param testId - Playwright test ID.
-   * @param rawAttachments - List of raw Playwright attachments.
-   * @returns Formatted list of attachments, or undefined if empty.
-   */
-  private processAttachments(
-    testId: string,
-    rawAttachments: TestResult['attachments']
-  ): TestCaseModel['attachments'] {
-    if (!rawAttachments || rawAttachments.length === 0) return undefined;
-
-    const cwd = process.cwd();
-    const normalizedCwd = cwd.endsWith('/') ? cwd.slice(0, -1) : cwd;
-    const outputDir = path.resolve(normalizedCwd, this.reportConfig.outputDir);
-    const attachmentsDir = path.join(outputDir, 'attachments');
-
-    const result = rawAttachments.map((att, attIdx) => {
-      let finalPath: string | null = att.path || null;
-
-      const isText =
-        att.contentType?.startsWith('text/') ||
-        /\.(txt|log|json|csv|html|xml|md|yaml|yml|js|ts|jsx|tsx|css)$/i.test(
-          att.name || att.path || ''
-        );
-
-      if (att.path && fs.existsSync(att.path)) {
-        try {
-          fs.mkdirSync(attachmentsDir, { recursive: true });
-          const safeName = path.basename(att.path).replace(/[^a-zA-Z0-9._-]/g, '_');
-          const safeTestId = testId.replace(/[^a-zA-Z0-9_-]/g, '_');
-          const targetFilename = `${safeTestId}_att${attIdx}_${safeName}`;
-          const targetPath = path.join(attachmentsDir, targetFilename);
-          fs.copyFileSync(att.path, targetPath);
-          finalPath = `./attachments/${targetFilename}`;
-        } catch (e) {
-          console.error(`Failed to copy attachment file from ${att.path}:`, e);
-        }
-      } else if (att.body) {
-        try {
-          fs.mkdirSync(attachmentsDir, { recursive: true });
-
-          let ext = '';
-          const nameExt = att.name ? path.extname(att.name) : '';
-          if (nameExt && nameExt.length > 1) {
-            ext = nameExt;
-          } else if (att.contentType === 'image/png') {
-            ext = '.png';
-          } else if (att.contentType === 'image/jpeg') {
-            ext = '.jpg';
-          } else if (att.contentType === 'image/webp') {
-            ext = '.webp';
-          } else if (att.contentType === 'image/svg+xml') {
-            ext = '.svg';
-          } else if (att.contentType === 'video/webm') {
-            ext = '.webm';
-          } else if (att.contentType === 'video/mp4') {
-            ext = '.mp4';
-          } else if (att.contentType === 'application/zip') {
-            ext = '.zip';
-          } else if (att.contentType === 'application/json' || att.name?.endsWith('.json')) {
-            ext = '.json';
-          } else if (att.contentType === 'text/html' || att.name?.endsWith('.html')) {
-            ext = '.html';
-          } else if (att.contentType === 'text/markdown' || att.name?.endsWith('.md')) {
-            ext = '.md';
-          } else if (
-            att.contentType === 'text/javascript' ||
-            att.contentType === 'application/javascript'
-          ) {
-            ext = '.js';
-          } else if (att.contentType === 'text/plain') {
-            ext = '.txt';
-          } else if (isText) {
-            ext = '.txt';
-          } else {
-            ext = '.bin';
-          }
-
-          const safeTestId = testId.replace(/[^a-zA-Z0-9_-]/g, '_');
-          const targetFilename = `${safeTestId}_att${attIdx}${ext}`;
-          const targetPath = path.join(attachmentsDir, targetFilename);
-          const buf = Buffer.isBuffer(att.body) ? att.body : Buffer.from(att.body);
-
-          fs.writeFileSync(targetPath, buf);
-          finalPath = `./attachments/${targetFilename}`;
-        } catch (e) {
-          console.error('Failed to write in-memory attachment to disk:', e);
-        }
-      }
-
-      let bodyContent: string | null = null;
-      if (att.body) {
-        if (isText) {
-          bodyContent = Buffer.isBuffer(att.body) ? att.body.toString('utf8') : String(att.body);
-        } else {
-          bodyContent = Buffer.isBuffer(att.body) ? att.body.toString('base64') : String(att.body);
-        }
-      } else if (isText && att.path && fs.existsSync(att.path)) {
-        try {
-          // Embed text attachment content in body so file:// previews work offline & without CORS blocks
-          bodyContent = fs.readFileSync(att.path, 'utf8');
-        } catch (e) {
-          console.error(`Failed to read text attachment file from ${att.path}:`, e);
-        }
-      }
-
-      return {
-        name: att.name,
-        contentType: att.contentType,
-        path: finalPath,
-        body: bodyContent,
-      };
-    });
-
-    return result.length > 0 ? result : undefined;
-  }
-
-  /**
    * Maps Playwright test result errors to internal `TestError` models.
    *
    * @param resultError - Playwright test error object.
@@ -415,121 +296,6 @@ class ZenReporter implements Reporter {
   }
 
   /**
-   * Returns OS friendly name for system diagnostic and report metadata.
-   *
-   * @returns Operating system name (e.g. 'macOS', 'Windows', 'Arch Linux').
-   */
-  private getOsName(): string {
-    const p = platform();
-
-    if (p === 'darwin') return `macOS ${os.release()}`;
-    if (p === 'win32') return `${os.version()}`;
-    if (p === 'linux') {
-      try {
-        if (fs.existsSync('/etc/os-release')) {
-          const content = fs.readFileSync('/etc/os-release', 'utf8');
-          const match = content.match(/^PRETTY_NAME="?([^"\n]+)"?/m);
-
-          if (match && match[1]) return match[1];
-        }
-      } catch {
-        /* ignore */
-      }
-
-      return 'Linux';
-    }
-
-    return osType();
-  }
-
-  /**
-   * Detects installed @playwright/test package version in the project.
-   *
-   * @returns Installed Playwright version string or undefined if not found.
-   */
-  private getPlaywrightVersion(): string | undefined {
-    try {
-      const customRequire = createRequire(path.resolve(process.cwd(), 'package.json'));
-      const pwPkg = customRequire('@playwright/test/package.json');
-      return pwPkg.version || undefined;
-    } catch {
-      return undefined;
-    }
-  }
-
-  /**
-   * Resolves current Git branch name from CI environment variables or local Git CLI.
-   *
-   * @returns Current Git branch name, or undefined if not in a repository.
-   */
-  private getGitBranch(): string | undefined {
-    // 1. Check common CI environment variables
-    const ciBranch =
-      process.env.GITHUB_HEAD_REF || // Pull request target branch in GitHub Actions
-      process.env.GITHUB_REF_NAME || // Branch or tag name in GitHub Actions
-      process.env.CI_COMMIT_REF_NAME || // GitLab CI
-      process.env.GIT_BRANCH || // Jenkins / Generic
-      process.env.BRANCH_NAME; // Generic CI
-
-    if (ciBranch && ciBranch.trim()) {
-      return ciBranch.trim();
-    }
-
-    // 2. Fall back to local git CLI invocation
-    try {
-      const branch = execFileSync('git', ['rev-parse', '--abbrev-ref', 'HEAD'], {
-        stdio: ['ignore', 'pipe', 'ignore'],
-        encoding: 'utf8',
-        timeout: 2000,
-      }).trim();
-
-      if (branch && branch !== 'HEAD') {
-        return branch;
-      }
-    } catch {
-      /* ignore git failure */
-    }
-
-    return undefined;
-  }
-
-  /**
-   * Resolves current Git short and full commit hashes from CI environment variables or local Git CLI.
-   *
-   * @returns Object containing short (7-char) and full (40-char) commit hashes, or empty object if not in a repository.
-   */
-  private getGitCommit(): { short?: string; full?: string } {
-    // 1. Check common CI environment variables
-    const ciSha =
-      process.env.GITHUB_SHA ||
-      process.env.CI_COMMIT_SHA ||
-      process.env.GIT_COMMIT ||
-      process.env.COMMIT_SHA;
-
-    if (ciSha && ciSha.trim()) {
-      const full = ciSha.trim();
-      return { short: full.slice(0, 7), full };
-    }
-
-    // 2. Fall back to local git CLI invocation
-    try {
-      const full = execFileSync('git', ['rev-parse', 'HEAD'], {
-        stdio: ['ignore', 'pipe', 'ignore'],
-        encoding: 'utf8',
-        timeout: 2000,
-      }).trim();
-
-      if (full) {
-        return { short: full.slice(0, 7), full };
-      }
-    } catch {
-      /* ignore git failure */
-    }
-
-    return {};
-  }
-
-  /**
    * Computes high-level result summary statistics for the completed test run.
    *
    * @param endTime - ISO timestamp of completion.
@@ -545,7 +311,7 @@ class ZenReporter implements Reporter {
     const numberOfProjects = this.config.projects.length;
     const totalSequentialDuration = this.testCases.reduce((sum, tc) => sum + (tc.duration || 0), 0);
 
-    const gitCommitInfo = this.getGitCommit();
+    const gitCommitInfo = getGitCommit();
 
     return {
       total: this.testCases.length,
@@ -560,206 +326,12 @@ class ZenReporter implements Reporter {
       totalSequentialDuration,
       numberOfProjects,
       workers: this.config?.workers,
-      playwrightVersion: this.getPlaywrightVersion(),
-      osName: this.getOsName(),
-      gitBranch: this.getGitBranch(),
+      playwrightVersion: getPlaywrightVersion(),
+      osName: getOsName(),
+      gitBranch: getGitBranch(),
       gitCommit: gitCommitInfo.short,
       gitCommitFull: gitCommitInfo.full,
     };
-  }
-
-  /**
-   * Finds the absolute path to `bin/zen-reporter.js` by checking current and parent directories.
-   *
-   * @returns Absolute path to `bin/zen-reporter.js`, or `null` if not found.
-   */
-  private findBinPath(): string | null {
-    const moduleFile =
-      typeof __filename !== 'undefined' ? __filename : fileURLToPath(import.meta.url);
-    let dir = path.dirname(moduleFile);
-
-    for (let i = 0; i < 4; i++) {
-      const candidate = path.join(dir, 'bin', 'zen-reporter.js');
-      if (fs.existsSync(candidate)) {
-        return candidate;
-      }
-
-      const parent = path.dirname(dir);
-      if (parent === dir) break;
-
-      dir = parent;
-    }
-
-    return null;
-  }
-
-  /**
-   * Updates history data files and HTML embeddings.
-   *
-   * @returns Void.
-   */
-  private refreshHistory(): void {
-    try {
-      const moduleFile =
-        typeof __filename !== 'undefined' ? __filename : fileURLToPath(import.meta.url);
-      const moduleDir = path.dirname(moduleFile);
-      const packageRoot =
-        moduleDir.endsWith(path.join('src', 'lib')) || moduleDir.endsWith('src/lib')
-          ? path.resolve(moduleDir, '..', '..')
-          : path.resolve(moduleDir, '..');
-
-      const historyModulePath = path.join(packageRoot, 'bin', 'commands', 'history.js');
-      if (!fs.existsSync(historyModulePath)) return;
-
-      import(historyModulePath)
-        .then(({ handleHistory }) => {
-          handleHistory(['report'], process.cwd()).catch(() => {
-            console.warn('History refresh skipped (keeping existing history data).');
-          });
-        })
-        .catch(() => {
-          console.warn('History refresh skipped (keeping existing history data).');
-        });
-    } catch {
-      console.warn('History refresh skipped (keeping existing history data).');
-    }
-  }
-
-  /**
-   * Automatically opens the generated report using `zr show` if configured.
-   *
-   * @param summary - Result summary containing passed/failed/timedOut/interrupted counts.
-   * @returns Boolean indicating whether the report was opened automatically.
-   */
-  private maybeOpenReport(summary: ResultSummary): boolean {
-    const mode = this.reportConfig.openAutomatically;
-    if (mode === 'never') return false;
-
-    const hasFailure =
-      (summary.failed || 0) > 0 || (summary.timedOut || 0) > 0 || (summary.interrupted || 0) > 0;
-
-    if (mode === 'on-failure-only' && !hasFailure) {
-      return false;
-    }
-
-    const binPath = this.findBinPath();
-    if (!binPath) return false;
-
-    try {
-      const child = spawn(process.execPath, [binPath, 'show'], {
-        cwd: process.cwd(),
-        detached: true,
-        stdio: 'ignore',
-        env: { ...process.env, PW_REPORTER_OUTPUT: this.reportConfig.outputDir },
-      });
-      child.unref();
-      return true;
-    } catch {
-      return false;
-    }
-  }
-
-  /**
-   * Generates `index.html` (and optional `summary.html`) from template assets and JSON payloads.
-   *
-   * @param outputDir - Target output directory path.
-   * @param reportData - Complete report data model payload.
-   * @param summary - Result summary containing passed/failed/timedOut/interrupted counts.
-   */
-  private generateHtmlReport(
-    outputDir: string,
-    reportData: ReportData,
-    summary: ResultSummary
-  ): void {
-    try {
-      const pm = this.reportConfig.packageManager;
-      const moduleFile =
-        typeof __filename !== 'undefined' ? __filename : fileURLToPath(import.meta.url);
-      const moduleDir = path.dirname(moduleFile);
-      const packageRoot =
-        moduleDir.endsWith(path.join('src', 'lib')) || moduleDir.endsWith('src/lib')
-          ? path.resolve(moduleDir, '..', '..')
-          : path.resolve(moduleDir, '..');
-
-      const templatePath = path.join(packageRoot, 'dist', 'index.html');
-      let templateContent: string | null = null;
-
-      if (fs.existsSync(templatePath)) {
-        try {
-          templateContent = fs.readFileSync(templatePath, 'utf8');
-        } catch {
-          /* ignore */
-        }
-      }
-
-      if (!templateContent) {
-        console.error(
-          `Zen Reporter template not found at "${templatePath}". Ensure the package is properly built.`
-        );
-        return;
-      }
-
-      if (templateContent) {
-        const safeData = JSON.stringify(reportData).replace(/</g, '\\u003c');
-        const dataScript = `<script id="report-data" type="application/json">${safeData}</script>`;
-
-        const cleanTemplate = templateContent.replace(
-          /<script id="report-data" type="application\/json">[\s\S]*?<\/script>/,
-          ''
-        );
-        let finalHtml = cleanTemplate.replace('</head>', `${dataScript}\n</head>`);
-
-        const historyPath = path.join(outputDir, 'history.json');
-
-        if (fs.existsSync(historyPath)) {
-          try {
-            const history = JSON.parse(fs.readFileSync(historyPath, 'utf8'));
-            const historyScript = `<script id="history-data" type="application/json">${JSON.stringify(history).replace(/</g, '\\u003c')}</script>`;
-            finalHtml = finalHtml
-              .replace(/<script id="history-data" type="application\/json">[\s\S]*?<\/script>/, '')
-              .replace('</head>', `${historyScript}\n</head>`);
-          } catch (e) {
-            console.error('History data injection failed:', e);
-          }
-        }
-
-        const destHtml = path.join(outputDir, 'index.html');
-        fs.writeFileSync(destHtml, finalHtml, 'utf8');
-
-        console.debug(`\n✓ Report generated: ${destHtml}`);
-
-        const openedAutomatically = this.maybeOpenReport(summary);
-        if (openedAutomatically) {
-          console.log(
-            '\n✓ Report opened automatically in your web browser as per configuration.\n'
-          );
-        } else {
-          console.log(
-            `\n💡 Run "${getShowReportCommand(pm)}" to view the report in web browser.\n`
-          );
-        }
-
-        if (this.reportConfig.enableHistory !== false) {
-          this.refreshHistory();
-        }
-
-        if (this.reportConfig.singleSummaryFile) {
-          const summaryHtmlPath = path.join(outputDir, 'summary.html');
-          const summaryScript = `<script>window.__ZEN_SUMMARY_ONLY__ = true;</script>`;
-          const summaryHtml = cleanTemplate.replace(
-            '</head>',
-            `${dataScript}\n${summaryScript}\n</head>`
-          );
-
-          fs.writeFileSync(summaryHtmlPath, summaryHtml, 'utf8');
-          console.debug(`✓ Standalone Summary generated: ${summaryHtmlPath}`);
-        }
-      } else {
-        console.error('Report template not found and build failed.');
-      }
-    } catch (err) {
-      console.error('Report generation failed, keeping report.json:', err);
-    }
   }
 
   /**
@@ -893,7 +465,11 @@ class ZenReporter implements Reporter {
     const attemptStdout = this.processOutputEntries(result.stdout);
     const attemptStderr = this.processOutputEntries(result.stderr);
 
-    const attemptAttachments = this.processAttachments(test.id, result.attachments);
+    const attemptAttachments = processAttachments(
+      test.id,
+      result.attachments,
+      this.reportConfig.outputDir
+    );
     testCase.attachments = attemptAttachments;
     testCase.errors = this.mapTestError(result.error);
 
@@ -1006,30 +582,15 @@ class ZenReporter implements Reporter {
     );
     console.log('\n' + summaryTable);
 
-    this.generateHtmlReport(outputDir, reportData, summary);
+    generateHtmlReport(outputDir, reportData, summary, {
+      outputDir: this.reportConfig.outputDir,
+      packageManager: this.reportConfig.packageManager,
+      enableHistory: this.reportConfig.enableHistory,
+      singleSummaryFile: this.reportConfig.singleSummaryFile,
+      openAutomatically: this.reportConfig.openAutomatically,
+    });
   }
 }
 
-/**
- * Helper to construct the terminal command string for opening the generated report.
- *
- * @param pm - Optional package manager name (defaults to auto-detection).
- * @param cwd - Current working directory.
- * @returns Command string (e.g., `npx zr show` or `pnpm zr show`).
- */
-export function getShowReportCommand(pm?: string, cwd: string = process.cwd()): string {
-  const manager = pm || detectPackageManager(cwd);
-
-  switch (manager) {
-    case 'pnpm':
-      return 'pnpm zr show';
-    case 'yarn':
-      return 'yarn zr show';
-    case 'bun':
-      return 'bunx zr show';
-    default:
-      return 'npx zr show';
-  }
-}
-
+export { getShowReportCommand };
 export default ZenReporter;

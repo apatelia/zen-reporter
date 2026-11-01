@@ -37,6 +37,19 @@ const ANSI_STYLE_MAP: Record<number, string> = {
   4: 'text-decoration: underline',
 };
 
+const JS_TOKENS_REGEX =
+  /(\/\/[^\n]*)|('(?:\\[\s\S]|[^'\\])*'|"(?:\\[\s\S]|[^"\\])*"|`(?:\\[\s\S]|[^`\\])*`)|(\b(?:await|async|test|expect|const|let|var|function|return|import|from|if|else|try|catch|finally|for|while|do|switch|case|break|continue|default|new|typeof|instanceof)\b)|(\b(?:true|false|null|undefined|\d+)\b)|(\.\w+)/g;
+
+const JSON_LINE_REGEX =
+  /("(?:\\.|[^"\\])*"(?=\s*:))|("(?:\\.|[^"\\])*")|(\b(?:true|false|null|-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?)\b)|([{}[\]:,])/g;
+
+const MD_FENCE_REGEX = /^```/;
+const MD_HEADING_REGEX = /^(\s{0,3}#{1,6}\s+)(.*)$/;
+const MD_QUOTE_REGEX = /^(\s{0,3}>\s*)(.*)$/;
+const MD_LIST_REGEX = /^(\s{0,4}(?:[-*+]|\d+\.)\s+)(.*)$/;
+const MD_INLINES_REGEX =
+  /(`[^`\n]+`)|(\*{1,3}[^*\n]+\*{1,3}|_{1,3}[^_\n]+_{1,3})|(\[[^\]]+\]\([^)]+\))/g;
+
 /**
  * Sets a custom file system instance (useful when running under Node or bundled environments).
  *
@@ -101,8 +114,14 @@ export function getStepCodeSnippet(
 
     let filePath = location.file;
     if (!fs.existsSync(filePath)) {
-      const resolved =
-        typeof process !== 'undefined' && process.cwd ? `${process.cwd()}/${filePath}` : filePath;
+      let resolved = filePath;
+      if (typeof process !== 'undefined' && typeof process.cwd === 'function') {
+        const cwd = process.cwd();
+        const sep = cwd.includes('\\') ? '\\' : '/';
+        const cleanCwd = cwd.replace(/[/\\]+$/, '');
+        const cleanFile = filePath.replace(/^[/\\]+/, '');
+        resolved = `${cleanCwd}${sep}${cleanFile}`;
+      }
 
       if (fs.existsSync(resolved)) {
         filePath = resolved;
@@ -149,16 +168,14 @@ export function getStepCodeSnippet(
 export function highlightJsTokens(code: string): string {
   if (!code) return '';
 
-  const regex =
-    /(\/\/[^\n]*)|('(?:\\[\s\S]|[^'\\])*'|"(?:\\[\s\S]|[^"\\])*"|`(?:\\[\s\S]|[^`\\])*`)|(\b(?:await|async|test|expect|const|let|var|function|return|import|from|if|else|try|catch|finally|for|while|do|switch|case|break|continue|default|new|typeof|instanceof)\b)|(\b(?:true|false|null|undefined|\d+)\b)|(\.\w+)/g;
-
+  JS_TOKENS_REGEX.lastIndex = 0;
   let result = '';
   let lastIndex = 0;
   let match: RegExpExecArray | null;
 
-  while ((match = regex.exec(code)) !== null) {
+  while ((match = JS_TOKENS_REGEX.exec(code)) !== null) {
     result += escapeHTML(code.slice(lastIndex, match.index));
-    lastIndex = regex.lastIndex;
+    lastIndex = JS_TOKENS_REGEX.lastIndex;
 
     const [fullMatch, comment, str, keyword, numBool, method] = match;
 
@@ -190,21 +207,14 @@ export function highlightJsTokens(code: string): string {
 export function highlightJsonLine(line: string): string {
   if (!line) return '';
 
-  // Matches:
-  // 1: JSON Key ("key"\s*:)
-  // 2: JSON String value ("(?:\\.|[^"\\])*")
-  // 3: Number or boolean or null (\b(?:true|false|null|-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?)\b)
-  // 4: Brackets / punctuation ([{}[\]:,])
-  const regex =
-    /("(?:\\.|[^"\\])*"(?=\s*:))|("(?:\\.|[^"\\])*")|(\b(?:true|false|null|-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?)\b)|([{}[\]:,])/g;
-
+  JSON_LINE_REGEX.lastIndex = 0;
   let result = '';
   let lastIndex = 0;
   let match: RegExpExecArray | null;
 
-  while ((match = regex.exec(line)) !== null) {
+  while ((match = JSON_LINE_REGEX.exec(line)) !== null) {
     result += escapeHTML(line.slice(lastIndex, match.index));
-    lastIndex = regex.lastIndex;
+    lastIndex = JSON_LINE_REGEX.lastIndex;
 
     const [fullMatch, key, strVal, litVal, punct] = match;
 
@@ -235,24 +245,24 @@ export function highlightMarkdownLine(line: string): string {
   if (!line) return '';
 
   // 1. Code fences
-  if (/^```/.test(line)) {
+  if (MD_FENCE_REGEX.test(line)) {
     return `<span class="text-purple-700 dark:text-purple-400 font-bold font-mono">${escapeHTML(line)}</span>`;
   }
 
   // 2. Headings (# Header)
-  const headingMatch = line.match(/^(\s{0,3}#{1,6}\s+)(.*)$/);
+  const headingMatch = line.match(MD_HEADING_REGEX);
   if (headingMatch) {
     return `<span class="text-purple-700 dark:text-purple-400 font-bold">${escapeHTML(headingMatch[1])}</span><span class="text-accent-blue font-bold">${escapeHTML(headingMatch[2])}</span>`;
   }
 
   // 3. Blockquotes (> quote)
-  const quoteMatch = line.match(/^(\s{0,3}>\s*)(.*)$/);
+  const quoteMatch = line.match(MD_QUOTE_REGEX);
   if (quoteMatch) {
     return `<span class="text-slate-500 dark:text-slate-400 font-bold">${escapeHTML(quoteMatch[1])}</span><span class="text-slate-600 dark:text-slate-300 italic">${highlightMarkdownInlines(quoteMatch[2])}</span>`;
   }
 
   // 4. Bullet & numbered lists (- item, * item, 1. item)
-  const listMatch = line.match(/^(\s{0,4}(?:[-*+]|\d+\.)\s+)(.*)$/);
+  const listMatch = line.match(MD_LIST_REGEX);
   if (listMatch) {
     return `<span class="text-amber-700 dark:text-amber-400 font-bold">${escapeHTML(listMatch[1])}</span>${highlightMarkdownInlines(listMatch[2])}`;
   }
@@ -269,19 +279,14 @@ export function highlightMarkdownLine(line: string): string {
 function highlightMarkdownInlines(text: string): string {
   if (!text) return '';
 
-  // Matches:
-  // 1: Inline code (`...`)
-  // 2: Bold / Italic (**...** or *...*)
-  // 3: Markdown link [label](url)
-  const regex = /(`[^`\n]+`)|(\*{1,3}[^*\n]+\*{1,3}|_{1,3}[^_\n]+_{1,3})|(\[[^\]]+\]\([^)]+\))/g;
-
+  MD_INLINES_REGEX.lastIndex = 0;
   let result = '';
   let lastIndex = 0;
   let match: RegExpExecArray | null;
 
-  while ((match = regex.exec(text)) !== null) {
+  while ((match = MD_INLINES_REGEX.exec(text)) !== null) {
     result += escapeHTML(text.slice(lastIndex, match.index));
-    lastIndex = regex.lastIndex;
+    lastIndex = MD_INLINES_REGEX.lastIndex;
 
     const [fullMatch, code, boldItalic, link] = match;
 
@@ -418,6 +423,15 @@ export function highlightCodeSnippet(snippet: string, status?: string): string {
   return lines.map((line) => highlightCodeLine(line, status, maxLineNoWidth)).join('');
 }
 
+interface ExtendedPwTestStep extends PwTestStep {
+  snippet?: string;
+  subtitle?: string;
+  params?: Record<string, unknown>;
+  error?: PwTestStep['error'] & {
+    cause?: TestError | null;
+  };
+}
+
 /**
  * Recursively converts Playwright step models into internal TestStep models with code snippets and attachments.
  *
@@ -431,9 +445,8 @@ export function convertPlaywrightSteps(
 ): TestStep[] {
   const activeFs = fsModule || getNodeFs();
 
-  return pwSteps.map((step) => {
-    const rawStep = step as unknown as Record<string, unknown>;
-    const rawError = step.error as unknown as Record<string, unknown> | undefined;
+  return pwSteps.map((pwStep) => {
+    const step = pwStep as ExtendedPwTestStep;
 
     const error: TestStep['error'] = step.error
       ? {
@@ -448,7 +461,7 @@ export function convertPlaywrightSteps(
               }
             : null,
           snippet: step.error.snippet || '',
-          cause: (rawError?.cause as TestError | null) || null,
+          cause: step.error.cause || null,
         }
       : null;
 
@@ -463,10 +476,10 @@ export function convertPlaywrightSteps(
       : null;
 
     const snippet: string | undefined =
-      (typeof rawStep.snippet === 'string' ? rawStep.snippet : undefined) ||
+      (typeof step.snippet === 'string' ? step.snippet : undefined) ||
       getStepCodeSnippet(location, activeFs);
 
-    const rawParams = rawStep.params;
+    const rawParams = step.params;
     const params =
       rawParams && typeof rawParams === 'object'
         ? (rawParams as Record<string, unknown>)
@@ -474,13 +487,25 @@ export function convertPlaywrightSteps(
 
     return {
       title: step.title,
-      subtitle: typeof rawStep.subtitle === 'string' ? rawStep.subtitle : undefined,
+      subtitle: typeof step.subtitle === 'string' ? step.subtitle : undefined,
       location,
       snippet,
       params,
       duration: step.duration,
       status,
-      annotations: Array.isArray(rawStep.annotations) ? rawStep.annotations : [],
+      annotations: Array.isArray(step.annotations)
+        ? step.annotations.map((a) => ({
+            type: a.type,
+            description: a.description ?? null,
+            location: a.location
+              ? {
+                  file: a.location.file,
+                  line: a.location.line,
+                  column: a.location.column,
+                }
+              : null,
+          }))
+        : [],
       attachments: step.attachments
         ? step.attachments.map((att) => {
             let bodyData: string | null = null;

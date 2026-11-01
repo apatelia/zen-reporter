@@ -95,12 +95,15 @@ zen-reporter/
 │   ├── types/                 # Modular domain type definitions
 │   │   ├── history.ts         # DuckDB historical analytics & JSONL row schemas
 │   │   └── report.ts          # Core Playwright execution report models (TestCase, ResultSummary, etc.)
+│   ├── attachmentManager.ts   # Test result attachment extraction, MIME resolution & disk persistence
 │   ├── codeHighlighting.ts    # Syntax highlighting for step code snippets & error stack traces
 │   ├── cryptoUtils.ts         # MD5/SHA-256 hashing & error signature clustering
 │   ├── dataProcessor.ts       # Raw data conversion, duration calculations & package manager detection
 │   ├── exportFilename.ts      # Sanitized export filename builder
 │   ├── exportToCsv.ts         # Zero-dependency RFC 4180 CSV exporter with UTF-8 BOM
-│   ├── formatters.ts          # Duration, timestamp, text & file path formatting helpers
+│   ├── formatters.ts          # Duration, timestamp, text & cross-platform file path formatting helpers
+│   ├── gitUtils.ts            # Git environment resolution (CI env variables & local Git CLI rev-parse)
+│   ├── htmlReportGenerator.ts # HTML template loading, JSON data script injection & report emission
 │   ├── progressPrinter.ts     # Dedicated TTY console progress rendering ('line' | 'dot' | 'none')
 │   ├── reporter.ts            # Playwright reporter lifecycle event orchestrator (onBegin, onTestEnd, onEnd)
 │   ├── runHistory.ts          # Run identifier builder & DuckDB row flattening utilities
@@ -121,7 +124,9 @@ zen-reporter/
 │   │   ├── help.js            # Help and usage documentation renderer
 │   │   ├── history.js         # History report and query engine handler ('zr history ...')
 │   │   ├── show.js            # Internal 127.0.0.1 static HTTP report server launcher ('zr show')
-│   │   └── summary.js         # Markdown summary snippet generator ('zr summary')
+│   │   ├── summary.js         # Markdown summary snippet generator ('zr summary')
+│   │   ├── system.d.ts        # TypeScript declarations for system environment utilities
+│   │   └── system.js          # Canonical OS name and package version resolution utilities
 │   └── zen-reporter.js        # Executable CLI entry point delegating to bin/commands/
 ├── zen-report/                # Generated self-contained report bundle folder
 │   ├── index.html             # Main interactive HTML dashboard interface
@@ -163,6 +168,8 @@ flowchart TD
   Hooks: onBegin ➔ onTestBegin ➔ onTestEnd ➔ onEnd
   Orchestrates Playwright lifecycle events:
     ├── TTY Progress ──► ProgressPrinter (src/lib/progressPrinter.ts)
+    ├── Attachments ──► processAttachments (src/lib/attachmentManager.ts)
+    ├── Git Metadata ──► getGitCommit & getGitBranch (src/lib/gitUtils.ts)
     └── History Writer ──► runHistoryWriter (src/lib/runHistoryWriter.ts)
                          │
                          ▼
@@ -170,7 +177,7 @@ flowchart TD
     Structured JSON dataset containing testRun & summary
                          │
                          ▼
-        HTML Generation (ZenReporter.generateHtmlReport)
+     HTML Generation (src/lib/htmlReportGenerator.ts)
   Inlines report.json & history.json into <script id="report-data">
                          │
                          ▼

@@ -101,10 +101,9 @@ export function handleSummary(cwd = process.cwd()) {
   const reportJsonPath = resolve(cwd, outputDir, 'report.json');
 
   if (!existsSync(reportJsonPath)) {
-    console.error(`✗ Report file not found at "${outputDir}/report.json".`);
-    console.error(`  Make sure you have run your Playwright tests first.`);
-
-    process.exit(1);
+    throw new Error(
+      `Report file not found at "${outputDir}/report.json".\n  Make sure you have run your Playwright tests first.`
+    );
   }
 
   try {
@@ -114,8 +113,6 @@ export function handleSummary(cwd = process.cwd()) {
 
     console.log(summaryMd);
   } catch (err) {
-    console.error('✗ Failed to read report summary:', err.message || err);
-
-    process.exit(1);
+    throw new Error(`Failed to read report summary: ${err.message || err}`, { cause: err });
   }
 }

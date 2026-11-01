@@ -1,5 +1,3 @@
-import React from 'react';
-
 export interface InfoTooltipProps {
   text: string;
   isFirst?: boolean;
@@ -44,11 +42,11 @@ export function InfoTooltip({
         />
       </svg>
       <div
-        className={`pointer-events-none absolute top-full mt-2 hidden group-hover:block z-50 w-48 rounded-md bg-[var(--color-tooltip-bg)] text-[var(--color-tooltip-text)] p-2 text-center text-xs shadow-lg border border-[var(--color-tooltip-border)] ${tooltipPosClass}`}
+        className={`pointer-events-none absolute top-full mt-2 hidden group-hover:block z-50 w-48 rounded-md bg-(--color-tooltip-bg) text-(--color-tooltip-text) p-2 text-center text-xs shadow-lg border border-(--color-tooltip-border) ${tooltipPosClass}`}
       >
         {text}
         <div
-          className={`absolute bottom-full -mb-1 border-4 border-transparent border-b-[var(--color-tooltip-bg)] ${arrowPosClass}`}
+          className={`absolute bottom-full -mb-1 border-4 border-transparent border-b-(--color-tooltip-bg) ${arrowPosClass}`}
         />
       </div>
     </div>

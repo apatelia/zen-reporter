@@ -9,8 +9,8 @@ import BackToTopButton from '@/components/shared/BackToTopButton';
 import SuitesSection from '@/components/suites/SuitesSection';
 import { formatDateRange, formatDuration } from '@/lib/formatters';
 import type { HistoryData } from '@/lib/types/history';
-import type { ReportData, TestRun, TestSuite } from '@/lib/types/report';
-import { lazy, Suspense, useEffect, useMemo, useState } from 'react';
+import type { ReportData, TestSuite } from '@/lib/types/report';
+import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react';
 
 const ProjectsSection = lazy(() => import('@/components/projects/ProjectsSection'));
 const TrendsSection = lazy(() => import('@/components/trends/TrendsSection'));
@@ -28,6 +28,7 @@ export default function App() {
   }, []);
 
   const [activeTabState, setActiveTabState] = useState<TabKey>('overview');
+  const contentContainerRef = useRef<HTMLDivElement>(null);
   const [reportData, setReportData] = useState<ReportData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [historyData, setHistoryData] = useState<HistoryData | null>(null);
@@ -52,8 +53,7 @@ export default function App() {
   }, []);
 
   const [theme, setTheme] = useState<'cafe' | 'sentinel' | 'streak'>(() => {
-    const testRun = initialReportData?.testRun as
-      (TestRun & { theme?: string; darkMode?: boolean }) | undefined;
+    const testRun = initialReportData?.testRun;
     const configuredTheme = testRun?.theme;
 
     if (configuredTheme) {
@@ -81,8 +81,7 @@ export default function App() {
       }
     }
 
-    const testRun = initialReportData?.testRun as
-      (TestRun & { theme?: string; darkMode?: boolean }) | undefined;
+    const testRun = initialReportData?.testRun;
 
     if (testRun?.darkMode !== undefined) {
       return testRun.darkMode ? 'dark' : 'light';
@@ -94,7 +93,7 @@ export default function App() {
   const [commitCopied, setCommitCopied] = useState(false);
 
   const applyThemeAndDarkMode = (data: ReportData) => {
-    const testRun = data?.testRun as (TestRun & { theme?: string; darkMode?: boolean }) | undefined;
+    const testRun = data?.testRun;
 
     if (testRun) {
       if (testRun.theme) {
@@ -267,6 +266,15 @@ export default function App() {
     return activeTabState;
   }, [isMinimalReport, activeTabState]);
 
+  useEffect(() => {
+    if (contentContainerRef.current) {
+      contentContainerRef.current.scrollTop = 0;
+    }
+    if (typeof window !== 'undefined') {
+      window.scrollTo(0, 0);
+    }
+  }, [activeTab]);
+
   /** Single root element for the app layout */
   return (
     <div className="flex h-screen overflow-hidden bg-canvas">
@@ -377,7 +385,23 @@ export default function App() {
                                       setTimeout(() => setCommitCopied(false), 2000);
                                     })
                                     .catch(() => {
-                                      /* Ignore clipboard rejection */
+                                      // Fallback to execCommand for restricted browser environments
+                                      try {
+                                        const ta = document.createElement('textarea');
+                                        ta.value = commitToCopy;
+                                        ta.style.position = 'fixed';
+                                        ta.style.opacity = '0';
+                                        document.body.appendChild(ta);
+                                        ta.focus();
+                                        ta.select();
+                                        if (document.execCommand('copy')) {
+                                          setCommitCopied(true);
+                                          setTimeout(() => setCommitCopied(false), 2000);
+                                        }
+                                        document.body.removeChild(ta);
+                                      } catch {
+                                        /* ignore fallback failure */
+                                      }
                                     });
                                 }
                               }}
@@ -449,7 +473,7 @@ export default function App() {
           </div>
         </header>
 
-        <div className="flex-1 overflow-auto">
+        <div ref={contentContainerRef} className="flex-1 overflow-auto">
           <div className="mx-auto max-w-full px-6 sm:px-8 pt-6 sm:pt-8 pb-8">
             {isLoading && (
               <div className="flex items-center justify-center py-24">

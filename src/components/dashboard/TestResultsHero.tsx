@@ -9,14 +9,14 @@ export interface TestResultsHeroProps {
 }
 
 export default function TestResultsHero({ summary, suites }: TestResultsHeroProps) {
-  const statusPcts = computeStatusPercentages(summary);
+  const statusPercents = computeStatusPercentages(summary);
   const totalFailures = summary.failed + summary.timedOut + (summary.interrupted ?? 0);
   const isParallel = Boolean(summary.workers && summary.workers > 1);
 
   const failureRateClass =
-    statusPcts.failureRate === 0 || statusPcts.failureRate <= 10
+    statusPercents.failureRate === 0 || statusPercents.failureRate <= 10
       ? 'bg-success-500/10 text-success-600 dark:text-success-400 border-success-500/20'
-      : statusPcts.failureRate <= 40
+      : statusPercents.failureRate <= 40
         ? 'bg-warning-500/10 text-warning-600 dark:text-warning-400 border-warning-500/20'
         : 'bg-danger-500/10 text-danger-600 dark:text-danger-400 border-danger-500/20';
 
@@ -24,7 +24,7 @@ export default function TestResultsHero({ summary, suites }: TestResultsHeroProp
     {
       label: 'Passed',
       value: summary.passed,
-      pct: statusPcts.passed,
+      pct: statusPercents.passed,
       color: 'bg-success-500',
       text: 'text-success-600 dark:text-success-500',
       bg: 'bg-success-500/5 dark:bg-success-500/10 border-success-500/20',
@@ -43,7 +43,7 @@ export default function TestResultsHero({ summary, suites }: TestResultsHeroProp
     {
       label: 'Failed',
       value: summary.failed,
-      pct: statusPcts.failed,
+      pct: statusPercents.failed,
       color: 'bg-danger-500',
       text: 'text-danger-600 dark:text-danger-500',
       bg: 'bg-danger-500/5 dark:bg-danger-500/10 border-danger-500/20',
@@ -62,7 +62,7 @@ export default function TestResultsHero({ summary, suites }: TestResultsHeroProp
     {
       label: 'Timed Out',
       value: summary.timedOut,
-      pct: statusPcts.timedOut,
+      pct: statusPercents.timedOut,
       color: 'bg-danger-600 dark:bg-danger-400',
       text: 'text-danger-700 dark:text-danger-400',
       bg: 'bg-danger-600/5 dark:bg-danger-400/10 border-danger-600/25 dark:border-danger-400/25',
@@ -85,7 +85,7 @@ export default function TestResultsHero({ summary, suites }: TestResultsHeroProp
     {
       label: 'Interrupted',
       value: summary.interrupted ?? 0,
-      pct: statusPcts.interrupted,
+      pct: statusPercents.interrupted,
       color: 'bg-amber-600 dark:bg-amber-500',
       text: 'text-amber-600 dark:text-amber-500',
       bg: 'bg-amber-500/5 dark:bg-amber-500/10 border-amber-500/20',
@@ -108,7 +108,7 @@ export default function TestResultsHero({ summary, suites }: TestResultsHeroProp
     {
       label: 'Skipped',
       value: summary.skipped,
-      pct: statusPcts.skipped,
+      pct: statusPercents.skipped,
       color: 'bg-slate-400 dark:bg-slate-500',
       text: 'text-slate-600 dark:text-slate-400',
       bg: 'bg-slate-500/5 dark:bg-slate-400/10 border-slate-500/20 dark:border-slate-400/20',
@@ -131,7 +131,7 @@ export default function TestResultsHero({ summary, suites }: TestResultsHeroProp
       <div className="flex flex-col gap-6 lg:flex-row lg:items-stretch">
         {/* Left Side: Pass Rate Gauge */}
         <div className="flex flex-col items-center justify-between border-b border-border-default pb-5 lg:w-64 lg:border-b-0 lg:border-r lg:pb-0 lg:pr-6 dark:border-white/15">
-          <PassRateRing passRate={statusPcts.passRate} />
+          <PassRateRing passRate={statusPercents.passRate} />
         </div>
 
         {/* Right Side: Integrated Unbordered Metadata Strip + Execution Breakdown */}
@@ -244,7 +244,7 @@ export default function TestResultsHero({ summary, suites }: TestResultsHeroProp
               <div
                 className={`inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-semibold ${failureRateClass}`}
               >
-                <span>Failure Rate: {statusPcts.failureRate}%</span>
+                <span>Failure Rate: {statusPercents.failureRate}%</span>
                 <span className="opacity-40">•</span>
                 <span>
                   {totalFailures} {totalFailures === 1 ? 'failure' : 'failures'}

@@ -59,8 +59,8 @@ export function injectReportData(options: InjectReportDataOptions = {}): Plugin 
             const safeData = data.replace(/</g, '\\u003c');
             const script = `<script id="report-data" type="application/json">${safeData}</script>`;
             out = out.replace('</head>', `${script}\n</head>`);
-          } catch {
-            /* ignore */
+          } catch (err) {
+            console.warn(`[inject-report-data] Failed to inject ${dataFile}:`, err);
           }
         }
 
@@ -72,8 +72,8 @@ export function injectReportData(options: InjectReportDataOptions = {}): Plugin 
             const safeData = data.replace(/</g, '\\u003c');
             const script = `<script id="history-data" type="application/json">${safeData}</script>`;
             out = out.replace('</head>', `${script}\n</head>`);
-          } catch {
-            /* ignore */
+          } catch (err) {
+            console.warn(`[inject-report-data] Failed to inject ${historyFile}:`, err);
           }
         }
 

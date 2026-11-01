@@ -172,8 +172,8 @@ export default function TestCaseDetail({ testCase, showSteps = true }: TestCaseD
           <h5 className="text-xs font-bold uppercase tracking-wider text-text-body-mid dark:text-text-muted">
             Visual Regression Comparison
           </h5>
-          {visualDiffPairs.map((pair, idx) => (
-            <VisualDiffViewer key={`visual-diff-${pair.name || idx}`} pair={pair} />
+          {visualDiffPairs.map((pair) => (
+            <VisualDiffViewer key={pair.name || pair.actualUrl || pair.expectedUrl} pair={pair} />
           ))}
         </div>
       )}

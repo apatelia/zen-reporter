@@ -2,6 +2,36 @@ import { formatDuration } from './formatters';
 import { computePassRate, type FailedTest } from './statsUtils';
 import type { Attachment, ResultSummary } from './types/report';
 
+const RE_TIMESTAMP = /\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?Z?/gi;
+const RE_PTR = /0x[a-fA-F0-9]+/g;
+const RE_UUID = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/gi;
+const RE_LOCALHOST = /localhost:\d+/g;
+const RE_DURATION = /\d+ms/gi;
+const RE_LINE_COL = /:\d+:\d+/g;
+
+const MAX_WORD = Math.pow(2, 32);
+
+// Precomputed SHA-256 round and initial hash constants
+const SHA256_K: number[] = [];
+const SHA256_H_INIT: number[] = [];
+
+(function initSha256Constants() {
+  const isComposite: Record<number, boolean> = {};
+  let primeCounter = 0;
+  for (let candidate = 2; primeCounter < 64; candidate++) {
+    if (!isComposite[candidate]) {
+      for (let i = 0; i < 313; i += candidate) {
+        isComposite[i] = true;
+      }
+      if (primeCounter < 8) {
+        SHA256_H_INIT[primeCounter] = (Math.pow(candidate, 1 / 2) * MAX_WORD) | 0;
+      }
+      SHA256_K[primeCounter] = (Math.pow(candidate, 1 / 3) * MAX_WORD) | 0;
+      primeCounter++;
+    }
+  }
+})();
+
 /**
  * Normalizes error messages and stack traces by masking dynamic tokens (timestamps,
  * pointers, line numbers, ports, durations) so identical failure causes yield the same signature.
@@ -12,19 +42,19 @@ import type { Attachment, ResultSummary } from './types/report';
  */
 export function normalizeErrorText(message: string, stack: string): string {
   const normMsg = (message || '')
-    .replace(/\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?Z?/gi, '<TIMESTAMP>')
-    .replace(/0x[a-fA-F0-9]+/g, '<PTR>')
-    .replace(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/gi, '<UUID>')
-    .replace(/localhost:\d+/g, '<HOST>')
-    .replace(/\d+ms/gi, '<DURATION>')
-    .replace(/:\d+:\d+/g, ':<LINE>:<COL>');
+    .replace(RE_TIMESTAMP, '<TIMESTAMP>')
+    .replace(RE_PTR, '<PTR>')
+    .replace(RE_UUID, '<UUID>')
+    .replace(RE_LOCALHOST, '<HOST>')
+    .replace(RE_DURATION, '<DURATION>')
+    .replace(RE_LINE_COL, ':<LINE>:<COL>');
 
   const normStack = (stack || '')
     .split('\n')
     .filter((line) => !line.includes('node_modules') && !line.includes('internal/'))
     .slice(0, 4)
     .join('\n')
-    .replace(/:\d+:\d+/g, ':<LINE>:<COL>');
+    .replace(RE_LINE_COL, ':<LINE>:<COL>');
 
   return `${normMsg.trim()}\n${normStack.trim()}`;
 }
@@ -47,25 +77,8 @@ function rightRotate(value: number, amount: number): number {
  * @returns 64-character hexadecimal SHA-256 hash string.
  */
 export function sha256Sync(str: string): string {
-  const mathPow = Math.pow;
-  const maxWord = mathPow(2, 32);
-  const hash: number[] = [];
-  const k: number[] = [];
-  let primeCounter = 0;
-
-  const isComposite: Record<number, boolean> = {};
-  for (let candidate = 2; primeCounter < 64; candidate++) {
-    if (!isComposite[candidate]) {
-      for (let i = 0; i < 313; i += candidate) {
-        isComposite[i] = true;
-      }
-      if (primeCounter < 8) {
-        hash[primeCounter] = (mathPow(candidate, 1 / 2) * maxWord) | 0;
-      }
-      k[primeCounter] = (mathPow(candidate, 1 / 3) * maxWord) | 0;
-      primeCounter++;
-    }
-  }
+  const hash = SHA256_H_INIT.slice(0);
+  const k = SHA256_K;
 
   let wordsStr = str + '\x80';
   while (wordsStr.length % 64 !== 56) wordsStr += '\x00';
@@ -78,7 +91,7 @@ export function sha256Sync(str: string): string {
     words[i >> 2] |= charCode << (((3 - i) % 4) * 8);
   }
 
-  words[words.length] = (asciiBitLength / maxWord) | 0;
+  words[words.length] = (asciiBitLength / MAX_WORD) | 0;
   words[words.length] = asciiBitLength;
 
   for (let j = 0; j < words.length;) {

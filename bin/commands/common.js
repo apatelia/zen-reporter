@@ -1,7 +1,6 @@
-import { existsSync, readFileSync, readdirSync } from 'fs';
-import { createRequire } from 'module';
-import os, { platform, type } from 'os';
-import { resolve } from 'path';
+import { readdirSync } from 'fs';
+
+export { getOsName, getPlaywrightVersion, getZenReporterVersion } from './system.js';
 
 /**
  * Formats a duration in milliseconds into a concise human-readable string (e.g. "45s", "2m 15s").
@@ -338,75 +337,6 @@ export function printTable(
 }
 
 /**
- * Returns OS friendly name for system diagnostic output.
- *
- * @returns {string} Operating system name (e.g. 'macOS', 'Windows', 'Linux').
- */
-export function getOsName() {
-  const p = platform();
-
-  if (p === 'darwin') return `macOS ${os.release()}`;
-  if (p === 'win32') return `${os.version()}`;
-  if (p === 'linux') {
-    try {
-      if (existsSync('/etc/os-release')) {
-        const content = readFileSync('/etc/os-release', 'utf8');
-        const match = content.match(/^PRETTY_NAME="?([^"\n]+)"?/m);
-
-        if (match && match[1]) return match[1];
-      }
-    } catch {
-      /* ignore */
-    }
-
-    return 'Linux';
-  }
-
-  return type();
-}
-
-/**
- * Detects installed @playwright/test package version in the project.
- *
- * @param {string} [cwd=process.cwd()] - Project directory path.
- * @returns {string} Installed Playwright version string or 'not installed'.
- */
-export function getPlaywrightVersion(cwd = process.cwd()) {
-  const require = createRequire(resolve(cwd, 'package.json'));
-
-  try {
-    const pwPkg = require('@playwright/test/package.json');
-
-    return pwPkg.version || 'not installed';
-  } catch {
-    return 'not installed';
-  }
-}
-
-/**
- * Detects installed zen-reporter package version.
- *
- * @returns {string} Package version string or 'unknown'.
- */
-export function getZenReporterVersion() {
-  try {
-    const pkgPath = resolve(
-      import.meta.dirname || new URL('.', import.meta.url).pathname,
-      '../../package.json'
-    );
-    if (existsSync(pkgPath)) {
-      const pkg = JSON.parse(readFileSync(pkgPath, 'utf8'));
-
-      return pkg.version || 'unknown';
-    }
-  } catch {
-    /* ignore */
-  }
-
-  return 'unknown';
-}
-
-/**
  * Locates historic run JSONL files in specified runs directory. Exits process if none are found.
  *
  * @param {string} runsDirPath - Resolved path to runs directory.
@@ -423,11 +353,9 @@ export function findRunFiles(runsDirPath, historyDir) {
   }
 
   if (files.length === 0) {
-    console.error(
-      `✗ No historic runs found in "${historyDir}/runs". Run your Playwright tests first.`
+    throw new Error(
+      `No historic runs found in "${historyDir}/runs". Run your Playwright tests first.`
     );
-
-    process.exit(1);
   }
 
   return files;
@@ -444,11 +372,11 @@ export async function openDuckDb() {
 
     return await DuckDBConnection.create();
   } catch (e) {
-    if (e?.code === 'ERR_MODULE_NOT_FOUND') {
-      console.error('✗ @duckdb/node-api is not installed. Install it to use "zr history":');
-      console.error('  npm i -D @duckdb/node-api');
-
-      process.exit(1);
+    if (e?.code === 'ERR_MODULE_NOT_FOUND' || e?.code === 'MODULE_NOT_FOUND') {
+      throw new Error(
+        '@duckdb/node-api is not installed. Install it to use "zr history":\n  npm i -D @duckdb/node-api',
+        { cause: e }
+      );
     }
 
     throw e;
@@ -483,7 +411,7 @@ export async function runQuery(conn, sql, params) {
 }
 
 export const SRC = "read_json(?, format='newline_delimited', union_by_name=true)";
-export const RUNS_SQL = `SELECT DISTINCT run_name, started_at, run_duration_ms, run_total, run_passed, run_failed, run_timed_out, run_skipped, run_interrupted FROM ${SRC} ORDER BY started_at DESC`;
+export const RUNS_SQL = `SELECT DISTINCT run_name, started_at, run_duration_ms AS duration_ms, count(DISTINCT file) AS files, run_total AS tests, run_passed AS passed, run_failed AS failed, run_timed_out AS timed_out, run_skipped AS skipped, run_interrupted AS interrupted FROM ${SRC} GROUP BY run_name, started_at, run_duration_ms, run_total, run_passed, run_failed, run_timed_out, run_skipped, run_interrupted ORDER BY started_at DESC`;
 export const FLAKY_SQL = `SELECT suite, file, title, project, count(*) FILTER (status IN ('failed', 'timedOut')) AS failed_runs, count(*) FILTER (status = 'passed') AS passed_runs, sum(passed_on_retry) AS recovered_by_retry, count(*) AS total_runs, max(started_at) FILTER (status IN ('failed', 'timedOut') OR passed_on_retry > 0) AS last_flaky_at, max(started_at) AS last_seen_at FROM ${SRC} GROUP BY suite, file, title, project HAVING failed_runs > 0 AND passed_runs > 0 ORDER BY failed_runs DESC, passed_runs DESC`;
 export const REGRESSIONS_SQL = `WITH run_tests AS (SELECT run_id, run_name, suite, file, title, project, max(started_at) AS started_at, CASE WHEN count(*) FILTER (status = 'failed') > 0 THEN 'failed' WHEN count(*) FILTER (status = 'timedOut') > 0 THEN 'timedOut' WHEN count(*) FILTER (status = 'interrupted') > 0 THEN 'interrupted' WHEN count(*) FILTER (status = 'skipped') > 0 THEN 'skipped' ELSE 'passed' END AS status FROM ${SRC} GROUP BY run_id, run_name, suite, file, title, project), ordered AS (SELECT run_id, run_name, started_at, suite, file, title, project, status, row_number() OVER (PARTITION BY suite, file, title, project ORDER BY started_at, run_id) AS seq FROM run_tests), regressions AS (SELECT b.run_name AS regressed_in, b.started_at AS regressed_at, b.suite AS suite, b.file AS file, b.title AS title, b.project AS project FROM ordered b JOIN ordered a ON a.suite = b.suite AND a.file = b.file AND a.title = b.title AND a.project = b.project AND b.seq = a.seq + 1 WHERE a.status = 'passed' AND b.status IN ('failed', 'timedOut', 'interrupted')), latest AS (SELECT run_id, run_name, started_at, status, suite, file, title, project, row_number() OVER (PARTITION BY suite, file, title, project ORDER BY started_at DESC, run_id DESC) AS rn FROM run_tests) SELECT r.suite, r.file, r.title, r.project, r.regressed_in, r.regressed_at, l.status AS last_status, l.started_at AS last_run_at FROM (SELECT r.*, row_number() OVER (PARTITION BY suite, file, title, project ORDER BY regressed_at DESC) AS rn FROM regressions r) r JOIN latest l ON l.suite = r.suite AND l.file = r.file AND l.title = r.title AND l.project = r.project AND l.rn = 1 WHERE r.rn = 1 ORDER BY l.started_at DESC`;
 export const SLOW_SQL = `SELECT suite, file, title, project, round(avg(duration_ms), 1) AS avg_duration_ms, max(duration_ms) AS max_duration_ms, arg_max(duration_ms, started_at) AS last_duration_ms, count(*) AS runs FROM ${SRC} GROUP BY suite, file, title, project ORDER BY avg(duration_ms) DESC LIMIT ?`;
