@@ -9,7 +9,7 @@ import type {
 import { execFileSync, spawn } from 'child_process';
 import * as fs from 'fs';
 import { createRequire } from 'module';
-import { platform, type as osType } from 'os';
+import os, { platform, type as osType } from 'os';
 import * as path from 'path';
 import { fileURLToPath } from 'url';
 import { convertPlaywrightSteps, sanitizeAnsi, setFsModule } from './codeHighlighting';
@@ -422,8 +422,8 @@ class ZenReporter implements Reporter {
   private getOsName(): string {
     const p = platform();
 
-    if (p === 'darwin') return 'macOS';
-    if (p === 'win32') return 'Windows';
+    if (p === 'darwin') return `macOS ${os.release()}`;
+    if (p === 'win32') return `${os.version()}`;
     if (p === 'linux') {
       try {
         if (fs.existsSync('/etc/os-release')) {

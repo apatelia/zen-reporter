@@ -1,6 +1,6 @@
 import { existsSync, readFileSync, readdirSync } from 'fs';
 import { createRequire } from 'module';
-import { platform, type } from 'os';
+import os, { platform, type } from 'os';
 import { resolve } from 'path';
 
 /**
@@ -345,8 +345,8 @@ export function printTable(
 export function getOsName() {
   const p = platform();
 
-  if (p === 'darwin') return 'macOS';
-  if (p === 'win32') return 'Windows';
+  if (p === 'darwin') return `macOS ${os.release()}`;
+  if (p === 'win32') return `${os.version()}`;
   if (p === 'linux') {
     try {
       if (existsSync('/etc/os-release')) {
