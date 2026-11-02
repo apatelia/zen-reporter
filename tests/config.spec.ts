@@ -93,4 +93,46 @@ test.describe('Zen Reporter Configuration Tests', () => {
     const invalidConfig = resolveConfig({ openAutomatically: 'invalid' });
     expect(invalidConfig.openAutomatically).toBe('never');
   });
+
+  test('resolves history configuration options correctly', () => {
+    // Boolean true/false
+    const trueConfig = resolveConfig({ history: true });
+    expect(trueConfig.enableHistory).toBe(true);
+    expect(trueConfig.history).toBe(true);
+
+    const falseConfig = resolveConfig({ history: false });
+    expect(falseConfig.enableHistory).toBe(false);
+    expect(falseConfig.history).toBe(false);
+
+    // Local mode
+    const localConfig = resolveConfig({
+      history: { mode: 'local', windowSize: 100, maxRuns: 500 },
+    });
+    expect(localConfig.enableHistory).toBe(true);
+    expect(localConfig.history).toEqual({ mode: 'local', windowSize: 100, maxRuns: 500 });
+
+    // Remote mode
+    const remoteConfig = resolveConfig({
+      history: {
+        mode: 'remote',
+        serverUrl: 'http://localhost:3000',
+        apiKey: 'secret-key',
+        projectId: 'my-project',
+      },
+    });
+    expect(remoteConfig.enableHistory).toBe(true);
+    expect(remoteConfig.history).toEqual({
+      mode: 'remote',
+      serverUrl: 'http://localhost:3000',
+      apiKey: 'secret-key',
+      projectId: 'my-project',
+    });
+
+    // Disabled mode
+    const offConfig = resolveConfig({
+      history: { mode: 'off' },
+    });
+    expect(offConfig.enableHistory).toBe(false);
+    expect(offConfig.history).toEqual({ mode: 'off' });
+  });
 });

@@ -1,7 +1,6 @@
 import type { FullConfig } from '@playwright/test/reporter';
-import * as fs from 'fs';
 import * as path from 'path';
-import { buildRunId, flattenRunRows } from './runHistory';
+import { SqliteHistoryStore } from './history/SqliteHistoryStore';
 import type { ResultSummary, TestCase as TestCaseModel } from './types/report';
 
 export interface WriteRunHistoryOptions {
@@ -14,48 +13,34 @@ export interface WriteRunHistoryOptions {
   endedAt: string;
   testCases: TestCaseModel[];
   stepCategories?: Record<string, number>;
+  dbPath?: string;
+  maxRuns?: number;
+  windowSize?: number;
 }
 
 /**
- * Persist every run as a self-contained per-run JSONL file under
- * `<outputDir>/runs/` so historic runs survive report rebuilds.
+ * Persists test run data to the centralized SQLite database (`history.db`).
  * Failure policy: catch-and-log only — history writing must never break report/HTML generation.
  *
  * @param options - Configuration options containing run metrics, metadata, and test cases.
  */
-export function writeRunHistory(options: WriteRunHistoryOptions): void {
+export async function writeRunHistory(options: WriteRunHistoryOptions): Promise<void> {
+  const cwd = process.cwd();
+  const normalizedCwd = cwd.endsWith('/') ? cwd.slice(0, -1) : cwd;
+  const outputDir = path.resolve(normalizedCwd, options.outputDir);
+
   try {
-    const runId = buildRunId(options.startTime, options.testRunName, options.shard ?? null);
-    const cwd = process.cwd();
-    const normalizedCwd = cwd.endsWith('/') ? cwd.slice(0, -1) : cwd;
-    const runsDir = path.resolve(normalizedCwd, options.outputDir, 'runs');
-
-    // Collision guard (two invocations same ms + same name): append -2, -3, ...
-    let finalRunId = runId;
-    let suffix = 2;
-
-    while (fs.existsSync(path.join(runsDir, `${finalRunId}.jsonl`))) {
-      finalRunId = `${runId}-${suffix}`;
-      suffix += 1;
-    }
-
-    const rows = flattenRunRows(
-      finalRunId,
-      options.testRunName,
-      options.projectName,
-      options.summary,
-      options.endedAt,
-      options.testCases,
-      options.stepCategories
-    );
-
-    fs.mkdirSync(runsDir, { recursive: true });
-    fs.writeFileSync(
-      path.join(runsDir, `${finalRunId}.jsonl`),
-      rows.map((r) => JSON.stringify(r)).join('\n') + '\n',
-      'utf8'
-    );
+    const dbPath = options.dbPath
+      ? path.resolve(normalizedCwd, options.dbPath)
+      : path.join(outputDir, 'history.db');
+    const store = new SqliteHistoryStore({
+      dbPath,
+      maxRuns: options.maxRuns,
+      windowSize: options.windowSize,
+    });
+    await store.saveRun(options);
+    await store.close();
   } catch (e) {
-    console.error('Run history write failed:', e);
+    console.warn('SQLite history write failed:', e);
   }
 }

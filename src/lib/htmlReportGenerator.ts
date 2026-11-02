@@ -251,6 +251,21 @@ export function generateHtmlReport(
 
     if (options.enableHistory !== false) {
       refreshHistory(options.outputDir);
+
+      const dbPath = path.join(outputDir, 'history.db');
+      const runsDir = path.join(outputDir, 'runs');
+      if (fs.existsSync(dbPath) && fs.existsSync(runsDir)) {
+        try {
+          const jsonlFiles = fs.readdirSync(runsDir).filter((f) => f.endsWith('.jsonl'));
+          if (jsonlFiles.length > 0) {
+            console.log(
+              `\x1b[33m💡\x1b[0m Note: Zen Reporter is now using SQLite (${path.relative(process.cwd(), dbPath) || dbPath}) for historical data. Legacy JSONL files in "${path.relative(process.cwd(), runsDir) || runsDir}" can be safely removed, or run "${getShowReportCommand(pm).replace('show', 'history migrate --clean')}".\n`
+            );
+          }
+        } catch {
+          /* ignore error reading runsDir */
+        }
+      }
     }
 
     if (options.singleSummaryFile) {

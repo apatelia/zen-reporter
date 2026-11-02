@@ -96,3 +96,64 @@ export interface HistoryData {
   files?: HistoryFileRow[];
   tests?: HistoryTestRow[];
 }
+
+/** Local SQLite file-based history configuration (zero-config, offline, standalone) */
+export interface LocalHistoryConfig {
+  mode?: 'local';
+  /**
+   * Custom path or filename for the SQLite database.
+   * Defaults to `${outputDir}/history.db`
+   */
+  dbPath?: string;
+  /**
+   * Maximum number of historical runs embedded into the static HTML report.
+   * Default: 50
+   */
+  windowSize?: number;
+  /**
+   * Retention policy: max number of runs to keep in history.db (or 0 for infinite).
+   * Default: 1000
+   */
+  maxRuns?: number;
+}
+
+/** Remote history configuration (team server, LAN dashboard, or cloud SaaS) */
+export interface RemoteHistoryConfig {
+  mode: 'remote';
+  /** URL of the Zen Reporter ingestion server (e.g. 'http://zen.lan:3000' or 'https://api.zen-reporter.io') */
+  serverUrl: string;
+  /** API key for authenticating with the project/tenant */
+  apiKey?: string;
+  /** Explicit Project / Repo identifier */
+  projectId?: string;
+  /**
+   * Stable CI execution run key for idempotent de-duplication (e.g. process.env.GITHUB_RUN_ID).
+   * If omitted, falls back to automatic detection from CI environment variables.
+   */
+  runId?: string;
+  /**
+   * Whether to also save a local SQLite copy as a fallback if the remote server is unreachable.
+   * Default: true
+   */
+  fallbackToLocal?: boolean;
+  /**
+   * Timeout in milliseconds for HTTP ingestion requests.
+   * Default: 5000
+   */
+  timeoutMs?: number;
+}
+
+/** Configuration to disable historical tracking entirely */
+export interface DisabledHistoryConfig {
+  mode: 'off';
+}
+
+/**
+ * Historical Data Configuration:
+ * - `boolean`: true (local default), false (disabled)
+ * - `LocalHistoryConfig`: detailed local settings
+ * - `RemoteHistoryConfig`: push to central server or SaaS
+ * - `DisabledHistoryConfig`: turn history off
+ */
+export type HistoryConfig =
+  boolean | LocalHistoryConfig | RemoteHistoryConfig | DisabledHistoryConfig;

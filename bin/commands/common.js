@@ -1,4 +1,5 @@
-import { readdirSync } from 'fs';
+import { existsSync, readdirSync } from 'fs';
+import { resolve } from 'path';
 
 export { getOsName, getPlaywrightVersion, getZenReporterVersion } from './system.js';
 
@@ -352,13 +353,39 @@ export function findRunFiles(runsDirPath, historyDir) {
     /* runs dir missing */
   }
 
-  if (files.length === 0) {
-    throw new Error(
-      `No historic runs found in "${historyDir}/runs". Run your Playwright tests first.`
-    );
+  const dbPath = resolve(runsDirPath, '..', 'history.db');
+  if (files.length === 0 && !existsSync(dbPath)) {
+    throw new Error(`No historic runs found in "${historyDir}". Run your Playwright tests first.`);
   }
 
   return files;
+}
+
+/**
+ * Prepares the DuckDB source view `history_src` from either `history.db` (SQLite)
+ * or fallback newline-delimited JSONL files.
+ *
+ * @param {object} conn - Active DuckDB connection.
+ * @param {string} historyDir - Output directory name.
+ * @param {string} [cwd=process.cwd()] - Current working directory.
+ * @returns {Promise<{ isSqlite: boolean, target: string }>} Source details.
+ */
+export async function setupHistorySource(conn, historyDir, cwd = process.cwd()) {
+  const dbPath = resolve(cwd, historyDir, 'history.db');
+  const runsGlob = `${resolve(cwd, historyDir, 'runs')}/*.jsonl`;
+
+  if (existsSync(dbPath)) {
+    const escapedPath = dbPath.replace(/'/g, "''");
+    await conn.run(`ATTACH IF NOT EXISTS '${escapedPath}' AS history (TYPE SQLITE)`);
+    await conn.run(`CREATE OR REPLACE VIEW history_src AS SELECT * FROM history.history_view`);
+    return { isSqlite: true, target: dbPath };
+  } else {
+    const escapedGlob = runsGlob.replace(/'/g, "''");
+    await conn.run(
+      `CREATE OR REPLACE VIEW history_src AS SELECT * FROM read_json('${escapedGlob}', format='newline_delimited', union_by_name=true)`
+    );
+    return { isSqlite: false, target: runsGlob };
+  }
 }
 
 /**
@@ -410,7 +437,7 @@ export async function runQuery(conn, sql, params) {
   return { columns, rows };
 }
 
-export const SRC = "read_json(?, format='newline_delimited', union_by_name=true)";
+export const SRC = 'history_src';
 export const RUNS_SQL = `SELECT DISTINCT run_name, started_at, run_duration_ms AS duration_ms, count(DISTINCT file) AS files, run_total AS tests, run_passed AS passed, run_failed AS failed, run_timed_out AS timed_out, run_skipped AS skipped, run_interrupted AS interrupted FROM ${SRC} GROUP BY run_name, started_at, run_duration_ms, run_total, run_passed, run_failed, run_timed_out, run_skipped, run_interrupted ORDER BY started_at DESC`;
 export const FLAKY_SQL = `SELECT suite, file, title, project, count(*) FILTER (status IN ('failed', 'timedOut')) AS failed_runs, count(*) FILTER (status = 'passed') AS passed_runs, sum(passed_on_retry) AS recovered_by_retry, count(*) AS total_runs, max(started_at) FILTER (status IN ('failed', 'timedOut') OR passed_on_retry > 0) AS last_flaky_at, max(started_at) AS last_seen_at FROM ${SRC} GROUP BY suite, file, title, project HAVING failed_runs > 0 AND passed_runs > 0 ORDER BY failed_runs DESC, passed_runs DESC`;
 export const REGRESSIONS_SQL = `WITH run_tests AS (SELECT run_id, run_name, suite, file, title, project, max(started_at) AS started_at, CASE WHEN count(*) FILTER (status = 'failed') > 0 THEN 'failed' WHEN count(*) FILTER (status = 'timedOut') > 0 THEN 'timedOut' WHEN count(*) FILTER (status = 'interrupted') > 0 THEN 'interrupted' WHEN count(*) FILTER (status = 'skipped') > 0 THEN 'skipped' ELSE 'passed' END AS status FROM ${SRC} GROUP BY run_id, run_name, suite, file, title, project), ordered AS (SELECT run_id, run_name, started_at, suite, file, title, project, status, row_number() OVER (PARTITION BY suite, file, title, project ORDER BY started_at, run_id) AS seq FROM run_tests), regressions AS (SELECT b.run_name AS regressed_in, b.started_at AS regressed_at, b.suite AS suite, b.file AS file, b.title AS title, b.project AS project FROM ordered b JOIN ordered a ON a.suite = b.suite AND a.file = b.file AND a.title = b.title AND a.project = b.project AND b.seq = a.seq + 1 WHERE a.status = 'passed' AND b.status IN ('failed', 'timedOut', 'interrupted')), latest AS (SELECT run_id, run_name, started_at, status, suite, file, title, project, row_number() OVER (PARTITION BY suite, file, title, project ORDER BY started_at DESC, run_id DESC) AS rn FROM run_tests) SELECT r.suite, r.file, r.title, r.project, r.regressed_in, r.regressed_at, l.status AS last_status, l.started_at AS last_run_at FROM (SELECT r.*, row_number() OVER (PARTITION BY suite, file, title, project ORDER BY regressed_at DESC) AS rn FROM regressions r) r JOIN latest l ON l.suite = r.suite AND l.file = r.file AND l.title = r.title AND l.project = r.project AND l.rn = 1 WHERE r.rn = 1 ORDER BY l.started_at DESC`;

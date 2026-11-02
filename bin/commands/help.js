@@ -16,6 +16,7 @@ Usage:
   npx zr history slow [--limit N]       Slowest tests across runs (default 10)
   npx zr history trend                  Per-run pass rate over time
   npx zr history report                 Generate history.json and inject into index.html (History tab)
+  npx zr history migrate [--clean]      Migrate historical .jsonl runs into SQLite history.db
   npx zr history query "<SQL>"          Arbitrary SQL; table "runs" = read_json of runs/*.jsonl
 `);
 }

@@ -20,6 +20,12 @@ import { writeRunHistory } from './runHistoryWriter';
 import { buildSuitesFromCases } from './statsUtils';
 import { countStepCategories } from './stepCategoryClassifier';
 import type {
+  DisabledHistoryConfig,
+  HistoryConfig,
+  LocalHistoryConfig,
+  RemoteHistoryConfig,
+} from './types/history';
+import type {
   ReportData,
   ResultSummary,
   TestCase as TestCaseModel,
@@ -62,6 +68,7 @@ export interface ReporterConfig {
   theme?: string;
   darkMode?: boolean;
   enableHistory: 'auto' | boolean;
+  history?: HistoryConfig;
   minimalReport?: boolean;
   consoleProgress: 'auto' | 'line' | 'dot' | boolean;
   openAutomatically: 'always' | 'never' | 'on-failure-only';
@@ -105,10 +112,29 @@ export function resolveConfig(
   const minimalReport = Boolean(rawConfig?.minimalReport);
 
   let enableHistory: 'auto' | boolean = 'auto';
+  let history: HistoryConfig | undefined = undefined;
+
+  if (rawConfig?.history !== undefined) {
+    history = rawConfig.history as HistoryConfig;
+    if (
+      history === false ||
+      (typeof history === 'object' && history !== null && history.mode === 'off')
+    ) {
+      enableHistory = false;
+    } else if (history === true) {
+      enableHistory = true;
+    } else if (
+      typeof history === 'object' &&
+      history !== null &&
+      (history.mode === 'local' || history.mode === 'remote')
+    ) {
+      enableHistory = true;
+    }
+  }
 
   if (minimalReport) {
     enableHistory = false;
-  } else if (rawConfig?.enableHistory !== undefined) {
+  } else if (rawConfig?.enableHistory !== undefined && history === undefined) {
     if (typeof rawConfig.enableHistory === 'boolean') {
       enableHistory = rawConfig.enableHistory;
     } else if (rawConfig.enableHistory === 'auto') {
@@ -149,6 +175,7 @@ export function resolveConfig(
     theme,
     darkMode,
     enableHistory,
+    history,
     minimalReport,
     consoleProgress,
     openAutomatically,
@@ -519,7 +546,7 @@ class ZenReporter implements Reporter {
    *
    * @param result - Full test execution result details.
    */
-  onEnd(result: FullResult): void {
+  async onEnd(result: FullResult): Promise<void> {
     this.progressPrinter.clearLineProgress();
     console.log(
       '\n\x1b[33m⚡\x1b[0m Zen Reporter: Processing test results and generating report...'
@@ -544,7 +571,14 @@ class ZenReporter implements Reporter {
     const stepCategories = countStepCategories(suites);
 
     if (this.reportConfig.enableHistory !== false) {
-      writeRunHistory({
+      const historyOptions =
+        typeof this.reportConfig.history === 'object' &&
+        this.reportConfig.history !== null &&
+        this.reportConfig.history.mode === 'local'
+          ? this.reportConfig.history
+          : undefined;
+
+      await writeRunHistory({
         startTime: this.startTime,
         testRunName: this.reportConfig.testRunName,
         projectName: this.reportConfig.projectName,
@@ -554,6 +588,9 @@ class ZenReporter implements Reporter {
         endedAt: endTime,
         testCases: this.testCases,
         stepCategories,
+        dbPath: historyOptions?.dbPath,
+        maxRuns: historyOptions?.maxRuns,
+        windowSize: historyOptions?.windowSize,
       });
     }
 
@@ -596,4 +633,8 @@ class ZenReporter implements Reporter {
 }
 
 export { getShowReportCommand };
+export { SqliteHistoryStore } from './history/SqliteHistoryStore';
+export { migrateJsonlToSqlite } from './history/migration';
+export type { MigrationOptions, MigrationResult } from './history/migration';
+export type { DisabledHistoryConfig, HistoryConfig, LocalHistoryConfig, RemoteHistoryConfig };
 export default ZenReporter;

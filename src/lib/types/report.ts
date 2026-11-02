@@ -1,3 +1,5 @@
+import type { HistoryConfig } from './history';
+
 export interface TestError {
   name: string;
   message: string;
@@ -74,6 +76,7 @@ export interface TestRun {
   theme?: string;
   darkMode?: boolean;
   enableHistory?: 'auto' | boolean;
+  history?: HistoryConfig;
   minimalReport?: boolean;
 }
 
@@ -120,6 +123,7 @@ export interface ReporterConfig {
   theme?: string;
   darkMode?: boolean;
   enableHistory?: 'auto' | boolean;
+  history?: HistoryConfig;
   minimalReport?: boolean;
   openAutomatically?: 'always' | 'never' | 'on-failure-only';
 }

@@ -11,6 +11,7 @@ import {
   REGRESSIONS_SQL,
   runQuery,
   RUNS_SQL,
+  setupHistorySource,
   SLOW_SQL,
   SRC,
   TESTS_SQL,
@@ -28,7 +29,8 @@ import { printHelp } from './help.js';
  * @returns {Promise<void>}
  */
 export async function generateHistoryReport(conn, historyDir, cwd = process.cwd()) {
-  const runsGlob = `${resolve(cwd, historyDir, 'runs')}/*.jsonl`;
+  await setupHistorySource(conn, historyDir, cwd);
+
   const runsSql = `SELECT DISTINCT run_id, run_name, started_at, run_duration_ms, coalesce(max(run_sequential_duration_ms), sum(duration_ms)) AS run_sequential_duration_ms, max(run_workers) AS run_workers, count(DISTINCT file) AS run_files, run_total, run_passed, run_failed, run_timed_out, run_skipped, run_interrupted, round(100.0 * run_passed / nullif(run_total, 0), 1) AS pass_rate, max(coalesce(step_assertions, 0)) AS step_assertions, max(coalesce(step_actions, 0)) AS step_actions, max(coalesce(step_network, 0)) AS step_network, max(coalesce(step_hooks, 0)) AS step_hooks, max(coalesce(step_waits, 0)) AS step_waits, max(coalesce(step_others, 0)) AS step_others FROM ${SRC} GROUP BY run_id, run_name, started_at, run_duration_ms, run_total, run_passed, run_failed, run_timed_out, run_skipped, run_interrupted ORDER BY started_at ASC`;
 
   const [
@@ -40,13 +42,13 @@ export async function generateHistoryReport(conn, historyDir, cwd = process.cwd(
     filesResult,
     testsResult,
   ] = await Promise.all([
-    runQuery(conn, runsSql, [runsGlob]),
-    runQuery(conn, FLAKY_SQL, [runsGlob]),
-    runQuery(conn, REGRESSIONS_SQL, [runsGlob]),
-    runQuery(conn, SLOW_SQL, [runsGlob, 10]),
-    runQuery(conn, PROJECT_DURATIONS_SQL, [runsGlob]),
-    runQuery(conn, FILES_SQL, [runsGlob]),
-    runQuery(conn, TESTS_SQL, [runsGlob]),
+    runQuery(conn, runsSql),
+    runQuery(conn, FLAKY_SQL),
+    runQuery(conn, REGRESSIONS_SQL),
+    runQuery(conn, SLOW_SQL, [10]),
+    runQuery(conn, PROJECT_DURATIONS_SQL),
+    runQuery(conn, FILES_SQL),
+    runQuery(conn, TESTS_SQL),
   ]);
 
   const projectDurationsByRun = {};
@@ -95,9 +97,12 @@ export async function generateHistoryReport(conn, historyDir, cwd = process.cwd(
     };
   });
 
+  // Window embedded runs to the most recent 50 runs to keep HTML payload lightweight
+  const windowedRuns = runs.length > 50 ? runs.slice(-50) : runs;
+
   const history = {
     generated_at: new Date().toISOString(),
-    runs,
+    runs: windowedRuns,
     flaky: flakyResult.rows,
     regressions: regressionsResult.rows,
     slowest: slowResult.rows,
@@ -139,34 +144,26 @@ export async function generateHistoryReport(conn, historyDir, cwd = process.cwd(
 export async function handleHistory(subArgs, cwd = process.cwd()) {
   const historyDir = process.env.PW_REPORTER_OUTPUT || 'zen-report';
   const runsDirPath = resolve(cwd, historyDir, 'runs');
-  const runsGlob = `${runsDirPath}/*.jsonl`;
   const sub = subArgs[0] || 'runs';
 
   findRunFiles(runsDirPath, historyDir);
 
   const conn = await openDuckDb();
+  await setupHistorySource(conn, historyDir, cwd);
 
   try {
     switch (sub) {
       case 'runs':
-        printTable(
-          await runQuery(conn, RUNS_SQL, [runsGlob]),
-          'No historic test runs found.',
-          'runs'
-        );
+        printTable(await runQuery(conn, RUNS_SQL), 'No historic test runs found.', 'runs');
         break;
 
       case 'flaky':
-        printTable(
-          await runQuery(conn, FLAKY_SQL, [runsGlob]),
-          'No flaky tests found.',
-          'flaky tests'
-        );
+        printTable(await runQuery(conn, FLAKY_SQL), 'No flaky tests found.', 'flaky tests');
         break;
 
       case 'regressions':
         printTable(
-          await runQuery(conn, REGRESSIONS_SQL, [runsGlob]),
+          await runQuery(conn, REGRESSIONS_SQL),
           'No test regressions found.',
           'regressions'
         );
@@ -177,32 +174,24 @@ export async function handleHistory(subArgs, cwd = process.cwd()) {
         const rawLimit =
           idx >= 0 ? subArgs[idx + 1] : /^\d+$/.test(subArgs[1] || '') ? subArgs[1] : '10';
         const limit = Math.max(1, parseInt(rawLimit, 10) || 10);
-        printTable(
-          await runQuery(conn, SLOW_SQL, [runsGlob, limit]),
-          'No slow tests found.',
-          'slow tests'
-        );
+        printTable(await runQuery(conn, SLOW_SQL, [limit]), 'No slow tests found.', 'slow tests');
         break;
       }
 
       case 'trend':
-        printTable(await runQuery(conn, TREND_SQL, [runsGlob]), 'No trend data found.', 'runs');
+        printTable(await runQuery(conn, TREND_SQL), 'No trend data found.', 'runs');
         break;
 
       case 'files':
         printTable(
-          await runQuery(conn, FILES_SUMMARY_SQL, [runsGlob]),
+          await runQuery(conn, FILES_SUMMARY_SQL),
           'No spec files history found.',
           'spec files'
         );
         break;
 
       case 'tests':
-        printTable(
-          await runQuery(conn, TESTS_SUMMARY_SQL, [runsGlob]),
-          'No test history found.',
-          'tests'
-        );
+        printTable(await runQuery(conn, TESTS_SUMMARY_SQL), 'No test history found.', 'tests');
         break;
 
       case 'report':
@@ -214,15 +203,35 @@ export async function handleHistory(subArgs, cwd = process.cwd()) {
         if (!sqlText) {
           throw new Error('Usage: zr history query "<SQL>"');
         }
-        const usesReadJson = sqlText.includes('read_json');
-        const sql = usesReadJson
-          ? sqlText
-          : `WITH runs AS (SELECT * FROM read_json(?, format='newline_delimited')) ${sqlText}`;
-        const params = usesReadJson ? [] : [runsGlob];
+        const usesFrom = /\bfrom\b/i.test(sqlText);
+        const sql = usesFrom ? sqlText : `SELECT * FROM ${SRC} ${sqlText}`;
         try {
-          printTable(await runQuery(conn, sql, params), 'No matching records found.', 'records');
+          printTable(await runQuery(conn, sql), 'No matching records found.', 'records');
         } catch (e) {
           throw new Error(`Query failed: ${e?.message || e}`, { cause: e });
+        }
+        break;
+      }
+
+      case 'migrate': {
+        const clean = subArgs.includes('--clean');
+        const dbPath = resolve(cwd, historyDir, 'history.db');
+        const { migrateJsonlToSqlite } = await import('../../dist/reporter.js');
+        console.log(`Migrating historical JSONL runs to SQLite (${historyDir}/history.db)...`);
+        const result = await migrateJsonlToSqlite({
+          runsDir: runsDirPath,
+          dbPath,
+          deleteSourceFiles: clean,
+        });
+        console.log(
+          `✓ Migrated ${result.migratedRuns} runs (${result.migratedTestCases} test executions) in ${result.durationMs}ms. Skipped ${result.skippedRuns} already migrated runs.`
+        );
+        if (clean) {
+          if (result.totalFiles > 0) {
+            console.log(`✓ Cleaned up source JSONL files.`);
+          } else {
+            console.log(`ℹ No legacy JSONL files found to clean up.`);
+          }
         }
         break;
       }
