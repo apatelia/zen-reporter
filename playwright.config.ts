@@ -8,7 +8,7 @@ export default defineConfig({
   workers: process.env.CI ? 1 : undefined,
   reporter: [
     [
-      './src/lib/reporter.ts',
+      './packages/reporter/src/lib/reporter.ts',
       {
         projectName: 'Zen Reporter',
         testRunName: 'Unit Tests Run #{N}',

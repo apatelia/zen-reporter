@@ -2,8 +2,8 @@
 import { expect, test } from '@playwright/test';
 import * as fs from 'fs';
 import * as path from 'path';
-import { migrateJsonlToSqlite } from '../src/lib/history/migration';
-import { SqliteHistoryStore } from '../src/lib/history/SqliteHistoryStore';
+import { migrateJsonlToSqlite } from '../packages/reporter/src/lib/history/migration';
+import { SqliteHistoryStore } from '../packages/reporter/src/lib/history/SqliteHistoryStore';
 
 test.describe('JSONL to SQLite Migration Tests', () => {
   function createSampleJsonl(filePath: string, runId: string, runName: string) {

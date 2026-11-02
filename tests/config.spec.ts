@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test';
 import * as fs from 'fs';
 import * as path from 'path';
-import { resolveConfig } from '../src/lib/reporter';
+import { resolveConfig } from '../packages/reporter/src/lib/reporter';
 
 test.describe('Zen Reporter Configuration Tests', () => {
   test('resolves default config values when options are omitted', () => {

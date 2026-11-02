@@ -1,30 +1,9 @@
 {
-  "name": "@arpanp/zen-reporter",
-  "private": false,
-  "version": "0.19.1",
+  "name": "zen-reporter-monorepo",
+  "private": true,
   "type": "module",
-  "description": "Beautiful test execution reports for Playwright",
   "workspaces": [
     "packages/*"
-  ],
-  "bin": {
-    "zen-reporter": "bin/zen-reporter.js",
-    "zr": "bin/zen-reporter.js"
-  },
-  "main": "dist/reporter.cjs",
-  "module": "dist/reporter.js",
-  "types": "dist/reporter.d.ts",
-  "exports": {
-    ".": {
-      "types": "./dist/reporter.d.ts",
-      "import": "./dist/reporter.js",
-      "require": "./dist/reporter.cjs"
-    },
-    "./package.json": "./package.json"
-  },
-  "files": [
-    "bin",
-    "dist"
   ],
   "author": {
     "name": "Arpan Patelia",
@@ -42,21 +21,26 @@
     "test automation"
   ],
   "scripts": {
-    "dev": "vite",
-    "build": "cross-env ZEN_REPORTER_DATA_FREE=true vite build && vite build --config vite.reporter.config.ts && tsc -p tsconfig.lib.json",
-    "preview": "vite preview",
+    "dev": "npm run dev -w @arpanp/zen-ui",
+    "build:core": "npm run build -w @arpanp/zen-core",
+    "build:ui": "npm run build -w @arpanp/zen-ui",
+    "build:reporter": "npm run build -w @arpanp/zen-reporter",
+    "build": "npm run build:core && npm run build:ui && npm run build:reporter",
+    "preview": "npm run preview -w @arpanp/zen-ui",
     "test": "npx playwright test",
-    "show": "node bin/zen-reporter.js show",
+    "show": "node packages/reporter/bin/zen-reporter.js show",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "lint:unused": "npx tsc --noEmit --noUnusedLocals --noUnusedParameters",
     "spellcheck": "npx cspell lint .",
-    "typecheck": "tsc --noEmit",
+    "typecheck:core": "npm run build -w @arpanp/zen-core",
+    "typecheck:ui": "tsc -p packages/ui/tsconfig.json --noEmit",
+    "typecheck:reporter": "tsc -p packages/reporter/tsconfig.lib.json --noEmit",
+    "typecheck:tests": "tsc -p tsconfig.json --noEmit",
+    "typecheck": "npm run typecheck:core && npm run typecheck:ui && npm run typecheck:reporter && npm run typecheck:tests",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "prepare": "husky",
-    "prepack": "npm run build",
-    "prepublish": "npm run build"
+    "prepare": "husky"
   },
   "lint-staged": {
     "*.{js,jsx,ts,tsx}": [

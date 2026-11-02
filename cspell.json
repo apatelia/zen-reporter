@@ -7,7 +7,7 @@
     ".git",
     ".zed",
     "dist",
-    "src/assets/**",
+    "packages/ui/src/assets/**",
     "zen-report*",
     ".playwright",
     "playwright-report",

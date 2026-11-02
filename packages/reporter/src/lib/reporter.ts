@@ -1,0 +1,640 @@
+import type {
+  FullConfig,
+  FullResult,
+  Reporter,
+  Suite,
+  TestCase,
+  TestResult,
+} from '@playwright/test/reporter';
+import * as fs from 'fs';
+import * as path from 'path';
+import { getOsName, getPlaywrightVersion } from '../../bin/commands/system.js';
+import { processAttachments } from './attachmentManager';
+import { convertPlaywrightSteps, sanitizeAnsi, setFsModule } from '@arpanp/zen-core';
+import { generateTerminalSummaryTable } from '@arpanp/zen-core';
+import { detectPackageManager } from './dataProcessor';
+import { getGitBranch, getGitCommit } from './gitUtils';
+import { generateHtmlReport, getShowReportCommand } from './htmlReportGenerator';
+import { ProgressPrinter, type ProgressMode } from './progressPrinter';
+import { writeRunHistory } from './runHistoryWriter';
+import { buildSuitesFromCases } from '@arpanp/zen-core';
+import { countStepCategories } from '@arpanp/zen-core';
+import type {
+  DisabledHistoryConfig,
+  HistoryConfig,
+  LocalHistoryConfig,
+  RemoteHistoryConfig,
+} from '@arpanp/zen-core';
+import type {
+  ReportData,
+  ResultSummary,
+  TestCase as TestCaseModel,
+  TestError,
+  TestRun as TestRunModel,
+  TestSuite,
+} from '@arpanp/zen-core';
+
+setFsModule(fs);
+
+/**
+ * Traverses parent suites to build a describe path array for a test case.
+ *
+ * @param test - Playwright TestCase object.
+ * @returns Array of describe suite titles leading up to the test case.
+ */
+function getDescribePath(test: TestCase): string[] {
+  const describePath: string[] = [];
+  let curr: Suite | undefined = test.parent;
+
+  while (curr) {
+    if (curr.type === 'file' || curr.type === 'project' || curr.type === 'root') {
+      break;
+    }
+    if (curr.type === 'describe' && curr.title) {
+      describePath.unshift(curr.title);
+    }
+    curr = curr.parent;
+  }
+
+  return describePath;
+}
+
+export interface ReporterConfig {
+  outputDir: string;
+  packageManager: string;
+  projectName: string;
+  testRunName: string;
+  singleSummaryFile?: boolean;
+  theme?: string;
+  darkMode?: boolean;
+  enableHistory: 'auto' | boolean;
+  history?: HistoryConfig;
+  minimalReport?: boolean;
+  consoleProgress: 'auto' | 'line' | 'dot' | boolean;
+  openAutomatically: 'always' | 'never' | 'on-failure-only';
+}
+
+/**
+ * Resolves user options and defaults into a complete `ReporterConfig` object.
+ *
+ * @param rawConfig - Optional raw configuration options from Playwright config.
+ * @param cwd - Current working directory (defaults to process.cwd()).
+ * @returns Fully resolved reporter configuration.
+ */
+export function resolveConfig(
+  rawConfig?: Record<string, unknown>,
+  cwd: string = process.cwd()
+): ReporterConfig {
+  const outputDir = rawConfig?.outputDir ? String(rawConfig.outputDir) : 'zen-report';
+  const packageManager = detectPackageManager(cwd);
+  const projectName = rawConfig?.projectName
+    ? String(rawConfig.projectName)
+    : 'Test Automation Project';
+  let runNumber = 1;
+
+  try {
+    const runsDir = path.resolve(cwd, outputDir, 'runs');
+
+    if (fs.existsSync(runsDir)) {
+      const files = fs.readdirSync(runsDir);
+      const runFiles = files.filter((f) => f.endsWith('.jsonl'));
+      runNumber = runFiles.length + 1;
+    }
+  } catch {
+    runNumber = 1;
+  }
+
+  const rawTestRunName = rawConfig?.testRunName ? String(rawConfig.testRunName) : 'Test Run #{N}';
+  const testRunName = rawTestRunName.replaceAll('{N}', String(runNumber));
+  const singleSummaryFile = Boolean(rawConfig?.singleSummaryFile);
+  const theme = rawConfig?.theme !== undefined ? String(rawConfig.theme) : 'Cafe';
+  const darkMode = rawConfig?.darkMode !== undefined ? Boolean(rawConfig.darkMode) : undefined;
+  const minimalReport = Boolean(rawConfig?.minimalReport);
+
+  let enableHistory: 'auto' | boolean = 'auto';
+  let history: HistoryConfig | undefined = undefined;
+
+  if (rawConfig?.history !== undefined) {
+    history = rawConfig.history as HistoryConfig;
+    if (
+      history === false ||
+      (typeof history === 'object' && history !== null && history.mode === 'off')
+    ) {
+      enableHistory = false;
+    } else if (history === true) {
+      enableHistory = true;
+    } else if (
+      typeof history === 'object' &&
+      history !== null &&
+      (history.mode === 'local' || history.mode === 'remote')
+    ) {
+      enableHistory = true;
+    }
+  }
+
+  if (minimalReport) {
+    enableHistory = false;
+  } else if (rawConfig?.enableHistory !== undefined && history === undefined) {
+    if (typeof rawConfig.enableHistory === 'boolean') {
+      enableHistory = rawConfig.enableHistory;
+    } else if (rawConfig.enableHistory === 'auto') {
+      enableHistory = 'auto';
+    }
+  }
+
+  let consoleProgress: 'auto' | 'line' | 'dot' | boolean = 'auto';
+
+  if (rawConfig?.consoleProgress !== undefined) {
+    if (typeof rawConfig.consoleProgress === 'boolean') {
+      consoleProgress = rawConfig.consoleProgress;
+    } else if (
+      rawConfig.consoleProgress === 'auto' ||
+      rawConfig.consoleProgress === 'line' ||
+      rawConfig.consoleProgress === 'dot'
+    ) {
+      consoleProgress = rawConfig.consoleProgress;
+    }
+  }
+
+  let openAutomatically: 'always' | 'never' | 'on-failure-only' = 'never';
+
+  if (
+    rawConfig?.openAutomatically === 'always' ||
+    rawConfig?.openAutomatically === 'never' ||
+    rawConfig?.openAutomatically === 'on-failure-only'
+  ) {
+    openAutomatically = rawConfig.openAutomatically;
+  }
+
+  return {
+    outputDir,
+    packageManager,
+    projectName,
+    testRunName,
+    singleSummaryFile,
+    theme,
+    darkMode,
+    enableHistory,
+    history,
+    minimalReport,
+    consoleProgress,
+    openAutomatically,
+  };
+}
+
+/**
+ * Custom Playwright Test reporter generating interactive HTML and structured JSON reports.
+ */
+class ZenReporter implements Reporter {
+  private config!: FullConfig;
+  private reportConfig!: ReporterConfig;
+  private testCaseMap = new Map<string, TestCaseModel>();
+  private startTime = '';
+  private testCases: TestCaseModel[] = [];
+  private options?: Record<string, unknown>;
+  private progressPrinter = new ProgressPrinter();
+
+  /**
+   * Constructs a new ZenReporter instance.
+   *
+   * @param options - Optional reporter options override.
+   */
+  constructor(options?: Record<string, unknown>) {
+    this.options = options;
+  }
+
+  /** Resets internal run state before commencing a test run. */
+  private resetRunState(): void {
+    this.testCaseMap.clear();
+    this.testCases = [];
+    this.progressPrinter.reset();
+  }
+
+  /**
+   * Groups flat test case models into hierarchical test suite structures.
+   *
+   * @returns List of processed test suites.
+   */
+  private buildSuites(): TestSuite[] {
+    return buildSuitesFromCases(this.testCases);
+  }
+
+  /**
+   * Initializes a internal `TestCaseModel` from Playwright's `TestCase` object.
+   *
+   * @param test - Playwright TestCase object.
+   * @param initialStatus - Initial status to assign.
+   * @returns Structured TestCaseModel instance.
+   */
+  private createTestCaseModel(
+    test: TestCase,
+    initialStatus: TestCaseModel['status']
+  ): TestCaseModel {
+    const fileName = test.location?.file
+      ? test.location.file.replace(process.cwd(), '')
+      : test.parent.location?.file
+        ? test.parent.location.file.replace(process.cwd(), '')
+        : 'unknown file';
+
+    const testCase: TestCaseModel = {
+      title: test.title,
+      parent: test.parent.title,
+      project: test.parent.project()?.name || 'unknown',
+      fileName,
+      status: initialStatus,
+      duration: 0,
+      steps: [],
+      stdout: [],
+      stderr: [],
+      annotations: test.annotations
+        ? test.annotations.map((a) => ({
+            type: a.type,
+            description: a.description || null,
+            location: a.location
+              ? {
+                  file: a.location.file,
+                  line: a.location.line,
+                  column: a.location.column,
+                }
+              : null,
+          }))
+        : [],
+      attachments: [],
+      tags: test.tags.flatMap((tag) => tag.replace('@', '')),
+      describePath: getDescribePath(test),
+      attempts: 0,
+      failedAttempts: [],
+    };
+
+    testCase.tags?.push(testCase.project);
+
+    return testCase;
+  }
+
+  /**
+   * Maps Playwright test result errors to internal `TestError` models.
+   *
+   * @param resultError - Playwright test error object.
+   * @returns Array of TestError objects or undefined.
+   */
+  private mapTestError(resultError: TestResult['error']): TestError[] | undefined {
+    if (!resultError) return undefined;
+
+    return [
+      {
+        name: 'Error',
+        message: sanitizeAnsi(resultError.message || ''),
+        stack: sanitizeAnsi(resultError.stack || ''),
+        location: resultError.location
+          ? {
+              file: resultError.location.file,
+              line: resultError.location.line,
+              column: resultError.location.column,
+            }
+          : null,
+        snippet: resultError.snippet || '',
+        cause: (resultError.cause as unknown as TestError) || null,
+      },
+    ];
+  }
+
+  /**
+   * Normalizes stdout/stderr chunks into discrete lines.
+   * Strips an optional trailing newline so standard log statements don't produce an extra empty line.
+   *
+   * @param entries - Array of string or Buffer output chunks from Playwright test result.
+   * @returns Array of discrete line strings, or undefined if empty.
+   */
+  private processOutputEntries(entries: (string | Buffer)[] | undefined): string[] | undefined {
+    if (!entries || entries.length === 0) return undefined;
+
+    const fullText = entries
+      .map((entry) => (typeof entry === 'string' ? entry : entry.toString('utf8')))
+      .join('');
+
+    if (!fullText) return undefined;
+
+    const lines = fullText.split(/\r?\n/);
+    if (lines.length > 0 && lines[lines.length - 1] === '') {
+      lines.pop();
+    }
+
+    return lines.length > 0 ? lines : undefined;
+  }
+
+  /**
+   * Computes high-level result summary statistics for the completed test run.
+   *
+   * @param endTime - ISO timestamp of completion.
+   * @param wallClockDuration - Total wall clock duration in milliseconds.
+   * @returns ResultSummary metrics object.
+   */
+  private computeResultSummary(endTime: string, wallClockDuration: number): ResultSummary {
+    const passed = this.testCases.filter((tc) => tc.status === 'passed').length;
+    const failed = this.testCases.filter((tc) => tc.status === 'failed').length;
+    const skipped = this.testCases.filter((tc) => tc.status === 'skipped').length;
+    const timedOut = this.testCases.filter((tc) => tc.status === 'timedOut').length;
+    const interrupted = this.testCases.filter((tc) => tc.status === 'interrupted').length;
+    const numberOfProjects = this.config.projects.length;
+    const totalSequentialDuration = this.testCases.reduce((sum, tc) => sum + (tc.duration || 0), 0);
+
+    const gitCommitInfo = getGitCommit();
+
+    return {
+      total: this.testCases.length,
+      passed,
+      failed,
+      skipped,
+      timedOut,
+      interrupted,
+      startTime: this.startTime,
+      endTime,
+      duration: wallClockDuration,
+      totalSequentialDuration,
+      numberOfProjects,
+      workers: this.config?.workers,
+      playwrightVersion: getPlaywrightVersion(),
+      osName: getOsName(),
+      gitBranch: getGitBranch(),
+      gitCommit: gitCommitInfo.short,
+      gitCommitFull: gitCommitInfo.full,
+    };
+  }
+
+  /**
+   * Playwright lifecycle hook called before running tests.
+   *
+   * @param config - Full Playwright test configuration.
+   * @param suite - Root test suite object.
+   */
+  onBegin(config: FullConfig, suite: Suite): void {
+    this.config = config;
+    this.reportConfig = resolveConfig(
+      this.options ||
+        (config as FullConfig & { reporterConfig?: Record<string, unknown> }).reporterConfig
+    );
+
+    if (this.reportConfig.enableHistory === true) {
+      try {
+        require.resolve('@duckdb/node-api');
+      } catch {
+        throw new Error(
+          'Zen Reporter: history is explicitly enabled (enableHistory: true), but "@duckdb/node-api" is not installed. Please install "@duckdb/node-api" or set enableHistory to "auto" or false.'
+        );
+      }
+    }
+
+    this.startTime = new Date().toISOString();
+
+    const allTests = suite.allTests();
+    this.resetRunState();
+
+    let progressMode: ProgressMode;
+    const cp = this.reportConfig.consoleProgress;
+
+    if (cp === false) {
+      progressMode = 'none';
+    } else if (cp === 'line') {
+      progressMode = 'line';
+    } else if (cp === 'dot') {
+      progressMode = 'dot';
+    } else {
+      const isTTY =
+        typeof process !== 'undefined' && process.stdout && Boolean(process.stdout.isTTY);
+      progressMode = isTTY ? 'line' : 'dot';
+    }
+
+    this.progressPrinter.init(allTests.length, progressMode);
+
+    if (progressMode === 'dot') {
+      const workers = this.config.workers || 1;
+      const workerStr = workers === 1 ? '1 worker (serially)' : `${workers} workers (in parallel)`;
+      console.log(
+        `Running total ${allTests.length} tests, ${workerStr}\n\nLegend: . passed | F failed | ± flaky | s skipped\n`
+      );
+    }
+
+    for (const test of allTests) {
+      const testCase = this.createTestCaseModel(test, 'skipped');
+      this.testCaseMap.set(test.id, testCase);
+    }
+  }
+
+  /**
+   * Playwright lifecycle hook called when a test case begins execution.
+   *
+   * @param test - Playwright TestCase object.
+   * @param _result - Playwright TestResult object.
+   */
+  onTestBegin(test: TestCase, _result: TestResult): void {
+    this.progressPrinter.onWorkerStart(test.id);
+
+    let existing = this.testCaseMap.get(test.id);
+    if (!existing) {
+      existing = this.createTestCaseModel(test, 'passed');
+      this.testCaseMap.set(test.id, existing);
+    }
+
+    existing.attempts = (existing.attempts ?? 0) + 1;
+  }
+
+  /**
+   * Playwright lifecycle hook called when a test case finishes execution.
+   *
+   * @param test - Playwright TestCase object.
+   * @param result - Playwright TestResult object.
+   */
+  onTestEnd(test: TestCase, result: TestResult): void {
+    const testCase = this.testCaseMap.get(test.id);
+    if (!testCase) return;
+
+    testCase.status =
+      result.status === 'passed'
+        ? 'passed'
+        : result.status === 'failed'
+          ? 'failed'
+          : result.status === 'skipped'
+            ? 'skipped'
+            : result.status === 'timedOut'
+              ? 'timedOut'
+              : result.status === 'interrupted'
+                ? 'interrupted'
+                : 'failed';
+
+    const attemptSteps =
+      result.steps && result.steps.length > 0
+        ? convertPlaywrightSteps(result.steps, fs)
+        : undefined;
+    const stepDurationSum = attemptSteps
+      ? attemptSteps.reduce((sum, step) => sum + (step.duration || 0), 0)
+      : 0;
+    const attemptDuration =
+      typeof result.duration === 'number' && result.duration > 0
+        ? result.duration
+        : stepDurationSum;
+
+    testCase.duration = attemptDuration;
+
+    if (test.annotations) {
+      testCase.annotations = test.annotations.map((a) => ({
+        type: a.type,
+        description: a.description || null,
+        location: a.location
+          ? {
+              file: a.location.file,
+              line: a.location.line,
+              column: a.location.column,
+            }
+          : null,
+      }));
+    }
+
+    const attemptStdout = this.processOutputEntries(result.stdout);
+    const attemptStderr = this.processOutputEntries(result.stderr);
+
+    const attemptAttachments = processAttachments(
+      test.id,
+      result.attachments,
+      this.reportConfig.outputDir
+    );
+    testCase.attachments = attemptAttachments;
+    testCase.errors = this.mapTestError(result.error);
+
+    if (
+      result.status === 'failed' ||
+      result.status === 'timedOut' ||
+      result.status === 'interrupted'
+    ) {
+      testCase.failedAttempts = testCase.failedAttempts ?? [];
+      testCase.failedAttempts.push({
+        status: result.status,
+        duration: attemptDuration,
+        error: testCase.errors && testCase.errors.length > 0 ? testCase.errors[0] : null,
+        steps: attemptSteps,
+        stdout: attemptStdout,
+        stderr: attemptStderr,
+        attachments: attemptAttachments,
+      });
+    }
+
+    testCase.steps = attemptSteps;
+    testCase.stdout = attemptStdout;
+    testCase.stderr = attemptStderr;
+
+    const status = testCase.status;
+    const projStr =
+      testCase.project && testCase.project !== 'unknown' ? `[${testCase.project}] ` : '';
+    const shortName = `${projStr}${testCase.fileName} › ${testCase.title}`;
+
+    if (status === 'failed' || status === 'timedOut' || status === 'interrupted') {
+      this.progressPrinter.clearLineProgress();
+      const durationStr = testCase.duration > 0 ? ` (${testCase.duration}ms)` : '';
+      console.log(`❌ [FAILED] ${shortName}${durationStr}`);
+    }
+
+    let dotStatus: 'passed' | 'failed' | 'timedOut' | 'skipped' | 'interrupted' | 'flaky' = status;
+
+    if (status === 'passed' && (testCase.failedAttempts?.length ?? 0) > 0) {
+      dotStatus = 'flaky';
+    }
+
+    this.progressPrinter.onTestComplete(test.id, dotStatus, shortName);
+  }
+
+  /**
+   * Playwright lifecycle hook called after all tests complete.
+   *
+   * @param result - Full test execution result details.
+   */
+  async onEnd(result: FullResult): Promise<void> {
+    this.progressPrinter.clearLineProgress();
+    console.log(
+      '\n\x1b[33m⚡\x1b[0m Zen Reporter: Processing test results and generating report...'
+    );
+
+    if (result.status === 'interrupted') {
+      for (const testCase of this.testCaseMap.values()) {
+        if ((testCase.attempts ?? 0) === 0) {
+          testCase.status = 'interrupted';
+        }
+      }
+    }
+
+    this.testCases = Array.from(this.testCaseMap.values());
+
+    const endTime = new Date().toISOString();
+    const startTimeMs = new Date(this.startTime).getTime();
+    const endTimeMs = new Date(endTime).getTime();
+    const wallClockDuration = Math.max(0, endTimeMs - startTimeMs);
+    const summary = this.computeResultSummary(endTime, wallClockDuration);
+    const suites = this.buildSuites();
+    const stepCategories = countStepCategories(suites);
+
+    if (this.reportConfig.enableHistory !== false) {
+      const historyOptions =
+        typeof this.reportConfig.history === 'object' &&
+        this.reportConfig.history !== null &&
+        this.reportConfig.history.mode === 'local'
+          ? this.reportConfig.history
+          : undefined;
+
+      await writeRunHistory({
+        startTime: this.startTime,
+        testRunName: this.reportConfig.testRunName,
+        projectName: this.reportConfig.projectName,
+        shard: this.config?.shard,
+        outputDir: this.reportConfig.outputDir,
+        summary,
+        endedAt: endTime,
+        testCases: this.testCases,
+        stepCategories,
+        dbPath: historyOptions?.dbPath,
+        maxRuns: historyOptions?.maxRuns,
+        windowSize: historyOptions?.windowSize,
+      });
+    }
+
+    const testRun: TestRunModel = {
+      summary,
+      suites,
+      projectName: this.reportConfig.projectName,
+      testRunName: this.reportConfig.testRunName,
+      theme: this.reportConfig.theme,
+      darkMode: this.reportConfig.darkMode,
+      enableHistory: this.reportConfig.enableHistory,
+      minimalReport: this.reportConfig.minimalReport,
+    };
+
+    const reportData: ReportData = { testRun };
+
+    const cwd = process.cwd();
+    const normalizedCwd = cwd.endsWith('/') ? cwd.slice(0, -1) : cwd;
+    const outputDir = path.resolve(normalizedCwd, this.reportConfig.outputDir);
+    fs.mkdirSync(outputDir, { recursive: true });
+
+    const jsonPath = path.join(outputDir, 'report.json');
+    fs.writeFileSync(jsonPath, JSON.stringify(reportData, null, 2), 'utf8');
+
+    const summaryTable = generateTerminalSummaryTable(
+      summary,
+      this.reportConfig.projectName,
+      this.reportConfig.testRunName
+    );
+    console.log('\n' + summaryTable);
+
+    generateHtmlReport(outputDir, reportData, summary, {
+      outputDir: this.reportConfig.outputDir,
+      packageManager: this.reportConfig.packageManager,
+      enableHistory: this.reportConfig.enableHistory,
+      singleSummaryFile: this.reportConfig.singleSummaryFile,
+      openAutomatically: this.reportConfig.openAutomatically,
+    });
+  }
+}
+
+export { getShowReportCommand };
+export { SqliteHistoryStore } from './history/SqliteHistoryStore';
+export { migrateJsonlToSqlite } from './history/migration';
+export type { MigrationOptions, MigrationResult } from './history/migration';
+export type { DisabledHistoryConfig, HistoryConfig, LocalHistoryConfig, RemoteHistoryConfig };
+export default ZenReporter;

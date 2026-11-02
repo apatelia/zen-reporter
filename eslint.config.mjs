@@ -12,6 +12,7 @@ export default defineConfig([
   {
     ignores: [
       'dist',
+      'packages/*/dist',
       'node_modules',
       'test-results',
       '.playwright',

@@ -1,0 +1,55 @@
+{
+  "name": "@arpanp/zen-reporter",
+  "version": "0.19.1",
+  "type": "module",
+  "description": "Beautiful test execution reports for Playwright",
+  "bin": {
+    "zen-reporter": "bin/zen-reporter.js",
+    "zr": "bin/zen-reporter.js"
+  },
+  "main": "dist/reporter.cjs",
+  "module": "dist/reporter.js",
+  "types": "dist/reporter.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/reporter.d.ts",
+      "import": "./dist/reporter.js",
+      "require": "./dist/reporter.cjs"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "bin",
+    "dist"
+  ],
+  "author": {
+    "name": "Arpan Patelia",
+    "email": "arpan.is@gmail.com"
+  },
+  "license": "MIT",
+  "scripts": {
+    "build:reporter": "vite build --config vite.reporter.config.ts && tsc -p tsconfig.lib.json",
+    "build:template": "cp ../ui/dist/index.html dist/index.html && cp ../ui/dist/favicon-BduA2ejy.svg dist/ 2>/dev/null || true",
+    "build": "mkdir -p dist && npm run build:template && npm run build:reporter"
+  },
+  "dependencies": {
+    "@arpanp/zen-core": "^0.19.1"
+  },
+  "peerDependencies": {
+    "@duckdb/node-api": ">=2.0.0-r.1",
+    "@playwright/test": ">=1.63.0"
+  },
+  "peerDependenciesMeta": {
+    "@playwright/test": {
+      "optional": true
+    },
+    "@duckdb/node-api": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.6",
+    "typescript": "^6.0.3",
+    "vite": "^8.3.5"
+  }
+}

@@ -15,16 +15,10 @@
     "jsx": "react-jsx",
     "types": ["node", "vite/client"],
     "paths": {
-      "@/*": ["./src/*"]
+      "@arpanp/zen-core": ["./packages/core/src/index.ts"],
+      "@arpanp/zen-reporter": ["./packages/reporter/src/lib/reporter.ts"]
     }
   },
-  "include": [
-    "src/**/*.ts",
-    "src/**/*.tsx",
-    "scripts/*.ts",
-    "*.config.ts",
-    "tests/**/*.ts",
-    "*.config.mjs"
-  ],
+  "include": ["tests/**/*.ts", "*.config.ts", "*.config.mjs"],
   "exclude": ["node_modules"]
 }

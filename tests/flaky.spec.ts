@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test';
 import { existsSync, readdirSync } from 'fs';
 import * as path from 'path';
-import { resolveConfig } from '../src/lib/reporter';
+import { resolveConfig } from '../packages/reporter/src/lib/reporter';
 
 /**
  * Cross-run flaky generator for the history tab.

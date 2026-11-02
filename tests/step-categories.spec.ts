@@ -1,9 +1,5 @@
 import { expect, test } from '@playwright/test';
-import {
-  classifyStepTitle,
-  countStepCategories,
-  STEP_CATEGORIES,
-} from '../src/lib/stepCategoryClassifier';
+import { classifyStepTitle, countStepCategories, STEP_CATEGORIES } from '@arpanp/zen-core';
 import type { TestStep, TestSuite } from '@arpanp/zen-core';
 
 function mockStep(title: string, subSteps?: TestStep[]): TestStep {

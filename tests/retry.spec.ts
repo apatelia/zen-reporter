@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test';
 import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'fs';
 import * as path from 'path';
-import { resolveConfig } from '../src/lib/reporter';
+import { resolveConfig } from '../packages/reporter/src/lib/reporter';
 
 const counterDir = path.resolve(process.cwd(), resolveConfig().outputDir);
 const counterFile = path.join(counterDir, '_retry_counter');

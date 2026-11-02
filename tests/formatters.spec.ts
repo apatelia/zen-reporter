@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
-import { normalizeErrorText, sha256Sync } from '../src/lib/cryptoUtils';
-import { truncateMiddlePath } from '../src/lib/formatters';
+import { normalizeErrorText, sha256Sync } from '@arpanp/zen-core';
+import { truncateMiddlePath } from '@arpanp/zen-core';
 
 test.describe('Formatters & Windows Path Tests', () => {
   test('truncateMiddlePath truncates POSIX paths with > 3 segments', () => {

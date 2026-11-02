@@ -2,7 +2,7 @@
 import { expect, test } from '@playwright/test';
 import * as fs from 'fs';
 import * as path from 'path';
-import { SqliteHistoryStore } from '../src/lib/history/SqliteHistoryStore';
+import { SqliteHistoryStore } from '../packages/reporter/src/lib/history/SqliteHistoryStore';
 import type { ResultSummary, TestCase } from '@arpanp/zen-core';
 
 test.describe('SqliteHistoryStore Tests', () => {
