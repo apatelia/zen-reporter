@@ -3,7 +3,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { fileURLToPath } from 'url';
 import { detectPackageManager } from './dataProcessor';
-import type { ReportData, ResultSummary } from './types/report';
+import type { ReportData, ResultSummary, TestSuite } from './types/report';
 
 /**
  * Configuration options needed for HTML report generation.
@@ -120,6 +120,58 @@ export function getShowReportCommand(pm?: string, cwd: string = process.cwd()): 
 }
 
 /**
+ * Recursively strips granular execution data (steps, sub-steps, attachments, logs, errors)
+ * from suites and cases, preserving only high-level properties necessary for Overview calculations.
+ *
+ * @param suite - TestSuite to prune.
+ * @returns Pruned TestSuite.
+ */
+export function pruneSuiteForSummary(suite: TestSuite): TestSuite {
+  return {
+    title: suite.title,
+    cases: (suite.cases || []).map((c) => ({
+      title: c.title,
+      parent: c.parent,
+      project: c.project,
+      fileName: c.fileName,
+      status: c.status,
+      duration: c.duration,
+      attempts: c.attempts,
+      ...(c.failedAttempts && c.failedAttempts.length > 0
+        ? {
+            failedAttempts: c.failedAttempts.map((f) => ({
+              status: f.status,
+              duration: f.duration,
+              error: null,
+            })),
+          }
+        : {}),
+    })),
+    ...(suite.subSuites && suite.subSuites.length > 0
+      ? {
+          subSuites: suite.subSuites.map(pruneSuiteForSummary),
+        }
+      : {}),
+  };
+}
+
+/**
+ * Creates a lightweight copy of ReportData containing only metadata and pruned suites
+ * for embedding into summary.html.
+ *
+ * @param reportData - Complete report data model payload.
+ * @returns Pruned ReportData.
+ */
+export function pruneReportDataForSummary(reportData: ReportData): ReportData {
+  return {
+    testRun: {
+      ...reportData.testRun,
+      suites: (reportData.testRun.suites || []).map(pruneSuiteForSummary),
+    },
+  };
+}
+
+/**
  * Generates `index.html` (and optional `summary.html`) from template assets and JSON payloads.
  *
  * @param outputDir - Target output directory path.
@@ -188,7 +240,7 @@ export function generateHtmlReport(
     const destHtml = path.join(outputDir, 'index.html');
     fs.writeFileSync(destHtml, finalHtml, 'utf8');
 
-    console.debug(`\n✓ Report generated: ${destHtml}`);
+    console.log(`\n✓ Report generated: ${destHtml}`);
 
     const openedAutomatically = maybeOpenReport(options, summary);
     if (openedAutomatically) {
@@ -202,15 +254,21 @@ export function generateHtmlReport(
     }
 
     if (options.singleSummaryFile) {
+      const summaryJsonPath = path.join(outputDir, 'summary.json');
       const summaryHtmlPath = path.join(outputDir, 'summary.html');
+      const prunedSummaryData = pruneReportDataForSummary(reportData);
+      fs.writeFileSync(summaryJsonPath, JSON.stringify(prunedSummaryData, null, 2), 'utf8');
+
+      const safeSummaryData = JSON.stringify(prunedSummaryData).replace(/</g, '\\u003c');
+      const summaryDataScript = `<script id="report-data" type="application/json">${safeSummaryData}</script>`;
       const summaryScript = `<script>window.__ZEN_SUMMARY_ONLY__ = true;</script>`;
       const summaryHtml = cleanTemplate.replace(
         '</head>',
-        `${dataScript}\n${summaryScript}\n</head>`
+        `${summaryDataScript}\n${summaryScript}\n</head>`
       );
 
       fs.writeFileSync(summaryHtmlPath, summaryHtml, 'utf8');
-      console.debug(`✓ Standalone Summary generated: ${summaryHtmlPath}`);
+      console.log(`✓ Standalone Summary generated: ${summaryHtmlPath}`);
     }
   } catch (err) {
     console.error('Report generation failed, keeping report.json:', err);

@@ -131,6 +131,7 @@ zen-reporter/
 ├── zen-report/                # Generated self-contained report bundle folder
 │   ├── index.html             # Main interactive HTML dashboard interface
 │   ├── summary.html           # Optional executive summary HTML (when singleSummaryFile: true)
+│   ├── summary.json           # Optional pruned executive summary dataset (when singleSummaryFile: true)
 │   ├── runs/                  # Historical per-run JSONL execution archives
 │   ├── report.json            # Processed test execution JSON dataset
 │   ├── history.json           # Historical test analytics & DuckDB trend dataset

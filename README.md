@@ -117,6 +117,7 @@ When executed, Zen Reporter generates a self-contained report folder (default: `
 zen-report/
 ├── index.html        # Main interactive HTML dashboard interface
 ├── summary.html      # Optional standalone executive summary dashboard (when singleSummaryFile: true)
+├── summary.json      # Optional pruned executive summary dataset (when singleSummaryFile: true)
 ├── runs/             # Per-run JSONL execution history logs (<timestamp>__<run-slug>.jsonl)
 └── attachments/      # Extracted test attachments (screenshots, videos, trace files, text logs)
 ```

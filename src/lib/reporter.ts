@@ -521,6 +521,9 @@ class ZenReporter implements Reporter {
    */
   onEnd(result: FullResult): void {
     this.progressPrinter.clearLineProgress();
+    console.log(
+      '\n\x1b[33m⚡\x1b[0m Zen Reporter: Processing test results and generating report...'
+    );
 
     if (result.status === 'interrupted') {
       for (const testCase of this.testCaseMap.values()) {
