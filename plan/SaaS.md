@@ -64,9 +64,10 @@ This is the biggest _new_ surface — you currently have zero of it.
 
 ### 3. Storage & hosting
 
-- **Object storage** (S3/GCS) for reports, attachments, and JSONL archives.
-- **CDN** to host/serve the per-run `index.html` at a public URL (currently it's a local file only).
-- Encrypt at rest/in transit — **test data often contains stack traces, source snippets, and possibly secrets/PII.** Tenant isolation + a privacy posture (maybe SOC 2) becomes a sales requirement, not a nice-to-have.
+- **Relational metadata (Postgres)**: Runs, suites, test results, flaky analytics, and attachment metadata (`history_attachments`).
+- **Object storage (S3/Cloudflare R2/GCS)**: Stores raw screenshots, video replays, trace archives, and HTML report backups with presigned upload URLs.
+- **CDN**: Public URLs for reports and media assets with tenant-scoped signed cookies or tokens.
+- **Attachment Retention**: Automated S3 lifecycle rules to transition old traces/videos to cold storage or expire them after 30–90 days.
 
 ### 4. Server-side analytics engine
 

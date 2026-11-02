@@ -181,6 +181,50 @@ serve({ fetch: app.fetch, port: 3000 });
 
 ---
 
+### 3. 🖼️ Historical Attachments & Multi-Run Browsing Plan
+
+To allow users to browse **any past historical report** and inspect its **attachments** without needing hundreds of individual `report.json` files:
+
+#### A. Database Schema (`history_attachments`)
+
+Add a normalized `history_attachments` table to `history.db` (`schema.ts`):
+
+```sql
+CREATE TABLE IF NOT EXISTS history_attachments (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  run_id TEXT NOT NULL,
+  test_file TEXT NOT NULL,
+  test_title TEXT NOT NULL,
+  name TEXT NOT NULL,
+  content_type TEXT,
+  file_path TEXT NOT NULL,       -- Relative path, e.g. "attachments/run-104_att0_screenshot.png"
+  body_text TEXT,               -- Truncated text/log snippet (<64KB) if text attachment
+  created_at TEXT NOT NULL,
+  FOREIGN KEY (run_id) REFERENCES history_runs(run_id) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_hist_att_run ON history_attachments(run_id);
+```
+
+#### B. Attachment Storage & Retention
+
+- **File System**: Binary attachments (screenshots, videos, trace files) are saved under `<outputDir>/attachments/` with run-prefixed names (e.g. `<runId>_<testId>_<attIdx>_<filename>`).
+- **Pruning**: When `maxRuns` retention cleans up old runs in `history.db`, an automatic cleanup hook scans `<outputDir>/attachments/` and removes unreferenced files.
+- **SaaS / Remote Mode**: The reporter uploads attachments to S3/R2/GCS via presigned URLs and records the object key or public URL in `history_attachments.file_path`.
+
+#### C. User Run Switching (UI / Dashboard)
+
+1. **Top Navigation Run Selector**:
+   - The UI header features a dropdown listing recent runs populated from `history.json` / `history_runs`.
+   - Selecting a run updates the active run context and URL query parameter (`?runId=<run_id>`).
+2. **From the History Tab Table**:
+   - Every row in the "Runs History" table includes a `"View Report ↗"` action that loads that run's test suite and failures.
+3. **Serving Historical Runs**:
+   - **In CLI Server (`npx zr show`) / SaaS Server**: Adds a fast REST route `GET /api/runs/:runId` that queries `history_test_cases` and `history_attachments` to reconstruct that run on demand.
+   - **In Static HTML (`index.html`)**: The embedded `history.json` supplies the run summary and test failure details, and the browser resolves media via `<img src="./attachments/<runId>_..." />`.
+
+---
+
 ### Summary Recommendation Matrix
 
 | Solution                  | Install Size Added | Node.js Version | Best For                                                 |
