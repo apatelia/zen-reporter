@@ -1,4 +1,4 @@
-import type { HistoryData } from '../types/history';
+import type { HistoryData } from '@arpanp/zen-core';
 import type { WriteRunHistoryOptions } from '../runHistoryWriter';
 
 /**

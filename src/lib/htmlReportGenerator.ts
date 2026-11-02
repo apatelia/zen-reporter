@@ -3,7 +3,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { fileURLToPath } from 'url';
 import { detectPackageManager } from './dataProcessor';
-import type { ReportData, ResultSummary, TestSuite } from './types/report';
+import type { ReportData, ResultSummary, TestSuite } from '@arpanp/zen-core';
 
 /**
  * Configuration options needed for HTML report generation.

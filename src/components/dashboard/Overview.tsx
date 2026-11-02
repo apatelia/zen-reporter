@@ -1,4 +1,4 @@
-import type { ResultSummary, TestSuite } from '@/lib/types/report';
+import type { ResultSummary, TestSuite } from '@arpanp/zen-core';
 import TestResultsHero from './TestResultsHero';
 import ExecutionTimingEfficiencyCard from './ExecutionTimingEfficiencyCard';
 import TestHealthCard from './TestHealthCard';

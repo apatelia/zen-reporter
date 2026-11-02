@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import type { TestError } from '@/lib/types/report';
+import type { TestError } from '@arpanp/zen-core';
 import {
   highlightCodeSnippet,
   highlightExpectedReceived,

@@ -1,4 +1,4 @@
-import type { ResultSummary, TestSuite } from '@/lib/types/report';
+import type { ResultSummary, TestSuite } from '@arpanp/zen-core';
 import { formatDuration } from '@/lib/formatters';
 import { computeSlowestTest, computeFastestTest, collectAllCases } from '@/lib/statsUtils';
 

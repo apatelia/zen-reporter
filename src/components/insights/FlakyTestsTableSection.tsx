@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import type { HistoryFlakyRow } from '@/lib/types/history';
+import type { HistoryFlakyRow } from '@arpanp/zen-core';
 import { formatDate } from '@/lib/formatters';
 import { usePagination } from '@/components/pagination/usePagination';
 import { PageSizeControl } from '@/components/pagination/PageSizeControl';

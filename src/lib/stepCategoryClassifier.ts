@@ -1,5 +1,5 @@
 import { collectAllCases } from '@/lib/statsUtils';
-import type { TestStep, TestSuite } from '@/lib/types/report';
+import type { TestStep, TestSuite } from '@arpanp/zen-core';
 
 export type StepCategoryKey = 'assertions' | 'actions' | 'network' | 'hooks' | 'waits' | 'others';
 

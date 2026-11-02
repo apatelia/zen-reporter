@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import type { TestStep } from '@/lib/types/report';
+import type { TestStep } from '@arpanp/zen-core';
 import { getStepCodeSnippet, highlightCodeSnippet } from '@/lib/codeHighlighting';
 import { statusConfig } from './AttemptView';
 

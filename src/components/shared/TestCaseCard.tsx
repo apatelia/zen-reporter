@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import type { TestCase } from '@/lib/types/report';
+import type { TestCase } from '@arpanp/zen-core';
 import { getTagColor } from '@/lib/tagColors';
 import TestCaseDetail from './TestCaseDetail';
 

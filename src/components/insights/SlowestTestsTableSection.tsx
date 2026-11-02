@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import type { HistorySlowRow } from '@/lib/types/history';
+import type { HistorySlowRow } from '@arpanp/zen-core';
 import { formatDurationVerbose } from '@/lib/formatters';
 import LearnMoreButton from '@/components/shared/LearnMoreButton';
 import { DataTable } from '@/components/shared/DataTable';

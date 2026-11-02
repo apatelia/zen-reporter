@@ -24,7 +24,7 @@ import type {
   HistoryConfig,
   LocalHistoryConfig,
   RemoteHistoryConfig,
-} from './types/history';
+} from '@arpanp/zen-core';
 import type {
   ReportData,
   ResultSummary,
@@ -32,7 +32,7 @@ import type {
   TestError,
   TestRun as TestRunModel,
   TestSuite,
-} from './types/report';
+} from '@arpanp/zen-core';
 
 setFsModule(fs);
 

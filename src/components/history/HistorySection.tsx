@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import HistoryDisabledBanner from '@/components/shared/HistoryDisabledBanner';
-import type { HistoryData } from '@/lib/types/history';
+import type { HistoryData } from '@arpanp/zen-core';
 import HistoryGuides from './HistoryGuides';
 import { HistoryFileSection } from './HistoryFileSection';
 import { HistoryRunsTableSection } from './HistoryRunsTableSection';

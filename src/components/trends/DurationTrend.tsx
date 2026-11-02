@@ -1,7 +1,7 @@
 import LearnMoreButton from '@/components/shared/LearnMoreButton';
 import { formatDateParts, formatDuration } from '@/lib/formatters';
 import { getProjectColor } from '@/lib/theme';
-import type { HistoryData } from '@/lib/types/history';
+import type { HistoryData } from '@arpanp/zen-core';
 import { useMemo } from 'react';
 import {
   CartesianGrid,

@@ -1,7 +1,7 @@
 import type { FullConfig } from '@playwright/test/reporter';
 import * as path from 'path';
 import { SqliteHistoryStore } from './history/SqliteHistoryStore';
-import type { ResultSummary, TestCase as TestCaseModel } from './types/report';
+import type { ResultSummary, TestCase as TestCaseModel } from '@arpanp/zen-core';
 
 export interface WriteRunHistoryOptions {
   startTime: string;

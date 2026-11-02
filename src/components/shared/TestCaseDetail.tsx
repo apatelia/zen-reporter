@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import type { Attachment, TestCase, TestStep } from '@/lib/types/report';
+import type { Attachment, TestCase, TestStep } from '@arpanp/zen-core';
 import { extractVisualDiffPairs } from '@/lib/cryptoUtils';
 import SearchInput from './SearchInput';
 import { VisualDiffViewer } from '../visual-regression/VisualDiffViewer';

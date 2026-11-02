@@ -1,4 +1,4 @@
-import type { ResultSummary, TestSuite } from '@/lib/types/report';
+import type { ResultSummary, TestSuite } from '@arpanp/zen-core';
 import { formatDuration } from '@/lib/formatters';
 import { computeStatusPercentages } from '@/lib/statsUtils';
 import PassRateRing from './PassRateRing';

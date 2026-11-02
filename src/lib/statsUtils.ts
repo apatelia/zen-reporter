@@ -1,4 +1,4 @@
-import type { ResultSummary, TestCase, TestError, TestSuite } from './types/report';
+import type { ResultSummary, TestCase, TestError, TestSuite } from '@arpanp/zen-core';
 
 const FAILED_STATUS_TYPE: Record<TestCase['status'], string | undefined> = {
   passed: undefined,

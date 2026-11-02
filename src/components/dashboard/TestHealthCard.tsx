@@ -1,4 +1,4 @@
-import type { TestSuite } from '@/lib/types/report';
+import type { TestSuite } from '@arpanp/zen-core';
 import { collectAllCases } from '@/lib/statsUtils';
 
 export interface TestHealthCardProps {

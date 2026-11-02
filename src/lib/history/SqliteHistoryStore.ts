@@ -10,8 +10,8 @@ import type {
   HistoryRun,
   HistorySlowRow,
   HistoryTestRow,
-} from '../types/history';
-import type { TestCase as TestCaseModel } from '../types/report';
+} from '@arpanp/zen-core';
+import type { TestCase as TestCaseModel } from '@arpanp/zen-core';
 import type { HistoryStore } from './HistoryStore';
 import { INIT_SCHEMA_STATEMENTS } from './schema';
 

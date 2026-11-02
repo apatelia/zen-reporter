@@ -8,8 +8,8 @@ import ThemeControls from '@/components/layout/ThemeControls';
 import BackToTopButton from '@/components/shared/BackToTopButton';
 import SuitesSection from '@/components/suites/SuitesSection';
 import { formatDateRange, formatDuration } from '@/lib/formatters';
-import type { HistoryData } from '@/lib/types/history';
-import type { ReportData, TestSuite } from '@/lib/types/report';
+import type { HistoryData } from '@arpanp/zen-core';
+import type { ReportData, TestSuite } from '@arpanp/zen-core';
 import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react';
 
 const ProjectsSection = lazy(() => import('@/components/projects/ProjectsSection'));

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import type { TestSuite, TestCase } from '@/lib/types/report';
+import type { TestSuite, TestCase } from '@arpanp/zen-core';
 import { formatDurationVerbose } from '@/lib/formatters';
 import TestCaseCard from '@/components/shared/TestCaseCard';
 

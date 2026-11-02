@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import { truncateFileName, calculatePassRate } from '@/lib/formatters';
 import { collectAllCases, computeFileStats, type FileStats } from '@/lib/statsUtils';
-import type { TestSuite } from '@/lib/types/report';
+import type { TestSuite } from '@arpanp/zen-core';
 import { usePagination } from '@/components/pagination/usePagination';
 import { PageSizeControl } from '@/components/pagination/PageSizeControl';
 import { PaginationFooter } from '@/components/pagination/PaginationFooter';

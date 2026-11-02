@@ -9,7 +9,7 @@ import type {
   TestError,
   TestRun,
   TestStep,
-} from './types/report';
+} from '@arpanp/zen-core';
 
 /**
  * Detects the package manager used in the target directory based on lockfiles or package.json settings.

@@ -13,7 +13,7 @@ import { StatusCountBadge } from '@/components/shared/StatusCountBadge';
 import DateFilterControl, { type DateFilterRange } from '@/components/shared/DateFilterControl';
 import LearnMoreButton from '@/components/shared/LearnMoreButton';
 import SearchInput from '@/components/shared/SearchInput';
-import type { HistoryData, HistoryTestRow } from '@/lib/types/history';
+import type { HistoryData, HistoryTestRow } from '@arpanp/zen-core';
 import { formatDuration, truncateFileName, calculatePassRate } from '@/lib/formatters';
 import { generateExportFilename } from '@/lib/exportFilename';
 

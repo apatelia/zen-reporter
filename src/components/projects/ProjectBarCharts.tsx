@@ -10,7 +10,7 @@ import {
   TooltipContentProps,
 } from 'recharts';
 import { computeProjectStats, collectAllCases } from '@/lib/statsUtils';
-import type { ResultSummary, TestSuite } from '@/lib/types/report';
+import type { ResultSummary, TestSuite } from '@arpanp/zen-core';
 import LearnMoreButton from '@/components/shared/LearnMoreButton';
 import { TEST_STATUS_COLOR_MAP } from '@/lib/theme';
 

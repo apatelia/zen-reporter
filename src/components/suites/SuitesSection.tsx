@@ -1,4 +1,4 @@
-import type { TestSuite } from '@/lib/types/report';
+import type { TestSuite } from '@arpanp/zen-core';
 import { useMemo, useState } from 'react';
 import MultiSelectFilter, { FilterCountBadge } from '@/components/shared/MultiSelectFilter';
 import StatCard from '@/components/shared/StatCard';

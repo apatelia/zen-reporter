@@ -4,8 +4,8 @@ import {
   STEP_CATEGORIES,
   StepCategoryKey,
 } from '@/lib/stepCategoryClassifier';
-import type { HistoryData } from '@/lib/types/history';
-import type { TestSuite } from '@/lib/types/report';
+import type { HistoryData } from '@arpanp/zen-core';
+import type { TestSuite } from '@arpanp/zen-core';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { StepCategoryChart, type StepCategoryChartPoint } from './step-category/StepCategoryChart';
 import { StepCategorySummaryCards } from './step-category/StepCategorySummaryCards';

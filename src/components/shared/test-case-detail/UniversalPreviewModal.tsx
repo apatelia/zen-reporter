@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import BaseModal from '../BaseModal';
-import type { Attachment } from '@/lib/types/report';
+import type { Attachment } from '@arpanp/zen-core';
 import type { AttemptView } from './AttemptView';
 import { detectLanguage, highlightSyntaxLine } from '@/lib/codeHighlighting';
 

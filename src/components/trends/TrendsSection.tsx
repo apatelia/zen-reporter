@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import type { TestSuite } from '@/lib/types/report';
-import type { HistoryData } from '@/lib/types/history';
+import type { TestSuite } from '@arpanp/zen-core';
+import type { HistoryData } from '@arpanp/zen-core';
 import PassRateTrend from '@/components/trends/PassRateTrend';
 import DurationTrend from '@/components/trends/DurationTrend';
 import StepCategoryTrend from '@/components/trends/StepCategoryTrend';

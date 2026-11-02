@@ -1,6 +1,6 @@
 import { formatDuration } from './formatters';
 import { computePassRate, type FailedTest } from './statsUtils';
-import type { Attachment, ResultSummary } from './types/report';
+import type { Attachment, ResultSummary } from '@arpanp/zen-core';
 
 const RE_TIMESTAMP = /\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?Z?/gi;
 const RE_PTR = /0x[a-fA-F0-9]+/g;

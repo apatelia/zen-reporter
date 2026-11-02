@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import type { TestSuite } from '@/lib/types/report';
+import type { TestSuite } from '@arpanp/zen-core';
 import StatCard from '@/components/shared/StatCard';
 import InfoTooltip from '@/components/shared/InfoTooltip';
 

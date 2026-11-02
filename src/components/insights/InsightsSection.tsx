@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import InsightsGuides, { type InsightModalType } from './InsightsGuides';
-import type { TestSuite } from '@/lib/types/report';
-import type { HistoryData } from '@/lib/types/history';
+import type { TestSuite } from '@arpanp/zen-core';
+import type { HistoryData } from '@arpanp/zen-core';
 import { computeProjectStats, collectAllCases } from '@/lib/statsUtils';
 import ProjectFlakyRateChart from './ProjectFlakyRateChart';
 import ProjectDurationChart from '@/components/insights/ProjectDurationChart';

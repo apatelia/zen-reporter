@@ -11,7 +11,7 @@ import {
 } from 'recharts';
 import { computeProjectStats, collectAllCases } from '@/lib/statsUtils';
 import LearnMoreButton from '@/components/shared/LearnMoreButton';
-import type { TestSuite } from '@/lib/types/report';
+import type { TestSuite } from '@arpanp/zen-core';
 
 export interface ProjectFlakyRateChartProps {
   suites: TestSuite[];

@@ -1,7 +1,7 @@
 import type { TestStep as PwTestStep } from '@playwright/test/reporter';
 import type { existsSync as fsExistsSync, readFileSync as fsReadFileSync } from 'fs';
 import { escapeHTML } from './formatters';
-import type { Location, TestError, TestStep } from './types/report';
+import type { Location, TestError, TestStep } from '@arpanp/zen-core';
 
 export interface FsModule {
   existsSync: typeof fsExistsSync;

@@ -4,6 +4,9 @@
   "version": "0.19.1",
   "type": "module",
   "description": "Beautiful test execution reports for Playwright",
+  "workspaces": [
+    "packages/*"
+  ],
   "bin": {
     "zen-reporter": "bin/zen-reporter.js",
     "zr": "bin/zen-reporter.js"

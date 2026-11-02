@@ -4,7 +4,7 @@ import {
   countStepCategories,
   STEP_CATEGORIES,
 } from '../src/lib/stepCategoryClassifier';
-import type { TestStep, TestSuite } from '../src/lib/types/report';
+import type { TestStep, TestSuite } from '@arpanp/zen-core';
 
 function mockStep(title: string, subSteps?: TestStep[]): TestStep {
   return {

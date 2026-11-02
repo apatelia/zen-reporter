@@ -9,7 +9,7 @@ import {
   computeProjectExecutiveKPIs,
   computeProjectStats,
 } from '@/lib/statsUtils';
-import type { TestSuite } from '@/lib/types/report';
+import type { TestSuite } from '@arpanp/zen-core';
 
 export interface ProjectsSectionProps {
   suites: TestSuite[];
