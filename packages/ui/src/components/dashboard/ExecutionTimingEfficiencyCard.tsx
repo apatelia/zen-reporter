@@ -1,5 +1,5 @@
 import type { ResultSummary, TestSuite } from '@arpanp/zen-core';
-import { formatDuration } from '@arpanp/zen-core';
+import { formatDurationVerbose } from '@arpanp/zen-core';
 import { computeSlowestTest, computeFastestTest, collectAllCases } from '@arpanp/zen-core';
 
 export interface ExecutionTimingEfficiencyCardProps {
@@ -24,11 +24,14 @@ export default function ExecutionTimingEfficiencyCard({
   const speedup = hasSavings ? speedupRatio.toFixed(1) : speedupRatio.toFixed(1);
 
   const maxDuration = Math.max(sequentialMs, parallelMs, 1);
-  const seqWidthPct = Math.min(100, Math.max(8, (sequentialMs / maxDuration) * 100));
-  const parWidthPct = Math.min(100, Math.max(8, (parallelMs / maxDuration) * 100));
+  const seqWidthPct =
+    sequentialMs > 0 ? Math.min(100, Math.max(8, (sequentialMs / maxDuration) * 100)) : 0;
+  const parWidthPct =
+    parallelMs > 0 ? Math.min(100, Math.max(8, (parallelMs / maxDuration) * 100)) : 0;
 
   const allCases = collectAllCases(suites);
   const executedTotal = summary.total - summary.skipped;
+  const isZeroExecution = executedTotal === 0 || (sequentialMs === 0 && parallelMs === 0);
   const avgDuration = executedTotal > 0 ? Math.round(summary.duration / executedTotal) : 0;
   const slowestTest = computeSlowestTest(allCases);
   const fastestTest = computeFastestTest(allCases);
@@ -111,10 +114,10 @@ export default function ExecutionTimingEfficiencyCard({
       <div className="my-3 flex items-baseline gap-2">
         <span className="text-3xl font-bold tracking-tight text-text-ink dark:text-text-on-primary">
           {hasSavings
-            ? formatDuration(savedMs)
+            ? formatDurationVerbose(savedMs)
             : isOverhead
-              ? formatDuration(overheadMs)
-              : formatDuration(parallelMs)}
+              ? formatDurationVerbose(overheadMs)
+              : formatDurationVerbose(parallelMs)}
         </span>
         <span className="text-xs font-medium uppercase tracking-wider text-text-body-mid dark:text-text-muted">
           {hasSavings
@@ -132,7 +135,7 @@ export default function ExecutionTimingEfficiencyCard({
           <div className="flex items-center justify-between text-xs font-medium text-text-body-mid dark:text-text-muted mb-1">
             <span>Sequential Effort</span>
             <span className="font-mono font-bold text-text-ink dark:text-text-on-primary">
-              {formatDuration(sequentialMs)}
+              {formatDurationVerbose(sequentialMs)}
             </span>
           </div>
           <div className="h-2.5 w-full rounded-full bg-surface-200 dark:bg-surface-200 border border-border-default overflow-hidden">
@@ -148,7 +151,7 @@ export default function ExecutionTimingEfficiencyCard({
           <div className="flex items-center justify-between text-xs font-medium text-text-body-mid dark:text-text-muted mb-1">
             <span>Actual Wall-Clock</span>
             <span className="font-mono font-bold text-text-ink dark:text-text-on-primary">
-              {formatDuration(parallelMs)}
+              {formatDurationVerbose(parallelMs)}
             </span>
           </div>
           <div className="h-2.5 w-full rounded-full bg-surface-200 dark:bg-surface-200 border border-border-default overflow-hidden">
@@ -181,9 +184,13 @@ export default function ExecutionTimingEfficiencyCard({
               />
             </svg>
           </div>
-          <span className="mt-1.5 font-mono font-bold text-sm text-text-ink dark:text-text-on-primary">
-            {formatDuration(avgDuration)}
-          </span>
+          {isZeroExecution ? (
+            <span className="mt-1.5 font-mono font-bold text-sm text-text-muted">—</span>
+          ) : (
+            <span className="mt-1.5 font-mono font-bold text-sm text-text-ink dark:text-text-on-primary">
+              {formatDurationVerbose(avgDuration)}
+            </span>
+          )}
         </div>
 
         <div className="flex flex-col justify-between rounded-md border border-border-default bg-surface-100 dark:bg-surface-100 p-2.5 sm:p-3 shadow-2xs">
@@ -203,9 +210,13 @@ export default function ExecutionTimingEfficiencyCard({
               />
             </svg>
           </div>
-          <span className="mt-1.5 font-mono font-bold text-sm text-text-ink dark:text-text-on-primary">
-            {formatDuration(slowestTest)}
-          </span>
+          {isZeroExecution ? (
+            <span className="mt-1.5 font-mono font-bold text-sm text-text-muted">—</span>
+          ) : (
+            <span className="mt-1.5 font-mono font-bold text-sm text-text-ink dark:text-text-on-primary">
+              {formatDurationVerbose(slowestTest)}
+            </span>
+          )}
         </div>
 
         <div className="flex flex-col justify-between rounded-md border border-border-default bg-surface-100 dark:bg-surface-100 p-2.5 sm:p-3 shadow-2xs">
@@ -225,9 +236,13 @@ export default function ExecutionTimingEfficiencyCard({
               />
             </svg>
           </div>
-          <span className="mt-1.5 font-mono font-bold text-sm text-text-ink dark:text-text-on-primary">
-            {formatDuration(fastestTest)}
-          </span>
+          {isZeroExecution ? (
+            <span className="mt-1.5 font-mono font-bold text-sm text-text-muted">—</span>
+          ) : (
+            <span className="mt-1.5 font-mono font-bold text-sm text-text-ink dark:text-text-on-primary">
+              {formatDurationVerbose(fastestTest)}
+            </span>
+          )}
         </div>
       </div>
     </div>

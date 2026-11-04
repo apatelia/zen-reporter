@@ -6,17 +6,30 @@ import HistorySection from '@/components/history/HistorySection';
 import Sidebar, { type TabKey } from '@/components/layout/Sidebar';
 import ThemeControls from '@/components/layout/ThemeControls';
 import BackToTopButton from '@/components/shared/BackToTopButton';
+import RunSwitcherModal from '@/components/shared/RunSwitcherModal';
+import Toast, { type ToastNotification } from '@/components/shared/Toast';
 import SuitesSection from '@/components/suites/SuitesSection';
 import { formatDateRange, formatDuration } from '@arpanp/zen-core';
 import type { HistoryData } from '@arpanp/zen-core';
 import type { ReportData, TestSuite } from '@arpanp/zen-core';
-import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 const ProjectsSection = lazy(() => import('@/components/projects/ProjectsSection'));
 const TrendsSection = lazy(() => import('@/components/trends/TrendsSection'));
 const InsightsSection = lazy(() => import('@/components/insights/InsightsSection'));
 
 const faviconUri = `data:image/svg+xml;utf8,${encodeURIComponent(faviconRaw)}`;
+
+export type ThemeMode = 'sage' | 'lotus' | 'oasis';
+
+function normalizeTheme(val?: string | null): ThemeMode | null {
+  if (!val) return null;
+  const lower = val.toLowerCase();
+  if (lower === 'sage' || lower === 'cafe') return 'sage';
+  if (lower === 'lotus' || lower === 'sentinel') return 'lotus';
+  if (lower === 'oasis' || lower === 'streak') return 'oasis';
+  return null;
+}
 
 export default function App() {
   const isSummaryView = useMemo(() => {
@@ -33,6 +46,9 @@ export default function App() {
   const [isLoading, setIsLoading] = useState(true);
   const [historyData, setHistoryData] = useState<HistoryData | null>(null);
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const [isRunSwitcherOpen, setIsRunSwitcherOpen] = useState(false);
+  const [toastNotification, setToastNotification] = useState<ToastNotification | null>(null);
+  const [loadError, setLoadError] = useState<{ runId: string; message: string } | null>(null);
 
   const initialReportData = useMemo(() => {
     if (typeof document === 'undefined') return null;
@@ -52,25 +68,26 @@ export default function App() {
     return null;
   }, []);
 
-  const [theme, setTheme] = useState<'cafe' | 'sentinel' | 'streak'>(() => {
+  const [theme, setTheme] = useState<ThemeMode>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('zen-theme');
+      const normalized = normalizeTheme(saved);
+      if (normalized) {
+        return normalized;
+      }
+    }
+
     const testRun = initialReportData?.testRun;
     const configuredTheme = testRun?.theme;
 
     if (configuredTheme) {
-      const lower = configuredTheme.toLowerCase();
-      if (lower === 'cafe' || lower === 'sentinel' || lower === 'streak') {
-        return lower;
+      const normalized = normalizeTheme(configuredTheme);
+      if (normalized) {
+        return normalized;
       }
     }
 
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('zen-theme');
-      if (saved === 'cafe' || saved === 'sentinel' || saved === 'streak') {
-        return saved;
-      }
-    }
-
-    return 'cafe';
+    return 'sage';
   });
 
   const [darkMode, setDarkMode] = useState<'system' | 'light' | 'dark'>(() => {
@@ -96,10 +113,10 @@ export default function App() {
     const testRun = data?.testRun;
 
     if (testRun) {
-      if (testRun.theme) {
-        const lower = testRun.theme.toLowerCase();
-        if (lower === 'cafe' || lower === 'sentinel' || lower === 'streak') {
-          setTheme(lower as 'cafe' | 'sentinel' | 'streak');
+      if (testRun.theme && typeof window !== 'undefined' && !localStorage.getItem('zen-theme')) {
+        const normalized = normalizeTheme(testRun.theme);
+        if (normalized) {
+          setTheme(normalized);
         }
       }
       if (
@@ -154,9 +171,197 @@ export default function App() {
     link.href = faviconUri;
   }, []);
 
+  const [selectedRunId, setSelectedRunId] = useState<string | null>(() => {
+    if (typeof window === 'undefined') return null;
+    const params = new URLSearchParams(window.location.search);
+    return params.get('runId');
+  });
+
+  const loadRunById = useCallback(
+    async (runId: string, shouldPushState = true) => {
+      if (typeof window === 'undefined' || window.location.protocol === 'file:') return;
+      try {
+        setIsLoading(true);
+        const resp = await fetch(`/api/runs/${encodeURIComponent(runId)}`);
+        if (resp.ok) {
+          const data = (await resp.json()) as ReportData;
+          setReportData(data);
+          setSelectedRunId(runId);
+          setLoadError(null);
+          applyThemeAndDarkMode(data);
+
+          if (shouldPushState) {
+            const url = new URL(window.location.href);
+            url.searchParams.set('runId', runId);
+            window.history.pushState({ runId }, '', url.toString());
+          }
+
+          const targetRunName =
+            data.testRun?.testRunName ||
+            historyData?.runs?.find((r) => r.run_id === runId)?.run_name ||
+            'Selected Run';
+          setToastNotification({
+            id: String(Date.now()),
+            type: 'success',
+            title: 'Execution Run Switched',
+            message: `Now viewing ${targetRunName}. All report data and dashboards are updated.`,
+            duration: 5000,
+          });
+        } else {
+          const errorMsg =
+            resp.status === 404
+              ? `Execution run "${runId}" not found in history.`
+              : `Server returned status ${resp.status} for run ${runId}`;
+          setLoadError({ runId, message: errorMsg });
+          setSelectedRunId(runId);
+          if (shouldPushState) {
+            const url = new URL(window.location.href);
+            url.searchParams.set('runId', runId);
+            window.history.pushState({ runId }, '', url.toString());
+          }
+          setToastNotification({
+            id: String(Date.now()),
+            type: 'error',
+            title: 'Failed to Switch Run',
+            message: errorMsg,
+          });
+        }
+      } catch (e) {
+        console.warn(`Failed to fetch run ${runId}:`, e);
+        const errorMsg = e instanceof Error ? e.message : 'Network error loading report data';
+        setLoadError({ runId, message: errorMsg });
+        setSelectedRunId(runId);
+        setToastNotification({
+          id: String(Date.now()),
+          type: 'error',
+          title: 'Failed to Switch Run',
+          message: errorMsg,
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [historyData]
+  );
+
+  const loadLatestRun = useCallback(async (shouldPushState = true) => {
+    setIsLoading(true);
+    setLoadError(null);
+
+    if (shouldPushState && typeof window !== 'undefined') {
+      const url = new URL(window.location.href);
+      url.searchParams.delete('runId');
+      window.history.pushState({}, '', url.pathname + (url.search ? url.search : ''));
+    }
+
+    // Check inline report data
+    const inlineEl = document.getElementById('report-data');
+    if (inlineEl) {
+      const text = inlineEl.textContent?.trim();
+      if (text) {
+        try {
+          const data = JSON.parse(text) as ReportData;
+          setReportData(data);
+          applyThemeAndDarkMode(data);
+          setSelectedRunId(null);
+          setIsLoading(false);
+          setToastNotification({
+            id: String(Date.now()),
+            type: 'success',
+            title: 'Switched to Latest Execution Run',
+            message: `Now viewing the latest run: ${data.testRun?.testRunName || 'Latest Run'}. All report data and dashboards are updated.`,
+            duration: 5000,
+          });
+          return;
+        } catch {
+          /* fall through */
+        }
+      }
+    }
+
+    // Fetch latest report.json
+    if (typeof window !== 'undefined' && window.location.protocol !== 'file:') {
+      try {
+        const resp = await fetch('./report.json');
+        if (resp.ok) {
+          const data = (await resp.json()) as ReportData;
+          setReportData(data);
+          applyThemeAndDarkMode(data);
+          setSelectedRunId(null);
+          setToastNotification({
+            id: String(Date.now()),
+            type: 'success',
+            title: 'Switched to Latest Execution Run',
+            message: `Now viewing the latest run: ${data.testRun?.testRunName || 'Latest Run'}. All report data and dashboards are updated.`,
+            duration: 5000,
+          });
+          return;
+        }
+      } catch {
+        /* ignore error */
+      } finally {
+        setIsLoading(false);
+      }
+    }
+    setIsLoading(false);
+  }, []);
+
+  const handleSelectRun = useCallback(
+    (runId: string) => {
+      void loadRunById(runId, true);
+    },
+    [loadRunById]
+  );
+
+  useEffect(() => {
+    const handlePopState = () => {
+      if (typeof window === 'undefined') return;
+      const params = new URLSearchParams(window.location.search);
+      const targetRunId = params.get('runId');
+      if (targetRunId) {
+        void loadRunById(targetRunId, false);
+      } else {
+        void loadLatestRun(false);
+      }
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [loadRunById, loadLatestRun]);
+
   useEffect(() => {
     void (async () => {
       async function loadReportData() {
+        if (typeof window !== 'undefined' && window.location.protocol !== 'file:') {
+          const params = new URLSearchParams(window.location.search);
+          const targetRunId = params.get('runId');
+          if (targetRunId) {
+            try {
+              const resp = await fetch(`/api/runs/${encodeURIComponent(targetRunId)}`);
+              if (resp.ok) {
+                const data = (await resp.json()) as ReportData;
+                setReportData(data);
+                applyThemeAndDarkMode(data);
+                setSelectedRunId(targetRunId);
+                setLoadError(null);
+                return;
+              }
+              const errorMsg =
+                resp.status === 404
+                  ? `Execution run "${targetRunId}" not found in history.`
+                  : `Server returned status ${resp.status} for run ${targetRunId}`;
+              setLoadError({ runId: targetRunId, message: errorMsg });
+              setSelectedRunId(targetRunId);
+              return;
+            } catch (e) {
+              const errorMsg = e instanceof Error ? e.message : 'Network error loading report data';
+              setLoadError({ runId: targetRunId, message: errorMsg });
+              setSelectedRunId(targetRunId);
+              return;
+            }
+          }
+        }
+
         // First check for embedded inline report data (used in static single-file HTML reports)
         const inlineEl = document.getElementById('report-data');
 
@@ -240,6 +445,15 @@ export default function App() {
     };
   }, [reportData]);
 
+  const effectiveRunId = useMemo(() => {
+    return (
+      selectedRunId ||
+      (historyData?.runs && historyData.runs.length > 0
+        ? historyData.runs[historyData.runs.length - 1].run_id
+        : null)
+    );
+  }, [selectedRunId, historyData]);
+
   const failedCount = summary ? summary.failed : 0;
   const timedOutCount = summary ? summary.timedOut : 0;
   const interruptedCount = summary ? summary.interrupted || 0 : 0;
@@ -302,7 +516,7 @@ export default function App() {
               <h1 className="text-base font-bold tracking-tight text-text-ink dark:text-text-on-primary sm:text-lg truncate leading-tight">
                 {projectName || 'Test Execution Report'}
               </h1>
-              <div className="mt-1 flex items-center gap-2 flex-wrap text-xs text-text-body-mid dark:text-text-muted min-w-0">
+              <div className="mt-0.5 flex items-center gap-2 flex-wrap text-xs text-text-body-mid dark:text-text-muted min-w-0">
                 <span
                   className="font-medium text-text-ink dark:text-text-on-primary max-w-md truncate"
                   title={testRunName || 'Playwright Test Reporter'}
@@ -461,9 +675,63 @@ export default function App() {
           </div>
 
           <div className="flex items-center gap-3 shrink-0 pt-0.5">
+            {historyData && historyData.runs && historyData.runs.length > 1 && (
+              <>
+                {(loadError ||
+                  (selectedRunId &&
+                    historyData.runs[0]?.run_id &&
+                    selectedRunId !== historyData.runs[0].run_id)) && (
+                  <button
+                    type="button"
+                    onClick={() => void loadLatestRun(true)}
+                    className="inline-flex items-center gap-1.5 h-8 px-2.5 text-xs font-semibold rounded-md border border-accent-blue/30 bg-accent-blue/10 hover:bg-accent-blue/20 text-accent-blue shadow-2xs transition-colors cursor-pointer"
+                    title="Return to latest test run"
+                  >
+                    <svg
+                      className="h-3.5 w-3.5 text-accent-blue"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                      strokeWidth={2}
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                      />
+                    </svg>
+                    <span>Latest Run</span>
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={() => setIsRunSwitcherOpen(true)}
+                  className="inline-flex items-center gap-1.5 h-8 px-2.5 text-xs font-semibold rounded-md border border-border-default bg-surface-100 hover:bg-surface-200 text-text-ink dark:text-text-on-primary shadow-2xs hover:border-accent-blue transition-colors cursor-pointer"
+                  title="Switch test run"
+                >
+                  <svg
+                    className="h-3.5 w-3.5 text-text-muted"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    strokeWidth={2}
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                    />
+                  </svg>
+                  <span>Switch Run</span>
+                </button>
+              </>
+            )}
             <ThemeControls
               theme={theme}
-              setTheme={setTheme}
+              setTheme={(t) => {
+                const normalized = normalizeTheme(t);
+                if (normalized) setTheme(normalized);
+              }}
               darkMode={darkMode}
               setDarkMode={(mode) => {
                 setDarkMode(mode);
@@ -484,7 +752,70 @@ export default function App() {
               </div>
             )}
 
-            {!isLoading && !reportData && (
+            {!isLoading && loadError && (
+              <div className="flex items-center justify-center py-16 text-center">
+                <div className="max-w-md w-full rounded-xl border border-danger-500/30 bg-surface-50 dark:bg-surface-100/40 p-8 shadow-sm">
+                  <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-danger-500/10 text-danger-500 ring-1 ring-danger-500/20">
+                    <svg
+                      className="h-7 w-7"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                      strokeWidth={1.75}
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z"
+                      />
+                    </svg>
+                  </div>
+                  <h3 className="text-lg font-bold text-text-ink dark:text-text-on-primary">
+                    Test Run Not Found
+                  </h3>
+                  <p className="mt-2 text-sm text-text-body-mid leading-relaxed">
+                    Could not load execution run{' '}
+                    <code className="rounded bg-surface-200/60 dark:bg-surface-200 px-1.5 py-0.5 font-mono text-xs text-text-ink dark:text-text-on-primary">
+                      {loadError.runId}
+                    </code>
+                    . {loadError.message}
+                  </p>
+                  <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
+                    <button
+                      type="button"
+                      onClick={() => void loadLatestRun(true)}
+                      className="inline-flex items-center gap-2 rounded-md bg-accent-blue px-4 py-2 text-xs font-bold text-text-on-primary dark:text-surface-950 hover:bg-accent-blue/90 shadow-xs transition-colors cursor-pointer"
+                    >
+                      <svg
+                        className="h-3.5 w-3.5"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                        strokeWidth={2}
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                        />
+                      </svg>
+                      <span>Return to Latest Run</span>
+                    </button>
+                    {historyData && historyData.runs && historyData.runs.length > 1 && (
+                      <button
+                        type="button"
+                        onClick={() => setIsRunSwitcherOpen(true)}
+                        className="inline-flex items-center gap-1.5 rounded-md border border-border-default bg-surface-100 dark:bg-surface-200 px-3.5 py-2 text-xs font-semibold text-text-ink dark:text-text-on-primary hover:bg-surface-200 dark:hover:bg-surface-100 transition-colors cursor-pointer"
+                      >
+                        <span>Choose From History</span>
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {!isLoading && !loadError && !reportData && (
               <div className="flex items-center justify-center py-24 text-center">
                 <div>
                   <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-md bg-surface-100">
@@ -514,11 +845,16 @@ export default function App() {
               </div>
             )}
 
-            {!isLoading && reportData && (isSummaryView || activeTab === 'overview') && summary && (
-              <Overview summary={summary} suites={suites} isMinimalReport={isMinimalReport} />
-            )}
+            {!isLoading &&
+              !loadError &&
+              reportData &&
+              (isSummaryView || activeTab === 'overview') &&
+              summary && (
+                <Overview summary={summary} suites={suites} isMinimalReport={isMinimalReport} />
+              )}
 
             {!isLoading &&
+              !loadError &&
               !isSummaryView &&
               !isMinimalReport &&
               reportData &&
@@ -534,63 +870,107 @@ export default function App() {
                 </Suspense>
               )}
 
-            {!isLoading && !isSummaryView && reportData && activeTab === 'suites' && (
+            {!isLoading && !loadError && !isSummaryView && reportData && activeTab === 'suites' && (
               <SuitesSection suites={suites} />
             )}
 
-            {!isLoading && !isSummaryView && reportData && activeTab === 'files' && (
-              <FilesSection suites={suites} isMinimalReport={isMinimalReport} />
-            )}
-
-            {!isLoading && !isSummaryView && reportData && activeTab === 'failures' && (
-              <FailuresSection
+            {!isLoading && !loadError && !isSummaryView && reportData && activeTab === 'files' && (
+              <FilesSection
                 suites={suites}
-                failedCount={failedCount}
-                timedOutCount={timedOutCount}
-                interruptedCount={interruptedCount}
+                isMinimalReport={isMinimalReport}
+                testRunName={testRunName}
               />
             )}
 
-            {!isLoading && !isSummaryView && !isMinimalReport && activeTab === 'trends' && (
-              <Suspense
-                fallback={
-                  <div className="flex items-center justify-center py-24 text-sm text-text-body-mid">
-                    Loading trends…
-                  </div>
-                }
-              >
-                <TrendsSection
-                  history={historyData}
+            {!isLoading &&
+              !loadError &&
+              !isSummaryView &&
+              reportData &&
+              activeTab === 'failures' && (
+                <FailuresSection
                   suites={suites}
-                  isHistoryDisabled={isHistoryDisabled}
+                  failedCount={failedCount}
+                  timedOutCount={timedOutCount}
+                  interruptedCount={interruptedCount}
                 />
-              </Suspense>
-            )}
+              )}
 
-            {!isLoading && !isSummaryView && !isMinimalReport && activeTab === 'insights' && (
-              <Suspense
-                fallback={
-                  <div className="flex items-center justify-center py-24 text-sm text-text-body-mid">
-                    Loading insights…
-                  </div>
-                }
-              >
-                <InsightsSection
+            {!isLoading &&
+              !loadError &&
+              !isSummaryView &&
+              !isMinimalReport &&
+              activeTab === 'trends' && (
+                <Suspense
+                  fallback={
+                    <div className="flex items-center justify-center py-24 text-sm text-text-body-mid">
+                      Loading trends…
+                    </div>
+                  }
+                >
+                  <TrendsSection
+                    history={historyData}
+                    suites={suites}
+                    isHistoryDisabled={isHistoryDisabled}
+                  />
+                </Suspense>
+              )}
+
+            {!isLoading &&
+              !loadError &&
+              !isSummaryView &&
+              !isMinimalReport &&
+              activeTab === 'insights' && (
+                <Suspense
+                  fallback={
+                    <div className="flex items-center justify-center py-24 text-sm text-text-body-mid">
+                      Loading insights…
+                    </div>
+                  }
+                >
+                  <InsightsSection
+                    history={historyData}
+                    suites={suites}
+                    isHistoryDisabled={isHistoryDisabled}
+                  />
+                </Suspense>
+              )}
+
+            {!isLoading &&
+              !loadError &&
+              !isSummaryView &&
+              !isMinimalReport &&
+              activeTab === 'history' && (
+                <HistorySection
                   history={historyData}
-                  suites={suites}
                   isHistoryDisabled={isHistoryDisabled}
+                  onSelectRun={handleSelectRun}
+                  selectedRunId={effectiveRunId}
                 />
-              </Suspense>
-            )}
-
-            {!isLoading && !isSummaryView && !isMinimalReport && activeTab === 'history' && (
-              <HistorySection history={historyData} isHistoryDisabled={isHistoryDisabled} />
-            )}
+              )}
           </div>
         </div>
       </main>
 
       <BackToTopButton activeTab={activeTab} />
+
+      <Toast
+        key={toastNotification?.id ?? 'none'}
+        notification={toastNotification}
+        onDismiss={() => setToastNotification(null)}
+      />
+
+      {historyData && historyData.runs && (
+        <RunSwitcherModal
+          isOpen={isRunSwitcherOpen}
+          onClose={() => setIsRunSwitcherOpen(false)}
+          runs={historyData.runs}
+          currentRunId={effectiveRunId || ''}
+          onSelectRun={(runId) => {
+            handleSelectRun(runId);
+            setIsRunSwitcherOpen(false);
+          }}
+        />
+      )}
     </div>
   );
 }

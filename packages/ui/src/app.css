@@ -1,14 +1,14 @@
 @import 'tailwindcss';
 
 /* ==========================================================================
-   DEFAULT THEME: CAFE
+   DEFAULT THEME: SAGE
    ========================================================================== */
 @theme {
   /* ── Brand Primary ───────────────────────────── */
   --color-ink: #006241;
   --color-ink-strong: #1e3932;
 
-  /* ── Surface Palette (Cafe Warm Canvas) ──── */
+  /* ── Surface Palette (Sage Warm Canvas) ──── */
   --color-canvas: #f2f0eb;
   --color-surface-50: #e8e5df;
   --color-surface-100: #dad6ce;
@@ -33,7 +33,7 @@
   --color-border-chart: #b4bcc1;
   --color-border-active: #1e3932;
 
-  /* ── Semantic: Success (Cafe Green) ─────── */
+  /* ── Semantic: Success (Sage Green) ─────── */
   --color-success: #00754a;
   --color-success-50: #d4e9e2;
   --color-success-100: #c2e3d8;
@@ -73,6 +73,7 @@
 
   /* ── Accent Palette ──────────────────────────── */
   --color-accent-cafe: #006241;
+  --color-accent-sage: #006241;
   --color-accent-green: #00754a;
   --color-accent-house: #1e3932;
   --color-accent-gold: #cba258;
@@ -96,7 +97,7 @@
   --color-status-chart-interrupted: #d97706; /* amber-600 */
   --color-status-chart-skipped: #94a3b8; /* slate-400 */
 
-  /* ── Step Category Composition Palette (Cafe / Default Light) ─ */
+  /* ── Step Category Composition Palette (Sage / Default Light) ─ */
   --color-step-cat-assertions: var(--color-success-500);
   --color-step-cat-assertions-border: var(--color-success-600);
   --color-step-cat-hooks: var(--color-success-200);
@@ -119,7 +120,7 @@ html.dark {
   --color-status-chart-interrupted: #f59e0b; /* amber-500 */
   --color-status-chart-skipped: #64748b; /* slate-500 */
 
-  /* ── Step Category Composition Palette (Cafe Dark) ─ */
+  /* ── Step Category Composition Palette (Sage Dark) ─ */
   --color-step-cat-assertions: #4ade80;
   --color-step-cat-assertions-border: #22c55e;
   --color-step-cat-hooks: #86efac;
@@ -137,8 +138,9 @@ html.dark {
 /* ── Dark mode variant definition ─ */
 @custom-variant dark (&:where(.dark, .dark *));
 
-/* Cafe Dark Mode */
+/* Sage Dark Mode */
 html.dark,
+html[data-theme='sage'].dark,
 html[data-theme='cafe'].dark {
   --color-ink: #ffffff;
   --color-ink-strong: #ffffff;
@@ -198,6 +200,7 @@ html[data-theme='cafe'].dark {
   --color-info-700: #0369a1;
 
   --color-accent-cafe: #4ade80;
+  --color-accent-sage: #4ade80;
   --color-accent-green: #22c55e;
   --color-accent-house: var(--color-warning-500);
   --color-accent-gold: #fcd34d;
@@ -216,10 +219,12 @@ html[data-theme='cafe'].dark {
 }
 
 /* ==========================================================================
-   THEME 2: SENTINEL (html[data-theme="sentinel"])
+   THEME 2: LOTUS (html[data-theme="lotus"])
    ========================================================================== */
 
-/* Sentinel Light Mode */
+/* Lotus Light Mode */
+html[data-theme='lotus'],
+[data-theme='lotus'],
 html[data-theme='sentinel'],
 [data-theme='sentinel'] {
   /* ── Brand Primary ───────────────────────────── */
@@ -291,6 +296,7 @@ html[data-theme='sentinel'],
 
   /* ── Accent Palette ──────────────────────────── */
   --color-accent-cafe: #150f23;
+  --color-accent-sage: #150f23;
   --color-accent-green: #709600;
   --color-accent-house: #1f1633;
   --color-accent-gold: #eab308;
@@ -302,7 +308,7 @@ html[data-theme='sentinel'],
   --color-accent-yellow: #c2ef4e;
   --color-accent-red: #d93d75;
 
-  /* ── Step Category Composition Palette (Sentinel Light) ─ */
+  /* ── Step Category Composition Palette (Lotus Light) ─ */
   --color-step-cat-assertions: #709600;
   --color-step-cat-assertions-border: #587700;
   --color-step-cat-hooks: #c2ef4e;
@@ -322,7 +328,9 @@ html[data-theme='sentinel'],
   --color-tooltip-border: #582da8;
 }
 
-/* Sentinel Dark Mode */
+/* Lotus Dark Mode */
+html[data-theme='lotus'].dark,
+[data-theme='lotus'] .dark,
 html[data-theme='sentinel'].dark,
 [data-theme='sentinel'] .dark {
   /* ── Brand Primary ───────────────────────────── */
@@ -392,6 +400,7 @@ html[data-theme='sentinel'].dark,
 
   /* ── Accent Palette ──────────────────────────── */
   --color-accent-cafe: #c2ef4e;
+  --color-accent-sage: #c2ef4e;
   --color-accent-green: #c2ef4e;
   --color-accent-house: #79628c;
   --color-accent-gold: #facc15;
@@ -403,7 +412,7 @@ html[data-theme='sentinel'].dark,
   --color-accent-yellow: #c2ef4e;
   --color-accent-red: #fa7faa;
 
-  /* ── Step Category Composition Palette (Sentinel Dark) ─ */
+  /* ── Step Category Composition Palette (Lotus Dark) ─ */
   --color-step-cat-assertions: #c2ef4e;
   --color-step-cat-assertions-border: #a9d936;
   --color-step-cat-hooks: #709600;
@@ -424,10 +433,12 @@ html[data-theme='sentinel'].dark,
 }
 
 /* ==========================================================================
-   THEME 3: STREAK (html[data-theme="streak"]) - Stripe Inspired
+   THEME 3: OASIS (html[data-theme="oasis"])
    ========================================================================== */
 
-/* Streak Light Mode */
+/* Oasis Light Mode */
+html[data-theme='oasis'],
+[data-theme='oasis'],
 html[data-theme='streak'],
 [data-theme='streak'] {
   /* ── Brand Primary ───────────────────────────── */
@@ -499,6 +510,7 @@ html[data-theme='streak'],
 
   /* ── Accent Palette ──────────────────────────── */
   --color-accent-cafe: #533afd;
+  --color-accent-sage: #533afd;
   --color-accent-green: #00875a;
   --color-accent-house: #1c1e54;
   --color-accent-gold: #b87a28;
@@ -510,7 +522,7 @@ html[data-theme='streak'],
   --color-accent-yellow: #b87a28;
   --color-accent-red: #ea2261;
 
-  /* ── Step Category Composition Palette (Streak Light) ─ */
+  /* ── Step Category Composition Palette (Oasis Light) ─ */
   --color-step-cat-assertions: #00875a;
   --color-step-cat-assertions-border: #006644;
   --color-step-cat-hooks: #79e2b1;
@@ -530,7 +542,9 @@ html[data-theme='streak'],
   --color-tooltip-border: #1c1e54;
 }
 
-/* Streak Dark Mode (Deep Navy Track: Brand Dark 900 / #0d253d / #1c1e54) */
+/* Oasis Dark Mode (Deep Navy Track: Brand Dark 900 / #0d253d / #1c1e54) */
+html[data-theme='oasis'].dark,
+[data-theme='oasis'] .dark,
 html[data-theme='streak'].dark,
 [data-theme='streak'] .dark {
   /* ── Brand Primary ───────────────────────────── */
@@ -600,6 +614,7 @@ html[data-theme='streak'].dark,
 
   /* ── Accent Palette ──────────────────────────── */
   --color-accent-cafe: #665efd;
+  --color-accent-sage: #665efd;
   --color-accent-green: #36b37e;
   --color-accent-house: #b9b9f9;
   --color-accent-gold: #f5a623;
@@ -611,7 +626,7 @@ html[data-theme='streak'].dark,
   --color-accent-yellow: #f5a623;
   --color-accent-red: #ff4d88;
 
-  /* ── Step Category Composition Palette (Streak Dark) ─ */
+  /* ── Step Category Composition Palette (Oasis Dark) ─ */
   --color-step-cat-assertions: #36b37e;
   --color-step-cat-assertions-border: #00875a;
   --color-step-cat-hooks: #79e2b1;

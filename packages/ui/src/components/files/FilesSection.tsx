@@ -5,9 +5,10 @@ import FileMetricsSection from '@/components/files/FileMetricsSection';
 export interface FilesSectionProps {
   suites: TestSuite[];
   isMinimalReport?: boolean;
+  testRunName?: string;
 }
 
-export default function FilesSection({ suites, isMinimalReport }: FilesSectionProps) {
+export default function FilesSection({ suites, isMinimalReport, testRunName }: FilesSectionProps) {
   if (suites.length === 0) {
     return (
       <div className="w-full space-y-6">
@@ -31,7 +32,7 @@ export default function FilesSection({ suites, isMinimalReport }: FilesSectionPr
 
       <FileMetricsSection suites={suites} isMinimalReport={isMinimalReport} />
 
-      <FileSummary suites={suites} title="Test Results by File" />
+      <FileSummary suites={suites} title="Test Results by File" testRunName={testRunName} />
     </div>
   );
 }

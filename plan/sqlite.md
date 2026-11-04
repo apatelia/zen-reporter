@@ -1,8 +1,10 @@
+# Migration to SQLite for local history tracking
+
 Switching to SQLite as the underlying storage engine (while utilizing DuckDB's SQLite extension or native DuckDB file querying) is an **excellent architectural decision**. Here is a detailed breakdown of how performance scales at 1,000–5,000 runs, and how it impacts CI/CD historical persistence:
 
 ---
 
-### 🚀 Performance Scaling at 1,000 to 5,000 Runs
+## 🚀 Performance Scaling at 1,000 to 5,000 Runs
 
 | Metric / Scenario                                | Raw JSON / JSONL (Current)                                                                               | SQLite Database Storage                                                                                               |
 | :----------------------------------------------- | :------------------------------------------------------------------------------------------------------- | :-------------------------------------------------------------------------------------------------------------------- |
@@ -15,16 +17,17 @@ At **1,000 to 5,000 runs**, SQLite will remain **lightning fast** for DuckDB OLA
 
 ---
 
-### 🔄 Impact on CI/CD Server & Workflow Persistence
+## 🔄 Impact on CI/CD Server & Workflow Persistence
 
 Switching to SQLite simplifies CI/CD persistence:
 
-#### 1. Easy CI Artifact Caching & Storage
+### 1. Easy CI Artifact Caching & Storage
 
 In GitHub Actions, GitLab CI, Jenkins, or CircleCI:
 
 - Storing and retrieving **a single binary `history.db` file** via cache actions (`actions/cache`) is significantly faster and less error-prone than restoring thousands of individual JSONL files.
 - **Example GitHub Actions step**:
+
   ```yaml
   - name: Restore Zen Reporter History DB
     uses: actions/cache@v4
@@ -33,13 +36,14 @@ In GitHub Actions, GitLab CI, Jenkins, or CircleCI:
       key: zen-history-${{ runner.os }}
   ```
 
-#### 2. Incremental Append Performance
+### 2. Incremental Append Performance
 
 - Instead of appending JSON lines across multiple `.jsonl` files or rewriting large JSON payloads, SQLite handles transactional inserts (`INSERT INTO runs ...`) atomically without lock contention or file corruption risks.
 
 #### 3. Easy Remote Database / S3 Synchronization
 
 - A single SQLite file can be easily uploaded/downloaded to/from Cloud Storage (S3 / GCS / Azure Blob) at the start/end of a CI pipeline:
+
   ```bash
   aws s3 cp s3://my-bucket/history.db ./zen-report/history.db
   # Run Playwright tests
@@ -71,6 +75,7 @@ In a static HTML file (where there is no live backend/server listening to SQL qu
 - **CSV Export**:
   - **Export Current View (Default)**: Clicking "Export CSV" in the UI exports all records currently available in the loaded `history.json` dataset ([exportToCsv.ts](file:///home/arpan/CodePlay/zen-reporter/src/lib/exportToCsv.ts)).
   - **Export Full Historical CSV via CLI**: If an engineer needs complete raw historical CSV dumps across all 5,000+ runs stored in `history.db`, they run the CLI command:
+
     ```bash
     npx zr history export --format=csv --out=all-history.csv
     ```
@@ -83,16 +88,19 @@ When running `npx zr show` or hosting Zen Reporter on a dashboard server:
 
 - **SQL-Based Server Pagination (OFFSET / LIMIT)**:
   - Instead of embedding static JSON into the page, the frontend requests data via API endpoints backed by DuckDB querying `history.db`:
+
     ```sql
     SELECT * FROM history_runs
     ORDER BY started_at DESC
     LIMIT 20 OFFSET 40;
     ```
+
   - Only 20 rows are transferred over the wire per page request. Page switches load instantly regardless of whether `history.db` contains 500 or 50,000 runs.
 
 - **Streaming Full CSV Export**:
   - Clicking "Export CSV" makes an API call to the backend endpoint (e.g. `/api/export/history.csv`).
   - DuckDB streams the CSV result directly from `history.db` using DuckDB's native CSV writer:
+
     ```sql
     COPY (SELECT * FROM history_runs ORDER BY started_at DESC)
     TO 'export.csv' (HEADER, DELIMITER ',');

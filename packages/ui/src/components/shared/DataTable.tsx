@@ -91,6 +91,7 @@ interface DataTableProps<T> {
   data: T[];
   columns: ColumnDef<T>[];
   getRowKey: (item: T, index: number) => string;
+  getRowClassName?: (item: T, index: number) => string;
   emptyMessage?: React.ReactNode;
   className?: string;
   compact?: boolean;
@@ -103,6 +104,7 @@ export function DataTable<T>({
   data,
   columns,
   getRowKey,
+  getRowClassName,
   emptyMessage,
   className = '',
   compact = false,
@@ -155,33 +157,36 @@ export function DataTable<T>({
             </tr>
           </thead>
           <tbody>
-            {data.map((item, index) => (
-              <tr
-                key={getRowKey(item, index)}
-                className="border-b border-border-default hover:bg-surface-100/60 dark:hover:bg-surface-200/40 transition-colors"
-              >
-                {columns.map((col) => {
-                  const alignClass =
-                    col.align === 'right'
-                      ? 'text-right'
-                      : col.align === 'center'
-                        ? 'text-center'
-                        : 'text-left';
-                  const cellBase = compact
-                    ? 'px-2 py-2.5 text-text-ink dark:text-text-on-primary tabular-nums'
-                    : 'px-3 py-3 text-text-ink dark:text-text-on-primary tabular-nums';
+            {data.map((item, index) => {
+              const rowCustomClass = getRowClassName ? getRowClassName(item, index) : '';
+              return (
+                <tr
+                  key={getRowKey(item, index)}
+                  className={`border-b border-border-default hover:bg-surface-100/60 dark:hover:bg-surface-200/40 transition-colors ${rowCustomClass}`}
+                >
+                  {columns.map((col) => {
+                    const alignClass =
+                      col.align === 'right'
+                        ? 'text-right'
+                        : col.align === 'center'
+                          ? 'text-center'
+                          : 'text-left';
+                    const cellBase = compact
+                      ? 'px-2 py-2.5 text-text-ink dark:text-text-on-primary tabular-nums'
+                      : 'px-3 py-3 text-text-ink dark:text-text-on-primary tabular-nums';
 
-                  return (
-                    <td
-                      key={col.key}
-                      className={`${cellBase} ${alignClass} ${col.className || ''}`}
-                    >
-                      {col.cell(item, index)}
-                    </td>
-                  );
-                })}
-              </tr>
-            ))}
+                    return (
+                      <td
+                        key={col.key}
+                        className={`${cellBase} ${alignClass} ${col.className || ''}`}
+                      >
+                        {col.cell(item, index)}
+                      </td>
+                    );
+                  })}
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>

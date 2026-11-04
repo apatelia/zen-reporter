@@ -375,9 +375,56 @@ export async function setupHistorySource(conn, historyDir, cwd = process.cwd()) 
   const runsGlob = `${resolve(cwd, historyDir, 'runs')}/*.jsonl`;
 
   if (existsSync(dbPath)) {
-    const escapedPath = dbPath.replace(/'/g, "''");
+    // Sanitize path against control characters and quote sequences
+    const sanitizedDbPath = resolve(dbPath);
+    if (/[\0\r\n]/.test(sanitizedDbPath)) {
+      throw new Error(`Invalid characters in SQLite database path: "${sanitizedDbPath}"`);
+    }
+    const escapedPath = sanitizedDbPath.replace(/'/g, "''");
     await conn.run(`ATTACH IF NOT EXISTS '${escapedPath}' AS history (TYPE SQLITE)`);
-    await conn.run(`CREATE OR REPLACE VIEW history_src AS SELECT * FROM history.history_view`);
+    await conn.run(`CREATE OR REPLACE VIEW history_src AS
+      SELECT
+        r.run_id,
+        r.run_name,
+        r.project_name,
+        r.started_at,
+        r.ended_at,
+        r.run_duration_ms,
+        r.run_sequential_duration_ms,
+        r.run_total,
+        r.run_passed,
+        r.run_failed,
+        r.run_skipped,
+        r.run_timed_out,
+        r.run_interrupted,
+        r.run_workers,
+        r.run_projects,
+        r.step_assertions,
+        r.step_actions,
+        r.step_network,
+        r.step_hooks,
+        r.step_waits,
+        r.step_others,
+        r.git_branch,
+        r.git_commit,
+        r.git_commit_full,
+        t.file,
+        t.suite,
+        t.title,
+        t.project,
+        t.status,
+        t.duration_ms,
+        t.attempts,
+        t.failed_attempts,
+        t.passed_on_retry,
+        t.error_message,
+        t.error_stack,
+        t.error_file,
+        t.error_line,
+        t.tags
+      FROM history.history_runs r
+      LEFT JOIN history.history_test_cases t ON r.run_id = t.run_id
+    `);
     return { isSqlite: true, target: dbPath };
   } else {
     const escapedGlob = runsGlob.replace(/'/g, "''");

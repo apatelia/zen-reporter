@@ -130,7 +130,7 @@ export default function ProjectFlakyRateChart({
             </svg>
           </div>
           <p className="text-sm font-semibold text-text-ink dark:text-text-on-primary">
-            No flaky tests detected
+            No flaky tests detected in current run
           </p>
           <p className="mt-1 text-xs text-text-body-mid dark:text-text-muted">
             All test cases executed without requiring retries to pass.

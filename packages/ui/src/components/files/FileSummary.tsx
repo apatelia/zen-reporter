@@ -19,9 +19,10 @@ import { generateExportFilename } from '@arpanp/zen-core';
 export interface FileSummaryProps {
   suites: TestSuite[];
   title?: string;
+  testRunName?: string;
 }
 
-export default function FileSummary({ suites, title }: FileSummaryProps) {
+export default function FileSummary({ suites, title, testRunName }: FileSummaryProps) {
   const [fileSearchTerm, setFileSearchTerm] = useState('');
 
   const allCases = useMemo(() => collectAllCases(suites), [suites]);
@@ -126,6 +127,7 @@ export default function FileSummary({ suites, title }: FileSummaryProps) {
             id="files-page-size"
             pageSize={pagination.pageSize}
             onPageSizeChange={pagination.changePageSize}
+            totalItems={filteredFiles.length}
           />
         )}
       </div>
@@ -142,17 +144,46 @@ export default function FileSummary({ suites, title }: FileSummaryProps) {
             className="w-full sm:w-80 md:w-96"
           />
           {filteredFiles.length > 0 && (
-            <ExportCsvButton
-              onClick={() =>
-                exportColumnsToCsv(
-                  () =>
-                    generateExportFilename('file_summary_metrics', { searchTerm: fileSearchTerm }),
-                  filteredFiles,
-                  fileColumns
-                )
-              }
-              count={filteredFiles.length}
-            />
+            <div className="flex items-center gap-2.5 flex-wrap sm:flex-nowrap">
+              {testRunName && (
+                <div
+                  className="inline-flex items-center gap-1.5 text-xs text-text-body-mid dark:text-text-muted px-1.5 py-0.5 select-none"
+                  title={`Active Test Run: ${testRunName}`}
+                >
+                  <span className="text-[11px] font-medium text-text-muted">Run:</span>
+                  <span className="inline-flex items-center gap-1 rounded-full bg-surface-200/80 dark:bg-surface-300/60 border border-border-default/60 px-2 py-0.5 text-[11px] font-semibold text-text-ink dark:text-text-on-primary max-w-56 truncate">
+                    <svg
+                      className="h-2.5 w-2.5 text-text-muted shrink-0"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                      strokeWidth={2}
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                      />
+                    </svg>
+                    <span className="truncate">{testRunName}</span>
+                  </span>
+                </div>
+              )}
+              <ExportCsvButton
+                onClick={() =>
+                  exportColumnsToCsv(
+                    () =>
+                      generateExportFilename('file_summary_metrics', {
+                        searchTerm: fileSearchTerm,
+                        additionalTags: testRunName ? [testRunName] : undefined,
+                      }),
+                    filteredFiles,
+                    fileColumns
+                  )
+                }
+                count={filteredFiles.length}
+              />
+            </div>
           )}
         </div>
       )}
@@ -163,7 +194,10 @@ export default function FileSummary({ suites, title }: FileSummaryProps) {
         columns={fileColumns}
         getRowKey={(f) => f.fileName}
         exportFilename={() =>
-          generateExportFilename('file_summary_metrics', { searchTerm: fileSearchTerm })
+          generateExportFilename('file_summary_metrics', {
+            searchTerm: fileSearchTerm,
+            additionalTags: testRunName ? [testRunName] : undefined,
+          })
         }
         hideExportButton
         className="mt-3"

@@ -18,6 +18,9 @@ export interface HistoryRun {
   pass_rate: number | null;
   project_durations?: Record<string, number>;
   step_categories?: Record<string, number>;
+  git_branch?: string;
+  git_commit?: string;
+  git_commit_full?: string;
 }
 
 export interface HistoryFlakyRow {

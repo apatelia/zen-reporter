@@ -240,7 +240,7 @@ export default function StepCategoryTrend({
             </svg>
           </div>
           <p className="text-sm font-semibold text-text-ink dark:text-text-on-primary">
-            No step data available
+            No step data available for current run
           </p>
           <p className="mt-1 text-xs text-text-body-mid dark:text-text-muted">
             No test steps were executed or recorded for this run.

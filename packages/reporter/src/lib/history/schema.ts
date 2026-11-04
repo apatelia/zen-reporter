@@ -27,6 +27,9 @@ CREATE TABLE IF NOT EXISTS history_runs (
   step_hooks INTEGER DEFAULT 0,
   step_waits INTEGER DEFAULT 0,
   step_others INTEGER DEFAULT 0,
+  git_branch TEXT,
+  git_commit TEXT,
+  git_commit_full TEXT,
   created_at TEXT DEFAULT CURRENT_TIMESTAMP
 );
 `;
@@ -49,6 +52,25 @@ CREATE TABLE IF NOT EXISTS history_test_cases (
   error_file TEXT,
   error_line INTEGER,
   tags TEXT,
+  steps_json TEXT,
+  stdout_json TEXT,
+  stderr_json TEXT,
+  FOREIGN KEY (run_id) REFERENCES history_runs(run_id) ON DELETE CASCADE
+);
+`;
+
+export const CREATE_ATTACHMENTS_TABLE_SQL = `
+CREATE TABLE IF NOT EXISTS history_attachments (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  run_id TEXT NOT NULL,
+  test_file TEXT NOT NULL,
+  test_title TEXT NOT NULL,
+  test_status TEXT,
+  name TEXT NOT NULL,
+  content_type TEXT,
+  file_path TEXT NOT NULL,
+  body_text TEXT,
+  created_at TEXT DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (run_id) REFERENCES history_runs(run_id) ON DELETE CASCADE
 );
 `;
@@ -58,6 +80,8 @@ CREATE INDEX IF NOT EXISTS idx_history_runs_started ON history_runs(started_at D
 CREATE INDEX IF NOT EXISTS idx_history_tests_run_id ON history_test_cases(run_id);
 CREATE INDEX IF NOT EXISTS idx_history_tests_title_status ON history_test_cases(title, status);
 CREATE INDEX IF NOT EXISTS idx_history_tests_file ON history_test_cases(file);
+CREATE INDEX IF NOT EXISTS idx_hist_att_run_id ON history_attachments(run_id);
+CREATE INDEX IF NOT EXISTS idx_hist_att_file_title ON history_attachments(test_file, test_title);
 `;
 
 export const CREATE_HISTORY_VIEW_SQL = `
@@ -84,6 +108,9 @@ SELECT
   r.step_hooks,
   r.step_waits,
   r.step_others,
+  r.git_branch,
+  r.git_commit,
+  r.git_commit_full,
   t.file,
   t.suite,
   t.title,
@@ -99,12 +126,13 @@ SELECT
   t.error_line,
   t.tags
 FROM history_runs r
-JOIN history_test_cases t ON r.run_id = t.run_id;
+LEFT JOIN history_test_cases t ON r.run_id = t.run_id;
 `;
 
 export const INIT_SCHEMA_STATEMENTS = [
   CREATE_RUNS_TABLE_SQL,
   CREATE_TEST_CASES_TABLE_SQL,
+  CREATE_ATTACHMENTS_TABLE_SQL,
   CREATE_INDEXES_SQL,
   CREATE_HISTORY_VIEW_SQL,
 ];

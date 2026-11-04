@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { PageSizeControl } from '@/components/pagination/PageSizeControl';
 import { PaginationFooter } from '@/components/pagination/PaginationFooter';
 import { usePagination } from '@/components/pagination/usePagination';
@@ -22,6 +22,8 @@ export interface HistoryRunsTableSectionProps {
   runs: HistoryRun[];
   availableTimestamps: string[];
   onOpenGuide: () => void;
+  onSelectRun?: (runId: string) => void;
+  selectedRunId?: string | null;
 }
 
 const sectionClass =
@@ -32,6 +34,8 @@ export function HistoryRunsTableSection({
   runs: rawRuns,
   availableTimestamps,
   onOpenGuide,
+  onSelectRun,
+  selectedRunId,
 }: HistoryRunsTableSectionProps) {
   const [filterRange, setFilterRange] = useState<DateFilterRange>({
     fromTimestamp: null,
@@ -50,7 +54,14 @@ export function HistoryRunsTableSection({
 
       if (runSearchTerm.trim()) {
         const query = runSearchTerm.trim().toLowerCase();
-        if (!run.run_name || !run.run_name.toLowerCase().includes(query)) {
+        const nameMatch = Boolean(run.run_name && run.run_name.toLowerCase().includes(query));
+        const branchMatch = Boolean(run.git_branch && run.git_branch.toLowerCase().includes(query));
+        const commitMatch = Boolean(
+          (run.git_commit && run.git_commit.toLowerCase().startsWith(query)) ||
+          (run.git_commit_full && run.git_commit_full.toLowerCase().startsWith(query))
+        );
+
+        if (!nameMatch && !branchMatch && !commitMatch) {
           return false;
         }
       }
@@ -62,6 +73,17 @@ export function HistoryRunsTableSection({
   const runs = useMemo(() => [...filteredRuns].reverse(), [filteredRuns]);
   const runsPag = usePagination(runs.length, 10);
 
+  // Automatically navigate to the page containing the selected run when selectedRunId changes
+  const { pageSize, setPage } = runsPag;
+  useEffect(() => {
+    if (!selectedRunId || runs.length === 0) return;
+    const activeIndex = runs.findIndex((r) => r.run_id === selectedRunId);
+    if (activeIndex !== -1) {
+      const targetPage = Math.floor(activeIndex / pageSize) + 1;
+      setPage(targetPage);
+    }
+  }, [selectedRunId, runs, pageSize, setPage]);
+
   const runColumns: ColumnDef<(typeof runs)[0]>[] = useMemo(
     () => [
       {
@@ -70,6 +92,38 @@ export function HistoryRunsTableSection({
         className: 'font-bold text-text-ink dark:text-text-on-primary',
         cell: (run) => run.run_name,
         csvValue: (run) => run.run_name,
+      },
+      {
+        key: 'branch',
+        header: 'Branch',
+        className: 'text-text-body-mid dark:text-text-muted',
+        cell: (run) => {
+          if (!run.git_branch) {
+            return <span className="text-text-muted-soft dark:text-text-muted">—</span>;
+          }
+          return (
+            <span
+              className="inline-flex items-center gap-1 rounded-full bg-surface-100 dark:bg-surface-200 border border-border-default px-2 py-0.5 text-xs font-semibold text-text-ink dark:text-text-on-primary max-w-36 truncate shadow-2xs"
+              title={`Branch: ${run.git_branch}${run.git_commit ? ` (${run.git_commit})` : ''}`}
+            >
+              <svg
+                className="h-2.5 w-2.5 text-accent-blue shrink-0"
+                fill="none"
+                viewBox="0 0 24 24"
+                strokeWidth="2.5"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M13.19 8.688a4.5 4.5 0 0 1 1.242 7.244l-4.5 4.5a4.5 4.5 0 0 1-6.364-6.364l1.757-1.757m13.35-.622 1.757-1.757a4.5 4.5 0 0 0-6.364-6.364l-4.5 4.5a4.5 4.5 0 0 0 1.242 7.244"
+                />
+              </svg>
+              <span className="truncate">{run.git_branch}</span>
+            </span>
+          );
+        },
+        csvValue: (run) => run.git_branch ?? '',
       },
       {
         key: 'mode',
@@ -255,8 +309,33 @@ export function HistoryRunsTableSection({
           return `${passRate}%`;
         },
       },
+      {
+        key: 'actions',
+        header: 'Report',
+        align: 'center',
+        cell: (run) => {
+          const isCurrent = selectedRunId === run.run_id;
+          return (
+            <button
+              type="button"
+              onClick={() => onSelectRun?.(run.run_id)}
+              disabled={isCurrent}
+              title={isCurrent ? 'Currently viewing this run' : `View ${run.run_name} report`}
+              className={`inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold rounded-md transition-colors ${
+                isCurrent
+                  ? 'bg-surface-200 text-text-muted cursor-default'
+                  : 'bg-surface-100 hover:bg-surface-200 text-accent-blue border border-border-default hover:border-accent-blue/40 shadow-2xs'
+              }`}
+            >
+              <span>{isCurrent ? 'Viewing' : 'View Report'}</span>
+              {!isCurrent && <span className="text-[10px]">↗</span>}
+            </button>
+          );
+        },
+        csvValue: () => '',
+      },
     ],
-    [isFiltered]
+    [isFiltered, selectedRunId, onSelectRun]
   );
 
   const pageRuns = runs.slice(runsPag.start, runsPag.start + runsPag.pageSize);
@@ -278,6 +357,7 @@ export function HistoryRunsTableSection({
             id="runs-page-size"
             pageSize={runsPag.pageSize}
             onPageSizeChange={runsPag.changePageSize}
+            totalItems={runs.length}
           />
         )}
       </div>
@@ -298,7 +378,7 @@ export function HistoryRunsTableSection({
                 setRunSearchTerm(val);
                 runsPag.setPage(1);
               }}
-              placeholder="Search test runs by run name..."
+              placeholder="Search test runs by name, branch, or commit..."
               className="w-full sm:w-80 md:w-96"
             />
             {runs.length > 0 && (
@@ -325,6 +405,11 @@ export function HistoryRunsTableSection({
         data={pageRuns}
         columns={runColumns}
         getRowKey={(run) => run.run_id}
+        getRowClassName={(run) =>
+          selectedRunId === run.run_id
+            ? 'bg-accent-blue/5 dark:bg-accent-blue/10 border-l-4 border-l-accent-blue'
+            : ''
+        }
         exportFilename={() =>
           generateExportFilename('test_runs_history', {
             dateRange: filterRange,

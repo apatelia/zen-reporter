@@ -14,10 +14,57 @@ const MONOREPO_ROOT = resolve(__dirname, '../..');
 // Default report output directory (e.g. <root>/zen-report)
 const REPORT_DIR = resolve(MONOREPO_ROOT, process.env.PW_REPORTER_OUTPUT || 'zen-report');
 
-// Dev server middleware that serves report.json, history.json, and attachments during `npm run dev`
+// Dev server middleware that serves report.json, history.json, attachments, and historical run APIs during `npm run dev`
 const serveReportAssets: Plugin = {
   name: 'serve-report-assets',
   configureServer(server) {
+    server.middlewares.use('/api/runs', async (req, res, next) => {
+      if (!req.url || req.method !== 'GET') return next();
+
+      try {
+        const { SqliteHistoryStore } = await import('@arpanp/zen-reporter');
+        const dbPath = resolve(REPORT_DIR, 'history.db');
+        if (!existsSync(dbPath)) {
+          res.statusCode = 404;
+          res.setHeader('content-type', 'application/json; charset=utf-8');
+          res.end(JSON.stringify({ error: 'history.db not found' }));
+          return;
+        }
+
+        const store = new SqliteHistoryStore({ dbPath, autoMigrate: false });
+
+        // Route: /api/runs (empty or "/")
+        if (req.url === '' || req.url === '/') {
+          const history = await store.getHistoryData();
+          res.statusCode = 200;
+          res.setHeader('content-type', 'application/json; charset=utf-8');
+          res.end(JSON.stringify({ runs: history.runs }));
+          await store.close();
+          return;
+        }
+
+        // Route: /api/runs/:runId
+        const runId = decodeURIComponent(req.url.replace(/^\//, ''));
+        const runReport = await store.getRunReport(runId);
+        await store.close();
+
+        if (!runReport) {
+          res.statusCode = 404;
+          res.setHeader('content-type', 'application/json; charset=utf-8');
+          res.end(JSON.stringify({ error: `Run "${runId}" not found` }));
+          return;
+        }
+
+        res.statusCode = 200;
+        res.setHeader('content-type', 'application/json; charset=utf-8');
+        res.end(JSON.stringify(runReport));
+      } catch (err) {
+        res.statusCode = 500;
+        res.setHeader('content-type', 'application/json; charset=utf-8');
+        res.end(JSON.stringify({ error: String((err as Error)?.message || err) }));
+      }
+    });
+
     server.middlewares.use('/report.json', (_req, res, next) => {
       const file = resolve(REPORT_DIR, 'report.json');
       if (!existsSync(file)) return next();

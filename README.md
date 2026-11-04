@@ -35,7 +35,7 @@ Dark mode:
   - **Slowest Tests Analysis**: Rank top slowest test cases by average execution duration across runs.
   - **P95 Duration & Latency**: Analyze 95th percentile completion thresholds per project profile.
 - **Core Platform Capabilities**:
-  - **Themes & Dark Mode**: Multiple design themes (`Cafe`, `Sentinel`, `Streak`) with light, dark, and auto system mode toggles (following OS preferences), built with WCAG-compliant color tokens and configurable default states.
+  - **Themes & Dark Mode**: Multiple design themes (`Sage`, `Lotus`, `Oasis`) with light, dark, and auto system mode toggles (following OS preferences), built with WCAG-compliant color tokens and configurable default states.
   - **Self-Contained Report Bundle Output**: Generates an interactive HTML dashboard (`index.html`) backed by per-run JSONL execution history (`runs/`) and test attachments (`attachments/`) for easy CI/CD artifact storage. Optionally creates a lightweight standalone `summary.html` dedicated to executive dashboards.
 
 > **Note**: Designed and built with AI pair-programming tools; fully tested, maintained, and quality-assured by human hands.
@@ -81,7 +81,7 @@ export default defineConfig({
         outputDir: 'zen-report', // Optional: Output directory where report files will be generated (default: "zen-report")
         projectName: 'My E2E Project', // Optional: Project name displayed in the top bar header
         testRunName: 'Nightly Build #42', // Optional: Test run / build name displayed in the top bar header
-        theme: 'Cafe', // Optional: Theme applied on initial load ("Cafe" | "Sentinel" | "Streak", default: "Cafe")
+        theme: 'Sage', // Optional: Theme applied on initial load ("Sage" | "Lotus" | "Oasis", default: "Sage")
         darkMode: 'system', // Optional: Initial dark mode state (boolean | "system", default: "system")
         singleSummaryFile: true, // Optional: Generates a standalone summary.html file alongside index.html
         minimalReport: false, // Optional: Produces a lightweight, basic report (disables history, hides analytical charts & secondary tabs, default: false)
@@ -101,7 +101,7 @@ export default defineConfig({
 | `outputDir`         | `string`                                   | `"zen-report"`              | Directory where final report files are saved.                                                                                               |
 | `projectName`       | `string`                                   | `"Test Automation Project"` | Project name displayed prominently in the top bar of the dashboard.                                                                         |
 | `testRunName`       | `string`                                   | `"Test Run #{N}"`           | Test run or build name displayed in top bar. `{N}` is replaced dynamically by run number.                                                   |
-| `theme`             | `string`                                   | `"Cafe"`                    | Theme applied on first load (`"Cafe"`, `"Sentinel"`, `"Streak"`).                                                                           |
+| `theme`             | `string`                                   | `"Sage"`                    | Theme applied on first load (`"Sage"`, `"Lotus"`, `"Oasis"`). Legacy names (`"Cafe"`, `"Sentinel"`, `"Streak"`) are automatically mapped.   |
 | `darkMode`          | `boolean \| 'system'`                      | `"system"`                  | Initial dark mode state (`true`, `false`, or `"system"` to automatically match OS theme setting).                                           |
 | `singleSummaryFile` | `boolean`                                  | `false`                     | Generates a standalone `summary.html` for executive summary views.                                                                          |
 | `minimalReport`     | `boolean`                                  | `false`                     | When `true`, disables history recording and hides analytical charts/secondary tabs (Projects, History, Trends, Insights) for a lean report. |
@@ -135,6 +135,10 @@ Run your Playwright tests as usual. Zen Reporter will stream live progress direc
 ```bash
 npx playwright test
 ```
+
+#### Running Tests in Shard Mode
+
+Running tests across multiple shards in CI or locally? Follow our [Sharded Test Runs Guide](docs/sharding.md) to generate a single consolidated Zen Report and unified execution history across all shards.
 
 ### 2. Viewing the Generated Report
 

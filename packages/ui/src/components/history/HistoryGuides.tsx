@@ -38,6 +38,13 @@ export default function HistoryGuides({
           </div>
           <ul className="list-disc list-inside space-y-1">
             <li>
+              <strong>Run Name:</strong> Name or dynamic run label assigned to the test execution.
+            </li>
+            <li>
+              <strong>Branch:</strong> Git branch associated with the test run, including commit
+              hash details on hover. Displays a dash (`—`) when git metadata was not recorded.
+            </li>
+            <li>
               <strong>Mode:</strong> Indicates whether the run executed sequentially (Serial) or
               concurrently across multiple worker processes (`--workers`).
             </li>
@@ -116,12 +123,13 @@ export default function HistoryGuides({
               months, or custom date ranges.
             </li>
             <li>
-              <strong>Run Name Search:</strong> Instantly filter test runs by run name substring
-              without clearing active date filters.
+              <strong>Search & Filter:</strong> Instantly filter test runs by run name, git branch,
+              or commit hash (short or full SHA) without clearing active date filters.
             </li>
             <li>
-              <strong>Export CSV:</strong> Download the complete filtered dataset of test runs to an
-              RFC 4180-compliant CSV file, ignoring pagination limits.
+              <strong>Export CSV:</strong> Download the complete filtered dataset of test runs
+              (including branch information) to an RFC 4180-compliant CSV file, ignoring pagination
+              limits.
             </li>
           </ul>
         </div>

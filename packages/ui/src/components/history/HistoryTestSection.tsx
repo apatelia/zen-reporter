@@ -313,6 +313,7 @@ export function HistoryTestSection({
             id="tests-history-page-size"
             pageSize={testsPag.pageSize}
             onPageSizeChange={testsPag.changePageSize}
+            totalItems={aggregatedTests.length}
           />
         )}
       </div>

@@ -207,6 +207,7 @@ export default function FlakyTestsTableSection({
             id="flaky-page-size"
             pageSize={flakyPag.pageSize}
             onPageSizeChange={flakyPag.changePageSize}
+            totalItems={filteredFlaky.length}
           />
         )}
       </div>

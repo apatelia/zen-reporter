@@ -225,6 +225,7 @@ export function HistoryFileSection({
             id="files-history-page-size"
             pageSize={filesPag.pageSize}
             onPageSizeChange={filesPag.changePageSize}
+            totalItems={aggregatedFiles.length}
           />
         )}
       </div>

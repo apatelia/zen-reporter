@@ -1,7 +1,8 @@
 import { spawn } from 'child_process';
 import { createReadStream, existsSync, statSync } from 'fs';
 import { createServer } from 'http';
-import { extname, join, normalize, resolve } from 'path';
+import { extname, join, normalize, relative, resolve } from 'path';
+import { SqliteHistoryStore } from '../../dist/reporter.js';
 
 const MIME_TYPES = {
   '.html': 'text/html; charset=utf-8',
@@ -62,12 +63,73 @@ export function handleShow(cwd = process.cwd()) {
     );
   }
 
-  const server = createServer((req, res) => {
-    const rawPath = decodeURIComponent((req.url || '/').split('?')[0]);
-    let safePath = normalize(rawPath).replace(/^(\.\.[/\\])+/, '');
-    let filePath = join(reportDir, safePath);
+  const dbPath = join(reportDir, 'history.db');
+  let historyStore = null;
+  if (existsSync(dbPath)) {
+    try {
+      historyStore = new SqliteHistoryStore({ dbPath, autoMigrate: false });
+    } catch {
+      /* ignore db init error */
+    }
+  }
 
-    if (!filePath.startsWith(reportDir)) {
+  const server = createServer(async (req, res) => {
+    const urlObj = new URL(req.url || '/', `http://${req.headers.host || 'localhost'}`);
+    const pathname = urlObj.pathname;
+
+    // API Routes for Multi-Run Browsing
+    if (pathname.startsWith('/api/')) {
+      res.setHeader('Content-Type', 'application/json; charset=utf-8');
+      res.setHeader('Cache-Control', 'no-cache');
+
+      if (!historyStore) {
+        res.writeHead(503);
+        res.end(JSON.stringify({ error: 'History database not available' }));
+        return;
+      }
+
+      if (pathname === '/api/runs' && req.method === 'GET') {
+        try {
+          const history = await historyStore.getHistoryData();
+          res.writeHead(200);
+          res.end(JSON.stringify({ runs: history.runs }));
+        } catch (e) {
+          res.writeHead(500);
+          res.end(JSON.stringify({ error: String(e?.message || e) }));
+        }
+        return;
+      }
+
+      const runMatch = pathname.match(/^\/api\/runs\/([^/]+)$/);
+      if (runMatch && req.method === 'GET') {
+        const runId = decodeURIComponent(runMatch[1]);
+        try {
+          const runReport = await historyStore.getRunReport(runId);
+          if (!runReport) {
+            res.writeHead(404);
+            res.end(JSON.stringify({ error: `Run "${runId}" not found` }));
+            return;
+          }
+          res.writeHead(200);
+          res.end(JSON.stringify(runReport));
+        } catch (e) {
+          res.writeHead(500);
+          res.end(JSON.stringify({ error: String(e?.message || e) }));
+        }
+        return;
+      }
+
+      res.writeHead(404);
+      res.end(JSON.stringify({ error: 'Not Found' }));
+      return;
+    }
+
+    const rawPath = decodeURIComponent(pathname);
+    const safePath = normalize(rawPath).replace(/^(\.\.[/\\])+/, '');
+    let filePath = resolve(reportDir, safePath.startsWith('/') ? safePath.slice(1) : safePath);
+
+    const rel = relative(reportDir, filePath);
+    if (rel.startsWith('..') || resolve(reportDir, rel) !== filePath) {
       res.writeHead(403, { 'Content-Type': 'text/plain' });
       res.end('Forbidden');
       return;

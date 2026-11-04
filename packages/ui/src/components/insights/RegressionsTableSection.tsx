@@ -196,6 +196,7 @@ export default function RegressionsTableSection({
             id="regressions-page-size"
             pageSize={regressionsPag.pageSize}
             onPageSizeChange={regressionsPag.changePageSize}
+            totalItems={filteredRegressions.length}
           />
         )}
       </div>

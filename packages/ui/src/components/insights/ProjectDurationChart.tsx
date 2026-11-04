@@ -101,7 +101,7 @@ export default function ProjectDurationChart({
             </svg>
           </div>
           <p className="text-sm font-semibold text-text-ink dark:text-text-on-primary">
-            No execution duration data available
+            No execution duration data available for current run
           </p>
           <p className="mt-1 text-xs text-text-body-mid dark:text-text-muted">
             Execution timing benchmarks will be displayed once test cases report execution timing.

@@ -1,5 +1,5 @@
 import type { HistoryData } from '@arpanp/zen-core';
-import type { WriteRunHistoryOptions } from '../runHistoryWriter';
+import type { WriteRunHistoryOptions } from '../runHistoryWriter.js';
 
 /**
  * Storage adapter interface for recording and querying historical test execution data.
@@ -27,6 +27,14 @@ export interface HistoryStore {
    * @returns Formatted historical dataset containing runs, flaky tests, regressions, and slowest tests.
    */
   getHistoryData(windowSize?: number): Promise<HistoryData>;
+
+  /**
+   * Reconstructs full ReportData for a specific historical test run from the database.
+   *
+   * @param runId - Unique identifier of the test run.
+   * @returns Reconstructed ReportData object or null if not found.
+   */
+  getRunReport(runId: string): Promise<import('@arpanp/zen-core').ReportData | null>;
 
   /**
    * Closes database connections, flushes buffered writes, or releases file locks.

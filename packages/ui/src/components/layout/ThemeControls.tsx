@@ -1,8 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
 
+export type ThemeId = 'sage' | 'lotus' | 'oasis' | 'cafe' | 'sentinel' | 'streak';
+
 export interface ThemeControlsProps {
-  theme: 'cafe' | 'sentinel' | 'streak';
-  setTheme: (theme: 'cafe' | 'sentinel' | 'streak') => void;
+  theme: ThemeId;
+  setTheme: (theme: ThemeId) => void;
   darkMode: 'system' | 'light' | 'dark';
   setDarkMode: (mode: 'system' | 'light' | 'dark') => void;
 }
@@ -30,18 +32,18 @@ export function ThemeControls({ theme, setTheme, darkMode, setDarkMode }: ThemeC
 
   const themes = [
     {
-      id: 'cafe' as const,
-      label: 'Cafe',
+      id: 'sage' as const,
+      label: 'Sage',
       colorDot: 'bg-[#006241] dark:bg-[#4ade80] ring-1 ring-black/10 dark:ring-white/20',
     },
     {
-      id: 'sentinel' as const,
-      label: 'Sentinel',
+      id: 'lotus' as const,
+      label: 'Lotus',
       colorDot: 'bg-[#6a5fc1] dark:bg-[#c2ef4e] ring-1 ring-black/10 dark:ring-white/20',
     },
     {
-      id: 'streak' as const,
-      label: 'Streak',
+      id: 'oasis' as const,
+      label: 'Oasis',
       colorDot: 'bg-[#533afd] dark:bg-[#665efd] ring-1 ring-black/10 dark:ring-white/20',
     },
   ];
@@ -49,7 +51,15 @@ export function ThemeControls({ theme, setTheme, darkMode, setDarkMode }: ThemeC
   useEffect(() => {
     const updateThemeIndicator = () => {
       const container = themeContainerRef.current;
-      const activeButton = themeButtonsRef.current[theme];
+      const normalizedTheme =
+        theme === 'cafe'
+          ? 'sage'
+          : theme === 'sentinel'
+            ? 'lotus'
+            : theme === 'streak'
+              ? 'oasis'
+              : theme;
+      const activeButton = themeButtonsRef.current[normalizedTheme];
       if (!container || !activeButton) return;
 
       const containerRect = container.getBoundingClientRect();
@@ -112,7 +122,15 @@ export function ThemeControls({ theme, setTheme, darkMode, setDarkMode }: ThemeC
         />
 
         {themes.map((t) => {
-          const isActive = theme === t.id;
+          const normalizedTheme =
+            theme === 'cafe'
+              ? 'sage'
+              : theme === 'sentinel'
+                ? 'lotus'
+                : theme === 'streak'
+                  ? 'oasis'
+                  : theme;
+          const isActive = normalizedTheme === t.id;
           return (
             <button
               key={t.id}

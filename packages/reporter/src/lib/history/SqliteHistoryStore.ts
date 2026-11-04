@@ -1,8 +1,10 @@
 import * as fs from 'fs';
 import * as path from 'path';
-import { buildRunId } from '../runHistory';
-import type { WriteRunHistoryOptions } from '../runHistoryWriter';
+import { buildRunId } from '../runHistory.js';
+import { buildSuitesFromCases } from '@arpanp/zen-core';
+import type { WriteRunHistoryOptions } from '../runHistoryWriter.js';
 import type {
+  Attachment,
   HistoryData,
   HistoryFileRow,
   HistoryFlakyRow,
@@ -10,10 +12,13 @@ import type {
   HistoryRun,
   HistorySlowRow,
   HistoryTestRow,
+  ReportData,
+  ResultSummary,
+  TestRun,
 } from '@arpanp/zen-core';
 import type { TestCase as TestCaseModel } from '@arpanp/zen-core';
 import type { HistoryStore } from './HistoryStore';
-import { INIT_SCHEMA_STATEMENTS } from './schema';
+import { CREATE_HISTORY_VIEW_SQL, INIT_SCHEMA_STATEMENTS } from './schema';
 
 interface SqliteStatement {
   run(...params: unknown[]): { changes: number; lastInsertRowid: number | bigint };
@@ -25,6 +30,14 @@ interface SqliteDatabase {
   exec(sql: string): void;
   prepare(sql: string): SqliteStatement;
   close(): void;
+}
+
+function optString(val: unknown): string | null {
+  return val !== null && val !== undefined ? String(val) : null;
+}
+
+function optNumber(val: unknown): number | null {
+  return val !== null && val !== undefined ? Number(val) : null;
 }
 
 import type { MigrationResult } from './migration';
@@ -88,10 +101,52 @@ export class SqliteHistoryStore implements HistoryStore {
 
     this.db = new DatabaseSyncConstructor(this.dbPath);
     this.db.exec('PRAGMA journal_mode = WAL;');
+    this.db.exec('PRAGMA synchronous = NORMAL;');
+    this.db.exec('PRAGMA cache_size = -64000;');
     this.db.exec('PRAGMA foreign_keys = ON;');
 
     for (const statement of INIT_SCHEMA_STATEMENTS) {
       this.db.exec(statement);
+    }
+
+    // Auto-migrate schema: add steps_json, stdout_json, stderr_json if missing from older databases
+    try {
+      this.db.exec('ALTER TABLE history_test_cases ADD COLUMN steps_json TEXT;');
+    } catch {
+      /* column already exists */
+    }
+    try {
+      this.db.exec('ALTER TABLE history_test_cases ADD COLUMN stdout_json TEXT;');
+    } catch {
+      /* column already exists */
+    }
+    try {
+      this.db.exec('ALTER TABLE history_test_cases ADD COLUMN stderr_json TEXT;');
+    } catch {
+      /* column already exists */
+    }
+    try {
+      this.db.exec('ALTER TABLE history_runs ADD COLUMN git_branch TEXT;');
+    } catch {
+      /* column already exists */
+    }
+    try {
+      this.db.exec('ALTER TABLE history_runs ADD COLUMN git_commit TEXT;');
+    } catch {
+      /* column already exists */
+    }
+    try {
+      this.db.exec('ALTER TABLE history_runs ADD COLUMN git_commit_full TEXT;');
+    } catch {
+      /* column already exists */
+    }
+
+    // Ensure history_view uses LEFT JOIN so runs with 0 tests are retained
+    try {
+      this.db.exec('DROP VIEW IF EXISTS history_view;');
+      this.db.exec(CREATE_HISTORY_VIEW_SQL);
+    } catch {
+      /* ignore view creation errors */
     }
 
     if (this.autoMigrate) {
@@ -143,13 +198,15 @@ export class SqliteHistoryStore implements HistoryStore {
         run_duration_ms, run_sequential_duration_ms, run_total,
         run_passed, run_failed, run_skipped, run_timed_out, run_interrupted,
         run_workers, run_projects, step_assertions, step_actions,
-        step_network, step_hooks, step_waits, step_others
+        step_network, step_hooks, step_waits, step_others,
+        git_branch, git_commit, git_commit_full
       ) VALUES (
         ?, ?, ?, ?, ?,
         ?, ?, ?,
         ?, ?, ?, ?, ?,
         ?, ?, ?, ?,
-        ?, ?, ?, ?
+        ?, ?, ?, ?,
+        ?, ?, ?
       )
     `);
 
@@ -174,7 +231,10 @@ export class SqliteHistoryStore implements HistoryStore {
       stepCategories?.network ?? 0,
       stepCategories?.hooks ?? 0,
       stepCategories?.waits ?? 0,
-      stepCategories?.others ?? 0
+      stepCategories?.others ?? 0,
+      summary.gitBranch ?? null,
+      summary.gitCommit ?? null,
+      summary.gitCommitFull ?? null
     );
 
     if (options.testCases.length > 0) {
@@ -182,21 +242,34 @@ export class SqliteHistoryStore implements HistoryStore {
         INSERT INTO history_test_cases (
           run_id, file, suite, title, project, status,
           duration_ms, attempts, failed_attempts, passed_on_retry,
-          error_message, error_stack, error_file, error_line, tags
+          error_message, error_stack, error_file, error_line, tags,
+          steps_json, stdout_json, stderr_json
         ) VALUES (
           ?, ?, ?, ?, ?, ?,
           ?, ?, ?, ?,
-          ?, ?, ?, ?, ?
+          ?, ?, ?, ?, ?,
+          ?, ?, ?
+        )
+      `);
+
+      const insertAttachmentStmt = this.db.prepare(`
+        INSERT INTO history_attachments (
+          run_id, test_file, test_title, test_status,
+          name, content_type, file_path, body_text
+        ) VALUES (
+          ?, ?, ?, ?,
+          ?, ?, ?, ?
         )
       `);
 
       for (const tc of options.testCases) {
         this.insertTestCase(insertTestStmt, finalRunId, tc);
+        this.insertAttachments(insertAttachmentStmt, finalRunId, tc);
       }
     }
 
     if (this.maxRuns > 0) {
-      this.pruneRuns(this.maxRuns);
+      this.pruneRuns(this.maxRuns, options.outputDir);
     }
 
     return finalRunId;
@@ -212,6 +285,9 @@ export class SqliteHistoryStore implements HistoryStore {
     const errorFile = tc.errors?.[0]?.location?.file ?? null;
     const errorLine = tc.errors?.[0]?.location?.line ?? null;
     const tagsJson = tc.tags && tc.tags.length > 0 ? JSON.stringify(tc.tags) : null;
+    const stepsJson = tc.steps && tc.steps.length > 0 ? JSON.stringify(tc.steps) : null;
+    const stdoutJson = tc.stdout && tc.stdout.length > 0 ? JSON.stringify(tc.stdout) : null;
+    const stderrJson = tc.stderr && tc.stderr.length > 0 ? JSON.stringify(tc.stderr) : null;
 
     stmt.run(
       runId,
@@ -228,20 +304,106 @@ export class SqliteHistoryStore implements HistoryStore {
       errorStack,
       errorFile,
       errorLine,
-      tagsJson
+      tagsJson,
+      stepsJson,
+      stdoutJson,
+      stderrJson
     );
   }
 
-  private pruneRuns(limit: number): void {
+  private insertAttachments(stmt: SqliteStatement, runId: string, tc: TestCaseModel): void {
+    const allAttachments: {
+      name: string;
+      contentType?: string;
+      path?: string | null;
+      body?: string | null;
+    }[] = [];
+
+    if (tc.attachments && tc.attachments.length > 0) {
+      allAttachments.push(...tc.attachments);
+    }
+
+    if (tc.failedAttempts && tc.failedAttempts.length > 0) {
+      for (const fa of tc.failedAttempts) {
+        if (fa.attachments && fa.attachments.length > 0) {
+          allAttachments.push(...fa.attachments);
+        }
+      }
+    }
+
+    // De-duplicate attachments in the same test case by file path or name
+    const seen = new Set<string>();
+    for (const att of allAttachments) {
+      const key = `${att.path || ''}|${att.name}|${att.contentType || ''}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+
+      const filePath = att.path || '';
+      // Body text snippet: store truncated string up to 64KB if available
+      let bodyText: string | null = null;
+      if (att.body) {
+        bodyText = att.body.length > 65536 ? att.body.slice(0, 65536) : att.body;
+      }
+
+      stmt.run(
+        runId,
+        tc.fileName,
+        tc.title,
+        tc.status,
+        att.name || 'attachment',
+        att.contentType || null,
+        filePath,
+        bodyText
+      );
+    }
+  }
+
+  private pruneRuns(limit: number, outputDir?: string): void {
     if (!this.db) return;
-    this.db
+
+    // First find run_ids that will be deleted
+    const oldRuns = this.db
       .prepare(
-        `DELETE FROM history_runs
+        `SELECT run_id FROM history_runs
          WHERE run_id NOT IN (
            SELECT run_id FROM history_runs ORDER BY started_at DESC LIMIT ?
          )`
       )
-      .run(limit);
+      .all(limit) as { run_id: string }[];
+
+    if (oldRuns.length === 0) return;
+
+    const oldRunIds = oldRuns.map((r) => r.run_id);
+    const placeholders = oldRunIds.map(() => '?').join(',');
+
+    // Find all attachment paths for these runs to delete files from disk
+    const attachmentsToPrune = this.db
+      .prepare(`SELECT file_path FROM history_attachments WHERE run_id IN (${placeholders})`)
+      .all(...oldRunIds) as { file_path: string }[];
+
+    // Delete records from database (history_runs cascade deletes test cases and attachments)
+    this.db.prepare(`DELETE FROM history_runs WHERE run_id IN (${placeholders})`).run(...oldRunIds);
+
+    // Clean up physical attachment files on disk
+    if (attachmentsToPrune.length > 0) {
+      const baseDir = outputDir
+        ? path.resolve(process.cwd(), outputDir)
+        : path.dirname(this.dbPath);
+
+      for (const item of attachmentsToPrune) {
+        if (!item.file_path) continue;
+        // Attachment paths are typically "./attachments/filename" or "attachments/filename"
+        const cleanPath = item.file_path.replace(/^\.[/\\]/, '');
+        const fullPath = path.resolve(baseDir, cleanPath);
+        if (fs.existsSync(fullPath)) {
+          try {
+            fs.unlinkSync(fullPath);
+          } catch {
+            /* ignore deletion errors */
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -258,15 +420,19 @@ export class SqliteHistoryStore implements HistoryStore {
     }
 
     const runsStmt = this.db.prepare(`
-      SELECT
-        run_id, run_name, started_at, run_duration_ms,
-        run_sequential_duration_ms, run_workers, run_total,
-        run_passed, run_failed, run_skipped, run_timed_out, run_interrupted,
-        round(100.0 * run_passed / nullif(run_total, 0), 1) AS pass_rate,
-        step_assertions, step_actions, step_network, step_hooks, step_waits, step_others
-      FROM history_runs
-      ORDER BY started_at DESC
-      LIMIT ?
+      SELECT * FROM (
+        SELECT
+          run_id, run_name, started_at, run_duration_ms,
+          run_sequential_duration_ms, run_workers, run_total,
+          run_passed, run_failed, run_skipped, run_timed_out, run_interrupted,
+          round(100.0 * run_passed / nullif(run_total, 0), 1) AS pass_rate,
+          step_assertions, step_actions, step_network, step_hooks, step_waits, step_others,
+          git_branch, git_commit, git_commit_full
+        FROM history_runs
+        ORDER BY started_at DESC
+        LIMIT ?
+      )
+      ORDER BY started_at ASC
     `);
 
     const rawRuns = runsStmt.all(windowSize) as unknown as (Record<string, unknown> & {
@@ -278,7 +444,7 @@ export class SqliteHistoryStore implements HistoryStore {
       step_others: number;
     })[];
 
-    const runs: HistoryRun[] = rawRuns.reverse().map((r) => {
+    const runs: HistoryRun[] = rawRuns.map((r) => {
       const hasStepCategories =
         (r.step_assertions || 0) +
           (r.step_actions || 0) +
@@ -303,6 +469,9 @@ export class SqliteHistoryStore implements HistoryStore {
         run_timed_out: Number(r.run_timed_out),
         run_interrupted: Number(r.run_interrupted),
         pass_rate: r.pass_rate !== null ? Number(r.pass_rate) : null,
+        git_branch: r.git_branch ? String(r.git_branch) : undefined,
+        git_commit: r.git_commit ? String(r.git_commit) : undefined,
+        git_commit_full: r.git_commit_full ? String(r.git_commit_full) : undefined,
         step_categories: hasStepCategories
           ? {
               assertions: Number(r.step_assertions || 0),
@@ -360,6 +529,157 @@ export class SqliteHistoryStore implements HistoryStore {
   }
 
   /**
+   * Reconstructs full ReportData for a specific historical test run from SQLite.
+   *
+   * @param runId - The run identifier to look up.
+   * @returns ReportData structure ready for dashboard hydration, or null if run is not found.
+   */
+  async getRunReport(runId: string): Promise<ReportData | null> {
+    await this.init();
+
+    if (!this.db) {
+      throw new Error('Database not initialized');
+    }
+
+    const runRow = this.db.prepare('SELECT * FROM history_runs WHERE run_id = ?').get(runId) as
+      Record<string, unknown> | undefined;
+
+    if (!runRow) {
+      return null;
+    }
+
+    const testCaseRows = this.db
+      .prepare('SELECT * FROM history_test_cases WHERE run_id = ? ORDER BY id ASC')
+      .all(runId) as Record<string, unknown>[];
+
+    const attachmentRows = this.db
+      .prepare('SELECT * FROM history_attachments WHERE run_id = ? ORDER BY id ASC')
+      .all(runId) as Record<string, unknown>[];
+
+    // Group attachments by test_file + test_title
+    const attachmentsByTest = new Map<string, Attachment[]>();
+    for (const att of attachmentRows) {
+      const key = `${att.test_file}|${att.test_title}`;
+      if (!attachmentsByTest.has(key)) {
+        attachmentsByTest.set(key, []);
+      }
+      attachmentsByTest.get(key)!.push({
+        name: String(att.name || 'attachment'),
+        contentType: att.content_type ? String(att.content_type) : 'application/octet-stream',
+        path: att.file_path ? String(att.file_path) : null,
+        body: att.body_text ? String(att.body_text) : null,
+      });
+    }
+
+    const testCases: TestCaseModel[] = testCaseRows.map((tc) => {
+      const suiteStr = String(tc.suite || '');
+      const describePath = suiteStr ? suiteStr.split(' > ') : [];
+      const tags: string[] = tc.tags ? JSON.parse(String(tc.tags)) : [];
+      const testKey = `${tc.file}|${tc.title}`;
+      const attachments = attachmentsByTest.get(testKey) || [];
+
+      const status = String(tc.status || 'passed') as TestCaseModel['status'];
+
+      const errors: TestCaseModel['errors'] = tc.error_message
+        ? [
+            {
+              name: 'Error',
+              message: String(tc.error_message),
+              stack: String(tc.error_stack || ''),
+              location: tc.error_file
+                ? {
+                    file: String(tc.error_file),
+                    line: Number(tc.error_line || 0),
+                    column: 0,
+                  }
+                : null,
+              snippet: '',
+              cause: null,
+            },
+          ]
+        : undefined;
+
+      let steps: TestCaseModel['steps'] = [];
+      if (tc.steps_json) {
+        try {
+          steps = JSON.parse(String(tc.steps_json));
+        } catch {
+          steps = [];
+        }
+      }
+
+      let stdout: string[] = [];
+      if (tc.stdout_json) {
+        try {
+          stdout = JSON.parse(String(tc.stdout_json));
+        } catch {
+          stdout = [];
+        }
+      }
+
+      let stderr: string[] = [];
+      if (tc.stderr_json) {
+        try {
+          stderr = JSON.parse(String(tc.stderr_json));
+        } catch {
+          stderr = [];
+        }
+      }
+
+      return {
+        title: String(tc.title || ''),
+        parent: describePath.length > 0 ? describePath[describePath.length - 1] : '',
+        project: String(tc.project || 'default'),
+        fileName: String(tc.file || ''),
+        status,
+        duration: Number(tc.duration_ms || 0),
+        steps: steps && steps.length > 0 ? steps : undefined,
+        errors,
+        stdout: stdout && stdout.length > 0 ? stdout : undefined,
+        stderr: stderr && stderr.length > 0 ? stderr : undefined,
+        annotations: [],
+        attachments: attachments.length > 0 ? attachments : undefined,
+        tags,
+        describePath,
+        attempts: Number(tc.attempts || 1),
+      };
+    });
+
+    const suites = buildSuitesFromCases(testCases);
+
+    const summary: ResultSummary = {
+      total: Number(runRow.run_total || 0),
+      passed: Number(runRow.run_passed || 0),
+      failed: Number(runRow.run_failed || 0),
+      skipped: Number(runRow.run_skipped || 0),
+      timedOut: Number(runRow.run_timed_out || 0),
+      interrupted: Number(runRow.run_interrupted || 0),
+      startTime: String(runRow.started_at),
+      endTime: String(runRow.ended_at),
+      duration: Number(runRow.run_duration_ms || 0),
+      totalSequentialDuration:
+        runRow.run_sequential_duration_ms !== null
+          ? Number(runRow.run_sequential_duration_ms)
+          : undefined,
+      numberOfProjects: Number(runRow.run_projects || 1),
+      workers: runRow.run_workers !== null ? Number(runRow.run_workers) : undefined,
+      gitBranch: runRow.git_branch ? String(runRow.git_branch) : undefined,
+      gitCommit: runRow.git_commit ? String(runRow.git_commit) : undefined,
+      gitCommitFull: runRow.git_commit_full ? String(runRow.git_commit_full) : undefined,
+    };
+
+    const testRun: TestRun = {
+      summary,
+      suites,
+      projectName: String(runRow.project_name || 'Zen Reporter'),
+      testRunName: String(runRow.run_name || runId),
+      enableHistory: true,
+    };
+
+    return { testRun };
+  }
+
+  /**
    * Migrates historic test runs from individual JSONL files into the SQLite database.
    * Skips files whose run_id already exists in the database.
    *
@@ -405,13 +725,15 @@ export class SqliteHistoryStore implements HistoryStore {
         run_duration_ms, run_sequential_duration_ms, run_total,
         run_passed, run_failed, run_skipped, run_timed_out, run_interrupted,
         run_workers, run_projects, step_assertions, step_actions,
-        step_network, step_hooks, step_waits, step_others
+        step_network, step_hooks, step_waits, step_others,
+        git_branch, git_commit, git_commit_full
       ) VALUES (
         ?, ?, ?, ?, ?,
         ?, ?, ?,
         ?, ?, ?, ?, ?,
         ?, ?, ?, ?,
-        ?, ?, ?, ?
+        ?, ?, ?, ?,
+        ?, ?, ?
       )
     `);
 
@@ -464,26 +786,24 @@ export class SqliteHistoryStore implements HistoryStore {
           String(firstRow.started_at || new Date().toISOString()),
           String(firstRow.ended_at || new Date().toISOString()),
           Number(firstRow.run_duration_ms || 0),
-          firstRow.run_sequential_duration_ms !== null &&
-            firstRow.run_sequential_duration_ms !== undefined
-            ? Number(firstRow.run_sequential_duration_ms)
-            : null,
+          optNumber(firstRow.run_sequential_duration_ms),
           Number(firstRow.run_total || 0),
           Number(firstRow.run_passed || 0),
           Number(firstRow.run_failed || 0),
           Number(firstRow.run_skipped || 0),
           Number(firstRow.run_timed_out || 0),
           Number(firstRow.run_interrupted || 0),
-          firstRow.run_workers !== null && firstRow.run_workers !== undefined
-            ? Number(firstRow.run_workers)
-            : null,
+          optNumber(firstRow.run_workers),
           Number(firstRow.run_projects || 1),
           Number(firstRow.step_assertions || 0),
           Number(firstRow.step_actions || 0),
           Number(firstRow.step_network || 0),
           Number(firstRow.step_hooks || 0),
           Number(firstRow.step_waits || 0),
-          Number(firstRow.step_others || 0)
+          Number(firstRow.step_others || 0),
+          optString(firstRow.git_branch),
+          optString(firstRow.git_commit),
+          optString(firstRow.git_commit_full)
         );
 
         existingRunIds.add(runId);
@@ -511,12 +831,10 @@ export class SqliteHistoryStore implements HistoryStore {
             Number(r.attempts || 1),
             Number(r.failed_attempts || 0),
             r.passed_on_retry ? 1 : 0,
-            r.error_message !== null && r.error_message !== undefined
-              ? String(r.error_message)
-              : null,
-            r.error_stack !== null && r.error_stack !== undefined ? String(r.error_stack) : null,
-            r.error_file !== null && r.error_file !== undefined ? String(r.error_file) : null,
-            r.error_line !== null && r.error_line !== undefined ? Number(r.error_line) : null,
+            optString(r.error_message),
+            optString(r.error_stack),
+            optString(r.error_file),
+            optNumber(r.error_line),
             r.tags ? (typeof r.tags === 'string' ? r.tags : JSON.stringify(r.tags)) : null
           );
           migratedTestCases++;

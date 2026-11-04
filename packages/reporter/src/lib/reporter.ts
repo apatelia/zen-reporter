@@ -8,6 +8,7 @@ import type {
 } from '@playwright/test/reporter';
 import * as fs from 'fs';
 import * as path from 'path';
+import { createRequire } from 'module';
 import { getOsName, getPlaywrightVersion } from '../../bin/commands/system.js';
 import { processAttachments } from './attachmentManager';
 import { convertPlaywrightSteps, sanitizeAnsi, setFsModule } from '@arpanp/zen-core';
@@ -93,12 +94,42 @@ export function resolveConfig(
   let runNumber = 1;
 
   try {
-    const runsDir = path.resolve(cwd, outputDir, 'runs');
+    const dbPath =
+      typeof rawConfig?.history === 'object' &&
+      rawConfig.history !== null &&
+      'dbPath' in rawConfig.history &&
+      rawConfig.history.dbPath
+        ? path.resolve(cwd, String(rawConfig.history.dbPath))
+        : path.resolve(cwd, outputDir, 'history.db');
 
-    if (fs.existsSync(runsDir)) {
-      const files = fs.readdirSync(runsDir);
-      const runFiles = files.filter((f) => f.endsWith('.jsonl'));
-      runNumber = runFiles.length + 1;
+    let countedFromDb = false;
+
+    if (fs.existsSync(dbPath)) {
+      try {
+        const req = createRequire(import.meta.url);
+        const sqlite = req('node:sqlite');
+        if (sqlite && typeof sqlite.DatabaseSync === 'function') {
+          const db = new sqlite.DatabaseSync(dbPath, { open: true, readOnly: true });
+          const row = db.prepare('SELECT COUNT(*) as count FROM history_runs').get() as
+            { count: number } | undefined;
+          db.close();
+          if (row && typeof row.count === 'number') {
+            runNumber = row.count + 1;
+            countedFromDb = true;
+          }
+        }
+      } catch {
+        /* fallback to file system / legacy checks */
+      }
+    }
+
+    if (!countedFromDb) {
+      const runsDir = path.resolve(cwd, outputDir, 'runs');
+      if (fs.existsSync(runsDir)) {
+        const files = fs.readdirSync(runsDir);
+        const runFiles = files.filter((f) => f.endsWith('.jsonl'));
+        runNumber = runFiles.length + 1;
+      }
     }
   } catch {
     runNumber = 1;
@@ -107,7 +138,15 @@ export function resolveConfig(
   const rawTestRunName = rawConfig?.testRunName ? String(rawConfig.testRunName) : 'Test Run #{N}';
   const testRunName = rawTestRunName.replaceAll('{N}', String(runNumber));
   const singleSummaryFile = Boolean(rawConfig?.singleSummaryFile);
-  const theme = rawConfig?.theme !== undefined ? String(rawConfig.theme) : 'Cafe';
+  const rawTheme = rawConfig?.theme !== undefined ? String(rawConfig.theme) : 'Sage';
+  const theme =
+    rawTheme.toLowerCase() === 'cafe'
+      ? 'Sage'
+      : rawTheme.toLowerCase() === 'sentinel'
+        ? 'Lotus'
+        : rawTheme.toLowerCase() === 'streak'
+          ? 'Oasis'
+          : rawTheme;
   const darkMode = rawConfig?.darkMode !== undefined ? Boolean(rawConfig.darkMode) : undefined;
   const minimalReport = Boolean(rawConfig?.minimalReport);
 

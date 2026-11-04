@@ -9,9 +9,16 @@ import { HistoryTestSection } from './HistoryTestSection';
 export interface HistorySectionProps {
   history: HistoryData | null;
   isHistoryDisabled?: boolean;
+  onSelectRun?: (runId: string) => void;
+  selectedRunId?: string | null;
 }
 
-export default function HistorySection({ history, isHistoryDisabled }: HistorySectionProps) {
+export default function HistorySection({
+  history,
+  isHistoryDisabled,
+  onSelectRun,
+  selectedRunId,
+}: HistorySectionProps) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isFileModalOpen, setIsFileModalOpen] = useState(false);
   const [isTestModalOpen, setIsTestModalOpen] = useState(false);
@@ -68,6 +75,8 @@ export default function HistorySection({ history, isHistoryDisabled }: HistorySe
         runs={history.runs}
         availableTimestamps={availableTimestamps}
         onOpenGuide={() => setIsModalOpen(true)}
+        onSelectRun={onSelectRun}
+        selectedRunId={selectedRunId}
       />
 
       {/* Spec Files History Breakdown Section */}

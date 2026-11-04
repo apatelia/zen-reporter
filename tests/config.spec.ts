@@ -1,6 +1,8 @@
+/* eslint-disable no-empty-pattern */
 import { expect, test } from '@playwright/test';
 import * as fs from 'fs';
 import * as path from 'path';
+import { DatabaseSync } from 'node:sqlite';
 import { resolveConfig } from '../packages/reporter/src/lib/reporter';
 
 test.describe('Zen Reporter Configuration Tests', () => {
@@ -8,7 +10,7 @@ test.describe('Zen Reporter Configuration Tests', () => {
     const config = resolveConfig();
     expect(config.outputDir).toBe('zen-report');
     expect(config.projectName).toBe('Test Automation Project');
-    expect(config.theme).toBe('Cafe');
+    expect(config.theme).toBe('Sage');
     expect(config.darkMode).toBeUndefined();
   });
 
@@ -21,19 +23,22 @@ test.describe('Zen Reporter Configuration Tests', () => {
     expect(config.outputDir).toBe('custom-output');
     expect(config.projectName).toBe('My E2E Project');
     expect(config.testRunName).toBe('Nightly Run #42');
-    expect(config.theme).toBe('Cafe');
+    expect(config.theme).toBe('Sage');
     expect(config.darkMode).toBeUndefined();
   });
 
-  test('replaces {N} placeholder with dynamic run number based on existing runs', () => {
-    const tempOutputDir = path.join(process.cwd(), 'temp-test-runs-dir');
+  test('replaces {N} placeholder with dynamic run number based on existing runs', ({}, testInfo) => {
+    const tempOutputDir = testInfo.outputPath('temp-test-runs-dir');
     const runsDir = path.join(tempOutputDir, 'runs');
 
     try {
       fs.mkdirSync(runsDir, { recursive: true });
 
       // 0 existing runs -> run #1
-      const config1 = resolveConfig({ outputDir: 'temp-test-runs-dir', testRunName: 'Build #{N}' });
+      const config1 = resolveConfig(
+        { outputDir: tempOutputDir, testRunName: 'Build #{N}' },
+        process.cwd()
+      );
       expect(config1.testRunName).toBe('Build #1');
 
       // Create dummy run files
@@ -41,12 +46,34 @@ test.describe('Zen Reporter Configuration Tests', () => {
       fs.writeFileSync(path.join(runsDir, 'run-2.jsonl'), '{}');
 
       // 2 existing runs -> run #3
-      const config3 = resolveConfig({ outputDir: 'temp-test-runs-dir', testRunName: 'Run {N}' });
+      const config3 = resolveConfig(
+        { outputDir: tempOutputDir, testRunName: 'Run {N}' },
+        process.cwd()
+      );
       expect(config3.testRunName).toBe('Run 3');
 
       // Default testRunName pattern should also use dynamic run number
-      const configDefault = resolveConfig({ outputDir: 'temp-test-runs-dir' });
+      const configDefault = resolveConfig({ outputDir: tempOutputDir }, process.cwd());
       expect(configDefault.testRunName).toBe('Test Run #3');
+
+      // Test SQLite history.db counting
+      const dbPath = path.join(tempOutputDir, 'history.db');
+      const db = new DatabaseSync(dbPath);
+      db.exec('CREATE TABLE history_runs (run_id TEXT PRIMARY KEY);');
+      db.prepare('INSERT INTO history_runs (run_id) VALUES (?);').run('run-1');
+      db.prepare('INSERT INTO history_runs (run_id) VALUES (?);').run('run-2');
+      db.prepare('INSERT INTO history_runs (run_id) VALUES (?);').run('run-3');
+      db.prepare('INSERT INTO history_runs (run_id) VALUES (?);').run('run-4');
+      db.close();
+
+      const configSqlite = resolveConfig(
+        {
+          outputDir: tempOutputDir,
+          testRunName: 'Execution #{N}',
+        },
+        process.cwd()
+      );
+      expect(configSqlite.testRunName).toBe('Execution #5');
     } finally {
       if (fs.existsSync(tempOutputDir)) {
         fs.rmSync(tempOutputDir, { recursive: true, force: true });
@@ -56,11 +83,17 @@ test.describe('Zen Reporter Configuration Tests', () => {
 
   test('resolves custom theme and darkMode configuration options', () => {
     const config = resolveConfig({
-      theme: 'Streak',
+      theme: 'Oasis',
       darkMode: true,
     });
-    expect(config.theme).toBe('Streak');
+    expect(config.theme).toBe('Oasis');
     expect(config.darkMode).toBe(true);
+
+    // Verify backwards compatibility for legacy theme names
+    const legacyConfig = resolveConfig({
+      theme: 'Streak',
+    });
+    expect(legacyConfig.theme).toBe('Oasis');
   });
 
   test('resolves minimalReport option and forces enableHistory to false when enabled', () => {

@@ -5,6 +5,7 @@ interface PageSizeControlProps {
   pageSize: number;
   onPageSizeChange: (size: number) => void;
   options?: number[];
+  totalItems?: number;
 }
 
 export function PageSizeControl({
@@ -12,7 +13,17 @@ export function PageSizeControl({
   pageSize,
   onPageSizeChange,
   options = PAGE_SIZE_OPTIONS,
+  totalItems,
 }: PageSizeControlProps) {
+  const visibleOptions =
+    typeof totalItems === 'number' && totalItems > 0
+      ? options.filter((size, idx) => {
+          if (size <= totalItems) return true;
+          // Include the first size threshold that exceeds totalItems so the user can show "all",
+          // but omit larger redundant tiers (e.g. don't show 100 if 50 already covers all items)
+          return idx === 0 || options[idx - 1] < totalItems;
+        })
+      : options;
   return (
     <label
       className="flex items-center gap-2 text-xs font-medium text-text-ink dark:text-text-on-primary"
@@ -26,7 +37,7 @@ export function PageSizeControl({
           onChange={(e) => onPageSizeChange(Number(e.target.value))}
           className="appearance-none rounded-md border border-border-default bg-surface-100 pl-3 pr-8 py-1 text-xs font-semibold text-text-ink dark:bg-surface-200 dark:text-text-on-primary focus:outline-none focus:ring-2 focus:ring-success-500 cursor-pointer"
         >
-          {options.map((size) => (
+          {visibleOptions.map((size) => (
             <option key={size} value={size}>
               {size}
             </option>
