@@ -92,6 +92,12 @@ zen-reporter/
 │       ├── ViewModeSelector.tsx    # Toggle controls for diff comparison modes
 │       └── VisualDiffViewer.tsx    # Main visual diff modal / container component
 ├── lib/
+│   ├── history/               # History persistence & schema management
+│   │   ├── HistoryStore.ts    # Storage interface definition for test run persistence
+│   │   ├── RemoteHistoryStore.ts # Remote SaaS ingestion client
+│   │   ├── SqliteHistoryStore.ts # SQLite storage implementation (lifecycle: tables ➔ migrations ➔ indexes ➔ views)
+│   │   ├── migration.ts       # Legacy JSONL to SQLite database migration handler
+│   │   └── schema.ts          # Relational DDL definitions (tables, column migrations, indexes, view)
 │   ├── types/                 # Modular domain type definitions
 │   │   ├── history.ts         # DuckDB historical analytics & JSONL row schemas
 │   │   └── report.ts          # Core Playwright execution report models (TestCase, ResultSummary, etc.)
@@ -146,19 +152,51 @@ zen-reporter/
 
 ## Data Flow & Architecture Diagram
 
+### 1. Local Architecture (SQLite + Filesystem)
+
 ```mermaid
 flowchart TD
-    A["Playwright Test Execution"] -->|onBegin / onTestEnd / onEnd| B["ZenReporter (src/lib/reporter.ts)"]
-    B -->|Delegates progress rendering| B1["ProgressPrinter (src/lib/progressPrinter.ts)"]
+    A["Playwright Test Execution"] -->|onBegin / onTestEnd / onEnd| B["ZenReporter (packages/reporter)"]
+    B -->|Delegates progress rendering| B1["ProgressPrinter"]
     B1 -->|Prints TTY status| B2["Console (line / dot mode)"]
     B -->|Writes run result| C["report.json (<outputDir>/report.json)"]
-    B -->|Delegates history persistence| D1["runHistoryWriter (src/lib/runHistoryWriter.ts)"]
-    D1 -->|Appends JSONL run file| D["JSONL Archives (<outputDir>/runs/*.jsonl)"]
-    D -->|Executes DuckDB SQL queries| E["DuckDB Analytics Engine (bin/commands/history.js)"]
-    E -->|Aggregates Pass Rate, Project Durations, Flaky, Regressions| F["history.json (<outputDir>/history.json)"]
-    C & F -->|Injects datasets| G["vite-plugin-inject-data.ts"]
+    B -->|Delegates history persistence| D1["SqliteHistoryStore"]
+    D1 -->|Stores historical runs & attachments| D["SQLite (<outputDir>/history.db)"]
+    B -->|Copies media attachments| AT["Local Filesystem (<outputDir>/attachments/)"]
+    C & D -->|Injects datasets| G["Report Bundle Generator"]
     G -->|Bundles dashboard web app| H["Report Bundle Folder (<outputDir>/index.html)"]
     H -->|Renders UI Tabs| I["React UI Components (Overview, Suites, Failures, History, Insights, Trends)"]
+```
+
+### 2. Remote Multi-Cloud Architecture (PostgreSQL + S3 / GCS / Azure)
+
+```mermaid
+flowchart LR
+    subgraph Client["Playwright Test Runner"]
+        R["ZenReporter"] --> RMS["RemoteHistoryStore"]
+    end
+
+    subgraph Server["@arpanp/zen-server (Hono API)"]
+        AUTH["Auth & Multi-Tenancy"]
+        INGEST["Run Ingestion Routes"]
+        STORAGE["Multi-Cloud Storage Provider"]
+    end
+
+    subgraph StorageBackends["Cloud Infrastructure"]
+        PG[("PostgreSQL Database")]
+        S3[("AWS S3 / MinIO / R2")]
+        GCS[("Google Cloud Storage")]
+        AZURE[("Azure Blob Storage")]
+    end
+
+    RMS -- "1. Request presigned upload URL" --> INGEST
+    INGEST --> STORAGE
+    STORAGE -- Presigned URL / SAS --> RMS
+    RMS -- "2. Direct HTTP PUT binary buffer" --> S3
+    RMS -. Direct HTTP PUT .-> GCS
+    RMS -. Direct HTTP PUT .-> AZURE
+    RMS -- "3. Stream lightweight metadata" --> INGEST
+    INGEST --> PG
 ```
 
 ```text

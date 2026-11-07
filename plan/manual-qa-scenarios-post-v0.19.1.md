@@ -98,4 +98,20 @@ High-level manual test scenarios covering all features, updates, architectural m
 
 - **`zr show` historical run API**: Verify `npx zr show` serves the report and responds to `/api/runs` and `/api/runs/:runId` endpoints using `history.db`.
 - **`zr history report` with DuckDB 2.0**: Verify running `npx zr history report` queries `history.db` through the DuckDB SQLite extension and generates an updated `history.json` embedded in `index.html`.
+- **SQLite schema initialization and column migration order**: Verify running tests against an older pre-existing `history.db` (lacking columns such as `project` on `history_attachments`) gracefully executes schema column migrations before creating dependent indexes (`idx_hist_att_test_project`), successfully appending new runs without failure.
+
+---
+
+## 11. Phase 2: Remote History Store, SaaS Server & Presigned Uploads
+
+- **Backend health check**: Verify running `curl -i http://localhost:3000/health` returns `200 OK` with JSON `{ "status": "ok" }`.
+- **API Key authentication enforcement**: Verify sending requests to `/api/v1/runs` without an `Authorization` or `X-API-Key` header returns `401 Unauthorized`, and invalid keys return `403 Forbidden`.
+- **Automatic default tenant initialization**: Verify starting the server logs `[zen-server] Ready. Tenant: default-tenant` and inserts the development key `zr_live_dev_api_key_12345` into the database if not present.
+- **S3 Bucket auto-creation**: Verify that on server start, if the configured bucket (e.g. `zen-reports`) does not exist on the S3/S3Mock endpoint, the server creates it without error.
+- **Remote run ingestion**: Verify executing tests with `history: { mode: 'remote', serverUrl: 'http://localhost:3000' }` streams the run, summary statistics, and test cases into PostgreSQL tables `runs` and `test_cases`.
+- **Binary attachment upload via presigned URLs**: Verify test screenshots and videos produce presigned PUT URLs via `POST /api/v1/runs/:runId/attachments/presign` and are uploaded into the S3 bucket under the tenant's prefix (`<tenantId>/<runId>/...`).
+- **Lazy loading of test details**: Verify expanding a test case in the UI triggers a fetch to `/api/v1/runs/:runId/tests/:testId` and displays the detailed steps, console stdout/stderr logs, and download links for media attachments.
+- **Lazy loading spinner feedback**: Verify a spinner animation briefly appears inside the expand button while the heavy test details are being fetched over the network.
+- **Paginated runs query (`GET /api/v1/runs`)**: Verify passing `?page=1&limit=10` returns the expected page slice along with pagination metadata (`total`, `totalPages`, `page`, `limit`).
+- **PostgreSQL relational integrity**: Verify deleting a run in PostgreSQL cascades and deletes associated rows in `test_cases`, `test_details`, and `attachments`.
 - **`zr history` analytical subcommands**: Verify running `npx zr history runs`, `flaky`, `regressions`, `slow`, `files`, and `tests` outputs CLI tables querying `history.db`.

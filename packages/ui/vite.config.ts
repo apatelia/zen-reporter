@@ -4,6 +4,7 @@ import { dirname, resolve } from 'path';
 import { fileURLToPath } from 'url';
 import { defineConfig, type Plugin } from 'vite';
 import { viteSingleFile } from 'vite-plugin-singlefile';
+import type { TestCase, TestSuite } from '@arpanp/zen-core';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -58,6 +59,73 @@ const serveReportAssets: Plugin = {
         res.statusCode = 200;
         res.setHeader('content-type', 'application/json; charset=utf-8');
         res.end(JSON.stringify(runReport));
+      } catch (err) {
+        res.statusCode = 500;
+        res.setHeader('content-type', 'application/json; charset=utf-8');
+        res.end(JSON.stringify({ error: String((err as Error)?.message || err) }));
+      }
+    });
+
+    server.middlewares.use('/api/tests', async (req, res, next) => {
+      if (!req.url || req.method !== 'GET') return next();
+
+      try {
+        const { SqliteHistoryStore } = await import('@arpanp/zen-reporter');
+        const dbPath = resolve(REPORT_DIR, 'history.db');
+        if (!existsSync(dbPath)) {
+          res.statusCode = 404;
+          res.setHeader('content-type', 'application/json; charset=utf-8');
+          res.end(JSON.stringify({ error: 'history.db not found' }));
+          return;
+        }
+
+        const store = new SqliteHistoryStore({ dbPath, autoMigrate: false });
+        const parts = req.url.replace(/^\//, '').split('/');
+        const runId = decodeURIComponent(parts[0] || '');
+        const testId = decodeURIComponent(parts.slice(1).join('/'));
+
+        const runReport = await store.getRunReport(runId);
+        await store.close();
+
+        if (!runReport) {
+          res.statusCode = 404;
+          res.setHeader('content-type', 'application/json; charset=utf-8');
+          res.end(JSON.stringify({ error: `Run "${runId}" not found` }));
+          return;
+        }
+
+        let foundCase: TestCase | null = null;
+        const searchSuites = (suites: TestSuite[]) => {
+          for (const s of suites || []) {
+            for (const c of s.cases || []) {
+              if (c.title === testId || `${runId}::${c.fileName}::${c.title}` === testId) {
+                foundCase = c;
+                return;
+              }
+            }
+            if (s.subSuites) searchSuites(s.subSuites);
+          }
+        };
+        searchSuites(runReport.testRun.suites);
+
+        if (!foundCase) {
+          res.statusCode = 404;
+          res.setHeader('content-type', 'application/json; charset=utf-8');
+          res.end(JSON.stringify({ error: `Test "${testId}" not found in run "${runId}"` }));
+          return;
+        }
+
+        res.statusCode = 200;
+        res.setHeader('content-type', 'application/json; charset=utf-8');
+        res.end(
+          JSON.stringify({
+            steps: foundCase.steps || [],
+            errors: foundCase.errors || [],
+            stdout: foundCase.stdout || [],
+            stderr: foundCase.stderr || [],
+            attachments: foundCase.attachments || [],
+          })
+        );
       } catch (err) {
         res.statusCode = 500;
         res.setHeader('content-type', 'application/json; charset=utf-8');

@@ -6,7 +6,9 @@
 
 Beautiful test execution reports for Playwright.
 
-[🚀 Live Demo](https://zen-reporter.vercel.app/demo) | [📚 Documentation](https://zen-reporter.vercel.app) | [📦 NPM Package](https://www.npmjs.com/package/@arpanp/zen-reporter) | [🐛 Report an Issue](https://github.com/apatelia/zen-reporter/issues)
+[🚀 Live Demo](https://zen-reporter.vercel.app/demo) | [📚 Documentation](https://zen-reporter.vercel.app) | [📦 NPM Package](https://www.npmjs.com/package/@arpanp/zen-reporter)
+
+[📝 Release Notes](https://github.com/apatelia/zen-reporter/releases) | [🐛 Report an Issue](https://github.com/apatelia/zen-reporter/issues)
 
 Zen Reporter transforms Playwright's raw test results into an interactive, visually stunning dashboard. It provides a clean, modern interface for exploring test suites, analyzing pass/fail rates, and diving into individual test failures with full step-by-step execution traces, source code snippets, syntax highlighting, and error stacks.
 
@@ -29,6 +31,9 @@ Dark mode:
 - **File & Test Case History**: Dedicated **File History** and **Test History** views to analyze long-term spec file stability, individual test case pass/fail rates, run counts, average execution durations, date-range filtering, and text search across historical runs.
 - **Export to CSV**: Lightweight, UTF-8 CSV exporter for all report tables (Files, History, Insights). Respects active filters/date ranges and exports un-paginated full datasets for easy data sharing and external analysis.
 - **Visual Quality Trends**: Track pass rate percentages over time, multi-project execution duration trends per project profile, and step category trends across historical runs.
+- **Dual History & Multi-Cloud Architecture**:
+  - **Local Mode (SQLite & Disk)**: Single-developer and local CI environments store execution history in embedded SQLite (`history.db`) and artifacts on disk.
+  - **Remote SaaS Mode (Postgres & Multi-Cloud Object Storage)**: Ingestion server (`@arpanp/zen-server`) streaming test runs into PostgreSQL with direct binary uploads via presigned URLs to **AWS S3** (or MinIO/R2), **Google Cloud Storage (GCS)**, and **Microsoft Azure Blob Storage**.
 - **DuckDB-Powered Test Intelligence**: Embedded analytics engine for advanced test suite intelligence:
   - **Flaky Intelligence**: Detect tests fluctuating between pass and fail across historical runs.
   - **Regression Tracking**: Identify tests that previously passed but regressed to failed in the latest run.
@@ -96,18 +101,18 @@ export default defineConfig({
 
 ### Options Reference
 
-| Option              | Type                                       | Default                     | Description                                                                                                                                 |
-| :------------------ | :----------------------------------------- | :-------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------ |
-| `outputDir`         | `string`                                   | `"zen-report"`              | Directory where final report files are saved.                                                                                               |
-| `projectName`       | `string`                                   | `"Test Automation Project"` | Project name displayed prominently in the top bar of the dashboard.                                                                         |
-| `testRunName`       | `string`                                   | `"Test Run #{N}"`           | Test run or build name displayed in top bar. `{N}` is replaced dynamically by run number.                                                   |
-| `theme`             | `string`                                   | `"Sage"`                    | Theme applied on first load (`"Sage"`, `"Lotus"`, `"Oasis"`). Legacy names (`"Cafe"`, `"Sentinel"`, `"Streak"`) are automatically mapped.   |
-| `darkMode`          | `boolean \| 'system'`                      | `"system"`                  | Initial dark mode state (`true`, `false`, or `"system"` to automatically match OS theme setting).                                           |
-| `singleSummaryFile` | `boolean`                                  | `false`                     | Generates a standalone `summary.html` for executive summary views.                                                                          |
-| `minimalReport`     | `boolean`                                  | `false`                     | When `true`, disables history recording and hides analytical charts/secondary tabs (Projects, History, Trends, Insights) for a lean report. |
-| `enableHistory`     | `'auto' \| boolean`                        | `"auto"`                    | Controls history execution archiving (`"auto"`, `true`, `false`). Forced to `false` when `minimalReport` is `true`.                         |
-| `consoleProgress`   | `'auto' \| 'line' \| 'dot' \| boolean`     | `"auto"`                    | Controls terminal execution output (`"auto"` selects `line` in TTY and `dot` in non-TTY).                                                   |
-| `openAutomatically` | `'always' \| 'never' \| 'on-failure-only'` | `"never"`                   | Controls whether to launch the report viewer automatically after run completion (`"always"`, `"never"`, or `"on-failure-only"`).            |
+| Option              | Type                                       | Default                     | Description                                                                                                                                                                                   |
+| :------------------ | :----------------------------------------- | :-------------------------- | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `outputDir`         | `string`                                   | `"zen-report"`              | Directory where final report files are saved.                                                                                                                                                 |
+| `projectName`       | `string`                                   | `"Test Automation Project"` | Project name displayed prominently in the top bar of the dashboard.                                                                                                                           |
+| `testRunName`       | `string`                                   | `"Test Run #{N}"`           | Test run or build name displayed in top bar. `{N}` is replaced dynamically by run number.                                                                                                     |
+| `theme`             | `string`                                   | `"Sage"`                    | Theme applied on first load (`"Sage"`, `"Lotus"`, `"Oasis"`). Legacy names (`"Cafe"`, `"Sentinel"`, `"Streak"`) are automatically mapped.                                                     |
+| `darkMode`          | `boolean \| 'system'`                      | `"system"`                  | Initial dark mode state (`true`, `false`, or `"system"` to automatically match OS theme setting).                                                                                             |
+| `singleSummaryFile` | `boolean`                                  | `false`                     | Generates a standalone `summary.html` for executive summary views.                                                                                                                            |
+| `minimalReport`     | `boolean`                                  | `false`                     | When `true`, disables history recording and hides analytical charts/secondary tabs (Projects, History, Trends, Insights) for a lean report.                                                   |
+| `enableHistory`     | `'auto' \| boolean \| object`              | `"auto"`                    | Controls history execution archiving. Accepts boolean, `"auto"`, or a configuration object with `mode: 'local' \| 'remote'` (see [Testing Local vs Remote](plan/testing-local-vs-remote.md)). |
+| `consoleProgress`   | `'auto' \| 'line' \| 'dot' \| boolean`     | `"auto"`                    | Controls terminal execution output (`"auto"` selects `line` in TTY and `dot` in non-TTY).                                                                                                     |
+| `openAutomatically` | `'always' \| 'never' \| 'on-failure-only'` | `"never"`                   | Controls whether to launch the report viewer automatically after run completion (`"always"`, `"never"`, or `"on-failure-only"`).                                                              |
 
 ### Report Output Structure
 

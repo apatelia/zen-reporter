@@ -1,7 +1,8 @@
 import type { FullConfig } from '@playwright/test/reporter';
 import * as path from 'path';
 import { SqliteHistoryStore } from './history/SqliteHistoryStore';
-import type { ResultSummary, TestCase as TestCaseModel } from '@arpanp/zen-core';
+import { RemoteHistoryStore } from './history/RemoteHistoryStore';
+import type { HistoryConfig, ResultSummary, TestCase as TestCaseModel } from '@arpanp/zen-core';
 
 export interface WriteRunHistoryOptions {
   startTime: string;
@@ -13,6 +14,7 @@ export interface WriteRunHistoryOptions {
   endedAt: string;
   testCases: TestCaseModel[];
   stepCategories?: Record<string, number>;
+  historyConfig?: HistoryConfig;
   dbPath?: string;
   maxRuns?: number;
   windowSize?: number;
@@ -30,6 +32,20 @@ export async function writeRunHistory(options: WriteRunHistoryOptions): Promise<
   const outputDir = path.resolve(normalizedCwd, options.outputDir);
 
   try {
+    if (
+      typeof options.historyConfig === 'object' &&
+      options.historyConfig !== null &&
+      options.historyConfig.mode === 'remote'
+    ) {
+      const remoteStore = new RemoteHistoryStore({
+        ...options.historyConfig,
+        outputDir: options.outputDir,
+      });
+      await remoteStore.saveRun(options);
+      await remoteStore.close();
+      return;
+    }
+
     const dbPath = options.dbPath
       ? path.resolve(normalizedCwd, options.dbPath)
       : path.join(outputDir, 'history.db');
@@ -41,6 +57,6 @@ export async function writeRunHistory(options: WriteRunHistoryOptions): Promise<
     await store.saveRun(options);
     await store.close();
   } catch (e) {
-    console.warn('SQLite history write failed:', e);
+    console.warn('History write failed:', e);
   }
 }

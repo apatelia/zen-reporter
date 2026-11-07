@@ -627,6 +627,7 @@ class ZenReporter implements Reporter {
         endedAt: endTime,
         testCases: this.testCases,
         stepCategories,
+        historyConfig: this.reportConfig.history,
         dbPath: historyOptions?.dbPath,
         maxRuns: historyOptions?.maxRuns,
         windowSize: historyOptions?.windowSize,
@@ -673,6 +674,7 @@ class ZenReporter implements Reporter {
 
 export { getShowReportCommand };
 export { SqliteHistoryStore } from './history/SqliteHistoryStore';
+export { RemoteHistoryStore } from './history/RemoteHistoryStore';
 export { migrateJsonlToSqlite } from './history/migration';
 export type { MigrationOptions, MigrationResult } from './history/migration';
 export type { DisabledHistoryConfig, HistoryConfig, LocalHistoryConfig, RemoteHistoryConfig };

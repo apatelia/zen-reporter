@@ -1,11 +1,12 @@
-import { useState } from 'react';
-import type { TestCase } from '@arpanp/zen-core';
+import { useState, useCallback } from 'react';
+import type { TestCase, TestStep, TestError, Attachment } from '@arpanp/zen-core';
 import { getTagColor } from '@arpanp/zen-core';
 import TestCaseDetail from './TestCaseDetail';
 
 export interface TestCaseCardProps {
   testCase: TestCase;
   showSteps?: boolean;
+  runId?: string;
 }
 
 const statusConfig = {
@@ -41,9 +42,97 @@ const statusConfig = {
   },
 };
 
-export default function TestCaseCard({ testCase, showSteps }: TestCaseCardProps) {
+export default function TestCaseCard({ testCase, showSteps, runId }: TestCaseCardProps) {
   const [isExpanded, setIsExpanded] = useState(false);
+  const [isLoadingDetails, setIsLoadingDetails] = useState(false);
+  const [detailedCase, setDetailedCase] = useState<TestCase>(testCase);
   const config = statusConfig[testCase.status];
+
+  const handleToggle = useCallback(async () => {
+    const nextExpanded = !isExpanded;
+    setIsExpanded(nextExpanded);
+
+    // If expanding and detailed steps/errors/attachments are empty, check if we need to fetch on demand
+    const hasDetailsAlready =
+      (detailedCase.steps && detailedCase.steps.length > 0) ||
+      (detailedCase.errors && detailedCase.errors.length > 0) ||
+      (detailedCase.stdout && detailedCase.stdout.length > 0) ||
+      (detailedCase.attachments && detailedCase.attachments.length > 0);
+
+    if (nextExpanded && !hasDetailsAlready && typeof window !== 'undefined') {
+      const activeRunId =
+        runId || new URLSearchParams(window.location.search).get('runId') || 'latest';
+      const testIdentifier = encodeURIComponent(
+        `${activeRunId}::${detailedCase.fileName}::${detailedCase.title}`
+      );
+
+      setIsLoadingDetails(true);
+      try {
+        // Try server endpoint /api/v1/runs/:runId/tests/:testId or dev /api/tests/:runId/:testId
+        const endpoint = `/api/v1/runs/${encodeURIComponent(activeRunId)}/tests/${testIdentifier}`;
+        const devEndpoint = `/api/tests/${encodeURIComponent(activeRunId)}/${encodeURIComponent(detailedCase.title)}`;
+
+        let resp = await fetch(endpoint).catch(() => null);
+        if (!resp || !resp.ok) {
+          resp = await fetch(devEndpoint).catch(() => null);
+        }
+
+        if (resp && resp.ok) {
+          const data = await resp.json();
+          setDetailedCase((prev) => {
+            const steps: TestStep[] = data.details?.stepsJson || data.steps || prev.steps || [];
+            const errors: TestError[] = data.details?.errorStack
+              ? [
+                  {
+                    name: 'Error',
+                    message: data.errorMessage || '',
+                    stack: data.details.errorStack,
+                    location: data.errorLine
+                      ? { file: data.errorFile || '', line: data.errorLine, column: 0 }
+                      : null,
+                    snippet: '',
+                    cause: null,
+                  },
+                ]
+              : data.errors || prev.errors || [];
+            const stdout: string[] = data.details?.stdoutJson || data.stdout || prev.stdout || [];
+            const stderr: string[] = data.details?.stderrJson || data.stderr || prev.stderr || [];
+            const rawAttachments = (data.attachments || []) as Array<{
+              name: string;
+              contentType?: string;
+              content_type?: string;
+              url?: string;
+              s3Url?: string;
+              file_path?: string;
+              path?: string;
+              bodyText?: string;
+              body_text?: string;
+              body?: string;
+            }>;
+            const mappedAttachments: Attachment[] = rawAttachments.map((a) => ({
+              name: a.name,
+              contentType: a.contentType || a.content_type || 'application/octet-stream',
+              path: a.url || a.s3Url || a.file_path || a.path || null,
+              body: a.bodyText || a.body_text || a.body || null,
+            }));
+
+            return {
+              ...prev,
+              steps,
+              errors,
+              stdout,
+              stderr,
+              attachments: mappedAttachments.length > 0 ? mappedAttachments : prev.attachments,
+            };
+          });
+        }
+      } catch {
+        /* fallback to existing static case data */
+      } finally {
+        setIsLoadingDetails(false);
+      }
+    }
+  }, [isExpanded, detailedCase, runId]);
 
   const formatDuration = (ms: number): string => {
     if (ms >= 1000) return `${(ms / 1000).toFixed(1)}s`;
@@ -123,7 +212,7 @@ export default function TestCaseCard({ testCase, showSteps }: TestCaseCardProps)
     >
       <div
         className="cursor-pointer hover:bg-surface-100/50 dark:hover:bg-surface-200/30 rounded-md transition-colors"
-        onClick={() => setIsExpanded(!isExpanded)}
+        onClick={handleToggle}
       >
         <div className="flex items-center justify-between px-3 py-2">
           {/* Left side */}
@@ -168,22 +257,44 @@ export default function TestCaseCard({ testCase, showSteps }: TestCaseCardProps)
               )}
             </span>
             <button
-              className="rounded p-1 text-text-body-mid hover:bg-surface-100 dark:hover:bg-surface-200 hover:text-text-ink dark:hover:text-text-on-primary transition-colors"
+              className="rounded p-1 text-text-body-mid hover:bg-surface-100 dark:hover:bg-surface-200 hover:text-text-ink dark:hover:text-text-on-primary transition-colors flex items-center justify-center"
               title={isExpanded ? 'Hide details' : 'Show details'}
               onClick={(e) => {
                 e.stopPropagation();
-                setIsExpanded(!isExpanded);
+                handleToggle();
               }}
             >
-              <svg
-                className={`h-4 w-4 transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`}
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                strokeWidth={2}
-              >
-                <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-              </svg>
+              {isLoadingDetails ? (
+                <svg
+                  className="h-4 w-4 animate-spin text-text-body-mid"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                >
+                  <circle
+                    className="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                  />
+                  <path
+                    className="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                  />
+                </svg>
+              ) : (
+                <svg
+                  className={`h-4 w-4 transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`}
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={2}
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                </svg>
+              )}
             </button>
           </div>
         </div>
@@ -210,7 +321,7 @@ export default function TestCaseCard({ testCase, showSteps }: TestCaseCardProps)
       {isExpanded && (
         <div className="border-t border-border-default">
           <div className="px-3 py-3">
-            <TestCaseDetail testCase={testCase} showSteps={showSteps} />
+            <TestCaseDetail testCase={detailedCase} showSteps={showSteps} />
           </div>
         </div>
       )}

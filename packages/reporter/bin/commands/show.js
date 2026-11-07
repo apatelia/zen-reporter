@@ -119,6 +119,57 @@ export function handleShow(cwd = process.cwd()) {
         return;
       }
 
+      // Route: /api/runs/:runId/tests/:testId
+      const testMatch = pathname.match(/^\/api\/runs\/([^/]+)\/tests\/([^/]+)$/);
+      if (testMatch && req.method === 'GET') {
+        const runId = decodeURIComponent(testMatch[1]);
+        const testId = decodeURIComponent(testMatch[2]);
+        try {
+          const runReport = await historyStore.getRunReport(runId);
+          if (!runReport) {
+            res.writeHead(404);
+            res.end(JSON.stringify({ error: `Run "${runId}" not found` }));
+            return;
+          }
+
+          // Find the test case across suites
+          let foundCase = null;
+          const searchSuites = (suites) => {
+            for (const s of suites || []) {
+              for (const c of s.cases || []) {
+                if (c.title === testId || `${runId}::${c.fileName}::${c.title}` === testId) {
+                  foundCase = c;
+                  return;
+                }
+              }
+              if (s.subSuites) searchSuites(s.subSuites);
+            }
+          };
+          searchSuites(runReport.testRun.suites);
+
+          if (!foundCase) {
+            res.writeHead(404);
+            res.end(JSON.stringify({ error: `Test "${testId}" not found in run "${runId}"` }));
+            return;
+          }
+
+          res.writeHead(200);
+          res.end(
+            JSON.stringify({
+              steps: foundCase.steps || [],
+              errors: foundCase.errors || [],
+              stdout: foundCase.stdout || [],
+              stderr: foundCase.stderr || [],
+              attachments: foundCase.attachments || [],
+            })
+          );
+        } catch (e) {
+          res.writeHead(500);
+          res.end(JSON.stringify({ error: String(e?.message || e) }));
+        }
+        return;
+      }
+
       res.writeHead(404);
       res.end(JSON.stringify({ error: 'Not Found' }));
       return;

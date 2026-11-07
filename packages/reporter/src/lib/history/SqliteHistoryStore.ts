@@ -18,7 +18,7 @@ import type {
 } from '@arpanp/zen-core';
 import type { TestCase as TestCaseModel } from '@arpanp/zen-core';
 import type { HistoryStore } from './HistoryStore';
-import { CREATE_HISTORY_VIEW_SQL, INIT_SCHEMA_STATEMENTS } from './schema';
+import { CREATE_HISTORY_VIEW_SQL, CREATE_INDEXES_SQL, CREATE_TABLES_SQL } from './schema';
 
 interface SqliteStatement {
   run(...params: unknown[]): { changes: number; lastInsertRowid: number | bigint };
@@ -32,10 +32,22 @@ interface SqliteDatabase {
   close(): void;
 }
 
+/**
+ * Safely casts an unknown value to a string or null.
+ *
+ * @param val - The value to cast.
+ * @returns The string value or null.
+ */
 function optString(val: unknown): string | null {
   return val !== null && val !== undefined ? String(val) : null;
 }
 
+/**
+ * Safely casts an unknown value to a number or null.
+ *
+ * @param val - The value to cast.
+ * @returns The numeric value or null.
+ */
 function optNumber(val: unknown): number | null {
   return val !== null && val !== undefined ? Number(val) : null;
 }
@@ -105,11 +117,12 @@ export class SqliteHistoryStore implements HistoryStore {
     this.db.exec('PRAGMA cache_size = -64000;');
     this.db.exec('PRAGMA foreign_keys = ON;');
 
-    for (const statement of INIT_SCHEMA_STATEMENTS) {
+    // 1. Create base tables
+    for (const statement of CREATE_TABLES_SQL) {
       this.db.exec(statement);
     }
 
-    // Auto-migrate schema: add steps_json, stdout_json, stderr_json if missing from older databases
+    // 2. Auto-migrate schema: add missing columns from older databases
     try {
       this.db.exec('ALTER TABLE history_test_cases ADD COLUMN steps_json TEXT;');
     } catch {
@@ -140,8 +153,20 @@ export class SqliteHistoryStore implements HistoryStore {
     } catch {
       /* column already exists */
     }
+    try {
+      this.db.exec('ALTER TABLE history_attachments ADD COLUMN project TEXT;');
+    } catch {
+      /* column already exists */
+    }
 
-    // Ensure history_view uses LEFT JOIN so runs with 0 tests are retained
+    // 3. Create indexes (now guaranteed to have all table columns available)
+    try {
+      this.db.exec(CREATE_INDEXES_SQL);
+    } catch {
+      /* ignore index creation errors */
+    }
+
+    // 4. Ensure history_view uses LEFT JOIN so runs with 0 tests are retained
     try {
       this.db.exec('DROP VIEW IF EXISTS history_view;');
       this.db.exec(CREATE_HISTORY_VIEW_SQL);
@@ -254,10 +279,10 @@ export class SqliteHistoryStore implements HistoryStore {
 
       const insertAttachmentStmt = this.db.prepare(`
         INSERT INTO history_attachments (
-          run_id, test_file, test_title, test_status,
+          run_id, test_file, test_title, test_status, project,
           name, content_type, file_path, body_text
         ) VALUES (
-          ?, ?, ?, ?,
+          ?, ?, ?, ?, ?,
           ?, ?, ?, ?
         )
       `);
@@ -350,6 +375,7 @@ export class SqliteHistoryStore implements HistoryStore {
         tc.fileName,
         tc.title,
         tc.status,
+        tc.project || null,
         att.name || 'attachment',
         att.contentType || null,
         filePath,
@@ -556,10 +582,13 @@ export class SqliteHistoryStore implements HistoryStore {
       .prepare('SELECT * FROM history_attachments WHERE run_id = ? ORDER BY id ASC')
       .all(runId) as Record<string, unknown>[];
 
-    // Group attachments by test_file + test_title
+    // Group attachments by test_file + test_title (+ project if available)
     const attachmentsByTest = new Map<string, Attachment[]>();
     for (const att of attachmentRows) {
-      const key = `${att.test_file}|${att.test_title}`;
+      const proj = att.project ? String(att.project) : '';
+      const key = proj
+        ? `${att.test_file}|${att.test_title}|${proj}`
+        : `${att.test_file}|${att.test_title}`;
       if (!attachmentsByTest.has(key)) {
         attachmentsByTest.set(key, []);
       }
@@ -575,8 +604,12 @@ export class SqliteHistoryStore implements HistoryStore {
       const suiteStr = String(tc.suite || '');
       const describePath = suiteStr ? suiteStr.split(' > ') : [];
       const tags: string[] = tc.tags ? JSON.parse(String(tc.tags)) : [];
-      const testKey = `${tc.file}|${tc.title}`;
-      const attachments = attachmentsByTest.get(testKey) || [];
+      const proj = tc.project ? String(tc.project) : '';
+      const testKeyWithProject = proj ? `${tc.file}|${tc.title}|${proj}` : `${tc.file}|${tc.title}`;
+      const fallbackKey = `${tc.file}|${tc.title}`;
+      const attachments =
+        attachmentsByTest.get(testKeyWithProject) ||
+        (attachmentsByTest.has(fallbackKey) ? attachmentsByTest.get(fallbackKey)! : []);
 
       const status = String(tc.status || 'passed') as TestCaseModel['status'];
 

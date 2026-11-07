@@ -63,13 +63,18 @@ export function slugify(name: string): string {
  * @param startedAtIso - The ISO formatted start timestamp of the test run.
  * @param testRunName - The name of the test run.
  * @param shard - Optional shard metadata containing current shard index and total shard count.
+ * @param explicitRunId - Optional explicit run identifier to use instead of generating one.
  * @returns The formatted run identifier.
  */
 export function buildRunId(
   startedAtIso: string,
   testRunName: string,
-  shard: { current: number; total: number } | null
+  shard: { current: number; total: number } | null | undefined,
+  explicitRunId?: string
 ): string {
+  if (explicitRunId) {
+    return explicitRunId;
+  }
   const base = `${startedAtIso.replace(/[:.]/g, '-')}__${slugify(testRunName)}`;
 
   if (shard && shard.total > 1) {

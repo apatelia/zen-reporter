@@ -66,6 +66,7 @@ CREATE TABLE IF NOT EXISTS history_attachments (
   test_file TEXT NOT NULL,
   test_title TEXT NOT NULL,
   test_status TEXT,
+  project TEXT,
   name TEXT NOT NULL,
   content_type TEXT,
   file_path TEXT NOT NULL,
@@ -82,6 +83,7 @@ CREATE INDEX IF NOT EXISTS idx_history_tests_title_status ON history_test_cases(
 CREATE INDEX IF NOT EXISTS idx_history_tests_file ON history_test_cases(file);
 CREATE INDEX IF NOT EXISTS idx_hist_att_run_id ON history_attachments(run_id);
 CREATE INDEX IF NOT EXISTS idx_hist_att_file_title ON history_attachments(test_file, test_title);
+CREATE INDEX IF NOT EXISTS idx_hist_att_test_project ON history_attachments(test_file, test_title, project);
 `;
 
 export const CREATE_HISTORY_VIEW_SQL = `
@@ -128,6 +130,12 @@ SELECT
 FROM history_runs r
 LEFT JOIN history_test_cases t ON r.run_id = t.run_id;
 `;
+
+export const CREATE_TABLES_SQL = [
+  CREATE_RUNS_TABLE_SQL,
+  CREATE_TEST_CASES_TABLE_SQL,
+  CREATE_ATTACHMENTS_TABLE_SQL,
+];
 
 export const INIT_SCHEMA_STATEMENTS = [
   CREATE_RUNS_TABLE_SQL,

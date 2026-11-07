@@ -1,3 +1,5 @@
+# SaaS
+
 No CI workflows exist. Let me check the vite reporter config and the `.playwright` directory to understand how reports are served.
 
 I've now got a thorough understanding of the architecture. Let me verify one detail about how attachments are handled in the report, since that's key to both CI artifacts and multi-tenancy.

@@ -1,0 +1,33 @@
+{
+  "name": "@arpanp/zen-server",
+  "version": "0.19.1",
+  "type": "module",
+  "description": "Backend SaaS ingestion and reporting service for Zen Reporter",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc -p tsconfig.json",
+    "start": "node dist/index.js",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "tsx src/db/migrate.ts"
+  },
+  "dependencies": {
+    "@arpanp/zen-core": "^0.19.1",
+    "@aws-sdk/client-s3": "^3.1161.0",
+    "@aws-sdk/s3-request-presigner": "^3.1161.0",
+    "@azure/storage-blob": "^12.34.0",
+    "@google-cloud/storage": "^8.4.0",
+    "@hono/node-server": "^2.1.6",
+    "dotenv": "^17.3.1",
+    "drizzle-orm": "^0.45.4",
+    "hono": "^4.13.16",
+    "postgres": "^4.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.6",
+    "drizzle-kit": "^0.31.11",
+    "tsx": "^4.21.0",
+    "typescript": "^6.0.3"
+  }
+}
