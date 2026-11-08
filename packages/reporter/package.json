@@ -33,7 +33,9 @@
     "build": "mkdir -p dist && npm run build:template && npm run build:reporter"
   },
   "dependencies": {
-    "@arpanp/zen-core": "^0.19.1"
+    "@arpanp/zen-core": "^0.19.1",
+    "@clack/prompts": "^1.8.1",
+    "picocolors": "^1.1.1"
   },
   "peerDependencies": {
     "@duckdb/node-api": ">=2.0.0-r.1",
@@ -50,6 +52,6 @@
   "devDependencies": {
     "@types/node": "^26.6.6",
     "typescript": "^6.0.3",
-    "vite": "^8.3.5"
+    "vite": "^8.3.6"
   }
 }

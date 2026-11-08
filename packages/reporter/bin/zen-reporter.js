@@ -2,12 +2,14 @@
 import { handleEnv } from './commands/env.js';
 import { printHelp } from './commands/help.js';
 import { handleHistory } from './commands/history.js';
+import { runInteractiveMenu } from './commands/menu.js';
 import { handleShow } from './commands/show.js';
 import { handleSummary } from './commands/summary.js';
 
 const cwd = process.cwd();
 const args = process.argv.slice(2);
-const command = args[0] || 'show';
+const isInteractive = args.length === 0 && Boolean(process.stdin.isTTY && process.stdout.isTTY);
+const command = args[0] || (isInteractive ? null : 'show');
 
 /**
  * Central CLI entrypoint dispatching commands and handling top-level errors.
@@ -16,7 +18,9 @@ const command = args[0] || 'show';
  */
 async function main() {
   try {
-    if (command === 'show') {
+    if (isInteractive) {
+      await runInteractiveMenu(cwd);
+    } else if (command === 'show') {
       await handleShow(cwd);
     } else if (command === 'summary') {
       await handleSummary(cwd);

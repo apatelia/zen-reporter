@@ -3,11 +3,13 @@ import { existsSync, readFileSync, writeFileSync } from 'fs';
 import { resolve } from 'path';
 import {
   checkDatabaseSizeWarning,
+  exportTableToCsv,
   FILES_SUMMARY_SQL,
   findRunFiles,
   FLAKY_SQL,
   formatDate,
   openDuckDb,
+  printPaginatedTable,
   printTable,
   PROJECT_DURATIONS_SQL,
   REGRESSIONS_SQL,
@@ -19,6 +21,7 @@ import {
   TESTS_SUMMARY_SQL,
   TREND_SQL,
 } from './common.js';
+import { generateExportFilename } from '@arpanp/zen-core';
 import { printHelp } from './help.js';
 
 /**
@@ -340,7 +343,7 @@ export async function handleHistory(subArgs, cwd = process.cwd()) {
           );
         }
 
-        const availableRuns = await store.listRuns(50);
+        const availableRuns = await store.listRuns();
         if (availableRuns.length === 0) {
           console.log('ℹ No historic runs found to clean.');
           return;
@@ -363,26 +366,112 @@ export async function handleHistory(subArgs, cwd = process.cwd()) {
           run_total: r.run_total ?? 0,
           pass_rate: r.pass_rate !== null && r.pass_rate !== undefined ? `${r.pass_rate}%` : '—',
         }));
-        printTable({ columns, rows }, 'No runs found.', 'runs');
-
-        const selection = await promptInput(
-          `\nEnter Sr. No.(s) to delete (e.g. "1", "1-3", "2, 5-8, 12", "all") or 'q' to cancel: `
-        );
-
-        if (!selection || selection.toLowerCase() === 'q') {
-          console.log('Action canceled.');
-          return;
-        }
 
         availableRuns.forEach((r) => runDetailMap.set(r.run_id, r));
 
-        const selectedIndices = parseRangeSelection(selection, availableRuns.length);
-        if (selectedIndices.length === 0) {
-          console.error(
-            `✗ Invalid selection: "${selection}". Expected comma-separated numbers or ranges between 1 and ${availableRuns.length}.`
+        const pageSize = 20;
+        let selectedIndices = [];
+        let currentOffset = 0;
+
+        if (availableRuns.length <= pageSize) {
+          printTable({ columns, rows }, 'No runs found.', 'runs');
+          const selection = await promptInput(
+            `\nEnter Sr. No.(s) to delete (e.g. "1", "1-3", "2, 5-8, 12", "all") or 'q' to cancel: `
           );
-          process.exitCode = 1;
-          return;
+
+          if (!selection || selection.toLowerCase() === 'q') {
+            console.log('Action canceled.');
+            return;
+          }
+
+          selectedIndices = parseRangeSelection(selection, availableRuns.length);
+          if (selectedIndices.length === 0) {
+            console.error(
+              `✗ Invalid selection: "${selection}". Expected comma-separated numbers or ranges between 1 and ${availableRuns.length}.`
+            );
+            process.exitCode = 1;
+            return;
+          }
+        } else {
+          // Paged interactive selection loop
+          let selectionMade = false;
+
+          while (!selectionMade) {
+            const pageRows = rows.slice(currentOffset, currentOffset + pageSize);
+            printTable({ columns, rows: pageRows }, 'No runs found.', 'runs', {
+              offset: currentOffset,
+              totalCount: availableRuns.length,
+            });
+
+            const currentEnd = currentOffset + pageRows.length;
+            const remaining = availableRuns.length - currentEnd;
+            const hasNext = remaining > 0;
+            const hasPrev = currentOffset > 0;
+
+            const navHints = [];
+            if (hasNext) navHints.push("'n' (next page)");
+            if (hasPrev) navHints.push("'p' (previous page)");
+            navHints.push("'a' (show all)");
+            navHints.push("'q' (cancel)");
+
+            const promptMsg = `\nEnter Sr. No.(s) to delete (e.g. "1", "1-3", "2, 5-8", "all") or ${navHints.join(', ')}: `;
+            const input = await promptInput(promptMsg);
+            const trimmed = input.trim().toLowerCase();
+
+            if (!trimmed || trimmed === 'q') {
+              console.log('Action canceled.');
+              return;
+            }
+
+            if (trimmed === 'n') {
+              if (hasNext) {
+                currentOffset += pageSize;
+              } else {
+                console.log('Already on the last page.');
+              }
+              continue;
+            }
+
+            if (trimmed === 'p') {
+              if (hasPrev) {
+                currentOffset = Math.max(0, currentOffset - pageSize);
+              } else {
+                console.log('Already on the first page.');
+              }
+              continue;
+            }
+
+            if (trimmed === 'a') {
+              printTable({ columns, rows }, 'No runs found.', 'runs');
+              const sel = await promptInput(
+                `\nEnter Sr. No.(s) to delete (e.g. "1", "1-3", "2, 5-8", "all") or 'q' to cancel: `
+              );
+              if (!sel || sel.toLowerCase() === 'q') {
+                console.log('Action canceled.');
+                return;
+              }
+              selectedIndices = parseRangeSelection(sel, availableRuns.length);
+              if (selectedIndices.length === 0) {
+                console.error(
+                  `✗ Invalid selection: "${sel}". Expected numbers or ranges between 1 and ${availableRuns.length}.`
+                );
+                process.exitCode = 1;
+                return;
+              }
+              selectionMade = true;
+              break;
+            }
+
+            selectedIndices = parseRangeSelection(input, availableRuns.length);
+            if (selectedIndices.length === 0) {
+              console.error(
+                `✗ Invalid selection: "${input}". Expected comma-separated numbers, ranges between 1 and ${availableRuns.length}, or navigation keys (n/p/a/q).\n`
+              );
+              continue;
+            }
+
+            selectionMade = true;
+          }
         }
 
         selectedIndices.forEach((idx) => {
@@ -498,7 +587,7 @@ export async function handleHistory(subArgs, cwd = process.cwd()) {
       }
 
       console.log(
-        `Targeted ${preview.deletedRunIds.length} run(s) (${preview.deletedTestCases} test executions, ${preview.deletedAttachments} attachment file(s)):`
+        `\nTargeted ${preview.deletedRunIds.length} run(s) (${preview.deletedTestCases} test executions, ${preview.deletedAttachments} attachment file(s)):`
       );
       for (const id of preview.deletedRunIds) {
         const srPrefix = srMap[id] ? `[#${srMap[id]}] ` : '';
@@ -628,47 +717,134 @@ export async function handleHistory(subArgs, cwd = process.cwd()) {
   const conn = await openDuckDb();
   await setupHistorySource(conn, historyDir, cwd);
 
+  const isAllFlag = subArgs.includes('--all');
+  const limitArgIdx = subArgs.indexOf('--limit');
+  const explicitLimit = limitArgIdx >= 0 ? parseInt(subArgs[limitArgIdx + 1], 10) : undefined;
+  const isInteractiveSession =
+    subArgs.includes('--interactive') ||
+    Boolean(
+      process.stdin.isTTY && process.stdout.isTTY && !isAllFlag && explicitLimit === undefined
+    );
+
+  // Parse export flag: --export [optionalPath] or -e [optionalPath]
+  let isExport = false;
+  let exportTargetPath;
+  const exportIdx = subArgs.findIndex((a) => a === '--export' || a === '-e');
+  if (exportIdx >= 0) {
+    isExport = true;
+    const nextArg = subArgs[exportIdx + 1];
+    if (nextArg && !nextArg.startsWith('-')) {
+      exportTargetPath = nextArg;
+    }
+  }
+
+  /**
+   * Helper to handle table display and optional CSV export.
+   *
+   * @param {object} table - Object containing columns and rows.
+   * @param {string} emptyMessage - Empty table fallback message.
+   * @param {string} entityName - Entity name for count/filenames.
+   * @param {object} [opts] - Pagination options.
+   * @returns {Promise<void>}
+   */
+  const handleDataset = async (table, emptyMessage, entityName, opts = {}) => {
+    let rowsToExport = table.rows || [];
+    if (!isAllFlag && opts.limit !== undefined) {
+      rowsToExport = rowsToExport.slice(0, opts.limit);
+    }
+
+    if (isExport) {
+      const defaultFilename = generateExportFilename(entityName.replace(/\s+/g, '-'));
+      exportTableToCsv(
+        { columns: table.columns, rows: rowsToExport },
+        defaultFilename,
+        exportTargetPath,
+        historyDir,
+        cwd
+      );
+    }
+
+    await printPaginatedTable(table, emptyMessage, entityName, opts);
+  };
+
   try {
     switch (sub) {
       case 'runs':
-        printTable(await runQuery(conn, RUNS_SQL), 'No historic test runs found.', 'runs');
+        await handleDataset(
+          await runQuery(conn, RUNS_SQL),
+          'No historic test runs found.',
+          'runs',
+          {
+            all: isAllFlag,
+            limit: explicitLimit,
+            interactive: isInteractiveSession && !isExport,
+          }
+        );
         break;
 
       case 'flaky':
-        printTable(await runQuery(conn, FLAKY_SQL), 'No flaky tests found.', 'flaky tests');
+        await handleDataset(
+          await runQuery(conn, FLAKY_SQL),
+          'No flaky tests found.',
+          'flaky tests',
+          {
+            all: isAllFlag,
+            limit: explicitLimit,
+            interactive: isInteractiveSession && !isExport,
+          }
+        );
         break;
 
       case 'regressions':
-        printTable(
+        await handleDataset(
           await runQuery(conn, REGRESSIONS_SQL),
           'No test regressions found.',
-          'regressions'
+          'regressions',
+          { all: isAllFlag, limit: explicitLimit, interactive: isInteractiveSession && !isExport }
         );
         break;
 
       case 'slow': {
-        const idx = subArgs.indexOf('--limit');
         const rawLimit =
-          idx >= 0 ? subArgs[idx + 1] : /^\d+$/.test(subArgs[1] || '') ? subArgs[1] : '10';
+          limitArgIdx >= 0
+            ? subArgs[limitArgIdx + 1]
+            : /^\d+$/.test(subArgs[1] || '')
+              ? subArgs[1]
+              : '10';
         const limit = Math.max(1, parseInt(rawLimit, 10) || 10);
-        printTable(await runQuery(conn, SLOW_SQL, [limit]), 'No slow tests found.', 'slow tests');
+        const table = await runQuery(conn, SLOW_SQL, [limit]);
+        if (isExport) {
+          const defaultFilename = generateExportFilename('slow-tests');
+          exportTableToCsv(table, defaultFilename, exportTargetPath, historyDir, cwd);
+        }
+        printTable(table, 'No slow tests found.', 'slow tests');
         break;
       }
 
       case 'trend':
-        printTable(await runQuery(conn, TREND_SQL), 'No trend data found.', 'runs');
+        await handleDataset(await runQuery(conn, TREND_SQL), 'No trend data found.', 'trend', {
+          all: isAllFlag,
+          limit: explicitLimit,
+          interactive: isInteractiveSession && !isExport,
+        });
         break;
 
       case 'files':
-        printTable(
+        await handleDataset(
           await runQuery(conn, FILES_SUMMARY_SQL),
           'No spec files history found.',
-          'spec files'
+          'spec files',
+          { all: isAllFlag, limit: explicitLimit, interactive: isInteractiveSession && !isExport }
         );
         break;
 
       case 'tests':
-        printTable(await runQuery(conn, TESTS_SUMMARY_SQL), 'No test history found.', 'tests');
+        await handleDataset(
+          await runQuery(conn, TESTS_SUMMARY_SQL),
+          'No test history found.',
+          'tests',
+          { all: isAllFlag, limit: explicitLimit, interactive: isInteractiveSession && !isExport }
+        );
         break;
 
       case 'report':
@@ -676,14 +852,25 @@ export async function handleHistory(subArgs, cwd = process.cwd()) {
         break;
 
       case 'query': {
-        const sqlText = subArgs.slice(1).join(' ').trim();
+        const queryArgs = subArgs.slice(1).filter((a, idx, arr) => {
+          if (a === '--export' || a === '-e') return false;
+          const prev = arr[idx - 1];
+          if ((prev === '--export' || prev === '-e') && !a.startsWith('-')) return false;
+          return true;
+        });
+        const sqlText = queryArgs.join(' ').trim();
         if (!sqlText) {
           throw new Error('Usage: zr history query "<SQL>"');
         }
         const usesFrom = /\bfrom\b/i.test(sqlText);
         const sql = usesFrom ? sqlText : `SELECT * FROM ${SRC} ${sqlText}`;
         try {
-          printTable(await runQuery(conn, sql), 'No matching records found.', 'records');
+          const result = await runQuery(conn, sql);
+          if (isExport) {
+            const defaultFilename = generateExportFilename('query-results');
+            exportTableToCsv(result, defaultFilename, exportTargetPath, historyDir, cwd);
+          }
+          printTable(result, 'No matching records found.', 'records');
         } catch (e) {
           throw new Error(`Query failed: ${e?.message || e}`, { cause: e });
         }

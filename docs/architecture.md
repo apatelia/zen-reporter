@@ -129,23 +129,25 @@ zen-reporter/
 └── vite-plugin-inject-data.ts # Vite plugin to inline report.json & history.json into HTML
 ├── bin/                       # Modularized CLI commands
 │   ├── commands/              # Sub-command handlers
-│   │   ├── common.js          # Shared CLI helpers & DuckDB history query loader
+│   │   ├── common.js          # Shared CLI helpers, colorful ANSI-safe table formatting & DuckDB loader
 │   │   ├── env.js             # System environment diagnostics handler ('zr env')
 │   │   ├── help.js            # Help and usage documentation renderer
 │   │   ├── history.js         # History report and query engine handler ('zr history ...')
+│   │   ├── menu.js            # Interactive Clack-powered menu and navigation prompt router
 │   │   ├── show.js            # Internal 127.0.0.1 static HTTP report server launcher ('zr show')
 │   │   ├── summary.js         # Markdown summary snippet generator ('zr summary')
 │   │   ├── system.d.ts        # TypeScript declarations for system environment utilities
 │   │   └── system.js          # Canonical OS name and package version resolution utilities
-│   └── zen-reporter.js        # Executable CLI entry point delegating to bin/commands/
+│   └── zen-reporter.js        # Executable CLI entry point dispatching interactive menu or direct commands
 ├── zen-report/                # Generated self-contained report bundle folder
 │   ├── index.html             # Main interactive HTML dashboard interface
 │   ├── summary.html           # Optional executive summary HTML (when singleSummaryFile: true)
 │   ├── summary.json           # Optional pruned executive summary dataset (when singleSummaryFile: true)
-│   ├── runs/                  # Historical per-run JSONL execution archives
+│   ├── history.db             # SQLite database storing historical runs, test executions & attachments
+│   ├── attachments/           # Copied test assets (screenshots, videos, trace files)
 │   ├── report.json            # Processed test execution JSON dataset
 │   ├── history.json           # Historical test analytics & DuckDB trend dataset
-│   └── attachments/           # Copied test assets (screenshots, videos, trace files)
+│   └── runs/                  # (Legacy / JSONL mode) Historical per-run JSONL archives
 ├── tests/                     # Playwright test files
 ├── playwright.config.ts       # Playwright test configuration with retries & dynamic testRunName
 ├── vite.config.ts             # Vite single-file bundling configuration

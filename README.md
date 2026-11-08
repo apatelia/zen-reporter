@@ -73,9 +73,9 @@ export default defineConfig({
 });
 ```
 
-### Advanced Configuration (With Options)
+### Configuration
 
-You can pass configuration options using the tuple syntax in Playwright:
+You can customize Zen Reporter using Playwright's reporter tuple syntax:
 
 ```ts
 import { defineConfig } from '@playwright/test';
@@ -85,38 +85,18 @@ export default defineConfig({
     [
       '@arpanp/zen-reporter',
       {
-        outputDir: 'zen-report', // Optional: Output directory where report files will be generated (default: "zen-report")
-        projectName: 'My E2E Project', // Optional: Project name displayed in the top bar header
-        testRunName: 'Nightly Build #42', // Optional: Test run / build name displayed in the top bar header
-        theme: 'Sage', // Optional: Theme applied on initial load ("Sage" | "Lotus" | "Oasis", default: "Sage")
-        darkMode: 'system', // Optional: Initial dark mode state (boolean | "system", default: "system")
-        singleSummaryFile: true, // Optional: Generates a standalone summary.html file alongside index.html
-        minimalReport: false, // Optional: Produces a lightweight, basic report (disables history, hides analytical charts & secondary tabs, default: false)
-        enableHistory: 'auto', // Optional: History recording mode ("auto" | boolean, default: "auto")
-        consoleProgress: 'auto', // Optional: Console execution progress output ("auto" | "line" | "dot" | false, default: "auto")
-        openAutomatically: 'never', // Optional: Open report automatically ("always" | "never" | "on-failure-only", default: "never")
+        outputDir: 'zen-report', // Output directory for reports and SQLite history
+        projectName: 'My E2E Project', // Project name displayed in top navigation bar
+        theme: 'Sage', // Initial visual theme: 'Sage' | 'Lotus' | 'Oasis'
       },
     ],
   ],
 });
 ```
 
-> **Tip**: You can also configure all of these settings interactively within the report UI! Click **Config Generator** at the bottom of the dashboard sidebar to open the visual configuration generator, adjust settings, and copy the generated snippet directly into your config file.
-
-### Options Reference
-
-| Option              | Type                                       | Default                     | Description                                                                                                                                                                                   |
-| :------------------ | :----------------------------------------- | :-------------------------- | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `outputDir`         | `string`                                   | `"zen-report"`              | Directory where final report files are saved.                                                                                                                                                 |
-| `projectName`       | `string`                                   | `"Test Automation Project"` | Project name displayed prominently in the top bar of the dashboard.                                                                                                                           |
-| `testRunName`       | `string`                                   | `"Test Run #{N}"`           | Test run or build name displayed in top bar. `{N}` is replaced dynamically by run number.                                                                                                     |
-| `theme`             | `string`                                   | `"Sage"`                    | Theme applied on first load (`"Sage"`, `"Lotus"`, `"Oasis"`). Legacy names (`"Cafe"`, `"Sentinel"`, `"Streak"`) are automatically mapped.                                                     |
-| `darkMode`          | `boolean \| 'system'`                      | `"system"`                  | Initial dark mode state (`true`, `false`, or `"system"` to automatically match OS theme setting).                                                                                             |
-| `singleSummaryFile` | `boolean`                                  | `false`                     | Generates a standalone `summary.html` for executive summary views.                                                                                                                            |
-| `minimalReport`     | `boolean`                                  | `false`                     | When `true`, disables history recording and hides analytical charts/secondary tabs (Projects, History, Trends, Insights) for a lean report.                                                   |
-| `enableHistory`     | `'auto' \| boolean \| object`              | `"auto"`                    | Controls history execution archiving. Accepts boolean, `"auto"`, or a configuration object with `mode: 'local' \| 'remote'` (see [Testing Local vs Remote](plan/testing-local-vs-remote.md)). |
-| `consoleProgress`   | `'auto' \| 'line' \| 'dot' \| boolean`     | `"auto"`                    | Controls terminal execution output (`"auto"` selects `line` in TTY and `dot` in non-TTY).                                                                                                     |
-| `openAutomatically` | `'always' \| 'never' \| 'on-failure-only'` | `"never"`                   | Controls whether to launch the report viewer automatically after run completion (`"always"`, `"never"`, or `"on-failure-only"`).                                                              |
+> ⚙️ **Full Configuration Guide**: For all available options (`singleSummaryFile`, `minimalReport`, `enableHistory`, `consoleProgress`, `openAutomatically`), production recipes, and remote SaaS setup, see the [Configuration Guide](docs/configuration.md).
+>
+> 💡 **Visual Config Generator**: You can also configure all options interactively in the web dashboard! Click **Config Generator** at the bottom of the sidebar to tune settings and copy the generated snippet directly into your config file.
 
 ### Report Output Structure
 
@@ -127,11 +107,12 @@ zen-report/
 ├── index.html        # Main interactive HTML dashboard interface
 ├── summary.html      # Optional standalone executive summary dashboard (when singleSummaryFile: true)
 ├── summary.json      # Optional pruned executive summary dataset (when singleSummaryFile: true)
-├── runs/             # Per-run JSONL execution history logs (<timestamp>__<run-slug>.jsonl)
-└── attachments/      # Extracted test attachments (screenshots, videos, trace files, text logs)
+├── history.db        # SQLite history database tracking all historical runs, test executions & metrics
+├── attachments/      # Extracted test attachments (screenshots, videos, trace files, text logs)
+└── runs/             # (Legacy / JSONL mode) Historical per-run JSONL execution logs
 ```
 
-> **Note**: To ensure historic trends, run logs, and media attachments render correctly, archive or publish the complete `zen-report/` directory in your CI/CD pipeline artifacts.
+> **Note**: To ensure historic trends, run logs, and media attachments render correctly, archive or publish the complete `zen-report/` directory in your CI/CD pipeline artifacts. SQLite (`history.db`) is used by default for local execution history; legacy `.jsonl` runs can be migrated seamlessly using `npx zr history migrate --clean`.
 
 ---
 
@@ -168,29 +149,41 @@ Zen Reporter comes with an interactive Playwright Configuration Generator built 
 
 ### 4. CLI Commands Reference (`zr`)
 
-Zen Reporter includes a built-in CLI executable (`npx zr`) for serving reports, checking system environment, and querying historical test execution data:
+Zen Reporter includes a built-in CLI executable (`npx zr`) for serving reports, querying historical test intelligence, and managing SQLite storage:
 
-#### Report & Environment
+#### Interactive Menu Mode
 
-- **`npx zr show`** — Launch the report server to view `index.html` in your default browser.
-- **`npx zr summary`** — Output Markdown summary snippet for current run results (ideal for PR comments or Slack).
-- **`npx zr env`** — Print environment details (`zen-reporter` version, `@playwright/test` version, Node.js version, OS).
+Running `npx zr` without arguments in an interactive terminal launches a guided, menu-driven experience powered by `@clack/prompts`:
 
-#### History & Intelligence (`zr history`)
+```bash
+npx zr
+```
 
-> **Note**: History commands analyze stored JSONL run logs via DuckDB. Ensure `@duckdb/node-api` is installed in your project (`npm i -D @duckdb/node-api`).
+- Navigate commands, history analytics, and database cleanups using arrow keys and `Enter`.
+- Supports interactive table pagination (`Next 25`, `Show All`, `Export All to CSV`, `Finish & Back`).
+- Press `Esc` at any sub-prompt to safely step back or exit.
 
-| Command                           | Description                                                                                        |
-| :-------------------------------- | :------------------------------------------------------------------------------------------------- |
-| `npx zr history`                  | List all historical test runs with start time, duration, and pass/fail/skip counts.                |
-| `npx zr history runs`             | Same as above. List all historical test runs with start time, duration, and pass/fail/skip counts. |
-| `npx zr history files`            | Summarize historical test execution metrics grouped by spec file.                                  |
-| `npx zr history tests`            | Summarize granular historical execution metrics and average durations per test case.               |
-| `npx zr history flaky`            | Identify flaky tests that passed in some runs and failed in others.                                |
-| `npx zr history regressions`      | List tests that passed in a previous run but failed in the latest run.                             |
-| `npx zr history slow [--limit N]` | Rank the top `N` slowest tests by average execution duration across runs (default: 10).            |
-| `npx zr history trend`            | Display historical pass rate percentages per run over time.                                        |
-| `npx zr history report`           | Build `history.json` for server and local history inspection.                                      |
-| `npx zr history clean [options]`  | Clean SQLite runs and remove orphaned attachments (`--all`, `--recent <N>`, `--keep <N>`, etc.).   |
-| `npx zr history vacuum`           | Directly repack `history.db` using VACUUM to reclaim disk space from the freelist.                 |
-| `npx zr history query "<SQL>"`    | Run arbitrary DuckDB SQL queries over recorded test runs.                                          |
+#### Direct Command Execution (Non-Interactive / CI)
+
+Run specific subcommands directly in scripts or CI/CD pipelines:
+
+```bash
+# Report & Environment
+npx zr show                          # Launch local report server
+npx zr summary                       # Output Markdown summary for PR comments
+npx zr env                           # Diagnostic environment details
+
+# History Intelligence & Analytics
+npx zr history                       # List historical runs
+npx zr history flaky                 # List flaky tests
+npx zr history slow --limit 10       # Top 10 slowest tests across runs
+npx zr history trend                 # Historical pass rate trends over time
+npx zr history flaky --export        # Export dataset to RFC 4180 CSV file
+
+# SQLite Database Maintenance
+npx zr history clean --keep 50       # Retain latest 50 runs, purging older runs
+npx zr history vacuum                # Reclaim unused disk space with VACUUM
+npx zr history migrate --clean       # Migrate legacy .jsonl runs into SQLite
+```
+
+> 📖 **Full CLI Documentation**: For all subcommands, interactive menu workflows, SQL query examples (`zr history query`), and complete flag matrices, see the [CLI Reference Guide](docs/cli.md).

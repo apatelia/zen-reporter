@@ -1,5 +1,8 @@
-import { existsSync, readdirSync, statSync } from 'fs';
-import { resolve } from 'path';
+import { existsSync, readdirSync, statSync, writeFileSync, mkdirSync } from 'fs';
+import { dirname, relative, resolve } from 'path';
+import * as clack from '@clack/prompts';
+import pc from 'picocolors';
+import { exportToCsvString, generateExportFilename } from '@arpanp/zen-core';
 
 export { getOsName, getPlaywrightVersion, getZenReporterVersion } from './system.js';
 
@@ -137,18 +140,29 @@ export function padCenter(str, width) {
  * @param {Record<string, unknown>[]} table.rows - Table row data.
  * @param {string} [emptyMessage='No records found.'] - Fallback message when rows are empty.
  * @param {string} [entityName='records'] - Plural entity name for count summary.
+ * @param {object} [options] - Additional table formatting options.
+ * @param {number} [options.offset=0] - 0-based offset for Sr. No. numbering.
+ * @param {number} [options.totalCount] - Total count of records across all pages, if paginated.
+ * @returns {void}
  */
 export function printTable(
   { columns, rows },
   emptyMessage = 'No records found.',
-  entityName = 'records'
+  entityName = 'records',
+  options = {}
 ) {
   if (!columns || columns.length === 0) return;
+
+  const { offset = 0, totalCount } = options;
 
   const displayHeaders = [
     'Sr. No.',
     ...columns.map((c) => {
       let header = c;
+
+      if (header === 'last_seen_at') {
+        return 'Last Run At';
+      }
 
       if (header.endsWith('_ms')) {
         header = header.slice(0, -3);
@@ -161,7 +175,7 @@ export function printTable(
   ];
 
   const formattedRows = rows.map((r, idx) => [
-    idx + 1,
+    offset + idx + 1,
     ...columns.map((c) => {
       const val = r && c in r ? r[c] : null;
 
@@ -304,31 +318,94 @@ export function printTable(
 
   const hasHeaderLine2 = wrappedHeaders.some((lines) => lines[1].length > 0);
 
-  const formatRow = (cells) => {
+  const formatHeaderRow = (cells) => {
     const formattedCells = cells.map((cell, i) => {
       const s = String(cell);
       const w = widths[i];
-
-      if (isNumericColumn[i]) {
-        return s.padStart(w);
-      }
-
-      return s.padEnd(w);
+      const padded = isNumericColumn[i] ? s.padStart(w) : s.padEnd(w);
+      return pc.cyan(pc.bold(padded));
     });
 
-    return `| ${formattedCells.join(' | ')} |`;
+    const vBar = pc.dim('│');
+    return `${vBar} ${formattedCells.join(` ${vBar} `)} ${vBar}`;
   };
 
-  const border = `+${widths.map((w) => '-'.repeat(w + 2)).join('+')}+`;
+  const colorizeCell = (text, colIdx) => {
+    if (!text) return text;
+    if (colIdx === 0) {
+      return pc.dim(text);
+    }
+    const colName = colIdx > 0 ? (columns[colIdx - 1] || '').toLowerCase() : '';
 
-  console.log(border);
-  console.log(formatRow(wrappedHeaders.map((lines) => lines[0])));
+    if (colName === 'status') {
+      const lower = text.toLowerCase();
+      if (lower === 'passed') return pc.green(text);
+      if (lower === 'failed') return pc.red(text);
+      if (lower === 'flaky' || lower === 'timed out' || lower === 'timed_out')
+        return pc.yellow(text);
+      if (lower === 'skipped') return pc.gray(text);
+      if (lower === 'interrupted') return pc.magenta(text);
+    }
+
+    if (colName.includes('pass_rate') || colName.includes('pass_ratio')) {
+      const num = parseFloat(text);
+      if (!isNaN(num)) {
+        if (num >= 95) return pc.green(text);
+        if (num >= 80) return pc.yellow(text);
+        return pc.red(text);
+      }
+    }
+
+    if (colName === 'failed' || colName.includes('fail')) {
+      const num = parseInt(text, 10);
+      if (num > 0) return pc.red(text);
+      return pc.dim(text);
+    }
+
+    if (colName === 'passed' || colName.includes('pass')) {
+      const num = parseInt(text, 10);
+      if (num > 0) return pc.green(text);
+      return pc.dim(text);
+    }
+
+    if (colName.includes('timed') || colName.includes('flaky') || colName.includes('interrupted')) {
+      const num = parseInt(text, 10);
+      if (num > 0) return pc.yellow(text);
+      return pc.dim(text);
+    }
+
+    if (colName.endsWith('_at') || colName === 'started_at') {
+      return pc.dim(text);
+    }
+
+    return text;
+  };
+
+  const formatDataRow = (cells) => {
+    const formattedCells = cells.map((cell, i) => {
+      const s = String(cell);
+      const w = widths[i];
+      const padded = isNumericColumn[i] ? s.padStart(w) : s.padEnd(w);
+      return colorizeCell(padded, i);
+    });
+
+    const vBar = pc.dim('│');
+    return `${vBar} ${formattedCells.join(` ${vBar} `)} ${vBar}`;
+  };
+
+  const topBorder = pc.dim(`┌${widths.map((w) => '─'.repeat(w + 2)).join('┬')}┐`);
+  const headerSeparator = pc.dim(`├${widths.map((w) => '─'.repeat(w + 2)).join('┼')}┤`);
+  const rowSeparator = pc.dim(`├${widths.map((w) => '─'.repeat(w + 2)).join('┼')}┤`);
+  const bottomBorder = pc.dim(`└${widths.map((w) => '─'.repeat(w + 2)).join('┴')}┘`);
+
+  console.log(topBorder);
+  console.log(formatHeaderRow(wrappedHeaders.map((lines) => lines[0])));
 
   if (hasHeaderLine2) {
-    console.log(formatRow(wrappedHeaders.map((lines) => lines[1])));
+    console.log(formatHeaderRow(wrappedHeaders.map((lines) => lines[1])));
   }
 
-  console.log(border);
+  console.log(headerSeparator);
 
   if (stringRows.length === 0) {
     const totalInnerWidth = widths.reduce((sum, w) => sum + w + 3, 0) - 1;
@@ -337,13 +414,14 @@ export function printTable(
         ? emptyMessage.slice(0, totalInnerWidth - 5) + '...'
         : emptyMessage;
 
-    console.log(`|${padCenter(msg, totalInnerWidth)}|`);
+    const vBar = pc.dim('│');
+    console.log(`${vBar}${padCenter(pc.dim(msg), totalInnerWidth)}${vBar}`);
   } else {
     let isFirst = true;
 
     for (const row of stringRows) {
       if (!isFirst) {
-        console.log(border);
+        console.log(rowSeparator);
       }
 
       isFirst = false;
@@ -352,19 +430,217 @@ export function printTable(
       const hasLine2 = wrappedCells.some((lines) => lines[1].length > 0);
 
       const line1Cells = wrappedCells.map((lines) => lines[0]);
-      console.log(formatRow(line1Cells));
+      console.log(formatDataRow(line1Cells));
 
       if (hasLine2) {
         const line2Cells = wrappedCells.map((lines) => lines[1]);
-        console.log(formatRow(line2Cells));
+        console.log(formatDataRow(line2Cells));
       }
     }
   }
 
-  console.log(border);
+  console.log(bottomBorder);
 
-  const label = rows.length === 1 ? entityName.replace(/s$/, '') : entityName;
-  console.log(`Total ${rows.length} ${label}.`);
+  const total = typeof totalCount === 'number' ? totalCount : rows.length;
+  const label = total === 1 ? entityName.replace(/s$/, '') : entityName;
+
+  if (typeof totalCount === 'number' && totalCount > rows.length) {
+    const endIdx = offset + rows.length;
+    console.log(
+      pc.dim(`Showing ${offset + 1}-${endIdx} of ${totalCount} ${label}.`) +
+        pc.dim(` (Use --all or --limit <N> to show more)`)
+    );
+  } else {
+    console.log(pc.dim(`Total ${total} ${label}.`));
+  }
+}
+
+/**
+ * Handles pagination over large tabular datasets across interactive and non-interactive environments.
+ *
+ * @param {object} table - Object containing columns array and rows array.
+ * @param {string[]} table.columns - Column field names.
+ * @param {Record<string, unknown>[]} table.rows - Full dataset rows.
+ * @param {string} [emptyMessage='No records found.'] - Fallback message.
+ * @param {string} [entityName='records'] - Plural entity name.
+ * @param {object} [options] - Pagination options.
+ * @param {number} [options.pageSize=25] - Default number of records per page.
+ * @param {boolean} [options.all=false] - If true, show all records without paging.
+ * @param {number} [options.limit] - Explicit record limit requested by the user.
+ * @param {boolean} [options.interactive=false] - Whether running in interactive menu mode.
+ * @returns {Promise<void>}
+ */
+export async function printPaginatedTable(
+  { columns, rows },
+  emptyMessage = 'No records found.',
+  entityName = 'records',
+  options = {}
+) {
+  if (!rows || rows.length === 0) {
+    printTable({ columns, rows: [] }, emptyMessage, entityName);
+    return;
+  }
+
+  const { pageSize = 25, all = false, limit, interactive = false } = options;
+
+  if (all || (limit !== undefined && limit >= rows.length)) {
+    printTable({ columns, rows }, emptyMessage, entityName);
+    return;
+  }
+
+  if (limit !== undefined) {
+    const limitedRows = rows.slice(0, limit);
+    printTable({ columns, rows: limitedRows }, emptyMessage, entityName, {
+      totalCount: rows.length,
+    });
+    return;
+  }
+
+  // If total rows fit within a single page, print immediately
+  if (rows.length <= pageSize) {
+    printTable({ columns, rows }, emptyMessage, entityName);
+    return;
+  }
+
+  // In non-interactive/CI mode: print first page with footer note
+  if (!interactive && !(process.stdin.isTTY && process.stdout.isTTY)) {
+    const firstPage = rows.slice(0, pageSize);
+    printTable({ columns, rows: firstPage }, emptyMessage, entityName, {
+      totalCount: rows.length,
+    });
+    return;
+  }
+
+  // Interactive pagination loop
+  let currentOffset = 0;
+
+  while (currentOffset < rows.length) {
+    const currentRows = rows.slice(currentOffset, currentOffset + pageSize);
+    printTable({ columns, rows: currentRows }, emptyMessage, entityName, {
+      offset: currentOffset,
+      totalCount: rows.length,
+    });
+
+    currentOffset += currentRows.length;
+    const remaining = rows.length - currentOffset;
+
+    if (remaining <= 0) {
+      break;
+    }
+
+    const nextBatchSize = Math.min(pageSize, remaining);
+    const action = await clack.select({
+      message: `Paging: ${remaining} more ${entityName} available. ${pc.dim('(Esc to finish & go back)')}`,
+      options: [
+        {
+          value: 'next',
+          label: `Next ${nextBatchSize}`,
+          hint: `Show items ${currentOffset + 1} to ${currentOffset + nextBatchSize}`,
+        },
+        {
+          value: 'all',
+          label: `Show All Remaining (${remaining})`,
+          hint: `Display all ${rows.length} ${entityName} at once`,
+        },
+        {
+          value: 'export',
+          label: `Export All to CSV`,
+          hint: `Save complete dataset (${rows.length} ${entityName}) to CSV file`,
+        },
+        { value: 'done', label: `← Finish & Back`, hint: `Return to menu` },
+      ],
+    });
+
+    if (clack.isCancel(action) || action === 'done') {
+      break;
+    }
+
+    if (action === 'export') {
+      const defaultFilename = generateExportFilename(entityName.replace(/\s+/g, '-'));
+      exportTableToCsv({ columns, rows }, defaultFilename);
+      break;
+    }
+
+    if (action === 'all') {
+      const remainingRows = rows.slice(currentOffset);
+      printTable({ columns, rows: remainingRows }, emptyMessage, entityName, {
+        offset: currentOffset,
+        totalCount: rows.length,
+      });
+      break;
+    }
+  }
+}
+
+/**
+ * Exports a tabular dataset to an RFC 4180 compliant CSV file on disk.
+ *
+ * @param {object} table - Object containing columns array and rows array.
+ * @param {string[]} table.columns - Column field names.
+ * @param {Record<string, unknown>[]} table.rows - Table rows to export.
+ * @param {string} [defaultFilename='export.csv'] - Auto-generated fallback file name.
+ * @param {string} [targetPath] - User-specified destination file path.
+ * @param {string} [historyDir='zen-report'] - Report/history directory name.
+ * @param {string} [cwd=process.cwd()] - Current working directory.
+ * @returns {string} Absolute path to the generated CSV file.
+ */
+export function exportTableToCsv(
+  { columns, rows },
+  defaultFilename = 'export.csv',
+  targetPath = undefined,
+  historyDir = process.env.PW_REPORTER_OUTPUT || 'zen-report',
+  cwd = process.cwd()
+) {
+  if (!columns || columns.length === 0) {
+    throw new Error('Cannot export table: no columns provided.');
+  }
+
+  const exportColumns = [
+    {
+      header: 'Sr. No.',
+      getValue: (_item, idx) => idx + 1,
+    },
+    ...columns.map((c) => {
+      let header = c;
+      if (header === 'last_seen_at') {
+        header = 'Last Run At';
+      } else if (header.endsWith('_ms')) {
+        header = header.slice(0, -3);
+      } else {
+        header = header.replace('_ms_', '_');
+      }
+
+      const formattedHeader = toProperCase(header);
+
+      return {
+        header: formattedHeader,
+        getValue: (item) => {
+          const val = item && c in item ? item[c] : null;
+          if (val === null || val === undefined) return '';
+          if (c.includes('ms')) return formatDuration(val);
+          if (c.endsWith('_at') || val instanceof Date) return formatDate(val);
+          return val;
+        },
+      };
+    }),
+  ];
+
+  const csvContent = exportToCsvString(rows || [], exportColumns);
+
+  let outPath;
+  if (targetPath) {
+    outPath = resolve(cwd, targetPath);
+  } else {
+    outPath = resolve(cwd, historyDir, defaultFilename);
+  }
+
+  mkdirSync(dirname(outPath), { recursive: true });
+  writeFileSync(outPath, csvContent, 'utf8');
+
+  const relPath = relative(cwd, outPath) || outPath;
+  console.log(pc.green(`✓ Exported ${rows ? rows.length : 0} records to "${relPath}"`));
+
+  return outPath;
 }
 
 /**
