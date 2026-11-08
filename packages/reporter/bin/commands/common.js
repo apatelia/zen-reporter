@@ -1,7 +1,37 @@
-import { existsSync, readdirSync } from 'fs';
+import { existsSync, readdirSync, statSync } from 'fs';
 import { resolve } from 'path';
 
 export { getOsName, getPlaywrightVersion, getZenReporterVersion } from './system.js';
+
+/**
+ * Checks SQLite history database file size and outputs proactive maintenance tips if size exceeds thresholds.
+ *
+ * @param {string} historyDir - Output directory name.
+ * @param {string} [cwd=process.cwd()] - Current working directory.
+ */
+export function checkDatabaseSizeWarning(historyDir, cwd = process.cwd()) {
+  const dbPath = resolve(cwd, historyDir, 'history.db');
+  if (!existsSync(dbPath)) return;
+
+  try {
+    const stats = statSync(dbPath);
+    const sizeBytes = stats.size;
+    const mb = (sizeBytes / (1024 * 1024)).toFixed(1);
+
+    // Warning threshold: >= 250 MB
+    if (sizeBytes >= 250 * 1024 * 1024) {
+      console.warn(
+        `\n\x1b[33m⚠️  Notice: SQLite history database (${historyDir}/history.db) has reached ${mb} MB.\x1b[0m`
+      );
+      console.warn(
+        `\x1b[33m   Consider cleaning old runs to maintain snappy load times and recover disk space:\x1b[0m`
+      );
+      console.warn(`   \x1b[36m${'npx'} zr history clean --keep 50\x1b[0m\n`);
+    }
+  } catch {
+    /* ignore stat errors */
+  }
+}
 
 /**
  * Formats a duration in milliseconds into a concise human-readable string (e.g. "45s", "2m 15s").

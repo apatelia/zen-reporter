@@ -3,6 +3,7 @@ import { createReadStream, existsSync, statSync } from 'fs';
 import { createServer } from 'http';
 import { extname, join, normalize, relative, resolve } from 'path';
 import { SqliteHistoryStore } from '../../dist/reporter.js';
+import { checkDatabaseSizeWarning } from './common.js';
 
 const MIME_TYPES = {
   '.html': 'text/html; charset=utf-8',
@@ -66,6 +67,7 @@ export function handleShow(cwd = process.cwd()) {
   const dbPath = join(reportDir, 'history.db');
   let historyStore = null;
   if (existsSync(dbPath)) {
+    checkDatabaseSizeWarning(outputDir, cwd);
     try {
       historyStore = new SqliteHistoryStore({ dbPath, autoMigrate: false });
     } catch {

@@ -15,7 +15,7 @@ import { convertPlaywrightSteps, sanitizeAnsi, setFsModule } from '@arpanp/zen-c
 import { generateTerminalSummaryTable } from '@arpanp/zen-core';
 import { detectPackageManager } from './dataProcessor';
 import { getGitBranch, getGitCommit } from './gitUtils';
-import { generateHtmlReport, getShowReportCommand } from './htmlReportGenerator';
+import { generateHtmlReport } from './htmlReportGenerator';
 import { ProgressPrinter, type ProgressMode } from './progressPrinter';
 import { writeRunHistory } from './runHistoryWriter';
 import { buildSuitesFromCases } from '@arpanp/zen-core';
@@ -110,12 +110,46 @@ export function resolveConfig(
         const sqlite = req('node:sqlite');
         if (sqlite && typeof sqlite.DatabaseSync === 'function') {
           const db = new sqlite.DatabaseSync(dbPath, { open: true, readOnly: true });
-          const row = db.prepare('SELECT COUNT(*) as count FROM history_runs').get() as
-            { count: number } | undefined;
-          db.close();
-          if (row && typeof row.count === 'number') {
-            runNumber = row.count + 1;
-            countedFromDb = true;
+          try {
+            const countRow = db.prepare('SELECT COUNT(*) as count FROM history_runs').get() as
+              { count: number } | undefined;
+            const totalCount = countRow && typeof countRow.count === 'number' ? countRow.count : 0;
+
+            let maxNumberFound = 0;
+
+            // Find the maximum existing run number embedded in run_name (e.g., "#135" or "Run 135")
+            // so numbers remain strictly monotonic even after pruning/deleting older runs.
+            // Safely verify if run_name column exists (in case table was created with custom/minimal schema).
+            try {
+              const recentRuns = db
+                .prepare(
+                  'SELECT run_name FROM history_runs WHERE run_name IS NOT NULL ORDER BY started_at DESC LIMIT 100'
+                )
+                .all() as { run_name: string }[];
+
+              for (const item of recentRuns) {
+                if (!item.run_name) continue;
+                const match = item.run_name.match(/#(\d+)\b/);
+                if (match) {
+                  const num = parseInt(match[1], 10);
+                  if (!isNaN(num) && num > maxNumberFound) {
+                    maxNumberFound = num;
+                  }
+                }
+              }
+            } catch {
+              /* ignore missing columns if custom schema */
+            }
+
+            if (maxNumberFound > 0) {
+              runNumber = maxNumberFound + 1;
+              countedFromDb = true;
+            } else if (totalCount > 0) {
+              runNumber = totalCount + 1;
+              countedFromDb = true;
+            }
+          } finally {
+            db.close();
           }
         }
       } catch {
@@ -672,8 +706,13 @@ class ZenReporter implements Reporter {
   }
 }
 
-export { getShowReportCommand };
+export { getShowReportCommand, updateReportHtmlFiles } from './htmlReportGenerator';
 export { SqliteHistoryStore } from './history/SqliteHistoryStore';
+export type {
+  CleanHistoryOptions,
+  CleanHistoryResult,
+  ConflictingRunDetail,
+} from './history/SqliteHistoryStore';
 export { RemoteHistoryStore } from './history/RemoteHistoryStore';
 export { migrateJsonlToSqlite } from './history/migration';
 export type { MigrationOptions, MigrationResult } from './history/migration';

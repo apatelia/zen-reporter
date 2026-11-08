@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import BaseModal from '../BaseModal';
 import type { Attachment } from '@arpanp/zen-core';
 import type { AttemptView } from './AttemptView';
@@ -209,6 +209,7 @@ export function UniversalPreviewModal({
   const [searchTerm, setSearchTerm] = useState('');
   const [copied, setCopied] = useState(false);
   const [zoomLevel, setZoomLevel] = useState(1);
+  const modalContainerRef = useRef<HTMLDivElement>(null);
 
   // Sync initialIndex when modal opens or initialIndex changes
   const [prevSyncProps, setPrevSyncProps] = useState({
@@ -385,26 +386,51 @@ export function UniversalPreviewModal({
     }
   }, [currentIndex, items.length]);
 
-  // Keyboard navigation
+  // Keyboard navigation & shortcuts
   useEffect(() => {
-    if (!isOpen || items.length <= 1) return;
+    if (!isOpen) return;
 
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Do not navigate slides if typing inside input/textarea
+      // Do not navigate slides if typing inside input, textarea, select, or editable elements
+      const target = e.target;
       if (
-        e.target instanceof HTMLInputElement ||
-        e.target instanceof HTMLTextAreaElement ||
-        e.target instanceof HTMLSelectElement
+        target instanceof HTMLElement &&
+        (target.tagName === 'INPUT' ||
+          target.tagName === 'TEXTAREA' ||
+          target.tagName === 'SELECT' ||
+          target.isContentEditable)
       ) {
         return;
       }
 
-      if (e.key === 'ArrowLeft') {
-        e.preventDefault();
-        handlePrev();
-      } else if (e.key === 'ArrowRight') {
-        e.preventDefault();
-        handleNext();
+      if (e.ctrlKey || e.metaKey || e.altKey) {
+        return;
+      }
+
+      const key = e.key.toLowerCase();
+
+      if (e.key === 'ArrowLeft' || key === 'p') {
+        if (items.length > 1) {
+          e.preventDefault();
+          e.stopPropagation();
+          handlePrev();
+        }
+      } else if (e.key === 'ArrowRight' || key === 'n') {
+        if (items.length > 1) {
+          e.preventDefault();
+          e.stopPropagation();
+          handleNext();
+        }
+      } else if (key === 'f') {
+        const searchInput = modalContainerRef.current?.querySelector<HTMLInputElement>(
+          'input[data-search-input="true"]'
+        );
+        if (searchInput) {
+          e.preventDefault();
+          e.stopPropagation();
+          searchInput.focus();
+          searchInput.select();
+        }
       }
     };
 
@@ -485,7 +511,7 @@ export function UniversalPreviewModal({
                   onClick={handlePrev}
                   disabled={currentIndex <= 0}
                   className="rounded-md p-1.5 text-text-body-mid hover:bg-surface-100 hover:text-text-ink dark:text-text-muted dark:hover:bg-surface-200/50 dark:hover:text-text-on-primary disabled:opacity-30 disabled:cursor-not-allowed transition-colors cursor-pointer"
-                  title="Previous artifact (←)"
+                  title="Previous artifact (← or p)"
                 >
                   <svg
                     className="h-4 w-4"
@@ -502,7 +528,7 @@ export function UniversalPreviewModal({
                   onClick={handleNext}
                   disabled={currentIndex >= items.length - 1}
                   className="rounded-md p-1.5 text-text-body-mid hover:bg-surface-100 hover:text-text-ink dark:text-text-muted dark:hover:bg-surface-200/50 dark:hover:text-text-on-primary disabled:opacity-30 disabled:cursor-not-allowed transition-colors cursor-pointer"
-                  title="Next artifact (→)"
+                  title="Next artifact (→ or n)"
                 >
                   <svg
                     className="h-4 w-4"
@@ -544,7 +570,7 @@ export function UniversalPreviewModal({
       }
     >
       {/* Modal Content Body Viewport */}
-      <div className="h-full flex flex-col min-h-0">
+      <div ref={modalContainerRef} className="h-full flex flex-col min-h-0">
         {/* VIEWPORT 1: TEXT LOG VIEWPORT */}
         {activeItem.type === 'text' && (
           <div className="h-full flex flex-col min-h-0 rounded-md bg-surface-100 dark:bg-surface-950 border border-border-default dark:border-border-subtle overflow-hidden">
@@ -568,7 +594,8 @@ export function UniversalPreviewModal({
                   </svg>
                   <input
                     type="text"
-                    placeholder="Search log..."
+                    placeholder="Search log... (f)"
+                    data-search-input="true"
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     className="w-full rounded-md border border-border-default dark:border-border-subtle bg-canvas dark:bg-surface-200/50 pl-8.5 pr-7 py-1 text-xs text-text-ink dark:text-text-on-primary placeholder:text-text-muted focus:border-accent-blue focus:outline-hidden"

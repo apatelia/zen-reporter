@@ -1,7 +1,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import { buildRunId } from '../runHistory.js';
-import { buildSuitesFromCases } from '@arpanp/zen-core';
+import { buildSuitesFromCases, computePassRate } from '@arpanp/zen-core';
 import type { WriteRunHistoryOptions } from '../runHistoryWriter.js';
 import type {
   Attachment,
@@ -22,8 +22,8 @@ import { CREATE_HISTORY_VIEW_SQL, CREATE_INDEXES_SQL, CREATE_TABLES_SQL } from '
 
 interface SqliteStatement {
   run(...params: unknown[]): { changes: number; lastInsertRowid: number | bigint };
-  all(...params: unknown[]): Record<string, unknown>[];
-  get(...params: unknown[]): Record<string, unknown> | undefined;
+  all<T = Record<string, unknown>>(...params: unknown[]): T[];
+  get<T = Record<string, unknown>>(...params: unknown[]): T | undefined;
 }
 
 interface SqliteDatabase {
@@ -63,6 +63,50 @@ export interface SqliteHistoryStoreOptions {
   maxRuns?: number;
   /** Automatically migrate adjacent runs/*.jsonl on initialization. Defaults to true. */
   autoMigrate?: boolean;
+}
+
+export interface ConflictingRunDetail {
+  run_id: string;
+  run_name: string;
+  started_at: string;
+  git_branch: string | null;
+  run_files: number;
+  run_total: number;
+  pass_rate: number | null;
+}
+
+export interface CleanHistoryOptions {
+  /** If true, removes all historical runs and attached files. */
+  all?: boolean;
+  /** Delete the most recent N runs. */
+  recent?: number;
+  /** Keep only the latest N runs, deleting all older runs. */
+  keep?: number;
+  /** Delete specific runs by IDs. */
+  runIds?: string[];
+  /** Delete a specific run by ID. */
+  runId?: string;
+  /** Delete run by run name (if multiple runs share this name, cleanHistory will throw or require runId). */
+  runName?: string;
+  /** If true, returns the runs and attachments that would be cleaned without modifying anything. */
+  dryRun?: boolean;
+  /** Optional output directory to resolve attachment file paths. Defaults to database directory. */
+  outputDir?: string;
+  /** Explicitly control whether to run VACUUM. If omitted, full VACUUM is run only on bulk cleanups (>= 10 runs or all=true). */
+  vacuum?: boolean;
+}
+
+export interface CleanHistoryResult {
+  /** Run IDs that were deleted (or would be deleted in dryRun). */
+  deletedRunIds: string[];
+  /** Number of test case executions deleted. */
+  deletedTestCases: number;
+  /** Number of attachment files deleted from disk. */
+  deletedAttachments: number;
+  /** Whether the operation was a dry run. */
+  dryRun: boolean;
+  /** Whether a full VACUUM was executed. */
+  vacuumed: boolean;
 }
 
 /**
@@ -384,6 +428,222 @@ export class SqliteHistoryStore implements HistoryStore {
     }
   }
 
+  /**
+   * Cleans historical runs from the SQLite database and removes corresponding attachment files from disk.
+   *
+   * @param options - Cleanup criteria (all, recent, keep, runId, dryRun, outputDir).
+   * @returns Cleanup outcome with list of affected run IDs, deleted test case counts, and deleted attachment counts.
+   */
+  async cleanHistory(options: CleanHistoryOptions = {}): Promise<CleanHistoryResult> {
+    await this.init();
+
+    if (!this.db) {
+      throw new Error('Database not initialized');
+    }
+
+    const {
+      all,
+      recent,
+      keep,
+      runId,
+      runIds,
+      runName,
+      dryRun = false,
+      outputDir,
+      vacuum: userVacuum,
+    } = options;
+
+    let targetRuns: { run_id: string }[];
+
+    if (all) {
+      targetRuns = this.db
+        .prepare('SELECT run_id FROM history_runs ORDER BY started_at ASC')
+        .all() as {
+        run_id: string;
+      }[];
+    } else if (Array.isArray(runIds) && runIds.length > 0) {
+      const placeholders = runIds.map(() => '?').join(',');
+      targetRuns = this.db
+        .prepare(
+          `SELECT run_id FROM history_runs WHERE run_id IN (${placeholders}) ORDER BY started_at ASC`
+        )
+        .all(...runIds) as { run_id: string }[];
+    } else if (typeof recent === 'number' && recent > 0) {
+      targetRuns = this.db
+        .prepare('SELECT run_id FROM history_runs ORDER BY started_at DESC LIMIT ?')
+        .all(recent) as { run_id: string }[];
+    } else if (typeof keep === 'number' && keep >= 0) {
+      targetRuns = this.db
+        .prepare(
+          `SELECT run_id FROM history_runs
+           WHERE run_id NOT IN (
+             SELECT run_id FROM history_runs ORDER BY started_at DESC LIMIT ?
+           )
+           ORDER BY started_at ASC`
+        )
+        .all(keep) as { run_id: string }[];
+    } else if (runId) {
+      targetRuns = this.db
+        .prepare('SELECT run_id FROM history_runs WHERE run_id = ?')
+        .all(runId) as { run_id: string }[];
+    } else if (runName) {
+      const rawMatches = this.db
+        .prepare(
+          `SELECT
+             r.run_id,
+             r.run_name,
+             r.started_at,
+             r.git_branch,
+             count(DISTINCT t.file) AS run_files,
+             r.run_total,
+             r.run_passed,
+             r.run_failed,
+             r.run_skipped,
+             r.run_timed_out,
+             r.run_interrupted
+           FROM history_runs r
+           LEFT JOIN history_test_cases t ON r.run_id = t.run_id
+           WHERE r.run_name = ?
+           GROUP BY r.run_id, r.run_name, r.started_at, r.git_branch, r.run_total, r.run_passed, r.run_failed, r.run_skipped, r.run_timed_out, r.run_interrupted
+           ORDER BY r.started_at ASC`
+        )
+        .all<{
+          run_id: string;
+          run_name: string;
+          started_at: string;
+          git_branch: string | null;
+          run_files: number;
+          run_total: number;
+          run_passed: number;
+          run_failed: number;
+          run_skipped: number;
+          run_timed_out: number;
+          run_interrupted: number;
+        }>(runName);
+
+      const matches: ConflictingRunDetail[] = rawMatches.map((m) => ({
+        run_id: m.run_id,
+        run_name: m.run_name,
+        started_at: m.started_at,
+        git_branch: m.git_branch,
+        run_files: m.run_files,
+        run_total: m.run_total,
+        pass_rate:
+          m.run_total > 0
+            ? computePassRate({
+                total: m.run_total,
+                passed: m.run_passed,
+                failed: m.run_failed,
+                skipped: m.run_skipped,
+                timedOut: m.run_timed_out,
+                interrupted: m.run_interrupted,
+              })
+            : 0,
+      }));
+
+      if (matches.length > 1) {
+        const error = new Error(
+          `Multiple runs found matching run name "${runName}". Please specify --run-id instead.`
+        ) as Error & { conflictingRuns?: ConflictingRunDetail[] };
+        error.conflictingRuns = matches;
+        throw error;
+      }
+      targetRuns = matches.map((m) => ({ run_id: m.run_id }));
+    } else {
+      throw new Error(
+        'Invalid cleanHistory options: specify either all=true, recent=<N>, keep=<N>, runId=<id>, runIds=[...], or runName=<name>.'
+      );
+    }
+
+    if (targetRuns.length === 0) {
+      return {
+        deletedRunIds: [],
+        deletedTestCases: 0,
+        deletedAttachments: 0,
+        dryRun,
+        vacuumed: false,
+      };
+    }
+
+    const targetRunIds = targetRuns.map((r) => r.run_id);
+    const placeholders = targetRunIds.map(() => '?').join(',');
+
+    // Count test cases associated with target runs
+    const testCasesCountRow = this.db
+      .prepare(`SELECT count(*) as count FROM history_test_cases WHERE run_id IN (${placeholders})`)
+      .get(...targetRunIds) as { count?: number } | undefined;
+    const deletedTestCases = Number(testCasesCountRow?.count || 0);
+
+    // Retrieve all attachment file paths for deletion
+    const attachmentsToPrune = this.db
+      .prepare(`SELECT file_path FROM history_attachments WHERE run_id IN (${placeholders})`)
+      .all(...targetRunIds) as { file_path: string }[];
+
+    const baseDir = outputDir ? path.resolve(process.cwd(), outputDir) : path.dirname(this.dbPath);
+
+    let deletedAttachments = 0;
+    let didVacuum = false;
+
+    if (!dryRun) {
+      // Execute DB deletion inside a transaction
+      this.db.exec('BEGIN TRANSACTION;');
+      try {
+        this.db
+          .prepare(`DELETE FROM history_runs WHERE run_id IN (${placeholders})`)
+          .run(...targetRunIds);
+        this.db.exec('COMMIT;');
+      } catch (err) {
+        this.db.exec('ROLLBACK;');
+        throw err;
+      }
+
+      // Reclaim deleted space:
+      // Run full VACUUM only if explicitly requested, or for bulk cleanups (>= 10 runs or all=true)
+      const shouldVacuum = userVacuum !== undefined ? userVacuum : all || targetRunIds.length >= 10;
+      if (shouldVacuum) {
+        try {
+          this.db.exec('VACUUM;');
+          didVacuum = true;
+        } catch {
+          /* ignore vacuum error if locked */
+        }
+      }
+
+      // Clean up physical attachment files
+      for (const item of attachmentsToPrune) {
+        if (!item.file_path) continue;
+        const cleanPath = item.file_path.replace(/^\.[/\\]/, '');
+        const fullPath = path.resolve(baseDir, cleanPath);
+        if (fs.existsSync(fullPath)) {
+          try {
+            fs.unlinkSync(fullPath);
+            deletedAttachments++;
+          } catch {
+            /* ignore deletion errors */
+          }
+        }
+      }
+    } else {
+      // In dry run, count existing files that would be removed
+      for (const item of attachmentsToPrune) {
+        if (!item.file_path) continue;
+        const cleanPath = item.file_path.replace(/^\.[/\\]/, '');
+        const fullPath = path.resolve(baseDir, cleanPath);
+        if (fs.existsSync(fullPath)) {
+          deletedAttachments++;
+        }
+      }
+    }
+
+    return {
+      deletedRunIds: targetRunIds,
+      deletedTestCases,
+      deletedAttachments,
+      dryRun,
+      vacuumed: didVacuum,
+    };
+  }
+
   private pruneRuns(limit: number, outputDir?: string): void {
     if (!this.db) return;
 
@@ -433,6 +693,85 @@ export class SqliteHistoryStore implements HistoryStore {
   }
 
   /**
+   * Directly repacks the database using VACUUM to reclaim disk space from the freelist.
+   */
+  async vacuum(): Promise<void> {
+    await this.init();
+
+    if (!this.db) {
+      throw new Error('Database not initialized');
+    }
+
+    this.db.exec('VACUUM;');
+  }
+
+  /**
+   * Retrieves all historical runs ordered by started_at DESC.
+   *
+   * @param limit - Optional maximum number of runs to return.
+   * @returns List of run summary records.
+   */
+  async listRuns(limit?: number): Promise<ConflictingRunDetail[]> {
+    await this.init();
+
+    if (!this.db) {
+      throw new Error('Database not initialized');
+    }
+
+    const sql = `
+      SELECT
+        r.run_id,
+        r.run_name,
+        r.started_at,
+        r.git_branch,
+        (SELECT count(DISTINCT file) FROM history_test_cases WHERE run_id = r.run_id) AS run_files,
+        r.run_total,
+        r.run_passed,
+        r.run_failed,
+        r.run_skipped,
+        r.run_timed_out,
+        r.run_interrupted
+      FROM history_runs r
+      ORDER BY r.started_at DESC
+      ${typeof limit === 'number' && limit > 0 ? `LIMIT ${limit}` : ''}
+    `;
+
+    const rawRuns = this.db.prepare(sql).all<{
+      run_id: string;
+      run_name: string;
+      started_at: string;
+      git_branch: string | null;
+      run_files: number;
+      run_total: number;
+      run_passed: number;
+      run_failed: number;
+      run_skipped: number;
+      run_timed_out: number;
+      run_interrupted: number;
+    }>();
+
+    return rawRuns.map((r) => ({
+      run_id: r.run_id,
+      run_name: r.run_name,
+      started_at: r.started_at,
+      git_branch: r.git_branch,
+      run_files: r.run_files,
+      run_total: r.run_total,
+      pass_rate:
+        r.run_total > 0
+          ? computePassRate({
+              total: r.run_total,
+              passed: r.run_passed,
+              failed: r.run_failed,
+              skipped: r.run_skipped,
+              timedOut: r.run_timed_out,
+              interrupted: r.run_interrupted,
+            })
+          : 0,
+    }));
+  }
+
+  /**
    * Generates aggregated historical data from the SQLite database.
    *
    * @param windowSize - Maximum number of recent runs to return in the trend window.
@@ -448,20 +787,22 @@ export class SqliteHistoryStore implements HistoryStore {
     const runsStmt = this.db.prepare(`
       SELECT * FROM (
         SELECT
-          run_id, run_name, started_at, run_duration_ms,
-          run_sequential_duration_ms, run_workers, run_total,
-          run_passed, run_failed, run_skipped, run_timed_out, run_interrupted,
-          round(100.0 * run_passed / nullif(run_total, 0), 1) AS pass_rate,
-          step_assertions, step_actions, step_network, step_hooks, step_waits, step_others,
-          git_branch, git_commit, git_commit_full
-        FROM history_runs
-        ORDER BY started_at DESC
+          r.run_id, r.run_name, r.started_at, r.run_duration_ms,
+          r.run_sequential_duration_ms, r.run_workers,
+          (SELECT count(DISTINCT file) FROM history_test_cases WHERE run_id = r.run_id) AS run_files,
+          r.run_total, r.run_passed, r.run_failed, r.run_skipped, r.run_timed_out, r.run_interrupted,
+          round(100.0 * r.run_passed / nullif(r.run_total, 0), 1) AS pass_rate,
+          r.step_assertions, r.step_actions, r.step_network, r.step_hooks, r.step_waits, r.step_others,
+          r.git_branch, r.git_commit, r.git_commit_full
+        FROM history_runs r
+        ORDER BY r.started_at DESC
         LIMIT ?
       )
       ORDER BY started_at ASC
     `);
 
     const rawRuns = runsStmt.all(windowSize) as unknown as (Record<string, unknown> & {
+      run_files: number;
       step_assertions: number;
       step_actions: number;
       step_network: number;
@@ -488,6 +829,7 @@ export class SqliteHistoryStore implements HistoryStore {
         run_sequential_duration_ms:
           r.run_sequential_duration_ms !== null ? Number(r.run_sequential_duration_ms) : null,
         run_workers: r.run_workers !== null ? Number(r.run_workers) : undefined,
+        run_files: Number(r.run_files || 0),
         run_total: Number(r.run_total),
         run_passed: Number(r.run_passed),
         run_failed: Number(r.run_failed),
@@ -512,36 +854,201 @@ export class SqliteHistoryStore implements HistoryStore {
     });
 
     const flakyStmt = this.db.prepare(`
+      WITH recent_runs AS (
+        SELECT run_id, started_at
+        FROM history_runs
+        ORDER BY started_at DESC
+        LIMIT ?
+      )
       SELECT
-        suite, file, title, project,
-        count(CASE WHEN status IN ('failed', 'timedOut') THEN 1 END) AS failed_runs,
-        count(CASE WHEN status = 'passed' THEN 1 END) AS passed_runs,
-        sum(passed_on_retry) AS recovered_by_retry,
-        count(*) AS total_runs
-      FROM history_test_cases
-      GROUP BY suite, file, title, project
+        t.suite, t.file, t.title, t.project,
+        count(CASE WHEN t.status IN ('failed', 'timedOut') THEN 1 END) AS failed_runs,
+        count(CASE WHEN t.status = 'passed' THEN 1 END) AS passed_runs,
+        sum(t.passed_on_retry) AS recovered_by_retry,
+        count(*) AS total_runs,
+        max(CASE WHEN t.status IN ('failed', 'timedOut') OR t.passed_on_retry > 0 THEN r.started_at END) AS last_flaky_at,
+        max(r.started_at) AS last_seen_at
+      FROM history_test_cases t
+      JOIN recent_runs r ON t.run_id = r.run_id
+      GROUP BY t.suite, t.file, t.title, t.project
       HAVING failed_runs > 0 AND passed_runs > 0
       ORDER BY failed_runs DESC, passed_runs DESC
       LIMIT 100
     `);
-    const flaky = (flakyStmt.all() as unknown as HistoryFlakyRow[]) || [];
+    const flaky = flakyStmt.all<HistoryFlakyRow>(windowSize) || [];
 
     const slowestStmt = this.db.prepare(`
+      WITH recent_runs AS (
+        SELECT run_id
+        FROM history_runs
+        ORDER BY started_at DESC
+        LIMIT ?
+      )
       SELECT
-        suite, file, title, project,
-        round(avg(duration_ms), 1) AS avg_duration_ms,
-        max(duration_ms) AS max_duration_ms,
+        t.suite, t.file, t.title, t.project,
+        round(avg(t.duration_ms), 1) AS avg_duration_ms,
+        max(t.duration_ms) AS max_duration_ms,
         count(*) AS runs
-      FROM history_test_cases
-      GROUP BY suite, file, title, project
-      ORDER BY avg(duration_ms) DESC
+      FROM history_test_cases t
+      JOIN recent_runs r ON t.run_id = r.run_id
+      GROUP BY t.suite, t.file, t.title, t.project
+      ORDER BY avg(t.duration_ms) DESC
       LIMIT 20
     `);
-    const slowest = (slowestStmt.all() as unknown as HistorySlowRow[]) || [];
+    const slowest = slowestStmt.all<HistorySlowRow>(windowSize) || [];
 
-    const regressions: HistoryRegressionRow[] = [];
-    const files: HistoryFileRow[] = [];
-    const tests: HistoryTestRow[] = [];
+    const regressionsStmt = this.db.prepare(`
+      WITH recent_runs AS (
+        SELECT run_id, run_name, started_at
+        FROM history_runs
+        ORDER BY started_at DESC
+        LIMIT ?
+      ),
+      run_tests AS (
+        SELECT
+          r.run_id,
+          r.run_name,
+          t.suite,
+          t.file,
+          t.title,
+          t.project,
+          r.started_at,
+          CASE
+            WHEN count(CASE WHEN t.status = 'failed' THEN 1 END) > 0 THEN 'failed'
+            WHEN count(CASE WHEN t.status = 'timedOut' THEN 1 END) > 0 THEN 'timedOut'
+            WHEN count(CASE WHEN t.status = 'interrupted' THEN 1 END) > 0 THEN 'interrupted'
+            WHEN count(CASE WHEN t.status = 'skipped' THEN 1 END) > 0 THEN 'skipped'
+            ELSE 'passed'
+          END AS status
+        FROM history_test_cases t
+        JOIN recent_runs r ON t.run_id = r.run_id
+        GROUP BY r.run_id, r.run_name, t.suite, t.file, t.title, t.project, r.started_at
+      ),
+      ordered AS (
+        SELECT
+          run_id, run_name, started_at, suite, file, title, project, status,
+          row_number() OVER (PARTITION BY suite, file, title, project ORDER BY started_at, run_id) AS seq
+        FROM run_tests
+      ),
+      regressions AS (
+        SELECT
+          b.run_name AS regressed_in,
+          b.started_at AS regressed_at,
+          b.suite, b.file, b.title, b.project
+        FROM ordered b
+        JOIN ordered a ON a.suite = b.suite AND a.file = b.file AND a.title = b.title AND a.project = b.project AND b.seq = a.seq + 1
+        WHERE a.status = 'passed' AND b.status IN ('failed', 'timedOut', 'interrupted')
+      ),
+      latest AS (
+        SELECT
+          run_id, run_name, started_at, status, suite, file, title, project,
+          row_number() OVER (PARTITION BY suite, file, title, project ORDER BY started_at DESC, run_id DESC) AS rn
+        FROM run_tests
+      )
+      SELECT
+        r.suite, r.file, r.title, r.project, r.regressed_in, r.regressed_at,
+        l.status AS last_status, l.started_at AS last_run_at
+      FROM (
+        SELECT r.*, row_number() OVER (PARTITION BY suite, file, title, project ORDER BY regressed_at DESC) AS rn
+        FROM regressions r
+      ) r
+      JOIN latest l ON l.suite = r.suite AND l.file = r.file AND l.title = r.title AND l.project = r.project AND l.rn = 1
+      WHERE r.rn = 1
+      ORDER BY l.started_at DESC
+    `);
+    const regressions = regressionsStmt.all<HistoryRegressionRow>(windowSize) || [];
+
+    const filesStmt = this.db.prepare(`
+      WITH recent_runs AS (
+        SELECT run_id, started_at
+        FROM history_runs
+        ORDER BY started_at DESC
+        LIMIT ?
+      )
+      SELECT
+        t.run_id,
+        r.started_at,
+        t.file,
+        count(*) AS total,
+        count(CASE WHEN t.status = 'passed' THEN 1 END) AS passed,
+        count(CASE WHEN t.status = 'failed' THEN 1 END) AS failed,
+        count(CASE WHEN t.status = 'timedOut' THEN 1 END) AS timed_out,
+        count(CASE WHEN t.status = 'interrupted' THEN 1 END) AS interrupted,
+        count(CASE WHEN t.status = 'skipped' THEN 1 END) AS skipped
+      FROM history_test_cases t
+      JOIN recent_runs r ON t.run_id = r.run_id
+      WHERE t.file IS NOT NULL AND t.file != ''
+      GROUP BY t.run_id, r.started_at, t.file
+      ORDER BY r.started_at ASC, t.file ASC
+    `);
+    const files = filesStmt.all<HistoryFileRow>(windowSize) || [];
+
+    const testsStmt = this.db.prepare(`
+      WITH recent_runs AS (
+        SELECT run_id, started_at
+        FROM history_runs
+        ORDER BY started_at DESC
+        LIMIT ?
+      )
+      SELECT
+        t.run_id,
+        r.started_at,
+        t.suite,
+        t.file,
+        t.title,
+        t.project,
+        count(*) AS total,
+        count(CASE WHEN t.status = 'passed' THEN 1 END) AS passed,
+        count(CASE WHEN t.status = 'failed' THEN 1 END) AS failed,
+        count(CASE WHEN t.status = 'timedOut' THEN 1 END) AS timed_out,
+        count(CASE WHEN t.status = 'interrupted' THEN 1 END) AS interrupted,
+        count(CASE WHEN t.status = 'skipped' THEN 1 END) AS skipped,
+        round(avg(t.duration_ms), 1) AS avg_duration_ms
+      FROM history_test_cases t
+      JOIN recent_runs r ON t.run_id = r.run_id
+      WHERE t.title IS NOT NULL AND t.title != ''
+      GROUP BY t.run_id, r.started_at, t.suite, t.file, t.title, t.project
+      ORDER BY r.started_at ASC, t.file ASC, t.title ASC
+    `);
+    const tests = testsStmt.all<HistoryTestRow>(windowSize) || [];
+
+    const projectTrendsStmt = this.db.prepare(`
+      WITH recent_runs AS (
+        SELECT run_id, started_at
+        FROM history_runs
+        ORDER BY started_at DESC
+        LIMIT ?
+      )
+      SELECT
+        t.run_id,
+        r.started_at,
+        t.project,
+        round(sum(t.duration_ms) / 1000.0, 2) AS duration_sec
+      FROM history_test_cases t
+      JOIN recent_runs r ON t.run_id = r.run_id
+      WHERE t.project IS NOT NULL AND t.project != ''
+      GROUP BY t.run_id, r.started_at, t.project
+      ORDER BY r.started_at ASC
+    `);
+    const projectDurationsRows = projectTrendsStmt.all(windowSize) as {
+      run_id: string;
+      project: string;
+      duration_sec: number;
+    }[];
+
+    const projectDurationsByRun: Record<string, Record<string, number>> = {};
+    for (const row of projectDurationsRows) {
+      if (!projectDurationsByRun[row.run_id]) {
+        projectDurationsByRun[row.run_id] = {};
+      }
+      projectDurationsByRun[row.run_id][row.project] = row.duration_sec;
+    }
+
+    for (const run of runs) {
+      if (projectDurationsByRun[run.run_id]) {
+        run.project_durations = projectDurationsByRun[run.run_id];
+      }
+    }
 
     return {
       generated_at: new Date().toISOString(),
@@ -551,6 +1058,7 @@ export class SqliteHistoryStore implements HistoryStore {
       slowest,
       files,
       tests,
+      project_trends: projectDurationsRows.map((r) => ({ project: r.project })),
     };
   }
 

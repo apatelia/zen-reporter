@@ -45,3 +45,24 @@ test.describe('CryptoUtils Performance Optimizations Tests', () => {
     expect(sha256Sync('')).toBe('e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855');
   });
 });
+
+test.describe('Range Selection Parser Tests', () => {
+  test('parses single numbers, lists, ranges and "all"', async () => {
+    const { parseRangeSelection } = await import('../packages/reporter/bin/commands/history.js');
+
+    expect(parseRangeSelection('', 10)).toEqual([]);
+    expect(parseRangeSelection('all', 5)).toEqual([1, 2, 3, 4, 5]);
+    expect(parseRangeSelection('1', 5)).toEqual([1]);
+    expect(parseRangeSelection('1, 3, 5', 10)).toEqual([1, 3, 5]);
+    expect(parseRangeSelection('2-4', 10)).toEqual([2, 3, 4]);
+    expect(parseRangeSelection('2-4, 8, 12-14', 20)).toEqual([2, 3, 4, 8, 12, 13, 14]);
+    // Deduplication and ordering
+    expect(parseRangeSelection('5, 2-4, 3, 5-6', 10)).toEqual([2, 3, 4, 5, 6]);
+    // Out of bounds / invalid inputs return empty
+    expect(parseRangeSelection('0', 10)).toEqual([]);
+    expect(parseRangeSelection('15', 10)).toEqual([]);
+    expect(parseRangeSelection('5-12', 10)).toEqual([]);
+    expect(parseRangeSelection('abc', 10)).toEqual([]);
+    expect(parseRangeSelection('1-2-3', 10)).toEqual([]);
+  });
+});

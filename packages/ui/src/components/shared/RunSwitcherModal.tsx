@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import BaseModal from '@/components/shared/BaseModal';
 import SearchInput from '@/components/shared/SearchInput';
 import { PassRateBadge } from '@/components/shared/PassRateBadge';
@@ -24,6 +24,7 @@ export default function RunSwitcherModal({
   onSelectRun,
 }: RunSwitcherModalProps) {
   const [searchTerm, setSearchTerm] = useState('');
+  const modalContainerRef = useRef<HTMLDivElement>(null);
 
   // Runs in reverse chronological order (newest first), with active run pinned to the very top
   const orderedRuns = useMemo(() => {
@@ -80,6 +81,56 @@ export default function RunSwitcherModal({
   const pagination = usePagination(filteredRuns.length, 5);
   const pagedRuns = filteredRuns.slice(pagination.start, pagination.start + pagination.pageSize);
 
+  // Local keyboard shortcuts inside RunSwitcherModal:
+  // 'f' -> focus search input
+  // 'p' -> previous page
+  // 'n' -> next page
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Do not intercept if typing inside an input/textarea/editable element
+      const target = e.target;
+      if (
+        target instanceof HTMLElement &&
+        (target.tagName === 'INPUT' ||
+          target.tagName === 'TEXTAREA' ||
+          target.tagName === 'SELECT' ||
+          target.isContentEditable)
+      ) {
+        return;
+      }
+
+      if (e.ctrlKey || e.metaKey || e.altKey) {
+        return;
+      }
+
+      const key = e.key.toLowerCase();
+      if (key === 'f') {
+        e.preventDefault();
+        e.stopPropagation();
+        const searchInput = modalContainerRef.current?.querySelector<HTMLInputElement>(
+          'input[data-search-input="true"]'
+        );
+        if (searchInput) {
+          searchInput.focus();
+          searchInput.select();
+        }
+      } else if (key === 'p') {
+        e.preventDefault();
+        e.stopPropagation();
+        pagination.setPage(Math.max(1, pagination.currentPage - 1));
+      } else if (key === 'n') {
+        e.preventDefault();
+        e.stopPropagation();
+        pagination.setPage(Math.min(pagination.totalPages, pagination.currentPage + 1));
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, pagination]);
+
   const handleSelect = (runId: string) => {
     setSearchTerm('');
     pagination.setPage(1);
@@ -102,7 +153,7 @@ export default function RunSwitcherModal({
       subtitle="Select a previous test execution to view its complete dashboard, test suites, failures, and attachments."
       maxWidthClass="max-w-3xl"
     >
-      <div className="space-y-4">
+      <div ref={modalContainerRef} className="space-y-4">
         {/* Search */}
         <div className="flex items-center justify-between gap-3">
           <SearchInput

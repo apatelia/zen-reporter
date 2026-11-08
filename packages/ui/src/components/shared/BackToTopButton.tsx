@@ -56,8 +56,8 @@ export default function BackToTopButton({ threshold = 200, activeTab }: BackToTo
     <button
       type="button"
       onClick={scrollToTop}
-      aria-label="Back to top"
-      title="Back to top"
+      aria-label="Return to top"
+      title="Return to top (r)"
       className="fixed bottom-4 right-6 z-50 flex h-10 w-10 items-center justify-center rounded-full bg-accent-blue text-text-on-primary dark:text-surface-950 border border-accent-blue/30 shadow-xl ring-2 ring-canvas/50 transition-all duration-200 hover:scale-110 hover:bg-accent-blue/90 hover:shadow-2xl active:scale-95 cursor-pointer"
     >
       <svg

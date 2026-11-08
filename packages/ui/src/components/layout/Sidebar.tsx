@@ -7,7 +7,7 @@ const logo = `data:image/svg+xml;utf8,${encodeURIComponent(logoRaw)}`;
 const logoDark = `data:image/svg+xml;utf8,${encodeURIComponent(logoDarkRaw)}`;
 
 export type TabKey =
-  'overview' | 'projects' | 'suites' | 'files' | 'failures' | 'history' | 'trends' | 'insights';
+  'overview' | 'projects' | 'suites' | 'files' | 'failures' | 'history' | 'insights' | 'trends';
 
 const TABS: { key: TabKey; label: string; icon: React.ReactNode }[] = [
   {
@@ -173,6 +173,7 @@ function SidebarItem({
   badge,
   disabledBadge,
   isCollapsed,
+  shortcutKey,
 }: {
   buttonRef?: (el: HTMLButtonElement | null) => void;
   icon: React.ReactNode;
@@ -182,17 +183,22 @@ function SidebarItem({
   badge?: number;
   disabledBadge?: boolean;
   isCollapsed?: boolean;
+  shortcutKey?: string;
 }) {
   return (
     <button
       ref={buttonRef}
       onClick={onClick}
       title={
-        isCollapsed ? (disabledBadge ? `${label} (History recording disabled)` : label) : undefined
+        isCollapsed
+          ? disabledBadge
+            ? `${label} (${shortcutKey}) (History recording disabled)`
+            : `${label} (${shortcutKey})`
+          : undefined
       }
       className={`group relative z-10 flex w-full items-center ${
         isCollapsed ? 'justify-center px-2 py-2.5' : 'gap-3 px-3 py-2.5'
-      } rounded-md text-sm font-semibold transition-colors duration-150 cursor-pointer ${
+      } rounded-md text-sm font-semibold transition-colors duration-150 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-blue/50 ${
         isActive
           ? 'text-accent-blue dark:text-accent-blue font-bold'
           : 'text-text-body-mid hover:bg-surface-100 hover:text-text-ink dark:text-text-body-mid dark:hover:bg-surface-100 dark:hover:text-text-on-primary font-medium'
@@ -208,30 +214,23 @@ function SidebarItem({
         {icon}
       </span>
       {!isCollapsed && <span className="truncate">{label}</span>}
-      {badge !== undefined && badge > 0 && (
-        <span
-          className={
-            isCollapsed
-              ? 'absolute top-1.5 right-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-danger-500 px-1 text-[10px] font-bold text-white dark:text-surface-950 shadow-xs'
-              : 'ml-auto flex h-5 min-w-5 items-center justify-center rounded-full bg-danger-500 px-1.5 text-[11px] font-bold text-white dark:text-surface-950 shadow-xs'
-          }
-        >
-          {badge}
-        </span>
-      )}
-      {disabledBadge && (
-        <span
-          title="History recording disabled"
-          className={
-            isCollapsed
-              ? 'absolute top-1.5 right-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-amber-500 text-white dark:text-surface-950 shadow-xs'
-              : 'ml-auto flex items-center gap-1 rounded-full bg-amber-500/15 px-2 py-0.5 text-[10px] font-semibold text-amber-700 dark:text-amber-300 border border-amber-500/30'
-          }
-        >
-          {isCollapsed ? (
-            '!'
-          ) : (
-            <>
+      {!isCollapsed && (
+        <div className="ml-auto flex items-center gap-1.5 shrink-0">
+          {shortcutKey && (
+            <kbd className="opacity-0 group-hover:opacity-100 transition-opacity hidden sm:inline-flex h-4.5 min-w-4.5 items-center justify-center rounded px-1 text-[11px] font-medium leading-none text-text-muted border border-border-default/60 bg-surface-100/60 dark:bg-surface-200/50">
+              {shortcutKey}
+            </kbd>
+          )}
+          {badge !== undefined && badge > 0 && (
+            <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-danger-500 px-1.5 text-[11px] font-bold text-white dark:text-surface-950 shadow-xs">
+              {badge}
+            </span>
+          )}
+          {disabledBadge && (
+            <span
+              title="History recording disabled"
+              className="flex h-5 w-5 items-center justify-center rounded-full bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/30 shrink-0"
+            >
               <svg
                 className="h-3 w-3 shrink-0"
                 fill="none"
@@ -245,9 +244,21 @@ function SidebarItem({
                   d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z"
                 />
               </svg>
-              <span>Disabled</span>
-            </>
+            </span>
           )}
+        </div>
+      )}
+      {isCollapsed && badge !== undefined && badge > 0 && (
+        <span className="absolute top-1.5 right-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-danger-500 px-1 text-[10px] font-bold text-white dark:text-surface-950 shadow-xs">
+          {badge}
+        </span>
+      )}
+      {isCollapsed && disabledBadge && (
+        <span
+          title="History recording disabled"
+          className="absolute top-1.5 right-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-amber-500 text-white dark:text-surface-950 shadow-xs"
+        >
+          !
         </span>
       )}
     </button>
@@ -264,6 +275,8 @@ interface SidebarProps {
   interruptedCount: number;
   isHistoryDisabled: boolean;
   isMinimalReport?: boolean;
+  onOpenConfigGenerator?: () => void;
+  onOpenHelp?: () => void;
 }
 
 export default function Sidebar({
@@ -276,6 +289,8 @@ export default function Sidebar({
   interruptedCount,
   isHistoryDisabled,
   isMinimalReport,
+  onOpenConfigGenerator,
+  onOpenHelp,
 }: SidebarProps) {
   const navContainerRef = useRef<HTMLElement>(null);
   const tabButtonsRef = useRef<Record<string, HTMLButtonElement | null>>({});
@@ -288,7 +303,7 @@ export default function Sidebar({
   const visibleTabs = isMinimalReport
     ? TABS.filter(
         (t) =>
-          t.key !== 'projects' && t.key !== 'history' && t.key !== 'trends' && t.key !== 'insights'
+          t.key !== 'projects' && t.key !== 'history' && t.key !== 'insights' && t.key !== 'trends'
       )
     : TABS;
 
@@ -389,7 +404,7 @@ export default function Sidebar({
           <span className="absolute left-0 top-1.5 bottom-1.5 w-1 rounded-r-full bg-accent-blue dark:bg-accent-blue" />
         </div>
 
-        {visibleTabs.map((tab) => (
+        {visibleTabs.map((tab, idx) => (
           <SidebarItem
             key={tab.key}
             buttonRef={(el) => {
@@ -399,40 +414,113 @@ export default function Sidebar({
             label={tab.label}
             isActive={activeTab === tab.key}
             onClick={() => setActiveTab(tab.key)}
+            shortcutKey={idx < 9 ? String(idx + 1) : undefined}
             badge={
               tab.key === 'failures' ? failedCount + timedOutCount + interruptedCount : undefined
             }
             disabledBadge={
               isHistoryDisabled &&
-              (tab.key === 'history' || tab.key === 'trends' || tab.key === 'insights')
+              (tab.key === 'history' || tab.key === 'insights' || tab.key === 'trends')
             }
             isCollapsed={isCollapsed}
           />
         ))}
       </nav>
 
-      {/* Sidebar Footer with Collapse/Expand Toggle */}
-      <div className="border-t border-border-default p-2">
+      {/* Sidebar Footer with Config Generator, Shortcuts Help & Collapse/Expand Toggle */}
+      <div className="border-t border-border-default p-2 space-y-1">
+        {onOpenHelp && (
+          <button
+            type="button"
+            onClick={onOpenHelp}
+            className={`flex w-full items-center ${
+              isCollapsed ? 'justify-center p-2' : 'justify-between px-3 py-2'
+            } rounded-md text-xs font-semibold text-text-body-mid hover:bg-surface-100 hover:text-text-ink dark:text-text-muted dark:hover:bg-surface-100 dark:hover:text-text-on-primary transition-colors cursor-pointer group focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-blue/50`}
+            title={isCollapsed ? 'Keyboard Shortcuts (?)' : undefined}
+          >
+            <div className="flex items-center gap-2.5 min-w-0">
+              <svg
+                className="h-4 w-4 shrink-0 text-text-body-mid group-hover:text-accent-blue dark:text-text-muted dark:group-hover:text-accent-blue transition-colors"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={1.75}
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M9.879 7.519c1.171-1.025 3.071-1.025 4.242 0 1.172 1.025 1.172 2.687 0 3.712-.203.179-.43.326-.67.442-.745.361-1.45.999-1.451 1.827v.75M12 18h.01"
+                />
+              </svg>
+              {!isCollapsed && <span className="truncate">Shortcuts</span>}
+            </div>
+            {!isCollapsed && (
+              <kbd className="opacity-0 group-hover:opacity-100 transition-opacity hidden sm:inline-flex h-4.5 min-w-4.5 items-center justify-center rounded px-1 text-[11px] font-medium leading-none text-text-muted border border-border-default/60 bg-surface-100/60 dark:bg-surface-200/50">
+                ?
+              </kbd>
+            )}
+          </button>
+        )}
+        {onOpenConfigGenerator && (
+          <button
+            type="button"
+            onClick={onOpenConfigGenerator}
+            className={`flex w-full items-center ${
+              isCollapsed ? 'justify-center p-2' : 'justify-between px-3 py-2'
+            } rounded-md text-xs font-semibold text-text-body-mid hover:bg-surface-100 hover:text-text-ink dark:text-text-muted dark:hover:bg-surface-100 dark:hover:text-text-on-primary transition-colors cursor-pointer group focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-blue/50`}
+            title={isCollapsed ? 'Playwright Config Generator (c)' : undefined}
+          >
+            <div className="flex items-center gap-2.5 min-w-0">
+              <svg
+                className="h-4 w-4 shrink-0 text-text-body-mid group-hover:text-accent-blue dark:text-text-muted dark:group-hover:text-accent-blue transition-colors"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={1.75}
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.332.184.735.2 1.08.047l1.196-.532a1.125 1.125 0 011.396.346l1.296 2.245a1.125 1.125 0 01-.286 1.411l-1.02.825a1.125 1.125 0 00-.41 1.047c.074.394.074.8 0 1.194a1.125 1.125 0 00.41 1.047l1.02.825c.394.318.52.85.286 1.411l-1.296 2.245a1.125 1.125 0 01-1.396.346l-1.196-.532a1.125 1.125 0 00-1.08.047c-.332.184-.582.496-.645.87l-.213 1.281c-.09.542-.56.94-1.11.94h-2.594c-.55 0-1.02-.398-1.11-.94l-.213-1.281a1.125 1.125 0 00-.645-.87 1.125 1.125 0 00-1.08-.047l-1.196.532a1.125 1.125 0 01-1.396-.346l-1.296-2.245a1.125 1.125 0 01.286-1.411l1.02-.825a1.125 1.125 0 00.41-1.047 7.15 7.15 0 010-1.194 1.125 1.125 0 00-.41-1.047l-1.02-.825a1.125 1.125 0 01-.286-1.411l1.296-2.245a1.125 1.125 0 011.396-.346l1.196.532c.345.153.748.137 1.08-.047.332-.184.582-.496.645-.87l.213-1.281z"
+                />
+                <circle cx="12" cy="12" r="3" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+              {!isCollapsed && <span className="truncate">Config Generator</span>}
+            </div>
+            {!isCollapsed && (
+              <kbd className="opacity-0 group-hover:opacity-100 transition-opacity hidden sm:inline-flex h-4.5 min-w-4.5 items-center justify-center rounded px-1 text-[11px] font-medium leading-none text-text-muted border border-border-default/60 bg-surface-100/60 dark:bg-surface-200/50">
+                c
+              </kbd>
+            )}
+          </button>
+        )}
         <button
           type="button"
           onClick={() => setIsCollapsed(!isCollapsed)}
           className={`flex w-full items-center ${
             isCollapsed ? 'justify-center p-2' : 'justify-between px-3 py-2'
-          } rounded-md text-xs font-semibold text-text-body-mid hover:bg-surface-100 hover:text-text-ink dark:text-text-muted dark:hover:bg-surface-100 dark:hover:text-text-on-primary transition-colors cursor-pointer`}
-          title={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+          } rounded-md text-xs font-semibold text-text-body-mid hover:bg-surface-100 hover:text-text-ink dark:text-text-muted dark:hover:bg-surface-100 dark:hover:text-text-on-primary transition-colors cursor-pointer group focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-blue/50`}
+          title={isCollapsed ? 'Expand sidebar (\\)' : 'Collapse sidebar (\\)'}
         >
-          {!isCollapsed && <span className="truncate">Collapse</span>}
-          <svg
-            className={`h-4 w-4 shrink-0 transition-transform duration-200 ${
-              isCollapsed ? '' : 'rotate-180'
-            }`}
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-            strokeWidth={1.75}
-          >
-            <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
-          </svg>
+          <div className="flex items-center gap-2.5 min-w-0">
+            <svg
+              className={`h-4 w-4 shrink-0 transition-transform duration-200 ${
+                isCollapsed ? '' : 'rotate-180'
+              }`}
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={1.75}
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+            </svg>
+            {!isCollapsed && <span className="truncate">Collapse</span>}
+          </div>
+          {!isCollapsed && (
+            <kbd className="opacity-0 group-hover:opacity-100 transition-opacity hidden sm:inline-flex h-4.5 min-w-4.5 items-center justify-center rounded px-1 text-[11px] font-medium leading-none text-text-muted border border-border-default/60 bg-surface-100/60 dark:bg-surface-200/50">
+              \
+            </kbd>
+          )}
         </button>
       </div>
     </aside>

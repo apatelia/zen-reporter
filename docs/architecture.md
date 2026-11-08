@@ -32,6 +32,7 @@ zen-reporter/
 │   │   ├── RegressionsTableSection.tsx   # Paginated regressions table with date filtering & CSV export
 │   │   └── SlowestTestsTableSection.tsx  # Paginated slowest tests table with CSV export
 │   ├── layout/                # Layout & navigation components
+│   │   ├── ConfigGeneratorModal.tsx # Interactive Playwright configuration generator modal
 │   │   ├── Sidebar.tsx        # Navigation sidebar layout component
 │   │   └── ThemeControls.tsx  # Theme selector & dark mode toggle controls
 │   ├── pagination/            # Centralized pagination components & hooks
@@ -64,8 +65,11 @@ zen-reporter/
 │   │   ├── InfoTooltip.tsx    # Tooltip component
 │   │   ├── LearnMoreButton.tsx
 │   │   ├── MultiSelectFilter.tsx
+│   │   ├── OfflineHistoryNotice.tsx # Server-mode recommendation banner for standalone offline viewing
 │   │   ├── PassRateBadge.tsx  # Color-coded pass rate badge
+│   │   ├── RunSwitcherModal.tsx # Interactive modal to browse and switch between historical runs
 │   │   ├── SearchInput.tsx    # Shared real-time text search filter input component
+│   │   ├── ShortcutsModal.tsx # Keyboard shortcuts cheat-sheet modal dialog
 │   │   ├── StatCard.tsx
 │   │   ├── StatusCountBadge.tsx # Test status badge
 │   │   ├── TagCloudModal.tsx  # Searchable tag cloud & multi-select modal dialog

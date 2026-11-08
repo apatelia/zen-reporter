@@ -38,7 +38,7 @@ const ANSI_STYLE_MAP: Record<number, string> = {
 };
 
 const JS_TOKENS_REGEX =
-  /(\/\/[^\n]*)|('(?:\\[\s\S]|[^'\\])*'|"(?:\\[\s\S]|[^"\\])*"|`(?:\\[\s\S]|[^`\\])*`)|(\b(?:await|async|test|expect|const|let|var|function|return|import|from|if|else|try|catch|finally|for|while|do|switch|case|break|continue|default|new|typeof|instanceof)\b)|(\b(?:true|false|null|undefined|\d+)\b)|(\.\w+)/g;
+  /(\/\/[^\n]*)|('(?:\\[\s\S]|[^'\\])*'|"(?:\\[\s\S]|[^"\\])*"|`(?:\\[\s\S]|[^`\\])*`)|(\b[a-zA-Z_$][a-zA-Z0-9_$]*\b(?=[ \t]*:))|(\b(?:await|async|test|expect|const|let|var|function|return|import|export|default|from|require|defineConfig|if|else|try|catch|finally|for|while|do|switch|case|break|continue|new|typeof|instanceof)\b)|(\b(?:true|false|null|undefined|\d+)\b)|(\bprocess\.env\.[A-Z0-9_]+\b)|(\.\w+)/g;
 
 const JSON_LINE_REGEX =
   /("(?:\\.|[^"\\])*"(?=\s*:))|("(?:\\.|[^"\\])*")|(\b(?:true|false|null|-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?)\b)|([{}[\]:,])/g;
@@ -177,18 +177,26 @@ export function highlightJsTokens(code: string): string {
     result += escapeHTML(code.slice(lastIndex, match.index));
     lastIndex = JS_TOKENS_REGEX.lastIndex;
 
-    const [fullMatch, comment, str, keyword, numBool, method] = match;
+    const [fullMatch, comment, str, objKey, keyword, numBool, envVar, method] = match;
 
     if (comment) {
       result += `<span class="text-slate-500 dark:text-slate-400 italic">${escapeHTML(comment)}</span>`;
     } else if (str) {
-      result += `<span class="text-emerald-700 dark:text-emerald-300 font-medium">${escapeHTML(str)}</span>`;
+      result += `<span class="text-emerald-700 dark:text-emerald-300">${escapeHTML(str)}</span>`;
+    } else if (objKey) {
+      result += `<span class="text-sky-700 dark:text-sky-300">${escapeHTML(objKey)}</span>`;
     } else if (keyword) {
-      result += `<span class="text-purple-700 dark:text-purple-400 font-semibold">${escapeHTML(keyword)}</span>`;
+      if (keyword === 'defineConfig') {
+        result += `<span class="text-sky-700 dark:text-sky-300 font-medium">${escapeHTML(keyword)}</span>`;
+      } else {
+        result += `<span class="text-purple-700 dark:text-purple-400 font-medium">${escapeHTML(keyword)}</span>`;
+      }
     } else if (numBool) {
       result += `<span class="text-amber-700 dark:text-amber-300 font-mono">${escapeHTML(numBool)}</span>`;
+    } else if (envVar) {
+      result += `<span class="text-purple-700 dark:text-purple-400 font-medium font-mono">${escapeHTML(envVar)}</span>`;
     } else if (method) {
-      result += `<span class="text-sky-700 dark:text-sky-300 font-medium">${escapeHTML(method)}</span>`;
+      result += `<span class="text-sky-700 dark:text-sky-300">${escapeHTML(method)}</span>`;
     } else {
       result += escapeHTML(fullMatch);
     }

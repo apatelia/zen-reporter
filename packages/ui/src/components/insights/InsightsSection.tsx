@@ -9,6 +9,7 @@ import FlakyTestsTableSection from './FlakyTestsTableSection';
 import RegressionsTableSection from './RegressionsTableSection';
 import SlowestTestsTableSection from './SlowestTestsTableSection';
 import HistoryDisabledBanner from '@/components/shared/HistoryDisabledBanner';
+import OfflineHistoryNotice from '@/components/shared/OfflineHistoryNotice';
 
 export interface InsightsSectionProps {
   history: HistoryData | null;
@@ -49,35 +50,10 @@ export default function InsightsSection({
       </div>
 
       {!history ? (
-        <div className="flex items-center justify-center py-16 text-center rounded-md border border-border-default bg-surface-50 p-6">
-          <div>
-            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-md bg-surface-100 border border-border-default">
-              <svg
-                className="h-8 w-8 text-text-ink dark:text-text-on-primary"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                strokeWidth={1.75}
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z"
-                />
-              </svg>
-            </div>
-            <h3 className="text-base font-bold text-text-ink dark:text-text-on-primary">
-              No history data
-            </h3>
-            <p className="mt-1.5 text-sm text-text-body-mid dark:text-text-muted">
-              Run{' '}
-              <code className="rounded bg-surface-200 px-1.5 py-0.5 text-xs font-mono font-semibold text-text-ink dark:text-text-on-primary border border-border-default">
-                npx zr history report
-              </code>{' '}
-              after your test runs to populate flaky test history, regressions, and slowest tests.
-            </p>
-          </div>
-        </div>
+        <OfflineHistoryNotice
+          title="Flaky, regression, and slowest test analytics require server mode"
+          description="You are currently viewing a standalone offline report. Deep cross-run insights, historical regressions, and flakiness calculations are computed from the project database."
+        />
       ) : (
         <>
           {/* 2. Flaky Tests Section */}

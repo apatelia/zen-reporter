@@ -47,6 +47,7 @@ export default function SearchInput({
       </span>
       <input
         type="text"
+        data-search-input="true"
         placeholder={placeholder}
         value={value}
         disabled={disabled}

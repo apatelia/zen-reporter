@@ -5,10 +5,14 @@ import FilesSection from '@/components/files/FilesSection';
 import HistorySection from '@/components/history/HistorySection';
 import Sidebar, { type TabKey } from '@/components/layout/Sidebar';
 import ThemeControls from '@/components/layout/ThemeControls';
+import { ConfigGeneratorModal } from '@/components/layout/ConfigGeneratorModal';
+import { ShortcutsModal } from '@/components/shared/ShortcutsModal';
 import BackToTopButton from '@/components/shared/BackToTopButton';
 import RunSwitcherModal from '@/components/shared/RunSwitcherModal';
 import Toast, { type ToastNotification } from '@/components/shared/Toast';
 import SuitesSection from '@/components/suites/SuitesSection';
+import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts';
+import { copyToClipboard } from '@/utils/clipboard';
 import { formatDateRange, formatDuration } from '@arpanp/zen-core';
 import type { HistoryData } from '@arpanp/zen-core';
 import type { ReportData, TestSuite } from '@arpanp/zen-core';
@@ -47,8 +51,11 @@ export default function App() {
   const [historyData, setHistoryData] = useState<HistoryData | null>(null);
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isRunSwitcherOpen, setIsRunSwitcherOpen] = useState(false);
+  const [isConfigGeneratorOpen, setIsConfigGeneratorOpen] = useState(false);
+  const [isShortcutsModalOpen, setIsShortcutsModalOpen] = useState(false);
   const [toastNotification, setToastNotification] = useState<ToastNotification | null>(null);
   const [loadError, setLoadError] = useState<{ runId: string; message: string } | null>(null);
+  const flashTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const initialReportData = useMemo(() => {
     if (typeof document === 'undefined') return null;
@@ -108,6 +115,7 @@ export default function App() {
   });
 
   const [commitCopied, setCommitCopied] = useState(false);
+  const [branchCopied, setBranchCopied] = useState(false);
 
   const applyThemeAndDarkMode = (data: ReportData) => {
     const testRun = data?.testRun;
@@ -402,19 +410,26 @@ export default function App() {
 
           if (text) {
             try {
-              setHistoryData(JSON.parse(text));
-
-              return;
+              setHistoryData(JSON.parse(text) as HistoryData);
             } catch {
               /* fall through to fetch */
             }
           }
         }
 
+        // If running over HTTP (server mode), fetch the full history dataset (up to 50 runs or DB query)
+        // so the user gets complete historical depth seamlessly
         if (typeof window !== 'undefined' && window.location.protocol !== 'file:') {
-          const resp = await fetch('./history.json');
-
-          if (resp.ok) setHistoryData(await resp.json());
+          try {
+            const resp = await fetch('./history.json');
+            if (resp.ok) {
+              const fullHistory = (await resp.json()) as HistoryData;
+              setHistoryData(fullHistory);
+              return;
+            }
+          } catch {
+            /* keep inline history if fetch fails */
+          }
         }
       };
 
@@ -480,6 +495,288 @@ export default function App() {
     return activeTabState;
   }, [isMinimalReport, activeTabState]);
 
+  const availableTabs: TabKey[] = useMemo(() => {
+    if (isMinimalReport) {
+      return ['overview', 'suites', 'files', 'failures'];
+    }
+    return ['overview', 'projects', 'suites', 'files', 'failures', 'history', 'insights', 'trends'];
+  }, [isMinimalReport]);
+
+  const handleSelectTabByIndex = useCallback(
+    (index: number) => {
+      if (index >= 0 && index < availableTabs.length) {
+        setActiveTabState(availableTabs[index]);
+      }
+    },
+    [availableTabs]
+  );
+
+  const handleNextTab = useCallback(() => {
+    const currentIndex = availableTabs.indexOf(activeTab);
+    if (currentIndex >= 0) {
+      const nextIndex = (currentIndex + 1) % availableTabs.length;
+      setActiveTabState(availableTabs[nextIndex]);
+    }
+  }, [availableTabs, activeTab]);
+
+  const handlePrevTab = useCallback(() => {
+    const currentIndex = availableTabs.indexOf(activeTab);
+    if (currentIndex >= 0) {
+      const prevIndex = (currentIndex - 1 + availableTabs.length) % availableTabs.length;
+      setActiveTabState(availableTabs[prevIndex]);
+    }
+  }, [availableTabs, activeTab]);
+
+  const handleToggleDarkMode = useCallback(() => {
+    setDarkMode((prev) => {
+      const nextMode = prev === 'system' ? 'light' : prev === 'light' ? 'dark' : 'system';
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('zen-dark-mode', nextMode);
+      }
+      return nextMode;
+    });
+  }, []);
+
+  const handleCopyCommit = useCallback(() => {
+    const commitToCopy = summary?.gitCommitFull || summary?.gitCommit;
+    if (!commitToCopy) return;
+
+    copyToClipboard(commitToCopy).then((success) => {
+      if (success) {
+        setCommitCopied(true);
+        setTimeout(() => setCommitCopied(false), 2000);
+      }
+    });
+  }, [summary?.gitCommitFull, summary?.gitCommit]);
+
+  const handleCopyBranch = useCallback(() => {
+    const branchToCopy = summary?.gitBranch;
+    if (!branchToCopy) return;
+
+    copyToClipboard(branchToCopy).then((success) => {
+      if (success) {
+        setBranchCopied(true);
+        setTimeout(() => setBranchCopied(false), 2000);
+      }
+    });
+  }, [summary?.gitBranch]);
+
+  const handleOpenWebsite = useCallback(() => {
+    if (typeof window !== 'undefined') {
+      window.open('https://zen-reporter.vercel.app', '_blank', 'noopener,noreferrer');
+    }
+  }, []);
+
+  const handleFocusSearch = useCallback(() => {
+    const container = contentContainerRef.current;
+    if (!container) return;
+
+    const inputs = Array.from(
+      container.querySelectorAll<HTMLInputElement>('input[data-search-input="true"]')
+    ).filter((el) => {
+      // Must be visible and enabled
+      const rect = el.getBoundingClientRect();
+      return rect.width > 0 && rect.height > 0 && !el.disabled;
+    });
+
+    if (inputs.length === 0) return;
+
+    if (inputs.length === 1) {
+      inputs[0].focus();
+      inputs[0].select();
+      return;
+    }
+
+    // Viewport-aware search: find the search input that is closest to or within the viewport
+    const viewportMiddle = window.innerHeight / 2;
+
+    let targetInput = inputs[0];
+    let minDistance = Infinity;
+
+    for (const input of inputs) {
+      const rect = input.getBoundingClientRect();
+      // Distance from center of input to center of viewport
+      const inputCenter = (rect.top + rect.bottom) / 2;
+      const distance = Math.abs(inputCenter - viewportMiddle);
+
+      if (distance < minDistance) {
+        minDistance = distance;
+        targetInput = input;
+      }
+    }
+
+    targetInput.focus();
+    targetInput.select();
+  }, []);
+
+  const handleScrollToTop = useCallback(() => {
+    if (contentContainerRef.current) {
+      contentContainerRef.current.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+    if (typeof window !== 'undefined') {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  }, []);
+
+  const handlePaginationStep = useCallback((direction: 'prev' | 'next') => {
+    const container = contentContainerRef.current;
+    if (!container) return;
+
+    const footers = Array.from(
+      container.querySelectorAll<HTMLElement>('[data-pagination-footer="true"]')
+    ).filter((el) => {
+      const rect = el.getBoundingClientRect();
+      return rect.width > 0 && rect.height > 0;
+    });
+
+    if (footers.length === 0) return;
+
+    let targetFooter = footers[0];
+
+    if (footers.length > 1) {
+      // Viewport-aware selection: find the pagination footer closest to viewport vertical center
+      const viewportMiddle = window.innerHeight / 2;
+      let minDistance = Infinity;
+
+      for (const footer of footers) {
+        const rect = footer.getBoundingClientRect();
+        const footerCenter = (rect.top + rect.bottom) / 2;
+        const distance = Math.abs(footerCenter - viewportMiddle);
+        if (distance < minDistance) {
+          minDistance = distance;
+          targetFooter = footer;
+        }
+      }
+    }
+
+    const buttonSelector =
+      direction === 'prev' ? '[data-pagination-prev="true"]' : '[data-pagination-next="true"]';
+    const btn = targetFooter.querySelector<HTMLButtonElement>(buttonSelector);
+    if (!btn || btn.disabled) return;
+
+    // Scroll past the pagination footer / table end so that the bottom border and padding are clearly visible
+    const tableSection =
+      targetFooter.closest('section') ||
+      targetFooter.parentElement?.querySelector('table') ||
+      targetFooter.previousElementSibling ||
+      targetFooter;
+
+    const sectionRect = tableSection.getBoundingClientRect();
+    const bottomPadding = 32; // ensure comfortable breathing room below bottom border
+    const isSectionEndVisible =
+      sectionRect.bottom + bottomPadding <=
+        (window.innerHeight || document.documentElement.clientHeight) && sectionRect.bottom >= 0;
+
+    if (!isSectionEndVisible) {
+      if (contentContainerRef.current) {
+        // Calculate the scroll position inside the scrollable container
+        const containerRect = contentContainerRef.current.getBoundingClientRect();
+        const targetScrollTop =
+          contentContainerRef.current.scrollTop +
+          (sectionRect.bottom - containerRect.bottom) +
+          bottomPadding;
+        contentContainerRef.current.scrollTo({
+          top: targetScrollTop,
+          behavior: 'smooth',
+        });
+      } else {
+        targetFooter.scrollIntoView({ behavior: 'smooth', block: 'end' });
+      }
+    }
+
+    // Trigger subtle body flash animation on the table
+    const tableEl =
+      targetFooter.closest('section')?.querySelector('table') ||
+      targetFooter.parentElement?.querySelector('table');
+    if (tableEl) {
+      if (flashTimeoutRef.current) {
+        clearTimeout(flashTimeoutRef.current);
+      }
+      tableEl.classList.remove('animate-page-flash');
+      // trigger reflow to restart css animation
+      void tableEl.offsetWidth;
+      tableEl.classList.add('animate-page-flash');
+      flashTimeoutRef.current = setTimeout(() => {
+        tableEl.classList.remove('animate-page-flash');
+      }, 400);
+    }
+
+    btn.click();
+  }, []);
+
+  // Listen to mouse/manual page change events from PaginationFooter to trigger the subtle table body flash animation
+  useEffect(() => {
+    const handleCustomPageChange = () => {
+      // Find the table that was likely affected and apply flash animation
+      const activeElement = document.activeElement;
+      const targetFooter =
+        activeElement?.closest('[data-pagination-footer="true"]') ||
+        document.querySelector('[data-pagination-footer="true"]');
+      const tableEl =
+        targetFooter?.closest('section')?.querySelector('table') ||
+        targetFooter?.parentElement?.querySelector('table') ||
+        document.querySelector('table');
+
+      if (tableEl) {
+        if (flashTimeoutRef.current) {
+          clearTimeout(flashTimeoutRef.current);
+        }
+        tableEl.classList.remove('animate-page-flash');
+        void tableEl.offsetWidth;
+        tableEl.classList.add('animate-page-flash');
+        flashTimeoutRef.current = setTimeout(() => {
+          tableEl.classList.remove('animate-page-flash');
+        }, 400);
+      }
+    };
+
+    window.addEventListener('zen:page-change', handleCustomPageChange);
+    return () => {
+      window.removeEventListener('zen:page-change', handleCustomPageChange);
+      if (flashTimeoutRef.current) {
+        clearTimeout(flashTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  const handleCycleTheme = useCallback(() => {
+    const themes: ThemeMode[] = ['sage', 'lotus', 'oasis'];
+    setTheme((prev) => {
+      const currentIndex = themes.indexOf(prev);
+      const nextTheme = themes[(currentIndex + 1) % themes.length];
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('zen-theme', nextTheme);
+      }
+      return nextTheme;
+    });
+  }, []);
+
+  const isAnyModalOpen = isRunSwitcherOpen || isConfigGeneratorOpen || isShortcutsModalOpen;
+
+  useKeyboardShortcuts({
+    onToggleSidebar: () => setIsCollapsed((prev) => !prev),
+    onSelectTabByIndex: handleSelectTabByIndex,
+    onNextTab: handleNextTab,
+    onPrevTab: handlePrevTab,
+    onToggleDarkMode: handleToggleDarkMode,
+    onCycleTheme: handleCycleTheme,
+    onOpenRunSwitcher: () => {
+      if (historyData && historyData.runs && historyData.runs.length > 0) {
+        setIsRunSwitcherOpen(true);
+      }
+    },
+    onOpenConfigGenerator: () => setIsConfigGeneratorOpen(true),
+    onOpenHelp: () => setIsShortcutsModalOpen(true),
+    onCopyCommit: handleCopyCommit,
+    onCopyBranch: handleCopyBranch,
+    onOpenWebsite: handleOpenWebsite,
+    onFocusSearch: handleFocusSearch,
+    onScrollToTop: handleScrollToTop,
+    onPrevPage: () => handlePaginationStep('prev'),
+    onNextPage: () => handlePaginationStep('next'),
+    isModalOpen: isAnyModalOpen,
+  });
+
   useEffect(() => {
     if (contentContainerRef.current) {
       contentContainerRef.current.scrollTop = 0;
@@ -504,6 +801,8 @@ export default function App() {
           interruptedCount={interruptedCount}
           isHistoryDisabled={isHistoryDisabled}
           isMinimalReport={isMinimalReport}
+          onOpenConfigGenerator={() => setIsConfigGeneratorOpen(true)}
+          onOpenHelp={() => setIsShortcutsModalOpen(true)}
         />
       )}
 
@@ -565,61 +864,61 @@ export default function App() {
                         <span className="text-text-muted/60 font-medium">·</span>
                         <div className="flex items-center gap-1.5">
                           {summary.gitBranch && (
-                            <span
-                              className="inline-flex items-center gap-1 rounded-full bg-surface-100 dark:bg-surface-200 border border-border-default px-2 py-0.5 text-[11px] font-semibold text-text-ink dark:text-text-on-primary shadow-2xs max-w-44 truncate"
-                              title={`Branch: ${summary.gitBranch}`}
+                            <button
+                              type="button"
+                              onClick={handleCopyBranch}
+                              className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-semibold leading-normal transition-all cursor-pointer shadow-2xs max-w-44 truncate ${
+                                branchCopied
+                                  ? 'border-success-500 bg-success-500/15 text-success-700 dark:text-success-400 dark:border-success-500/40'
+                                  : 'border-border-default bg-surface-100 dark:bg-surface-200 text-text-ink dark:text-text-on-primary hover:border-accent-blue hover:text-accent-blue dark:hover:border-accent-blue dark:hover:text-accent-blue'
+                              }`}
+                              title={
+                                branchCopied
+                                  ? 'Copied branch name!'
+                                  : `Click to copy branch (${summary.gitBranch}) (b)`
+                              }
                             >
-                              <svg
-                                className="h-3 w-3 text-accent-blue shrink-0"
-                                fill="none"
-                                viewBox="0 0 24 24"
-                                stroke="currentColor"
-                                strokeWidth={2}
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                              >
-                                <line x1="6" y1="3" x2="6" y2="15" />
-                                <circle cx="18" cy="6" r="3" />
-                                <circle cx="6" cy="18" r="3" />
-                                <path d="M18 9a9 9 0 0 1-9 9" />
-                              </svg>
-                              <span className="truncate">{summary.gitBranch}</span>
-                            </span>
+                              {branchCopied ? (
+                                <>
+                                  <svg
+                                    className="h-3 w-3 text-success-600 dark:text-success-400 shrink-0"
+                                    fill="none"
+                                    viewBox="0 0 24 24"
+                                    stroke="currentColor"
+                                    strokeWidth={2.5}
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                  >
+                                    <polyline points="20 6 9 17 4 12" />
+                                  </svg>
+                                  <span>Copied!</span>
+                                </>
+                              ) : (
+                                <>
+                                  <svg
+                                    className="h-3 w-3 text-accent-blue shrink-0"
+                                    fill="none"
+                                    viewBox="0 0 24 24"
+                                    stroke="currentColor"
+                                    strokeWidth={2}
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                  >
+                                    <line x1="6" y1="3" x2="6" y2="15" />
+                                    <circle cx="18" cy="6" r="3" />
+                                    <circle cx="6" cy="18" r="3" />
+                                    <path d="M18 9a9 9 0 0 1-9 9" />
+                                  </svg>
+                                  <span className="truncate">{summary.gitBranch}</span>
+                                </>
+                              )}
+                            </button>
                           )}
                           {summary.gitCommit && (
                             <button
                               type="button"
-                              onClick={() => {
-                                const commitToCopy = summary.gitCommitFull || summary.gitCommit;
-                                if (commitToCopy && navigator.clipboard?.writeText) {
-                                  navigator.clipboard
-                                    .writeText(commitToCopy)
-                                    .then(() => {
-                                      setCommitCopied(true);
-                                      setTimeout(() => setCommitCopied(false), 2000);
-                                    })
-                                    .catch(() => {
-                                      // Fallback to execCommand for restricted browser environments
-                                      try {
-                                        const ta = document.createElement('textarea');
-                                        ta.value = commitToCopy;
-                                        ta.style.position = 'fixed';
-                                        ta.style.opacity = '0';
-                                        document.body.appendChild(ta);
-                                        ta.focus();
-                                        ta.select();
-                                        if (document.execCommand('copy')) {
-                                          setCommitCopied(true);
-                                          setTimeout(() => setCommitCopied(false), 2000);
-                                        }
-                                        document.body.removeChild(ta);
-                                      } catch {
-                                        /* ignore fallback failure */
-                                      }
-                                    });
-                                }
-                              }}
-                              className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-mono font-semibold transition-all cursor-pointer shadow-2xs ${
+                              onClick={handleCopyCommit}
+                              className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-mono font-semibold leading-normal transition-all cursor-pointer shadow-2xs ${
                                 commitCopied
                                   ? 'border-success-500 bg-success-500/15 text-success-700 dark:text-success-400 dark:border-success-500/40'
                                   : 'border-border-default bg-surface-100 dark:bg-surface-200 text-text-ink dark:text-text-on-primary hover:border-accent-blue hover:text-accent-blue dark:hover:border-accent-blue dark:hover:text-accent-blue'
@@ -627,7 +926,7 @@ export default function App() {
                               title={
                                 commitCopied
                                   ? 'Copied full commit SHA!'
-                                  : `Click to copy commit SHA (${summary.gitCommitFull || summary.gitCommit})`
+                                  : `Click to copy commit SHA (${summary.gitCommitFull || summary.gitCommit}) (g)`
                               }
                             >
                               {commitCopied ? (
@@ -706,8 +1005,8 @@ export default function App() {
                 <button
                   type="button"
                   onClick={() => setIsRunSwitcherOpen(true)}
-                  className="inline-flex items-center gap-1.5 h-8 px-2.5 text-xs font-semibold rounded-md border border-border-default bg-surface-100 hover:bg-surface-200 text-text-ink dark:text-text-on-primary shadow-2xs hover:border-accent-blue transition-colors cursor-pointer"
-                  title="Switch test run"
+                  className="inline-flex items-center gap-1.5 h-8 px-2.5 text-xs font-semibold rounded-md border border-border-default bg-surface-100 hover:bg-surface-200 text-text-ink dark:text-text-on-primary shadow-2xs hover:border-accent-blue transition-colors cursor-pointer group"
+                  title="Switch test run (/)"
                 >
                   <svg
                     className="h-3.5 w-3.5 text-text-muted"
@@ -723,6 +1022,9 @@ export default function App() {
                     />
                   </svg>
                   <span>Switch Run</span>
+                  <kbd className="opacity-0 group-hover:opacity-100 transition-opacity hidden sm:inline-flex h-4.5 min-w-4.5 items-center justify-center rounded px-1 text-[11px] font-medium leading-none text-text-muted border border-border-default/60 bg-surface-50 dark:bg-surface-200/50">
+                    /
+                  </kbd>
                 </button>
               </>
             )}
@@ -971,6 +1273,24 @@ export default function App() {
           }}
         />
       )}
+
+      <ConfigGeneratorModal
+        isOpen={isConfigGeneratorOpen}
+        onClose={() => setIsConfigGeneratorOpen(false)}
+        activeConfig={{
+          projectName,
+          testRunName,
+          theme: normalizeTheme(reportData?.testRun?.theme) ?? undefined,
+          darkMode: reportData?.testRun?.darkMode,
+          minimalReport: reportData?.testRun?.minimalReport,
+          enableHistory: reportData?.testRun?.enableHistory,
+        }}
+      />
+
+      <ShortcutsModal
+        isOpen={isShortcutsModalOpen}
+        onClose={() => setIsShortcutsModalOpen(false)}
+      />
     </div>
   );
 }

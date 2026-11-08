@@ -172,6 +172,7 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': resolve(__dirname, './src'),
+      '@arpanp/zen-reporter': resolve(__dirname, '../reporter/src/lib/reporter.ts'),
     },
   },
   build: {

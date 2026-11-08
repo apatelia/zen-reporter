@@ -157,8 +157,7 @@ Public health status check. Does not require authentication.
 
 Ingests a completed test execution run, test cases, and attachment records.
 
-> [!NOTE]
-> Test case IDs are structured as `${runId}::${project || 'default'}::${file}::${title}`. Attachments include the `project` identifier alongside `file` and `title` to uniquely link to multi-browser/multi-project Playwright runs without collision.
+> **Note**: Test case IDs are structured as `${runId}::${project || 'default'}::${file}::${title}`. Attachments include the `project` identifier alongside `file` and `title` to uniquely link to multi-browser/multi-project Playwright runs without collision.
 
 **Headers**:
 

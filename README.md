@@ -40,6 +40,8 @@ Dark mode:
   - **Slowest Tests Analysis**: Rank top slowest test cases by average execution duration across runs.
   - **P95 Duration & Latency**: Analyze 95th percentile completion thresholds per project profile.
 - **Core Platform Capabilities**:
+  - **Interactive Configuration Generator**: Built-in visual Playwright configuration generator accessible right from the sidebar footer. Easily adjust reporter options, explore history modes (Local SQLite vs Remote SaaS), preview syntax-highlighted TypeScript/JavaScript configuration diffs in real-time with modified property indicators, and copy directly to `playwright.config.ts` or `playwright.config.js`.
+  - **Keyboard Navigation & Hotkeys**: Full single-key shortcuts for rapid dashboard navigation (`1-8` for tabs, `[`/`]` for cycling, `/` for run switcher, `f` for search focus, `p`/`n` for table & attachment pagination, `d` for dark mode, `t` for themes, `r` for back-to-top, and `?` for the interactive cheat-sheet).
   - **Themes & Dark Mode**: Multiple design themes (`Sage`, `Lotus`, `Oasis`) with light, dark, and auto system mode toggles (following OS preferences), built with WCAG-compliant color tokens and configurable default states.
   - **Self-Contained Report Bundle Output**: Generates an interactive HTML dashboard (`index.html`) backed by per-run JSONL execution history (`runs/`) and test attachments (`attachments/`) for easy CI/CD artifact storage. Optionally creates a lightweight standalone `summary.html` dedicated to executive dashboards.
 
@@ -99,6 +101,8 @@ export default defineConfig({
 });
 ```
 
+> **Tip**: You can also configure all of these settings interactively within the report UI! Click **Config Generator** at the bottom of the dashboard sidebar to open the visual configuration generator, adjust settings, and copy the generated snippet directly into your config file.
+
 ### Options Reference
 
 | Option              | Type                                       | Default                     | Description                                                                                                                                                                                   |
@@ -153,7 +157,16 @@ Launch the built-in report server to open the interactive dashboard in your brow
 npx zr show
 ```
 
-### 3. CLI Commands Reference (`zr`)
+### 3. Using the Interactive Configuration Generator
+
+Zen Reporter comes with an interactive Playwright Configuration Generator built right into the report dashboard:
+
+- **Launch from Sidebar**: Click the **Config Generator** button located at the bottom of the left navigation sidebar.
+- **Inspect & Tune Settings**: Modify report options (project names, run title format patterns, initial theme, dark mode state, standalone summaries, console tickers, and local SQLite vs remote SaaS history modes).
+- **Track Modified Settings**: Changed settings from the currently active report configuration are highlighted with subtle indicator dots, and changed configuration lines in the preview panel are color-accented.
+- **Copy Ready-to-Use Snippets**: Toggle between `playwright.config.ts` and `playwright.config.js` and click **Copy** to drop the new configuration straight into your codebase.
+
+### 4. CLI Commands Reference (`zr`)
 
 Zen Reporter includes a built-in CLI executable (`npx zr`) for serving reports, checking system environment, and querying historical test execution data:
 
@@ -177,5 +190,7 @@ Zen Reporter includes a built-in CLI executable (`npx zr`) for serving reports, 
 | `npx zr history regressions`      | List tests that passed in a previous run but failed in the latest run.                             |
 | `npx zr history slow [--limit N]` | Rank the top `N` slowest tests by average execution duration across runs (default: 10).            |
 | `npx zr history trend`            | Display historical pass rate percentages per run over time.                                        |
-| `npx zr history report`           | Build `history.json` and inject it into `index.html` to populate the History & Trends tabs.        |
+| `npx zr history report`           | Build `history.json` for server and local history inspection.                                      |
+| `npx zr history clean [options]`  | Clean SQLite runs and remove orphaned attachments (`--all`, `--recent <N>`, `--keep <N>`, etc.).   |
+| `npx zr history vacuum`           | Directly repack `history.db` using VACUUM to reclaim disk space from the freelist.                 |
 | `npx zr history query "<SQL>"`    | Run arbitrary DuckDB SQL queries over recorded test runs.                                          |

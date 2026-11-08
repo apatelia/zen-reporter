@@ -296,4 +296,266 @@ test.describe('SqliteHistoryStore Tests', () => {
 
     await store.close();
   });
+
+  test('cleans history runs and attachments with cleanHistory', async ({}, testInfo) => {
+    const tempDir = testInfo.outputPath('clean-test');
+    fs.mkdirSync(tempDir, { recursive: true });
+    const dbPath = path.join(tempDir, 'history.db');
+    const store = new SqliteHistoryStore({ dbPath });
+    await store.init();
+
+    // Create attachments on disk
+    const attDir = path.join(tempDir, 'attachments');
+    fs.mkdirSync(attDir, { recursive: true });
+    const attPath1 = path.join(attDir, 'file1.txt');
+    const attPath2 = path.join(attDir, 'file2.txt');
+    const attPath3 = path.join(attDir, 'file3.txt');
+    fs.writeFileSync(attPath1, 'Attachment 1');
+    fs.writeFileSync(attPath2, 'Attachment 2');
+    fs.writeFileSync(attPath3, 'Attachment 3');
+
+    // Create 3 runs
+    const run1Id = await store.saveRun({
+      startTime: '2026-11-01T10:00:00.000Z',
+      testRunName: 'Run 1',
+      projectName: 'Suite',
+      outputDir: tempDir,
+      summary: createSummary({ startTime: '2026-11-01T10:00:00.000Z' }),
+      endedAt: '2026-11-01T10:01:00.000Z',
+      testCases: [
+        createTestCase({
+          attachments: [
+            { name: 'att1', path: './attachments/file1.txt', contentType: 'text/plain' },
+          ],
+        }),
+      ],
+    });
+
+    const run2Id = await store.saveRun({
+      startTime: '2026-11-02T10:00:00.000Z',
+      testRunName: 'Run 2',
+      projectName: 'Suite',
+      outputDir: tempDir,
+      summary: createSummary({ startTime: '2026-11-02T10:00:00.000Z' }),
+      endedAt: '2026-11-02T10:01:00.000Z',
+      testCases: [
+        createTestCase({
+          attachments: [
+            { name: 'att2', path: './attachments/file2.txt', contentType: 'text/plain' },
+          ],
+        }),
+      ],
+    });
+
+    const run3Id = await store.saveRun({
+      startTime: '2026-11-03T10:00:00.000Z',
+      testRunName: 'Run 3',
+      projectName: 'Suite',
+      outputDir: tempDir,
+      summary: createSummary({ startTime: '2026-11-03T10:00:00.000Z' }),
+      endedAt: '2026-11-03T10:01:00.000Z',
+      testCases: [
+        createTestCase({
+          attachments: [
+            { name: 'att3', path: './attachments/file3.txt', contentType: 'text/plain' },
+          ],
+        }),
+      ],
+    });
+
+    // Test Dry Run
+    const dryRunResult = await store.cleanHistory({
+      recent: 1,
+      dryRun: true,
+      outputDir: tempDir,
+    });
+    expect(dryRunResult.dryRun).toBe(true);
+    expect(dryRunResult.deletedRunIds).toEqual([run3Id]);
+    expect(dryRunResult.deletedAttachments).toBe(1);
+    expect(fs.existsSync(attPath3)).toBe(true);
+
+    // Test Deleting Most Recent 1 Run (non-bulk: vacuumed should be false by default)
+    const recentResult = await store.cleanHistory({
+      recent: 1,
+      dryRun: false,
+      outputDir: tempDir,
+    });
+    expect(recentResult.deletedRunIds).toEqual([run3Id]);
+    expect(recentResult.deletedAttachments).toBe(1);
+    expect(recentResult.vacuumed).toBe(false);
+    expect(fs.existsSync(attPath3)).toBe(false);
+
+    // Verify run 3 is gone, 1 and 2 still remain
+    expect(await store.getRunReport(run3Id)).toBeNull();
+    expect(await store.getRunReport(run2Id)).not.toBeNull();
+    expect(await store.getRunReport(run1Id)).not.toBeNull();
+
+    // Test Deleting Specific Run by ID (run2Id)
+    const runIdResult = await store.cleanHistory({
+      runId: run2Id,
+      dryRun: false,
+      outputDir: tempDir,
+    });
+    expect(runIdResult.deletedRunIds).toEqual([run2Id]);
+    expect(runIdResult.deletedAttachments).toBe(1);
+    expect(fs.existsSync(attPath2)).toBe(false);
+    expect(await store.getRunReport(run2Id)).toBeNull();
+
+    // Test Deleting by runName when unique
+    const runNameResult = await store.cleanHistory({
+      runName: 'Run 1',
+      dryRun: false,
+      outputDir: tempDir,
+    });
+    expect(runNameResult.deletedRunIds).toEqual([run1Id]);
+    expect(runNameResult.deletedAttachments).toBe(1);
+    expect(fs.existsSync(attPath1)).toBe(false);
+    expect(await store.getRunReport(run1Id)).toBeNull();
+
+    // Test Ambiguous runName detection
+    await store.saveRun({
+      startTime: '2026-11-04T10:00:00.000Z',
+      testRunName: 'Duplicate Name Run',
+      projectName: 'Suite',
+      outputDir: tempDir,
+      summary: createSummary({ startTime: '2026-11-04T10:00:00.000Z' }),
+      endedAt: '2026-11-04T10:01:00.000Z',
+      testCases: [createTestCase()],
+    });
+    await store.saveRun({
+      startTime: '2026-11-05T10:00:00.000Z',
+      testRunName: 'Duplicate Name Run',
+      projectName: 'Suite',
+      outputDir: tempDir,
+      summary: createSummary({ startTime: '2026-11-05T10:00:00.000Z' }),
+      endedAt: '2026-11-05T10:01:00.000Z',
+      testCases: [createTestCase()],
+    });
+
+    let duplicateError: (Error & { conflictingRuns?: unknown[] }) | null = null;
+    try {
+      await store.cleanHistory({ runName: 'Duplicate Name Run' });
+    } catch (e) {
+      duplicateError = e as Error & { conflictingRuns?: unknown[] };
+    }
+    expect(duplicateError).not.toBeNull();
+    expect(duplicateError?.message).toContain('Multiple runs found');
+    expect(duplicateError?.conflictingRuns).toHaveLength(2);
+
+    // Test listRuns
+    const runsList = await store.listRuns(10);
+    expect(runsList).toHaveLength(2);
+
+    // Test Deleting Multiple Runs by IDs (runIds)
+    const runIdsResult = await store.cleanHistory({
+      runIds: [runsList[0].run_id],
+      dryRun: false,
+      outputDir: tempDir,
+    });
+    expect(runIdsResult.deletedRunIds).toHaveLength(1);
+
+    // Test Deleting All Remaining Runs (bulk: all=true triggers vacuum)
+    const allResult = await store.cleanHistory({
+      all: true,
+      dryRun: false,
+      outputDir: tempDir,
+    });
+    expect(allResult.deletedRunIds).toHaveLength(1);
+    expect(allResult.vacuumed).toBe(true);
+
+    // Test explicit vacuum method
+    await store.vacuum();
+
+    // Calling clean on empty database returns 0 affected
+    const emptyResult = await store.cleanHistory({ all: true });
+    expect(emptyResult.deletedRunIds).toEqual([]);
+    expect(emptyResult.deletedTestCases).toBe(0);
+    expect(emptyResult.vacuumed).toBe(false);
+
+    await store.close();
+  });
+
+  test('computes last_flaky_at and last_seen_at correctly for flaky tests in getHistoryData', async ({}, testInfo) => {
+    const dbPath = getDbPath(testInfo);
+    const store = new SqliteHistoryStore({ dbPath });
+    await store.init();
+
+    // Run 1: test passes
+    await store.saveRun({
+      startTime: '2026-11-01T10:00:00.000Z',
+      testRunName: 'Run #1',
+      projectName: 'Zen Core',
+      outputDir: path.dirname(dbPath),
+      summary: createSummary({
+        startTime: '2026-11-01T10:00:00.000Z',
+        endTime: '2026-11-01T10:01:00.000Z',
+      }),
+      endedAt: '2026-11-01T10:01:00.000Z',
+      testCases: [
+        createTestCase({
+          fileName: 'flaky.spec.ts',
+          parent: 'Flaky Suite',
+          title: 'flaky test',
+          project: 'chromium',
+          status: 'passed',
+        }),
+      ],
+    });
+
+    // Run 2: test fails (flaky occurrence)
+    await store.saveRun({
+      startTime: '2026-11-02T10:00:00.000Z',
+      testRunName: 'Run #2',
+      projectName: 'Zen Core',
+      outputDir: path.dirname(dbPath),
+      summary: createSummary({
+        startTime: '2026-11-02T10:00:00.000Z',
+        endTime: '2026-11-02T10:01:00.000Z',
+      }),
+      endedAt: '2026-11-02T10:01:00.000Z',
+      testCases: [
+        createTestCase({
+          fileName: 'flaky.spec.ts',
+          parent: 'Flaky Suite',
+          title: 'flaky test',
+          project: 'chromium',
+          status: 'failed',
+        }),
+      ],
+    });
+
+    // Run 3: test passes again
+    await store.saveRun({
+      startTime: '2026-11-03T10:00:00.000Z',
+      testRunName: 'Run #3',
+      projectName: 'Zen Core',
+      outputDir: path.dirname(dbPath),
+      summary: createSummary({
+        startTime: '2026-11-03T10:00:00.000Z',
+        endTime: '2026-11-03T10:01:00.000Z',
+      }),
+      endedAt: '2026-11-03T10:01:00.000Z',
+      testCases: [
+        createTestCase({
+          fileName: 'flaky.spec.ts',
+          parent: 'Flaky Suite',
+          title: 'flaky test',
+          project: 'chromium',
+          status: 'passed',
+        }),
+      ],
+    });
+
+    const history = await store.getHistoryData();
+    expect(history.flaky).toHaveLength(1);
+    const flakyRow = history.flaky[0];
+    expect(flakyRow.title).toBe('flaky test');
+    expect(flakyRow.failed_runs).toBe(1);
+    expect(flakyRow.passed_runs).toBe(2);
+    expect(flakyRow.total_runs).toBe(3);
+    expect(flakyRow.last_flaky_at).toBe('2026-11-02T10:00:00.000Z');
+    expect(flakyRow.last_seen_at).toBe('2026-11-03T10:00:00.000Z');
+
+    await store.close();
+  });
 });

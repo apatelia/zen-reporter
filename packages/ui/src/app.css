@@ -689,7 +689,8 @@ pre::-webkit-scrollbar-thumb:hover {
 
 /* Code / pre styling for error stacks */
 pre,
-code {
+code,
+kbd {
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 }
 
@@ -747,6 +748,40 @@ input[type='range'].onion-opacity-slider::-webkit-slider-thumb {
   vertical-align: middle !important;
 }
 
+/* Syntax Highlighting Tokens (Light & Dark Mode) */
+.text-purple-600,
+.text-purple-700 {
+  color: #7e22ce;
+}
+.dark .text-purple-300,
+.dark .text-purple-400 {
+  color: #c084fc;
+}
+.text-sky-600,
+.text-sky-700 {
+  color: #0284c7;
+}
+.dark .text-sky-300,
+.dark .text-sky-400 {
+  color: #38bdf8;
+}
+.text-emerald-600,
+.text-emerald-700 {
+  color: #047857;
+}
+.dark .text-emerald-300,
+.dark .text-emerald-400 {
+  color: #34d399;
+}
+.text-amber-600,
+.text-amber-700 {
+  color: #b45309;
+}
+.dark .text-amber-300,
+.dark .text-amber-400 {
+  color: #fbbf24;
+}
+
 /* 3D Elevation & Ambient Highlight Enhancements for Dark Mode Cards */
 .dark .shadow-xs,
 html.dark .shadow-xs {
@@ -774,4 +809,20 @@ html.dark .shadow-lg {
   box-shadow:
     0 8px 20px rgba(0, 0, 0, 0.55),
     inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+/* Page navigation flash animation */
+@keyframes paginationFlash {
+  0% {
+    opacity: 0.45;
+    background-color: var(--color-surface-200);
+  }
+  100% {
+    opacity: 1;
+    background-color: transparent;
+  }
+}
+
+.animate-page-flash {
+  animation: paginationFlash 350ms cubic-bezier(0.16, 1, 0.3, 1);
 }

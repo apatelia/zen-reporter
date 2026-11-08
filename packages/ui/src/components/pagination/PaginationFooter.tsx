@@ -1,4 +1,16 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+
+export interface PageChangeEventDetail {
+  page: number;
+  totalPages: number;
+  label: string;
+}
+
+declare global {
+  interface WindowEventMap {
+    'zen:page-change': CustomEvent<PageChangeEventDetail>;
+  }
+}
 
 export interface PaginationFooterProps {
   label: string;
@@ -38,6 +50,16 @@ export function PaginationFooter({
 }: PaginationFooterProps) {
   const [prevPage, setPrevPage] = useState(currentPage);
   const [inputVal, setInputVal] = useState(() => String(currentPage));
+  const [showPill, setShowPill] = useState(false);
+  const pillTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (pillTimeoutRef.current) {
+        clearTimeout(pillTimeoutRef.current);
+      }
+    };
+  }, []);
 
   if (prevPage !== currentPage) {
     setPrevPage(currentPage);
@@ -51,12 +73,37 @@ export function PaginationFooter({
     if (!isNaN(parsed)) {
       const validPage = Math.max(1, Math.min(totalPages, parsed));
       if (validPage !== currentPage) {
-        onPageChange(validPage);
+        handlePageTransition(validPage);
       }
       setInputVal(String(validPage));
     } else {
       setInputVal(String(currentPage));
     }
+  };
+
+  const handlePageTransition = (newPage: number) => {
+    // Show localized floating pill in center of this pagination footer
+    setShowPill(true);
+    if (pillTimeoutRef.current) {
+      clearTimeout(pillTimeoutRef.current);
+    }
+    pillTimeoutRef.current = setTimeout(() => {
+      setShowPill(false);
+    }, 1200);
+
+    // Dispatch page notification event for subtle table animation
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(
+        new CustomEvent('zen:page-change', {
+          detail: {
+            page: newPage,
+            totalPages,
+            label,
+          },
+        })
+      );
+    }
+    onPageChange(newPage);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -73,7 +120,30 @@ export function PaginationFooter({
     'rounded-md border border-border-default bg-surface-100 px-3 py-1 text-xs font-bold text-text-ink dark:bg-surface-200 dark:text-text-on-primary hover:bg-surface-200 dark:hover:bg-surface-100 focus:outline-none focus:ring-2 focus:ring-success-500 disabled:cursor-not-allowed disabled:opacity-40 cursor-pointer transition-colors';
 
   return (
-    <div className={className}>
+    <div
+      className={`relative ${className}`}
+      data-pagination-footer="true"
+      data-current-page={currentPage}
+      data-total-pages={totalPages}
+      data-item-label={label}
+    >
+      {/* Floating pill overlay in the center of the pagination footer */}
+      {showPill && (
+        <div
+          role="status"
+          aria-live="polite"
+          className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-20 flex items-center gap-2 rounded-full border border-border-default bg-surface-100/95 dark:bg-surface-200/95 backdrop-blur-md px-3.5 py-1 text-xs font-semibold text-text-ink dark:text-text-on-primary shadow-md transition-all animate-in fade-in zoom-in-95 duration-150"
+        >
+          <span className="inline-block h-2 w-2 rounded-full bg-accent-blue animate-pulse" />
+          <span>
+            Page {currentPage} of {totalPages}
+          </span>
+          <span className="text-[11px] text-text-body-mid dark:text-text-muted">
+            · {label.charAt(0).toUpperCase() + label.slice(1)}
+          </span>
+        </div>
+      )}
+
       <span>
         Showing{' '}
         <strong className="font-semibold text-text-ink dark:text-text-on-primary">
@@ -86,10 +156,12 @@ export function PaginationFooter({
       <div className="flex items-center gap-3">
         <button
           type="button"
+          data-pagination-prev="true"
           disabled={currentPage === 1}
-          onClick={() => onPageChange(currentPage - 1)}
+          onClick={() => handlePageTransition(currentPage - 1)}
           className={pageButtonClass}
           aria-label="Previous page"
+          title="Previous page (p)"
         >
           Previous
         </button>
@@ -118,10 +190,12 @@ export function PaginationFooter({
 
         <button
           type="button"
+          data-pagination-next="true"
           disabled={currentPage === totalPages}
-          onClick={() => onPageChange(currentPage + 1)}
+          onClick={() => handlePageTransition(currentPage + 1)}
           className={pageButtonClass}
           aria-label="Next page"
+          title="Next page (n)"
         >
           Next
         </button>
