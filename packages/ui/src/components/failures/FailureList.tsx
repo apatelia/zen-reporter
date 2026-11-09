@@ -1,4 +1,4 @@
-import { useState, useMemo, useRef, useEffect } from 'react';
+import { useState, useMemo, useRef, useEffect, useCallback } from 'react';
 import type { FailedTest } from '@arpanp/zen-core';
 import { getErrorSignature } from '@arpanp/zen-core';
 import TestCaseCard from '@/components/shared/TestCaseCard';
@@ -21,6 +21,16 @@ interface ErrorClusterGroup {
   projectsCount: number;
 }
 
+/**
+ * List component rendering test failures grouped either by spec file or by error signature cluster.
+ *
+ * @param props - Failure list properties.
+ * @param props.failedTests - Array of failed test objects.
+ * @param props.hasSuites - Whether any test suites were executed in the run.
+ * @param props.totalFailuresCount - Total unfiltered failure count if filters are active.
+ * @param props.onResetFilters - Callback to reset active filters.
+ * @returns The rendered failure list component.
+ */
 export default function FailureList({
   failedTests,
   hasSuites = true,
@@ -93,6 +103,45 @@ export default function FailureList({
   const isAllExpanded = useMemo(() => {
     return currentGroupKeys.length > 0 && currentGroupKeys.every((k) => expandedKeys[k]);
   }, [currentGroupKeys, expandedKeys]);
+
+  const isAllCollapsed = useMemo(() => {
+    return (
+      currentGroupKeys.length === 0 ||
+      currentGroupKeys.every((k) => expandedKeys[k] === false) ||
+      Object.keys(expandedKeys).length === 0
+    );
+  }, [currentGroupKeys, expandedKeys]);
+
+  const handleExpandAll = useCallback(() => {
+    if (isAllExpanded || currentGroupKeys.length === 0) return;
+    const updated: Record<string, boolean> = {};
+    for (const k of currentGroupKeys) {
+      updated[k] = true;
+    }
+    setExpandedKeys(updated);
+  }, [isAllExpanded, currentGroupKeys]);
+
+  const handleCollapseAll = useCallback(() => {
+    if (isAllCollapsed || currentGroupKeys.length === 0) return;
+    const updated: Record<string, boolean> = {};
+    for (const k of currentGroupKeys) {
+      updated[k] = false;
+    }
+    setExpandedKeys(updated);
+  }, [isAllCollapsed, currentGroupKeys]);
+
+  // Listen for global X (expand) and S (collapse) custom events
+  useEffect(() => {
+    const onExpand = () => handleExpandAll();
+    const onCollapse = () => handleCollapseAll();
+
+    window.addEventListener('zen:expand-all', onExpand);
+    window.addEventListener('zen:collapse-all', onCollapse);
+    return () => {
+      window.removeEventListener('zen:expand-all', onExpand);
+      window.removeEventListener('zen:collapse-all', onCollapse);
+    };
+  }, [handleExpandAll, handleCollapseAll]);
 
   const groupByContainerRef = useRef<HTMLDivElement>(null);
   const groupByButtonsRef = useRef<Record<string, HTMLButtonElement | null>>({});
@@ -322,19 +371,15 @@ export default function FailureList({
             <button
               type="button"
               disabled={isAllExpanded}
-              onClick={() => {
-                const updated: Record<string, boolean> = {};
-                for (const k of currentGroupKeys) {
-                  updated[k] = true;
-                }
-                setExpandedKeys(updated);
-              }}
+              onClick={handleExpandAll}
               className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-md transition-colors ${
                 isAllExpanded
                   ? 'opacity-40 cursor-not-allowed text-text-body-mid'
                   : 'text-text-body-mid hover:text-text-ink hover:bg-surface-200/50 dark:hover:text-text-on-primary cursor-pointer'
               }`}
-              title={isAllExpanded ? 'All failures are currently expanded' : 'Expand all failures'}
+              title={
+                isAllExpanded ? 'All failures are currently expanded' : 'Expand all failures (X)'
+              }
             >
               <svg
                 className="h-3.5 w-3.5"
@@ -353,28 +398,17 @@ export default function FailureList({
             </button>
             <button
               type="button"
-              disabled={
-                currentGroupKeys.every((k) => expandedKeys[k] === false) ||
-                Object.keys(expandedKeys).length === 0
-              }
-              onClick={() => {
-                const updated: Record<string, boolean> = {};
-                for (const k of currentGroupKeys) {
-                  updated[k] = false;
-                }
-                setExpandedKeys(updated);
-              }}
+              disabled={isAllCollapsed}
+              onClick={handleCollapseAll}
               className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-md transition-colors ${
-                currentGroupKeys.every((k) => expandedKeys[k] === false) ||
-                Object.keys(expandedKeys).length === 0
+                isAllCollapsed
                   ? 'opacity-40 cursor-not-allowed text-text-body-mid'
                   : 'text-text-body-mid hover:text-text-ink hover:bg-surface-200/50 dark:hover:text-text-on-primary cursor-pointer'
               }`}
               title={
-                currentGroupKeys.every((k) => expandedKeys[k] === false) ||
-                Object.keys(expandedKeys).length === 0
+                isAllCollapsed
                   ? 'All failures are currently collapsed'
-                  : 'Collapse all failures'
+                  : 'Collapse all failures (S)'
               }
             >
               <svg

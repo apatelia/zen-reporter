@@ -1,5 +1,5 @@
 import type { TestSuite } from '@arpanp/zen-core';
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useCallback, useEffect } from 'react';
 import MultiSelectFilter, { FilterCountBadge } from '@/components/shared/MultiSelectFilter';
 import StatCard from '@/components/shared/StatCard';
 import SearchInput from '@/components/shared/SearchInput';
@@ -162,6 +162,13 @@ function filterSuites(
   );
 }
 
+/**
+ * Top-level view rendering test suites hierarchy, search filters, and bulk expand/collapse controls.
+ *
+ * @param props - Component properties.
+ * @param props.suites - Array of top-level test suites.
+ * @returns The rendered SuitesSection component.
+ */
 export default function SuitesSection({ suites }: SuitesSectionProps) {
   const [filterStatuses, setFilterStatuses] = useState<TestCaseStatus[]>([]);
   const [filterProjects, setFilterProjects] = useState<string[]>([]);
@@ -205,6 +212,53 @@ export default function SuitesSection({ suites }: SuitesSectionProps) {
     setSelectedTags([]);
     setFileSearchTerm('');
   };
+
+  const filteredSuites = useMemo(() => {
+    return filterSuites(suites, filterStatuses, filterProjects, selectedTags, fileSearchTerm);
+  }, [suites, filterStatuses, filterProjects, selectedTags, fileSearchTerm]);
+
+  const isAllExpanded = useMemo(() => {
+    return filteredSuites.length > 0 && filteredSuites.every((s) => openSuites[s.title]);
+  }, [filteredSuites, openSuites]);
+
+  const isAnyExpanded = useMemo(() => {
+    return filteredSuites.some((s) => openSuites[s.title]);
+  }, [filteredSuites, openSuites]);
+
+  const handleExpandAll = useCallback(() => {
+    if (isAllExpanded || filteredSuites.length === 0) return;
+    const updated: Record<string, boolean> = {};
+    for (const s of filteredSuites) {
+      updated[s.title] = true;
+    }
+    setOpenSuites(updated);
+    setForceOpen(true);
+    setExpandKey((k) => k + 1);
+  }, [isAllExpanded, filteredSuites]);
+
+  const handleCollapseAll = useCallback(() => {
+    if (!isAnyExpanded || filteredSuites.length === 0) return;
+    const updated: Record<string, boolean> = {};
+    for (const s of filteredSuites) {
+      updated[s.title] = false;
+    }
+    setOpenSuites(updated);
+    setForceOpen(false);
+    setExpandKey((k) => k + 1);
+  }, [isAnyExpanded, filteredSuites]);
+
+  // Listen for global X (expand) and S (collapse) custom events
+  useEffect(() => {
+    const onExpand = () => handleExpandAll();
+    const onCollapse = () => handleCollapseAll();
+
+    window.addEventListener('zen:expand-all', onExpand);
+    window.addEventListener('zen:collapse-all', onCollapse);
+    return () => {
+      window.removeEventListener('zen:expand-all', onExpand);
+      window.removeEventListener('zen:collapse-all', onCollapse);
+    };
+  }, [handleExpandAll, handleCollapseAll]);
 
   return (
     <div className="w-full space-y-6">
@@ -361,17 +415,6 @@ export default function SuitesSection({ suites }: SuitesSectionProps) {
       {/* Suites List Header & Controls */}
       <div className="space-y-4">
         {(() => {
-          const filteredSuites = filterSuites(
-            suites,
-            filterStatuses,
-            filterProjects,
-            selectedTags,
-            fileSearchTerm
-          );
-          const isAllExpanded =
-            filteredSuites.length > 0 && filteredSuites.every((s) => openSuites[s.title]);
-          const isAnyExpanded = filteredSuites.some((s) => openSuites[s.title]);
-
           return (
             <>
               {filteredSuites.length > 0 && (
@@ -388,15 +431,7 @@ export default function SuitesSection({ suites }: SuitesSectionProps) {
                     <button
                       type="button"
                       disabled={isAllExpanded}
-                      onClick={() => {
-                        const updated: Record<string, boolean> = {};
-                        for (const s of filteredSuites) {
-                          updated[s.title] = true;
-                        }
-                        setOpenSuites(updated);
-                        setForceOpen(true);
-                        setExpandKey((k) => k + 1);
-                      }}
+                      onClick={handleExpandAll}
                       className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-md transition-colors ${
                         isAllExpanded
                           ? 'opacity-40 cursor-not-allowed text-text-body-mid'
@@ -405,7 +440,7 @@ export default function SuitesSection({ suites }: SuitesSectionProps) {
                       title={
                         isAllExpanded
                           ? 'All suites are currently expanded'
-                          : 'Expand all test suites'
+                          : 'Expand all test suites (X)'
                       }
                     >
                       <svg
@@ -426,15 +461,7 @@ export default function SuitesSection({ suites }: SuitesSectionProps) {
                     <button
                       type="button"
                       disabled={!isAnyExpanded}
-                      onClick={() => {
-                        const updated: Record<string, boolean> = {};
-                        for (const s of filteredSuites) {
-                          updated[s.title] = false;
-                        }
-                        setOpenSuites(updated);
-                        setForceOpen(false);
-                        setExpandKey((k) => k + 1);
-                      }}
+                      onClick={handleCollapseAll}
                       className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-md transition-colors ${
                         !isAnyExpanded
                           ? 'opacity-40 cursor-not-allowed text-text-body-mid'
@@ -443,7 +470,7 @@ export default function SuitesSection({ suites }: SuitesSectionProps) {
                       title={
                         !isAnyExpanded
                           ? 'All suites are currently collapsed'
-                          : 'Collapse all test suites'
+                          : 'Collapse all test suites (S)'
                       }
                     >
                       <svg

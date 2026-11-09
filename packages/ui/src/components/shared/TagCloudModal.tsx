@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import SearchInput from './SearchInput';
 import BaseModal from './BaseModal';
 
@@ -35,15 +35,6 @@ export default function TagCloudModal({
       setSearchTerm('');
     }
   }
-
-  useEffect(() => {
-    if (!isOpen) return;
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, onClose]);
 
   const sortedTags = useMemo(() => {
     return [...tagsWithCounts].sort((a, b) => {

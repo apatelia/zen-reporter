@@ -15,7 +15,7 @@ import SuitesSection from '@/components/suites/SuitesSection';
 import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts';
 import { copyToClipboard } from '@/utils/clipboard';
 import { formatDateRange, formatDuration } from '@arpanp/zen-core';
-import type { HistoryData } from '@arpanp/zen-core';
+import type { HistoryData, HistoryRun } from '@arpanp/zen-core';
 import type { ReportData, TestSuite } from '@arpanp/zen-core';
 import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
@@ -34,6 +34,13 @@ function normalizeTheme(val?: string | null): ThemeMode | null {
   if (lower === 'lotus' || lower === 'sentinel') return 'lotus';
   if (lower === 'oasis' || lower === 'streak') return 'oasis';
   return null;
+}
+
+declare global {
+  interface WindowEventMap {
+    'zen:expand-all': CustomEvent<void>;
+    'zen:collapse-all': CustomEvent<void>;
+  }
 }
 
 export default function App() {
@@ -574,6 +581,16 @@ export default function App() {
     });
   }, [summary?.gitBranch]);
 
+  const handleActiveRunSelected = useCallback((run: HistoryRun) => {
+    setToastNotification({
+      id: `already-active-run-${Date.now()}`,
+      type: 'info',
+      title: 'Already Viewing Run',
+      message: `You are already viewing "${run.run_name}".`,
+      duration: 3000,
+    });
+  }, []);
+
   const handleOpenWebsite = useCallback(() => {
     if (typeof window !== 'undefined') {
       window.open('https://zen-reporter.vercel.app', '_blank', 'noopener,noreferrer');
@@ -787,6 +804,16 @@ export default function App() {
     onScrollToTop: handleScrollToTop,
     onPrevPage: () => handlePaginationStep('prev'),
     onNextPage: () => handlePaginationStep('next'),
+    onExpandAll: () => {
+      if (activeTab === 'suites' || activeTab === 'failures') {
+        window.dispatchEvent(new CustomEvent('zen:expand-all'));
+      }
+    },
+    onCollapseAll: () => {
+      if (activeTab === 'suites' || activeTab === 'failures') {
+        window.dispatchEvent(new CustomEvent('zen:collapse-all'));
+      }
+    },
     isModalOpen: isAnyModalOpen,
   });
 
@@ -858,6 +885,7 @@ export default function App() {
                     runs={historyData.runs}
                     onSelectRun={(runId) => void loadRunById(runId)}
                     onOpenFullModal={() => setIsRunSwitcherOpen(true)}
+                    onActiveRunSelected={handleActiveRunSelected}
                   />
                   <span className="text-text-muted/60 font-medium select-none">|</span>
                 </>
@@ -1256,6 +1284,7 @@ export default function App() {
             handleSelectRun(runId);
             setIsRunSwitcherOpen(false);
           }}
+          onActiveRunSelected={handleActiveRunSelected}
         />
       )}
 

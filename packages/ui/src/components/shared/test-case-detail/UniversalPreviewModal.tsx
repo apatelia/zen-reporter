@@ -193,6 +193,17 @@ export function buildAttemptPreviewItems(
   return items;
 }
 
+/**
+ * Universal preview modal supporting text logs, syntax-highlighted code files, images,
+ * video players, and binary attachments with carousel navigation and search filtering.
+ *
+ * @param props - Modal component properties.
+ * @param props.isOpen - Whether the preview modal is open.
+ * @param props.onClose - Callback triggered when the modal is closed.
+ * @param props.items - List of preview items / attachments to navigate across.
+ * @param props.initialIndex - Starting index in the items list when the modal opens.
+ * @returns The rendered preview modal component, or null if isOpen is false or no active item.
+ */
 export function UniversalPreviewModal({
   isOpen,
   onClose,
@@ -438,6 +449,20 @@ export function UniversalPreviewModal({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isOpen, items.length, handlePrev, handleNext]);
 
+  const modalShortcuts = useMemo(() => {
+    const list = [];
+    if (items.length > 1) {
+      list.push(
+        { keyDesc: ['P', '←'], label: 'previous artifact' },
+        { keyDesc: ['N', '→'], label: 'next artifact' }
+      );
+    }
+    if (activeItem?.type === 'text') {
+      list.push({ keyDesc: 'F', label: 'find in artifact' });
+    }
+    return list;
+  }, [items.length, activeItem?.type]);
+
   if (!isOpen || !activeItem) return null;
 
   const downloadUrl = activeItem.downloadUrl || activeItem.url;
@@ -476,6 +501,7 @@ export function UniversalPreviewModal({
       onClose={onClose}
       maxWidthClass="max-w-5xl"
       maxHeightClass="h-[85vh]"
+      shortcuts={modalShortcuts}
       title={
         <div className="flex items-center gap-2.5 min-w-0 pr-2">
           <h4 className="text-base font-bold text-text-ink dark:text-text-on-primary truncate">

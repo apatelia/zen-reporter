@@ -19,15 +19,15 @@ const SHORTCUT_SECTIONS: ShortcutSection[] = [
   {
     title: 'Appearance & Themes',
     shortcuts: [
-      { keyDesc: ['d'], description: 'Cycle dark mode (System → Light → Dark)' },
-      { keyDesc: ['t'], description: 'Cycle color theme (Sage → Lotus → Oasis)' },
+      { keyDesc: ['D'], description: 'Cycle dark mode (System → Light → Dark)' },
+      { keyDesc: ['T'], description: 'Cycle color theme (Sage → Lotus → Oasis)' },
     ],
   },
   {
     title: 'Sidebar & Layout',
     shortcuts: [
       { keyDesc: ['\\'], description: 'Toggle collapse / expand sidebar' },
-      { keyDesc: ['c'], description: 'Open Playwright config generator' },
+      { keyDesc: ['C'], description: 'Open Playwright config generator' },
     ],
   },
   {
@@ -36,26 +36,40 @@ const SHORTCUT_SECTIONS: ShortcutSection[] = [
       { keyDesc: ['1', '…', '8'], description: 'Jump directly to navigation tab by index' },
       { keyDesc: ['['], description: 'Switch to previous tab' },
       { keyDesc: [']'], description: 'Switch to next tab' },
-      { keyDesc: ['p'], description: 'Go to previous page in table / modal' },
-      { keyDesc: ['n'], description: 'Go to next page in table / modal' },
-      { keyDesc: ['r'], description: 'Return to top of page' },
-      { keyDesc: ['z'], description: 'Open Zen Reporter documentation website' },
+      { keyDesc: ['P', '←'], description: 'Go to previous page in table / modal' },
+      { keyDesc: ['N', '→'], description: 'Go to next page in table / modal' },
+      { keyDesc: ['R'], description: 'Return to top of page' },
+      { keyDesc: ['Z'], description: 'Open Zen Reporter documentation website' },
     ],
   },
   {
     title: 'Search & Quick Actions',
     shortcuts: [
       { keyDesc: ['/'], description: 'Open test run switcher' },
-      { keyDesc: ['l'], description: 'Jump to latest run (when Switch Run menu or modal is open)' },
-      { keyDesc: ['f'], description: 'Focus contextual search / filter input' },
-      { keyDesc: ['g'], description: 'Copy Git commit SHA' },
-      { keyDesc: ['b'], description: 'Copy Git branch name' },
+      {
+        keyDesc: ['1', '…', '5'],
+        description: 'Select run on current view (when Switch Run menu or modal is open)',
+      },
+      { keyDesc: ['L'], description: 'Jump to latest run (when Switch Run menu or modal is open)' },
+      { keyDesc: ['X'], description: 'Expand all (Suites & Failures tabs)' },
+      { keyDesc: ['S'], description: 'Collapse all (Suites & Failures tabs)' },
+      { keyDesc: ['F'], description: 'Focus contextual search / filter input' },
+      { keyDesc: ['G'], description: 'Copy Git commit SHA' },
+      { keyDesc: ['B'], description: 'Copy Git branch name' },
       { keyDesc: ['?'], description: 'Show keyboard shortcuts cheatsheet' },
       { keyDesc: ['Esc'], description: 'Close any open modal or dialog' },
     ],
   },
 ];
 
+/**
+ * Cheatsheet modal listing all available keyboard shortcuts grouped by category.
+ *
+ * @param props - Component properties.
+ * @param props.isOpen - Whether the shortcuts modal is open.
+ * @param props.onClose - Callback triggered when the modal is closed.
+ * @returns The rendered shortcuts modal component.
+ */
 export function ShortcutsModal({ isOpen, onClose }: ShortcutsModalProps) {
   return (
     <BaseModal

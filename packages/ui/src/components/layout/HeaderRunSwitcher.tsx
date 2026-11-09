@@ -8,13 +8,27 @@ export interface HeaderRunSwitcherProps {
   runs: HistoryRun[];
   onSelectRun: (runId: string) => void;
   onOpenFullModal: () => void;
+  onActiveRunSelected?: (run: HistoryRun) => void;
 }
 
+/**
+ * HeaderRunSwitcher renders a quick dropdown menu in the top navigation bar to switch between
+ * recent test runs, jump directly to the latest execution run, or launch the full Run Switcher modal.
+ *
+ * @param props - Component properties for the run switcher dropdown.
+ * @param props.currentRunId - Unique identifier of the currently active test run.
+ * @param props.runs - List of historical execution runs.
+ * @param props.onSelectRun - Callback triggered when the user switches to a different run.
+ * @param props.onOpenFullModal - Callback triggered when the user requests the full run switcher modal.
+ * @param props.onActiveRunSelected - Optional callback triggered when the user selects the currently active run.
+ * @returns The rendered dropdown switcher component, or null if there is only 1 run.
+ */
 export function HeaderRunSwitcher({
   currentRunId,
   runs,
   onSelectRun,
   onOpenFullModal,
+  onActiveRunSelected,
 }: HeaderRunSwitcherProps) {
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -37,6 +51,9 @@ export function HeaderRunSwitcher({
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [isOpen]);
+
+  // Show up to 5 recent runs in the quick switcher
+  const recentRuns = sortedRuns.slice(0, 5);
 
   // Key navigation while dropdown is open
   useEffect(() => {
@@ -63,25 +80,51 @@ export function HeaderRunSwitcher({
         event.stopPropagation();
         setIsOpen(false);
       } else if (event.key.toLowerCase() === 'l') {
-        if (latestRun && !isViewingLatest) {
+        if (latestRun) {
           event.preventDefault();
           event.stopPropagation();
-          onSelectRun(latestRun.run_id);
+          if (isViewingLatest) {
+            onActiveRunSelected?.(latestRun);
+          } else {
+            onSelectRun(latestRun.run_id);
+          }
           setIsOpen(false);
         }
+      } else if (['1', '2', '3', '4', '5'].includes(event.key)) {
+        const targetIndex = parseInt(event.key, 10) - 1;
+        const targetRun = recentRuns[targetIndex];
+        if (targetRun) {
+          event.preventDefault();
+          event.stopPropagation();
+          if (targetRun.run_id === currentRunId) {
+            onActiveRunSelected?.(targetRun);
+          } else {
+            onSelectRun(targetRun.run_id);
+          }
+          setIsOpen(false);
+        }
+      } else if (['6', '7', '8', '9', '0'].includes(event.key)) {
+        // Prevent numeric keys from propagating outside the quick switcher menu
+        event.preventDefault();
+        event.stopPropagation();
       }
     }
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, latestRun, isViewingLatest, onSelectRun]);
+  }, [
+    isOpen,
+    latestRun,
+    isViewingLatest,
+    onSelectRun,
+    onActiveRunSelected,
+    recentRuns,
+    currentRunId,
+  ]);
 
   // If there are no multiple runs to switch between, do not render a switcher button
   if (!hasMultipleRuns) {
     return null;
   }
-
-  // Show up to 5 recent runs in the quick switcher
-  const recentRuns = sortedRuns.slice(0, 5);
 
   return (
     <div ref={containerRef} className="relative inline-flex items-center shrink-0">
@@ -140,8 +183,10 @@ export function HeaderRunSwitcher({
                 onClick={() => {
                   if (!isViewingLatest) {
                     onSelectRun(latestRun.run_id);
-                    setIsOpen(false);
+                  } else {
+                    onActiveRunSelected?.(latestRun);
                   }
+                  setIsOpen(false);
                 }}
                 className={`w-full flex items-center justify-between gap-2.5 px-2.5 py-2 rounded-md transition-colors text-left ${
                   isViewingLatest
@@ -180,7 +225,7 @@ export function HeaderRunSwitcher({
                   </span>
                 ) : (
                   <kbd className="hidden sm:inline-flex h-4.5 min-w-4.5 items-center justify-center rounded px-1.5 text-[10px] font-medium leading-none text-accent-blue border border-accent-blue/40 bg-accent-blue/10">
-                    l
+                    L
                   </kbd>
                 )}
               </button>
@@ -193,8 +238,9 @@ export function HeaderRunSwitcher({
               Recent Executions
             </div>
             <div className="space-y-0.5 mt-0.5">
-              {recentRuns.map((run) => {
+              {recentRuns.map((run, index) => {
                 const isCurrent = run.run_id === currentRunId;
+                const shortcutNumber = index + 1;
                 const passRate = computePassRate({
                   total: run.run_total,
                   passed: run.run_passed,
@@ -213,8 +259,10 @@ export function HeaderRunSwitcher({
                     onClick={() => {
                       if (!isCurrent) {
                         onSelectRun(run.run_id);
-                        setIsOpen(false);
+                      } else {
+                        onActiveRunSelected?.(run);
                       }
+                      setIsOpen(false);
                     }}
                     className={`w-full flex items-center justify-between gap-3 px-2.5 py-1.5 rounded-md text-left transition-colors ${
                       isCurrent
@@ -249,6 +297,9 @@ export function HeaderRunSwitcher({
                     </div>
                     <div className="shrink-0 flex items-center gap-1.5">
                       <PassRateBadge passRate={passRate} />
+                      <kbd className="hidden sm:inline-flex h-4 min-w-4 items-center justify-center rounded px-1 text-[9px] font-medium leading-none text-text-muted border border-border-default/60 bg-surface-100 dark:bg-surface-200/50">
+                        {shortcutNumber}
+                      </kbd>
                       {isCurrent && (
                         <svg
                           className="h-3.5 w-3.5 text-accent-blue shrink-0"

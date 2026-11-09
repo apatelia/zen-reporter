@@ -1,5 +1,10 @@
 import React, { useEffect } from 'react';
 
+export interface ModalShortcut {
+  keyDesc: string | string[];
+  label: string;
+}
+
 export interface BaseModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -10,8 +15,26 @@ export interface BaseModalProps {
   maxWidthClass?: string;
   maxHeightClass?: string;
   children: React.ReactNode;
+  shortcuts?: ModalShortcut[];
 }
 
+/**
+ * Base modal component providing backdrop overlay, escape key trapping, smart input blurring,
+ * and a bottom keyboard shortcuts bar.
+ *
+ * @param props - BaseModal configuration properties.
+ * @param props.isOpen - Whether the modal dialog is currently visible.
+ * @param props.onClose - Callback triggered when the modal is requested to close.
+ * @param props.title - Modal title content or header node.
+ * @param props.subtitle - Optional subtitle text or description node below the title.
+ * @param props.headerActions - Optional action buttons rendered on the right side of the header.
+ * @param props.footerActions - Optional action buttons rendered in the modal footer.
+ * @param props.maxWidthClass - Tailwind CSS max-width class constraint.
+ * @param props.maxHeightClass - Tailwind CSS max-height class constraint.
+ * @param props.children - Modal body content elements.
+ * @param props.shortcuts - Optional array of keyboard shortcuts applicable within this modal.
+ * @returns The rendered modal element, or null if isOpen is false.
+ */
 export default function BaseModal({
   isOpen,
   onClose,
@@ -22,21 +45,46 @@ export default function BaseModal({
   maxWidthClass = 'max-w-2xl',
   maxHeightClass = 'max-h-[90vh]',
   children,
+  shortcuts,
 }: BaseModalProps) {
+  const modalBoxRef = React.useRef<HTMLDivElement>(null);
+
   useEffect(() => {
     if (!isOpen) return;
 
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
+        const activeEl = document.activeElement;
+        // If an input, textarea, or contenteditable element inside this modal is focused, blur it and focus the modal container first instead of closing the modal
+        if (
+          activeEl instanceof HTMLElement &&
+          (activeEl.tagName === 'INPUT' ||
+            activeEl.tagName === 'TEXTAREA' ||
+            activeEl.tagName === 'SELECT' ||
+            activeEl.isContentEditable)
+        ) {
+          e.preventDefault();
+          e.stopPropagation();
+          activeEl.blur();
+          modalBoxRef.current?.focus();
+          return;
+        }
+
         onClose();
       }
     };
 
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
+    window.addEventListener('keydown', handleKeyDown, true);
+    return () => window.removeEventListener('keydown', handleKeyDown, true);
   }, [isOpen, onClose]);
 
   if (!isOpen) return null;
+
+  // Compile list of displayed shortcuts (always including Esc by default)
+  const effectiveShortcuts: ModalShortcut[] = [
+    ...(shortcuts || []),
+    { keyDesc: 'Esc', label: 'close' },
+  ];
 
   return (
     <div
@@ -48,7 +96,9 @@ export default function BaseModal({
       }}
     >
       <div
-        className={`relative w-full ${maxWidthClass} ${maxHeightClass} flex flex-col rounded-lg border border-border-default bg-canvas p-5 shadow-2xl overflow-hidden`}
+        ref={modalBoxRef}
+        tabIndex={-1}
+        className={`relative w-full ${maxWidthClass} ${maxHeightClass} flex flex-col rounded-lg border border-border-default bg-canvas p-5 shadow-2xl overflow-hidden focus:outline-hidden`}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Modal Header */}
@@ -96,6 +146,37 @@ export default function BaseModal({
         {footerActions && (
           <div className="flex items-center justify-end border-t border-border-default pt-3.5 mt-4 shrink-0">
             {footerActions}
+          </div>
+        )}
+
+        {/* Modal Keyboard Shortcuts Bar */}
+        {effectiveShortcuts.length > 0 && (
+          <div className="hidden sm:flex items-center gap-2 pt-3 mt-3 border-t border-border-default/60 text-[11px] text-text-muted shrink-0 select-none">
+            <span className="font-semibold text-text-muted/80">Shortcuts:</span>
+            {effectiveShortcuts.map((sc, index) => {
+              const keys = Array.isArray(sc.keyDesc) ? sc.keyDesc : [sc.keyDesc];
+              return (
+                <span
+                  key={`${keys.join('-')}-${sc.label}`}
+                  className="inline-flex items-center gap-1"
+                >
+                  {index > 0 && <span className="text-text-muted/40 mr-1">·</span>}
+                  <span className="inline-flex items-center gap-0.5">
+                    {keys.map((k, kIdx) => (
+                      <React.Fragment key={k}>
+                        {kIdx > 0 && (
+                          <span className="text-[10px] text-text-muted/60 mx-0.5">/</span>
+                        )}
+                        <kbd className="h-4 min-w-4 px-1 rounded border border-border-default bg-surface-100 dark:bg-surface-200/50 text-[10px] text-center font-mono leading-tight">
+                          {k}
+                        </kbd>
+                      </React.Fragment>
+                    ))}
+                  </span>
+                  <span>{sc.label}</span>
+                </span>
+              );
+            })}
           </div>
         )}
       </div>

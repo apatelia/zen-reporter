@@ -14,17 +14,39 @@ export interface RunSwitcherModalProps {
   runs: HistoryRun[];
   currentRunId: string | null;
   onSelectRun: (runId: string) => void;
+  onActiveRunSelected?: (run: HistoryRun) => void;
 }
 
+/**
+ * Modal dialog for searching and switching between historical test execution runs.
+ *
+ * @param props - Component properties for the Run Switcher modal.
+ * @param props.isOpen - Whether the modal dialog is currently visible.
+ * @param props.onClose - Callback triggered when the modal is requested to close.
+ * @param props.runs - List of historical execution runs available to switch to.
+ * @param props.currentRunId - Unique identifier of the currently active test run.
+ * @param props.onSelectRun - Callback triggered when the user switches to a run.
+ * @param props.onActiveRunSelected - Optional callback triggered when the user selects the currently active run.
+ * @returns The rendered modal element, or null if isOpen is false.
+ */
 export default function RunSwitcherModal({
   isOpen,
   onClose,
   runs,
   currentRunId,
   onSelectRun,
+  onActiveRunSelected,
 }: RunSwitcherModalProps) {
+  const [prevIsOpen, setPrevIsOpen] = useState(isOpen);
   const [searchTerm, setSearchTerm] = useState('');
   const modalContainerRef = useRef<HTMLDivElement>(null);
+
+  if (isOpen !== prevIsOpen) {
+    setPrevIsOpen(isOpen);
+    if (isOpen) {
+      setSearchTerm('');
+    }
+  }
 
   const latestRunId = useMemo(() => {
     if (runs.length === 0) return null;
@@ -86,6 +108,24 @@ export default function RunSwitcherModal({
   const pagination = usePagination(filteredRuns.length, 5);
   const pagedRuns = filteredRuns.slice(pagination.start, pagination.start + pagination.pageSize);
 
+  const modalShortcuts = useMemo(() => {
+    const list = [
+      {
+        keyDesc: ['1', '…', String(Math.min(5, pagedRuns.length || 1))],
+        label: 'select run',
+      },
+      { keyDesc: 'L', label: 'latest' },
+      { keyDesc: 'F', label: 'search' },
+    ];
+    if (filteredRuns.length > pagination.pageSize) {
+      list.push(
+        { keyDesc: ['P', '←'], label: 'previous page' },
+        { keyDesc: ['N', '→'], label: 'next page' }
+      );
+    }
+    return list;
+  }, [pagedRuns.length, filteredRuns.length, pagination.pageSize]);
+
   const handleSelect = useCallback(
     (runId: string) => {
       setSearchTerm('');
@@ -101,6 +141,7 @@ export default function RunSwitcherModal({
   // 'l' -> jump to latest run
   // 'p' -> previous page
   // 'n' -> next page
+  // '1'-'5' -> select run by position on current page
   useEffect(() => {
     if (!isOpen) return;
 
@@ -133,16 +174,37 @@ export default function RunSwitcherModal({
           searchInput.select();
         }
       } else if (key === 'l') {
-        if (latestRunId && latestRunId !== currentRunId) {
+        if (latestRunId) {
           e.preventDefault();
           e.stopPropagation();
-          handleSelect(latestRunId);
+          if (latestRunId === currentRunId) {
+            const activeRun = runs.find((r) => r.run_id === latestRunId);
+            if (activeRun) {
+              onActiveRunSelected?.(activeRun);
+            }
+            onClose();
+          } else {
+            handleSelect(latestRunId);
+          }
         }
-      } else if (key === 'p') {
+      } else if (['1', '2', '3', '4', '5'].includes(key)) {
+        const targetIndex = parseInt(key, 10) - 1;
+        const targetRun = pagedRuns[targetIndex];
+        if (targetRun) {
+          e.preventDefault();
+          e.stopPropagation();
+          if (targetRun.run_id === currentRunId) {
+            onActiveRunSelected?.(targetRun);
+            onClose();
+          } else {
+            handleSelect(targetRun.run_id);
+          }
+        }
+      } else if (e.key === 'ArrowLeft' || key === 'p') {
         e.preventDefault();
         e.stopPropagation();
         pagination.setPage(Math.max(1, pagination.currentPage - 1));
-      } else if (key === 'n') {
+      } else if (e.key === 'ArrowRight' || key === 'n') {
         e.preventDefault();
         e.stopPropagation();
         pagination.setPage(Math.min(pagination.totalPages, pagination.currentPage + 1));
@@ -151,7 +213,17 @@ export default function RunSwitcherModal({
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, pagination, latestRunId, currentRunId, handleSelect]);
+  }, [
+    isOpen,
+    pagination,
+    latestRunId,
+    currentRunId,
+    handleSelect,
+    pagedRuns,
+    runs,
+    onActiveRunSelected,
+    onClose,
+  ]);
 
   return (
     <BaseModal
@@ -167,6 +239,7 @@ export default function RunSwitcherModal({
       }
       subtitle="Select a previous test execution to view its complete dashboard, test suites, failures, and attachments."
       maxWidthClass="max-w-4xl"
+      shortcuts={modalShortcuts}
     >
       <div ref={modalContainerRef} className="space-y-4">
         {/* Search */}
@@ -190,8 +263,9 @@ export default function RunSwitcherModal({
                 No runs match &quot;{searchTerm}&quot;
               </div>
             ) : (
-              pagedRuns.map((run) => {
+              pagedRuns.map((run, index) => {
                 const isCurrent = currentRunId === run.run_id;
+                const shortcutNumber = index + 1;
                 const passRate = computePassRate({
                   total: run.run_total,
                   passed: run.run_passed,
@@ -208,6 +282,9 @@ export default function RunSwitcherModal({
                     onClick={() => {
                       if (!isCurrent) {
                         handleSelect(run.run_id);
+                      } else {
+                        onActiveRunSelected?.(run);
+                        onClose();
                       }
                     }}
                     className={`flex items-center justify-between gap-4 p-3.5 transition-colors ${
@@ -338,6 +415,22 @@ export default function RunSwitcherModal({
                       </div>
                       <div className="w-14 flex justify-end">
                         <PassRateBadge passRate={passRate} />
+                      </div>
+                      <div className="flex items-center gap-1">
+                        {run.run_id === latestRunId && (
+                          <kbd
+                            className="hidden sm:inline-flex h-4.5 min-w-4.5 items-center justify-center rounded px-1.5 text-[10px] font-medium leading-none text-accent-blue border border-accent-blue/40 bg-accent-blue/10"
+                            title="Shortcut key: L (jump to latest run)"
+                          >
+                            L
+                          </kbd>
+                        )}
+                        <kbd
+                          className="hidden sm:inline-flex h-4.5 min-w-4.5 items-center justify-center rounded px-1.5 text-[10px] font-medium leading-none text-text-muted border border-border-default/60 bg-surface-100 dark:bg-surface-200/50"
+                          title={`Shortcut key: ${shortcutNumber}`}
+                        >
+                          {shortcutNumber}
+                        </kbd>
                       </div>
                       <button
                         type="button"

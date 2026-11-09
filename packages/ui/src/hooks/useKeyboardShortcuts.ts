@@ -17,6 +17,8 @@ export interface ShortcutHandlers {
   onScrollToTop?: () => void;
   onPrevPage?: () => void;
   onNextPage?: () => void;
+  onExpandAll?: () => void;
+  onCollapseAll?: () => void;
   isModalOpen?: boolean;
 }
 
@@ -181,6 +183,7 @@ export function useKeyboardShortcuts(handlers: ShortcutHandlers) {
         }
 
         // Previous page in table pagination
+        case 'ArrowLeft':
         case 'p':
         case 'P': {
           event.preventDefault();
@@ -189,6 +192,7 @@ export function useKeyboardShortcuts(handlers: ShortcutHandlers) {
         }
 
         // Next page in table pagination
+        case 'ArrowRight':
         case 'n':
         case 'N': {
           event.preventDefault();
@@ -200,6 +204,26 @@ export function useKeyboardShortcuts(handlers: ShortcutHandlers) {
         case '?': {
           event.preventDefault();
           currentHandlers.onOpenHelp?.();
+          break;
+        }
+
+        // Expand all (Suites & Failures tabs)
+        case 'x':
+        case 'X': {
+          if (currentHandlers.onExpandAll) {
+            event.preventDefault();
+            currentHandlers.onExpandAll();
+          }
+          break;
+        }
+
+        // Collapse all (Suites & Failures tabs)
+        case 's':
+        case 'S': {
+          if (currentHandlers.onCollapseAll) {
+            event.preventDefault();
+            currentHandlers.onCollapseAll();
+          }
           break;
         }
 
