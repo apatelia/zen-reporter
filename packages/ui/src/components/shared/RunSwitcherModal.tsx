@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import BaseModal from '@/components/shared/BaseModal';
 import SearchInput from '@/components/shared/SearchInput';
 import { PassRateBadge } from '@/components/shared/PassRateBadge';
@@ -25,6 +25,11 @@ export default function RunSwitcherModal({
 }: RunSwitcherModalProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const modalContainerRef = useRef<HTMLDivElement>(null);
+
+  const latestRunId = useMemo(() => {
+    if (runs.length === 0) return null;
+    return runs[runs.length - 1].run_id;
+  }, [runs]);
 
   // Runs in reverse chronological order (newest first), with active run pinned to the very top
   const orderedRuns = useMemo(() => {
@@ -81,8 +86,19 @@ export default function RunSwitcherModal({
   const pagination = usePagination(filteredRuns.length, 5);
   const pagedRuns = filteredRuns.slice(pagination.start, pagination.start + pagination.pageSize);
 
+  const handleSelect = useCallback(
+    (runId: string) => {
+      setSearchTerm('');
+      pagination.setPage(1);
+      onSelectRun(runId);
+      onClose();
+    },
+    [onSelectRun, onClose, pagination]
+  );
+
   // Local keyboard shortcuts inside RunSwitcherModal:
   // 'f' -> focus search input
+  // 'l' -> jump to latest run
   // 'p' -> previous page
   // 'n' -> next page
   useEffect(() => {
@@ -116,6 +132,12 @@ export default function RunSwitcherModal({
           searchInput.focus();
           searchInput.select();
         }
+      } else if (key === 'l') {
+        if (latestRunId && latestRunId !== currentRunId) {
+          e.preventDefault();
+          e.stopPropagation();
+          handleSelect(latestRunId);
+        }
       } else if (key === 'p') {
         e.preventDefault();
         e.stopPropagation();
@@ -129,14 +151,7 @@ export default function RunSwitcherModal({
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, pagination]);
-
-  const handleSelect = (runId: string) => {
-    setSearchTerm('');
-    pagination.setPage(1);
-    onSelectRun(runId);
-    onClose();
-  };
+  }, [isOpen, pagination, latestRunId, currentRunId, handleSelect]);
 
   return (
     <BaseModal
@@ -151,7 +166,7 @@ export default function RunSwitcherModal({
         </div>
       }
       subtitle="Select a previous test execution to view its complete dashboard, test suites, failures, and attachments."
-      maxWidthClass="max-w-3xl"
+      maxWidthClass="max-w-4xl"
     >
       <div ref={modalContainerRef} className="space-y-4">
         {/* Search */}
@@ -202,35 +217,67 @@ export default function RunSwitcherModal({
                     }`}
                   >
                     <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-2 flex-wrap">
+                      {/* Row 1: Dedicated Run Title */}
+                      <div className="flex items-center gap-2">
                         <span className="font-bold text-sm text-text-ink dark:text-text-on-primary truncate">
                           {run.run_name}
                         </span>
-                        {run.git_branch && (
-                          <span
-                            className="inline-flex items-center gap-1 rounded-full bg-surface-100 dark:bg-surface-200 border border-border-default px-2 py-0.5 text-[10px] font-semibold text-text-ink dark:text-text-on-primary max-w-40 truncate shadow-2xs"
-                            title={`Branch: ${run.git_branch}`}
-                          >
-                            <svg
-                              className="h-2.5 w-2.5 text-accent-blue shrink-0"
-                              fill="none"
-                              viewBox="0 0 24 24"
-                              stroke="currentColor"
-                              strokeWidth={2}
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                            >
-                              <line x1="6" y1="3" x2="6" y2="15" />
-                              <circle cx="18" cy="6" r="3" />
-                              <circle cx="6" cy="18" r="3" />
-                              <path d="M18 9a9 9 0 0 1-9 9" />
-                            </svg>
-                            <span className="truncate">{run.git_branch}</span>
+                        {run.run_id === latestRunId && (
+                          <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-surface-200 dark:bg-surface-300 text-text-muted shrink-0 leading-tight">
+                            Latest
                           </span>
                         )}
-                        {run.git_commit && (
+                      </div>
+
+                      {/* Row 2: Git Metadata Pills */}
+                      <div className="mt-1 flex items-center gap-2 text-xs">
+                        {run.git_branch ? (
+                          <>
+                            <span
+                              className="inline-flex items-center gap-1 rounded-md bg-surface-100 dark:bg-surface-200 border border-border-default/80 px-1.5 py-0.5 text-[10px] font-semibold text-text-ink dark:text-text-on-primary max-w-xs truncate shadow-2xs leading-none"
+                              title={`Branch: ${run.git_branch}`}
+                            >
+                              <svg
+                                className="h-2.5 w-2.5 text-accent-blue shrink-0"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                                stroke="currentColor"
+                                strokeWidth={2}
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                              >
+                                <line x1="6" y1="3" x2="6" y2="15" />
+                                <circle cx="18" cy="6" r="3" />
+                                <circle cx="6" cy="18" r="3" />
+                                <path d="M18 9a9 9 0 0 1-9 9" />
+                              </svg>
+                              <span className="truncate">{run.git_branch}</span>
+                            </span>
+                            {run.git_commit && (
+                              <span
+                                className="inline-flex items-center gap-1 rounded-md border border-border-default/80 bg-surface-100 dark:bg-surface-200 px-1.5 py-0.5 text-[10px] font-mono font-semibold text-text-ink dark:text-text-on-primary shadow-2xs leading-none"
+                                title={`Commit SHA: ${run.git_commit_full || run.git_commit}`}
+                              >
+                                <svg
+                                  className="h-2.5 w-2.5 text-text-muted shrink-0"
+                                  fill="none"
+                                  viewBox="0 0 24 24"
+                                  stroke="currentColor"
+                                  strokeWidth={2}
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                >
+                                  <circle cx="12" cy="12" r="4" />
+                                  <line x1="12" y1="1.05" x2="12" y2="7" />
+                                  <line x1="12" y1="17.05" x2="12" y2="22.95" />
+                                </svg>
+                                <span>{run.git_commit}</span>
+                              </span>
+                            )}
+                          </>
+                        ) : run.git_commit ? (
                           <span
-                            className="inline-flex items-center gap-1 rounded-full border border-border-default bg-surface-100 dark:bg-surface-200 px-2 py-0.5 text-[10px] font-mono font-semibold text-text-ink dark:text-text-on-primary shadow-2xs"
+                            className="inline-flex items-center gap-1 rounded-md border border-border-default/80 bg-surface-100 dark:bg-surface-200 px-1.5 py-0.5 text-[10px] font-mono font-semibold text-text-ink dark:text-text-on-primary shadow-2xs leading-none"
                             title={`Commit SHA: ${run.git_commit_full || run.git_commit}`}
                           >
                             <svg
@@ -243,13 +290,19 @@ export default function RunSwitcherModal({
                               strokeLinejoin="round"
                             >
                               <circle cx="12" cy="12" r="4" />
-                              <line x1="1.05" y1="12" x2="7" y2="12" />
-                              <line x1="17.05" y1="12" x2="22.95" y2="12" />
+                              <line x1="12" y1="1.05" x2="12" y2="7" />
+                              <line x1="12" y1="17.05" x2="12" y2="22.95" />
                             </svg>
                             <span>{run.git_commit}</span>
                           </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 rounded-md bg-surface-100/60 dark:bg-surface-200/40 border border-border-default/50 px-1.5 py-0.5 text-[10px] text-text-muted italic leading-none select-none">
+                            No git metadata
+                          </span>
                         )}
                       </div>
+
+                      {/* Row 3: Execution Telemetry (Timestamp, Duration, Test & Worker Counts) */}
                       <div className="mt-1 flex items-center gap-2 text-xs text-text-body-mid dark:text-text-muted flex-wrap">
                         <span>{formatDate(run.started_at)}</span>
                         <span>·</span>

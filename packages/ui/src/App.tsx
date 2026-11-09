@@ -5,6 +5,7 @@ import FilesSection from '@/components/files/FilesSection';
 import HistorySection from '@/components/history/HistorySection';
 import Sidebar, { type TabKey } from '@/components/layout/Sidebar';
 import ThemeControls from '@/components/layout/ThemeControls';
+import HeaderRunSwitcher from '@/components/layout/HeaderRunSwitcher';
 import { ConfigGeneratorModal } from '@/components/layout/ConfigGeneratorModal';
 import { ShortcutsModal } from '@/components/shared/ShortcutsModal';
 import BackToTopButton from '@/components/shared/BackToTopButton';
@@ -831,6 +832,20 @@ export default function App() {
                 </span>
               </div>
               <div className="mt-1.5 flex items-center gap-2 flex-wrap text-xs text-text-body-mid dark:text-text-muted min-w-0">
+                {historyData && historyData.runs && historyData.runs.length > 1 && (
+                  <>
+                    <HeaderRunSwitcher
+                      currentRunId={
+                        selectedRunId ||
+                        (historyData?.runs?.[historyData.runs.length - 1]?.run_id ?? null)
+                      }
+                      runs={historyData.runs}
+                      onSelectRun={(runId) => void loadRunById(runId)}
+                      onOpenFullModal={() => setIsRunSwitcherOpen(true)}
+                    />
+                    <span className="text-text-muted/60 font-medium select-none">|</span>
+                  </>
+                )}
                 {summary && (
                   <>
                     <div className="inline-flex items-center gap-1.5 leading-none">
@@ -962,8 +977,8 @@ export default function App() {
                                     strokeLinejoin="round"
                                   >
                                     <circle cx="8" cy="8" r="3" />
-                                    <line x1="1" y1="8" x2="5" y2="8" />
-                                    <line x1="11" y1="8" x2="15" y2="8" />
+                                    <line x1="8" y1="1" x2="8" y2="5" />
+                                    <line x1="8" y1="11" x2="8" y2="15" />
                                   </svg>
                                   <span>{summary.gitCommit}</span>
                                 </>
@@ -980,60 +995,6 @@ export default function App() {
           </div>
 
           <div className="flex items-center gap-3 shrink-0">
-            {historyData && historyData.runs && historyData.runs.length > 1 && (
-              <>
-                {(loadError ||
-                  (selectedRunId &&
-                    historyData.runs[0]?.run_id &&
-                    selectedRunId !== historyData.runs[0].run_id)) && (
-                  <button
-                    type="button"
-                    onClick={() => void loadLatestRun(true)}
-                    className="inline-flex items-center gap-1.5 h-8 px-2.5 text-xs font-semibold rounded-md border border-accent-blue/30 bg-accent-blue/10 hover:bg-accent-blue/20 text-accent-blue shadow-2xs transition-colors cursor-pointer"
-                    title="Return to latest test run"
-                  >
-                    <svg
-                      className="h-3.5 w-3.5 text-accent-blue"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                      strokeWidth={2}
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-                      />
-                    </svg>
-                    <span>Latest Run</span>
-                  </button>
-                )}
-                <button
-                  type="button"
-                  onClick={() => setIsRunSwitcherOpen(true)}
-                  className="inline-flex items-center gap-1.5 h-8 px-2.5 text-xs font-semibold rounded-md border border-border-default bg-surface-100 hover:bg-surface-200 text-text-ink dark:text-text-on-primary shadow-2xs hover:border-accent-blue transition-colors cursor-pointer group"
-                  title="Switch test run (/)"
-                >
-                  <svg
-                    className="h-3.5 w-3.5 text-text-muted"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                    strokeWidth={2}
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-                    />
-                  </svg>
-                  <span>Switch Run</span>
-                  <kbd className="opacity-0 group-hover:opacity-100 transition-opacity hidden sm:inline-flex h-4.5 min-w-4.5 items-center justify-center rounded px-1 text-[11px] font-medium leading-none text-text-muted border border-border-default/60 bg-surface-50 dark:bg-surface-200/50">
-                    /
-                  </kbd>
-                </button>
-              </>
-            )}
             <ThemeControls
               theme={theme}
               setTheme={(t) => {

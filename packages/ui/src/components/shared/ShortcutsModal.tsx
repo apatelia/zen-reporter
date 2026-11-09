@@ -46,6 +46,7 @@ const SHORTCUT_SECTIONS: ShortcutSection[] = [
     title: 'Search & Quick Actions',
     shortcuts: [
       { keyDesc: ['/'], description: 'Open test run switcher' },
+      { keyDesc: ['l'], description: 'Jump to latest run (when Switch Run menu or modal is open)' },
       { keyDesc: ['f'], description: 'Focus contextual search / filter input' },
       { keyDesc: ['g'], description: 'Copy Git commit SHA' },
       { keyDesc: ['b'], description: 'Copy Git branch name' },
