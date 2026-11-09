@@ -546,6 +546,12 @@ export default function App() {
       if (success) {
         setCommitCopied(true);
         setTimeout(() => setCommitCopied(false), 2000);
+        setToastNotification({
+          id: `copy-commit-${Date.now()}`,
+          type: 'success',
+          title: 'Copied to clipboard',
+          message: `Copied full commit SHA "${commitToCopy}" to clipboard.`,
+        });
       }
     });
   }, [summary?.gitCommitFull, summary?.gitCommit]);
@@ -558,6 +564,12 @@ export default function App() {
       if (success) {
         setBranchCopied(true);
         setTimeout(() => setBranchCopied(false), 2000);
+        setToastNotification({
+          id: `copy-branch-${Date.now()}`,
+          type: 'success',
+          title: 'Copied to clipboard',
+          message: `Copied branch name "${branchToCopy}" to clipboard.`,
+        });
       }
     });
   }, [summary?.gitBranch]);
@@ -810,192 +822,198 @@ export default function App() {
       {/* Main Content */}
       <main className="flex-1 flex flex-col min-w-0 overflow-hidden bg-canvas">
         {/* Top Bar with Project/Run Name & Theme Switch */}
-        <header className="h-16 border-b border-border-default bg-surface-50/50 px-6 sm:px-8 shrink-0 flex items-end pb-2.5 justify-between gap-4">
-          <div className="flex items-center gap-3 min-w-0">
-            <div className="min-w-0 flex flex-col justify-center">
-              <div className="flex items-center gap-1.5 text-base sm:text-lg font-bold tracking-tight text-text-ink dark:text-text-on-primary leading-tight min-w-0">
-                <span className="truncate">{projectName || 'Test Execution Report'}</span>
-                <svg
-                  className="h-4 w-4 text-text-muted shrink-0"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                  strokeWidth={2}
-                >
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-                </svg>
-                <span
-                  className="font-normal text-text-body-mid dark:text-text-muted truncate max-w-md"
-                  title={testRunName || 'Playwright Test Reporter'}
-                >
-                  {testRunName || 'Playwright Test Reporter'}
-                </span>
-              </div>
-              <div className="mt-1.5 flex items-center gap-2 flex-wrap text-xs text-text-body-mid dark:text-text-muted min-w-0">
-                {historyData && historyData.runs && historyData.runs.length > 1 && (
-                  <>
-                    <HeaderRunSwitcher
-                      currentRunId={
-                        selectedRunId ||
-                        (historyData?.runs?.[historyData.runs.length - 1]?.run_id ?? null)
-                      }
-                      runs={historyData.runs}
-                      onSelectRun={(runId) => void loadRunById(runId)}
-                      onOpenFullModal={() => setIsRunSwitcherOpen(true)}
-                    />
-                    <span className="text-text-muted/60 font-medium select-none">|</span>
-                  </>
-                )}
-                {summary && (
-                  <>
-                    <div className="inline-flex items-center gap-1.5 leading-none">
-                      <svg
-                        className="h-3.5 w-3.5 text-text-muted shrink-0"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                        strokeWidth={1.75}
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      >
-                        <rect width="18" height="18" x="3" y="4" rx="2" ry="2" />
-                        <line x1="16" x2="16" y1="2" y2="6" />
-                        <line x1="8" x2="8" y1="2" y2="6" />
-                        <line x1="3" x2="21" y1="10" y2="10" />
-                      </svg>
-                      <span className="font-medium">
-                        {formatDateRange(summary.startTime, summary.endTime)}
-                      </span>
-                    </div>
-                    <span className="text-text-muted/60 font-medium select-none">|</span>
-                    <span className="inline-flex items-center gap-1.5 px-1.5 py-0.5 rounded-md bg-success-500/10 text-xs font-semibold text-success-700 dark:text-success-400 border border-success-500/25 dark:border-success-500/35 leading-none shrink-0">
-                      <svg
-                        className="h-3 w-3 text-success-600 dark:text-success-400 shrink-0"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                        strokeWidth={2}
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      >
-                        <line x1="10" x2="14" y1="2" y2="2" />
-                        <line x1="12" x2="15" y1="14" y2="11" />
-                        <circle cx="12" cy="14" r="8" />
-                      </svg>
-                      <span>{formatDuration(summary.duration)}</span>
-                    </span>
-                    {(summary.gitBranch || summary.gitCommit) && (
-                      <>
-                        {summary.gitBranch && (
-                          <>
-                            <span className="text-text-muted/60 font-medium select-none">|</span>
+        <header className="h-24 border-b border-border-default bg-surface-50/50 px-6 sm:px-8 shrink-0 flex items-center justify-between gap-6 py-3">
+          <div className="flex flex-col justify-between h-full min-w-0">
+            {/* Row 1: Breadcrumb */}
+            <div className="flex items-center gap-2 text-base sm:text-lg font-bold tracking-tight text-text-ink dark:text-text-on-primary leading-tight min-w-0">
+              <span className="font-extrabold text-text-ink dark:text-text-on-primary truncate">
+                {projectName || 'Test Execution Report'}
+              </span>
+              <svg
+                className="h-4 w-4 text-text-muted shrink-0"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={2}
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+              </svg>
+              <span
+                className="font-medium text-text-body-mid dark:text-text-muted truncate max-w-md"
+                title={testRunName || 'Playwright Test Reporter'}
+              >
+                {testRunName || 'Playwright Test Reporter'}
+              </span>
+            </div>
+
+            {/* Row 2: Controls & Metadata */}
+            <div className="flex items-center gap-2.5 flex-wrap text-xs text-text-body-mid dark:text-text-muted min-w-0">
+              {historyData && historyData.runs && historyData.runs.length > 1 && (
+                <>
+                  <HeaderRunSwitcher
+                    currentRunId={
+                      selectedRunId ||
+                      (historyData?.runs?.[historyData.runs.length - 1]?.run_id ?? null)
+                    }
+                    runs={historyData.runs}
+                    onSelectRun={(runId) => void loadRunById(runId)}
+                    onOpenFullModal={() => setIsRunSwitcherOpen(true)}
+                  />
+                  <span className="text-text-muted/60 font-medium select-none">|</span>
+                </>
+              )}
+              {summary && (
+                <>
+                  <div className="inline-flex items-center gap-1.5 h-7.5 text-xs font-medium text-text-body-mid dark:text-text-muted leading-none shrink-0 select-none">
+                    <svg
+                      className="h-3.5 w-3.5 text-text-muted shrink-0"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                      strokeWidth={1.75}
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <rect width="18" height="18" x="3" y="4" rx="2" ry="2" />
+                      <line x1="16" x2="16" y1="2" y2="6" />
+                      <line x1="8" x2="8" y1="2" y2="6" />
+                      <line x1="3" x2="21" y1="10" y2="10" />
+                    </svg>
+                    <span>{formatDateRange(summary.startTime, summary.endTime)}</span>
+                  </div>
+                  <span className="text-text-muted/60 font-medium select-none">|</span>
+                  <div className="inline-flex items-center gap-1.5 h-7.5 text-xs font-semibold text-success-700 dark:text-success-400 leading-none shrink-0 select-none">
+                    <svg
+                      className="h-3.5 w-3.5 text-success-600 dark:text-success-400 shrink-0"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                      strokeWidth={2}
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <line x1="10" x2="14" y1="2" y2="2" />
+                      <line x1="12" x2="15" y1="14" y2="11" />
+                      <circle cx="12" cy="14" r="8" />
+                    </svg>
+                    <span>{formatDuration(summary.duration)}</span>
+                  </div>
+                  {(summary.gitBranch || summary.gitCommit) && (
+                    <>
+                      {summary.gitBranch && (
+                        <>
+                          <span className="text-text-muted/60 font-medium select-none">|</span>
+                          <div className="inline-flex items-center gap-1.5 h-7.5 text-xs font-semibold leading-none text-text-ink dark:text-text-on-primary shrink-0 select-none">
+                            <svg
+                              className="h-3.5 w-3.5 text-accent-blue shrink-0"
+                              viewBox="0 0 16 16"
+                              fill="currentColor"
+                            >
+                              <path d="M9.5 3.25a2.25 2.25 0 1 1 3 2.122V6A2.5 2.5 0 0 1 10 8.5H6a1 1 0 0 0-1 1v1.128a2.251 2.251 0 1 1-1.5 0V5.372a2.25 2.25 0 1 1 1.5 0v1.836A2.493 2.493 0 0 1 6 7h4a1 1 0 0 0 1-1v-.628A2.25 2.25 0 0 1 9.5 3.25Zm-6 0a.75.75 0 1 0 1.5 0 .75.75 0 0 0-1.5 0Zm8.25-.75a.75.75 0 1 0 0 1.5.75.75 0 0 0 0-1.5ZM4.25 12a.75.75 0 1 0 0 1.5.75.75 0 0 0 0-1.5Z" />
+                            </svg>
+                            <span className="truncate max-w-56">{summary.gitBranch}</span>
                             <button
                               type="button"
                               onClick={handleCopyBranch}
-                              className={`group inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md border text-xs font-semibold leading-none transition-all cursor-pointer max-w-48 shrink-0 ${
-                                branchCopied
-                                  ? 'border-success-500 bg-success-500/15 text-success-700 dark:text-success-400 dark:border-success-500/40'
-                                  : 'border-border-default/70 bg-surface-100/80 hover:bg-surface-200 dark:bg-surface-200/60 dark:hover:bg-surface-200 text-text-ink dark:text-text-on-primary hover:border-accent-blue/50 hover:text-accent-blue dark:hover:border-accent-blue/50 dark:hover:text-accent-blue'
-                              }`}
-                              title={
-                                branchCopied
-                                  ? 'Copied branch name!'
-                                  : `Click to copy branch (${summary.gitBranch}) (b)`
-                              }
+                              className="inline-flex items-center justify-center p-1 rounded-md text-text-muted hover:text-accent-blue hover:bg-surface-200/60 transition-colors cursor-pointer"
+                              title={`Copy branch name (${summary.gitBranch}) (b)`}
+                              aria-label="Copy branch name"
                             >
                               {branchCopied ? (
-                                <>
-                                  <svg
-                                    className="h-3 w-3 text-success-600 dark:text-success-400 shrink-0"
-                                    fill="none"
-                                    viewBox="0 0 24 24"
-                                    stroke="currentColor"
-                                    strokeWidth={2.5}
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                  >
-                                    <polyline points="20 6 9 17 4 12" />
-                                  </svg>
-                                  <span>Copied!</span>
-                                </>
+                                <svg
+                                  className="h-3.5 w-3.5 text-success-600 dark:text-success-400"
+                                  fill="none"
+                                  viewBox="0 0 24 24"
+                                  stroke="currentColor"
+                                  strokeWidth={2.5}
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                >
+                                  <polyline points="20 6 9 17 4 12" />
+                                </svg>
                               ) : (
-                                <>
-                                  <svg
-                                    className="h-3 w-3 text-accent-blue shrink-0"
-                                    viewBox="0 0 16 16"
-                                    fill="currentColor"
-                                  >
-                                    <path d="M9.5 3.25a2.25 2.25 0 1 1 3 2.122V6A2.5 2.5 0 0 1 10 8.5H6a1 1 0 0 0-1 1v1.128a2.251 2.251 0 1 1-1.5 0V5.372a2.25 2.25 0 1 1 1.5 0v1.836A2.493 2.493 0 0 1 6 7h4a1 1 0 0 0 1-1v-.628A2.25 2.25 0 0 1 9.5 3.25Zm-6 0a.75.75 0 1 0 1.5 0 .75.75 0 0 0-1.5 0Zm8.25-.75a.75.75 0 1 0 0 1.5.75.75 0 0 0 0-1.5ZM4.25 12a.75.75 0 1 0 0 1.5.75.75 0 0 0 0-1.5Z" />
-                                  </svg>
-                                  <span className="truncate">{summary.gitBranch}</span>
-                                </>
+                                <svg
+                                  className="h-3.5 w-3.5"
+                                  fill="none"
+                                  viewBox="0 0 24 24"
+                                  stroke="currentColor"
+                                  strokeWidth={2}
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                >
+                                  <rect width="14" height="14" x="8" y="8" rx="2" ry="2" />
+                                  <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2" />
+                                </svg>
                               )}
                             </button>
-                          </>
-                        )}
-                        {summary.gitCommit && (
-                          <>
-                            <span className="text-text-muted/60 font-medium select-none">|</span>
+                          </div>
+                        </>
+                      )}
+                      {summary.gitCommit && (
+                        <>
+                          <span className="text-text-muted/60 font-medium select-none">|</span>
+                          <div className="inline-flex items-center gap-1.5 h-7.5 text-xs font-mono font-semibold leading-none text-text-ink dark:text-text-on-primary shrink-0 select-none">
+                            <svg
+                              className="h-3.5 w-3.5 text-accent-blue shrink-0"
+                              viewBox="0 0 16 16"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth={1.75}
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                            >
+                              <circle cx="8" cy="8" r="3" />
+                              <line x1="8" y1="1" x2="8" y2="5" />
+                              <line x1="8" y1="11" x2="8" y2="15" />
+                            </svg>
+                            <span>{summary.gitCommit}</span>
                             <button
                               type="button"
                               onClick={handleCopyCommit}
-                              className={`group inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md border text-xs font-mono font-semibold leading-none transition-all cursor-pointer shrink-0 ${
-                                commitCopied
-                                  ? 'border-success-500 bg-success-500/15 text-success-700 dark:text-success-400 dark:border-success-500/40'
-                                  : 'border-border-default/70 bg-surface-100/80 hover:bg-surface-200 dark:bg-surface-200/60 dark:hover:bg-surface-200 text-text-ink dark:text-text-on-primary hover:border-accent-blue/50 hover:text-accent-blue dark:hover:border-accent-blue/50 dark:hover:text-accent-blue'
-                              }`}
-                              title={
-                                commitCopied
-                                  ? 'Copied full commit SHA!'
-                                  : `Click to copy commit SHA (${summary.gitCommitFull || summary.gitCommit}) (g)`
-                              }
+                              className="inline-flex items-center justify-center p-1 rounded-md text-text-muted hover:text-accent-blue hover:bg-surface-200/60 transition-colors cursor-pointer font-sans"
+                              title={`Copy commit SHA (${summary.gitCommitFull || summary.gitCommit}) (g)`}
+                              aria-label="Copy commit SHA"
                             >
                               {commitCopied ? (
-                                <>
-                                  <svg
-                                    className="h-3 w-3 text-success-600 dark:text-success-400 shrink-0"
-                                    fill="none"
-                                    viewBox="0 0 24 24"
-                                    stroke="currentColor"
-                                    strokeWidth={2.5}
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                  >
-                                    <polyline points="20 6 9 17 4 12" />
-                                  </svg>
-                                  <span>Copied!</span>
-                                </>
+                                <svg
+                                  className="h-3.5 w-3.5 text-success-600 dark:text-success-400"
+                                  fill="none"
+                                  viewBox="0 0 24 24"
+                                  stroke="currentColor"
+                                  strokeWidth={2.5}
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                >
+                                  <polyline points="20 6 9 17 4 12" />
+                                </svg>
                               ) : (
-                                <>
-                                  <svg
-                                    className="h-3 w-3 text-text-body-mid dark:text-text-on-primary/80 shrink-0 transition-colors group-hover:text-accent-blue dark:group-hover:text-accent-blue"
-                                    viewBox="0 0 16 16"
-                                    fill="none"
-                                    stroke="currentColor"
-                                    strokeWidth={1.75}
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                  >
-                                    <circle cx="8" cy="8" r="3" />
-                                    <line x1="8" y1="1" x2="8" y2="5" />
-                                    <line x1="8" y1="11" x2="8" y2="15" />
-                                  </svg>
-                                  <span>{summary.gitCommit}</span>
-                                </>
+                                <svg
+                                  className="h-3.5 w-3.5"
+                                  fill="none"
+                                  viewBox="0 0 24 24"
+                                  stroke="currentColor"
+                                  strokeWidth={2}
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                >
+                                  <rect width="14" height="14" x="8" y="8" rx="2" ry="2" />
+                                  <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2" />
+                                </svg>
                               )}
                             </button>
-                          </>
-                        )}
-                      </>
-                    )}
-                  </>
-                )}
-              </div>
+                          </div>
+                        </>
+                      )}
+                    </>
+                  )}
+                </>
+              )}
             </div>
           </div>
 
-          <div className="flex items-center gap-3 shrink-0">
+          <div className="flex flex-col justify-between h-full shrink-0">
             <ThemeControls
+              layout="stack"
               theme={theme}
               setTheme={(t) => {
                 const normalized = normalizeTheme(t);

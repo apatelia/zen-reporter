@@ -52,7 +52,7 @@ export default function Toast({ notification, onDismiss, className = '' }: Toast
       aria-live="polite"
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
-      className={`fixed top-18 left-1/2 -translate-x-1/2 z-50 flex items-start gap-3 p-3.5 w-full max-w-md rounded-lg border shadow-xl backdrop-blur-md transition-all duration-200 animate-in fade-in slide-in-from-top-3 ${
+      className={`fixed top-26 left-1/2 -translate-x-1/2 z-50 flex items-start gap-3 p-3.5 w-full max-w-md rounded-lg border shadow-xl backdrop-blur-md transition-all duration-200 animate-in fade-in slide-in-from-top-3 ${
         isSuccess
           ? 'bg-surface-50 dark:bg-surface-200 border-success-500 text-text-ink dark:text-text-on-primary shadow-success-500/10 ring-1 ring-success-500/20'
           : isError

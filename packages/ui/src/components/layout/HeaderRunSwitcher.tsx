@@ -91,14 +91,14 @@ export function HeaderRunSwitcher({
         aria-haspopup="true"
         aria-expanded={isOpen}
         title="Switch test run (Click for quick menu or press / for full search)"
-        className={`group inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md border text-xs font-semibold leading-none shadow-2xs transition-all cursor-pointer select-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-blue ${
+        className={`group inline-flex items-center gap-1.5 h-7.5 px-2.5 rounded-lg border text-xs font-semibold leading-none shadow-2xs transition-all cursor-pointer select-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-blue ${
           isOpen
             ? 'border-accent-blue bg-accent-blue/15 text-accent-blue'
             : 'border-accent-blue/35 bg-accent-blue/10 hover:bg-accent-blue/20 text-accent-blue hover:border-accent-blue/60'
         }`}
       >
         <svg
-          className="h-3 w-3 shrink-0 text-accent-blue"
+          className="h-3.5 w-3.5 shrink-0 text-accent-blue"
           fill="none"
           viewBox="0 0 24 24"
           stroke="currentColor"

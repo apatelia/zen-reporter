@@ -336,51 +336,88 @@ export default function Sidebar({
     >
       {/* Sidebar Header (Aligned with Main Top Bar) */}
       <div
-        className={`flex h-16 items-center border-b border-border-default ${
-          isCollapsed ? 'justify-center px-2' : 'justify-start min-w-0 px-4'
+        className={`flex h-24 border-b border-border-default ${
+          isCollapsed
+            ? 'items-center justify-center px-2'
+            : 'flex-col justify-between px-4 py-3 min-w-0'
         }`}
       >
-        <a
-          href="https://zen-reporter.vercel.app"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="flex items-center gap-2.5 min-w-0 group cursor-pointer"
-          title={`Zen Reporter v${pkg.version}`}
-        >
-          <img
-            src={logo}
-            alt="Zen Reporter"
-            className="h-7 w-7 shrink-0 object-contain drop-shadow-xs transition-transform group-hover:scale-105 dark:hidden"
-          />
-          <img
-            src={logoDark}
-            alt="Zen Reporter"
-            className="h-7 w-7 shrink-0 object-contain drop-shadow-xs transition-transform group-hover:scale-105 hidden dark:block"
-          />
-          {!isCollapsed && (
-            <div className="flex flex-col min-w-0">
-              <span className="inline-flex items-center gap-1 text-sm font-bold tracking-tight text-accent-blue dark:text-accent-blue group-hover:underline truncate leading-tight transition-colors">
-                Zen Reporter
-                <svg
-                  className="h-3 w-3 shrink-0 text-text-muted group-hover:opacity-100 transition-opacity"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                  strokeWidth={2}
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
+        {isCollapsed ? (
+          <a
+            href="https://zen-reporter.vercel.app"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="group cursor-pointer p-1"
+            title={`Zen Reporter v${pkg.version}`}
+          >
+            <img
+              src={logo}
+              alt="Zen Reporter"
+              className="h-9 w-9 shrink-0 object-contain drop-shadow-xs transition-transform group-hover:scale-105 dark:hidden"
+            />
+            <img
+              src={logoDark}
+              alt="Zen Reporter"
+              className="h-9 w-9 shrink-0 object-contain drop-shadow-xs transition-transform group-hover:scale-105 hidden dark:block"
+            />
+          </a>
+        ) : (
+          <>
+            {/* Top Row: Logo, Brand Link & Version */}
+            <div className="flex items-center gap-3 min-w-0">
+              <a
+                href="https://zen-reporter.vercel.app"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="shrink-0 group cursor-pointer"
+                title={`Zen Reporter v${pkg.version}`}
+              >
+                <img
+                  src={logo}
+                  alt="Zen Reporter"
+                  className="h-9 w-9 shrink-0 object-contain drop-shadow-xs transition-transform group-hover:scale-105 dark:hidden"
+                />
+                <img
+                  src={logoDark}
+                  alt="Zen Reporter"
+                  className="h-9 w-9 shrink-0 object-contain drop-shadow-xs transition-transform group-hover:scale-105 hidden dark:block"
+                />
+              </a>
+              <div className="flex flex-col min-w-0 justify-center">
+                <a
+                  href="https://zen-reporter.vercel.app"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 text-base font-bold tracking-tight text-accent-blue dark:text-accent-blue group hover:underline truncate leading-tight transition-colors cursor-pointer"
+                  title={`Zen Reporter (opens in new tab)`}
                 >
-                  <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
-                  <polyline points="15 3 21 3 21 9" />
-                  <line x1="10" y1="14" x2="21" y2="3" />
-                </svg>
-              </span>
-              <span className="text-[10px] font-medium text-text-muted truncate leading-tight">
-                v{pkg.version}
-              </span>
+                  <span className="truncate">Zen Reporter</span>
+                  <svg
+                    className="h-3.5 w-3.5 shrink-0 text-text-muted group-hover:text-accent-blue transition-colors"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    strokeWidth={2}
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+                    <polyline points="15 3 21 3 21 9" />
+                    <line x1="10" y1="14" x2="21" y2="3" />
+                  </svg>
+                </a>
+                <span className="text-[11px] font-normal text-text-muted dark:text-surface-400 select-none leading-tight mt-0.5">
+                  v{pkg.version}
+                </span>
+              </div>
             </div>
-          )}
-        </a>
+
+            {/* Bottom Row: Subtitle covering optimal width */}
+            <div className="text-xs font-semibold text-text-body-mid dark:text-text-muted truncate select-none tracking-tight">
+              Beautiful Playwright Reports
+            </div>
+          </>
+        )}
       </div>
 
       {/* Nav */}
