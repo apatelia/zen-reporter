@@ -445,12 +445,11 @@ export default function Sidebar({
                 viewBox="0 0 24 24"
                 stroke="currentColor"
                 strokeWidth={1.75}
+                strokeLinecap="round"
+                strokeLinejoin="round"
               >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M9.879 7.519c1.171-1.025 3.071-1.025 4.242 0 1.172 1.025 1.172 2.687 0 3.712-.203.179-.43.326-.67.442-.745.361-1.45.999-1.451 1.827v.75M12 18h.01"
-                />
+                <rect width="20" height="16" x="2" y="4" rx="2" ry="2" />
+                <path d="M6 8h.01M10 8h.01M14 8h.01M18 8h.01M8 12h.01M12 12h.01M16 12h.01M7 16h10" />
               </svg>
               {!isCollapsed && <span className="truncate">Shortcuts</span>}
             </div>

@@ -809,22 +809,30 @@ export default function App() {
       {/* Main Content */}
       <main className="flex-1 flex flex-col min-w-0 overflow-hidden bg-canvas">
         {/* Top Bar with Project/Run Name & Theme Switch */}
-        <header className="h-16 border-b border-border-default bg-surface-50/50 px-6 sm:px-8 shrink-0 flex items-center justify-between gap-4">
+        <header className="h-16 border-b border-border-default bg-surface-50/50 px-6 sm:px-8 shrink-0 flex items-end pb-2.5 justify-between gap-4">
           <div className="flex items-center gap-3 min-w-0">
             <div className="min-w-0 flex flex-col justify-center">
-              <h1 className="text-base font-bold tracking-tight text-text-ink dark:text-text-on-primary sm:text-lg truncate leading-tight">
-                {projectName || 'Test Execution Report'}
-              </h1>
-              <div className="mt-0.5 flex items-center gap-2 flex-wrap text-xs text-text-body-mid dark:text-text-muted min-w-0">
+              <div className="flex items-center gap-1.5 text-base sm:text-lg font-bold tracking-tight text-text-ink dark:text-text-on-primary leading-tight min-w-0">
+                <span className="truncate">{projectName || 'Test Execution Report'}</span>
+                <svg
+                  className="h-4 w-4 text-text-muted shrink-0"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={2}
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                </svg>
                 <span
-                  className="font-medium text-text-ink dark:text-text-on-primary max-w-md truncate"
+                  className="font-normal text-text-body-mid dark:text-text-muted truncate max-w-md"
                   title={testRunName || 'Playwright Test Reporter'}
                 >
                   {testRunName || 'Playwright Test Reporter'}
                 </span>
+              </div>
+              <div className="mt-1.5 flex items-center gap-2 flex-wrap text-xs text-text-body-mid dark:text-text-muted min-w-0">
                 {summary && (
                   <>
-                    <span className="text-text-muted/60 font-medium">·</span>
                     <div className="inline-flex items-center gap-1.5 leading-none">
                       <svg
                         className="h-3.5 w-3.5 text-text-muted shrink-0"
@@ -844,8 +852,8 @@ export default function App() {
                         {formatDateRange(summary.startTime, summary.endTime)}
                       </span>
                     </div>
-                    <span className="text-text-muted/60 font-medium">·</span>
-                    <span className="inline-flex items-center gap-1.5 h-5 px-2 rounded-full bg-success-500/10 text-[11px] font-semibold text-success-700 dark:text-success-400 border border-success-500/25 dark:border-success-500/35 leading-none shrink-0">
+                    <span className="text-text-muted/60 font-medium select-none">|</span>
+                    <span className="inline-flex items-center gap-1.5 px-1.5 py-0.5 rounded-md bg-success-500/10 text-xs font-semibold text-success-700 dark:text-success-400 border border-success-500/25 dark:border-success-500/35 leading-none shrink-0">
                       <svg
                         className="h-3 w-3 text-success-600 dark:text-success-400 shrink-0"
                         fill="none"
@@ -859,22 +867,20 @@ export default function App() {
                         <line x1="12" x2="15" y1="14" y2="11" />
                         <circle cx="12" cy="14" r="8" />
                       </svg>
-                      <span className="leading-none translate-y-px">
-                        {formatDuration(summary.duration)}
-                      </span>
+                      <span>{formatDuration(summary.duration)}</span>
                     </span>
                     {(summary.gitBranch || summary.gitCommit) && (
                       <>
-                        <span className="text-text-muted/60 font-medium">·</span>
-                        <div className="flex items-center gap-1.5">
-                          {summary.gitBranch && (
+                        {summary.gitBranch && (
+                          <>
+                            <span className="text-text-muted/60 font-medium select-none">|</span>
                             <button
                               type="button"
                               onClick={handleCopyBranch}
-                              className={`group inline-flex items-center gap-1.5 h-5 rounded-full border px-2 text-[11px] font-medium leading-none transition-all cursor-pointer shadow-2xs max-w-44 shrink-0 ${
+                              className={`group inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md border text-xs font-semibold leading-none transition-all cursor-pointer max-w-48 shrink-0 ${
                                 branchCopied
                                   ? 'border-success-500 bg-success-500/15 text-success-700 dark:text-success-400 dark:border-success-500/40'
-                                  : 'border-border-default bg-surface-100 dark:bg-surface-200 text-text-ink dark:text-text-on-primary hover:border-accent-blue hover:text-accent-blue dark:hover:border-accent-blue dark:hover:text-accent-blue'
+                                  : 'border-border-default/70 bg-surface-100/80 hover:bg-surface-200 dark:bg-surface-200/60 dark:hover:bg-surface-200 text-text-ink dark:text-text-on-primary hover:border-accent-blue/50 hover:text-accent-blue dark:hover:border-accent-blue/50 dark:hover:text-accent-blue'
                               }`}
                               title={
                                 branchCopied
@@ -895,7 +901,7 @@ export default function App() {
                                   >
                                     <polyline points="20 6 9 17 4 12" />
                                   </svg>
-                                  <span className="leading-none translate-y-px">Copied!</span>
+                                  <span>Copied!</span>
                                 </>
                               ) : (
                                 <>
@@ -906,21 +912,22 @@ export default function App() {
                                   >
                                     <path d="M9.5 3.25a2.25 2.25 0 1 1 3 2.122V6A2.5 2.5 0 0 1 10 8.5H6a1 1 0 0 0-1 1v1.128a2.251 2.251 0 1 1-1.5 0V5.372a2.25 2.25 0 1 1 1.5 0v1.836A2.493 2.493 0 0 1 6 7h4a1 1 0 0 0 1-1v-.628A2.25 2.25 0 0 1 9.5 3.25Zm-6 0a.75.75 0 1 0 1.5 0 .75.75 0 0 0-1.5 0Zm8.25-.75a.75.75 0 1 0 0 1.5.75.75 0 0 0 0-1.5ZM4.25 12a.75.75 0 1 0 0 1.5.75.75 0 0 0 0-1.5Z" />
                                   </svg>
-                                  <span className="truncate leading-none translate-y-px">
-                                    {summary.gitBranch}
-                                  </span>
+                                  <span className="truncate">{summary.gitBranch}</span>
                                 </>
                               )}
                             </button>
-                          )}
-                          {summary.gitCommit && (
+                          </>
+                        )}
+                        {summary.gitCommit && (
+                          <>
+                            <span className="text-text-muted/60 font-medium select-none">|</span>
                             <button
                               type="button"
                               onClick={handleCopyCommit}
-                              className={`group inline-flex items-center gap-1.5 h-5 rounded-full border px-2 text-[11px] leading-none transition-all cursor-pointer shadow-2xs shrink-0 ${
+                              className={`group inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md border text-xs font-mono font-semibold leading-none transition-all cursor-pointer shrink-0 ${
                                 commitCopied
                                   ? 'border-success-500 bg-success-500/15 text-success-700 dark:text-success-400 dark:border-success-500/40'
-                                  : 'border-border-default bg-surface-100 dark:bg-surface-200 text-text-ink dark:text-text-on-primary hover:border-accent-blue hover:text-accent-blue dark:hover:border-accent-blue dark:hover:text-accent-blue'
+                                  : 'border-border-default/70 bg-surface-100/80 hover:bg-surface-200 dark:bg-surface-200/60 dark:hover:bg-surface-200 text-text-ink dark:text-text-on-primary hover:border-accent-blue/50 hover:text-accent-blue dark:hover:border-accent-blue/50 dark:hover:text-accent-blue'
                               }`}
                               title={
                                 commitCopied
@@ -941,25 +948,29 @@ export default function App() {
                                   >
                                     <polyline points="20 6 9 17 4 12" />
                                   </svg>
-                                  <span className="leading-none translate-y-px">Copied!</span>
+                                  <span>Copied!</span>
                                 </>
                               ) : (
                                 <>
                                   <svg
-                                    className="h-3 w-3 text-text-muted shrink-0 transition-colors group-hover:text-accent-blue dark:group-hover:text-accent-blue"
+                                    className="h-3 w-3 text-text-body-mid dark:text-text-on-primary/80 shrink-0 transition-colors group-hover:text-accent-blue dark:group-hover:text-accent-blue"
                                     viewBox="0 0 16 16"
-                                    fill="currentColor"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    strokeWidth={1.75}
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
                                   >
-                                    <path d="M10.5 8a2.5 2.5 0 1 1-5 0 2.5 2.5 0 0 1 5 0Zm1.43.75a4.002 4.002 0 0 0-7.86 0H.75a.75.75 0 0 1 0-1.5h3.32a4.002 4.002 0 0 0 7.86 0h3.32a.75.75 0 0 1 0 1.5h-3.32Z" />
+                                    <circle cx="8" cy="8" r="3" />
+                                    <line x1="1" y1="8" x2="5" y2="8" />
+                                    <line x1="11" y1="8" x2="15" y2="8" />
                                   </svg>
-                                  <span className="font-mono font-medium leading-none tracking-tight translate-y-px">
-                                    {summary.gitCommit}
-                                  </span>
+                                  <span>{summary.gitCommit}</span>
                                 </>
                               )}
                             </button>
-                          )}
-                        </div>
+                          </>
+                        )}
                       </>
                     )}
                   </>
@@ -968,7 +979,7 @@ export default function App() {
             </div>
           </div>
 
-          <div className="flex items-center gap-3 shrink-0 pt-0.5">
+          <div className="flex items-center gap-3 shrink-0">
             {historyData && historyData.runs && historyData.runs.length > 1 && (
               <>
                 {(loadError ||
