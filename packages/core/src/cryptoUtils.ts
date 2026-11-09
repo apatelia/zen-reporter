@@ -276,6 +276,7 @@ export function generateTerminalSummaryTable(
 ): string {
   const total = summary.total || 0;
   const passed = summary.passed || 0;
+  const flaky = summary.flaky || 0;
   const failed = summary.failed || 0;
   const timedOut = summary.timedOut || 0;
   const skipped = summary.skipped || 0;
@@ -291,6 +292,7 @@ export function generateTerminalSummaryTable(
     'Pass Rate',
     'Total',
     'Passed',
+    'Flaky',
     'Failed',
     'Timed Out',
     'Interrupted',
@@ -302,6 +304,7 @@ export function generateTerminalSummaryTable(
     passRate,
     String(total),
     String(passed),
+    String(flaky),
     String(failed),
     String(timedOut),
     String(interrupted),

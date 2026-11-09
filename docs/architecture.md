@@ -7,7 +7,7 @@ zen-reporter/
 │   ├── dashboard/             # Dashboard / Overview tab components
 │   │   ├── ExecutionTimingEfficiencyCard.tsx
 │   │   ├── Overview.tsx       # Main Overview layout
-│   │   ├── PassRateRing.tsx   # Radial pass rate chart (using theme tokens)
+│   │   ├── PassRateRing.tsx   # Radial pass rate chart (dual-tone clean/flaky arcs & theme tokens)
 │   │   ├── TestHealthCard.tsx # Test health breakdown
 │   │   └── TestResultsHero.tsx # Header summary metrics & run metadata cards
 │   ├── failures/              # Failures tab components
@@ -33,6 +33,7 @@ zen-reporter/
 │   │   └── SlowestTestsTableSection.tsx  # Paginated slowest tests table with CSV export
 │   ├── layout/                # Layout & navigation components
 │   │   ├── ConfigGeneratorModal.tsx # Interactive Playwright configuration generator modal
+│   │   ├── HeaderRunSwitcher.tsx    # Header run switcher dropdown for quick historical run toggling
 │   │   ├── Sidebar.tsx        # Navigation sidebar layout component
 │   │   └── ThemeControls.tsx  # Theme selector & dark mode toggle controls
 │   ├── pagination/            # Centralized pagination components & hooks

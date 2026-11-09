@@ -22,7 +22,8 @@ Dark mode:
 
 ## Features
 
-- **High-Level Test Dashboard**: Visual summary metrics featuring pass rate radial indicators, execution efficiency, test stability and flakiness, test run details (duration, Git branch & commit hash with one-click copy, projects, suites, test counts, worker threads, Playwright version, operating system), and calculation tooltips.
+- **High-Level Test Dashboard**: Visual summary metrics featuring pass rate radial indicators (with dual-tone arcs and flakiness warnings when tests pass via retries), execution efficiency, test stability and flakiness, test run details (duration, Git branch & commit hash with one-click copy and toast notifications, projects, suites, test counts, worker threads, Playwright version, operating system), and calculation tooltips.
+- **Header Run Switcher**: Quick-switch dropdown in the top navigation bar to seamlessly toggle between recent historical runs without leaving the active view, complemented by the full historical run switcher modal (`/`).
 - **Per-Project Execution Analytics**: Detailed status bar charts, volume and coverage distribution, and project detail cards comparing Playwright project profiles.
 - **Suite & Spec File Explorer**: Interactive, searchable tree view container for nested `describe` suites with collapsible nodes, bulk expand/collapse controls, retry badges, test case cards, and paginated spec file summary tables.
 - **Deep-Dive Failure Analysis**: Detailed root cause analysis with two grouping modes (file grouping and error signature clustering to group identical root causes into Shared Issue clusters), step-by-step execution traces with target indicators (`▶`), source code snippets with syntax highlighting, diff stack traces (`Expected` vs `Received`), and retry attempt tabs (`Run`, `Retry #1`).
@@ -120,7 +121,7 @@ zen-report/
 
 ### 1. Running Tests
 
-Run your Playwright tests as usual. Zen Reporter will stream live progress directly to your console (`line` mode in interactive terminals or `dot` mode in non-TTY environments) and display summary table upon test completion, while building structured suite trees and generating the HTML report bundle:
+Run your Playwright tests as usual. Zen Reporter will stream live progress directly to your console (`line` mode in interactive terminals or `dot` mode in non-TTY environments) with intuitive retry tracking (`🔁 [RETRYING]`, `🔄 [FLAKY]`, `❌ [FAILED]`) and display a comprehensive ASCII summary table upon test completion (highlighting Status, Duration, Pass Rate, Total, Passed, Flaky, Failed, Timed Out, Interrupted, and Skipped counts):
 
 ```bash
 npx playwright test

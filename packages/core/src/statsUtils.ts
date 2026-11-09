@@ -415,6 +415,7 @@ export function computeProjectExecutiveKPIs(projectStats: ProjectStats[]): Proje
 
 export interface StatusPercentages {
   passed: number;
+  flaky: number;
   failed: number;
   timedOut: number;
   interrupted: number;
@@ -426,7 +427,7 @@ export interface StatusPercentages {
 export type SummaryCountsInput = Pick<
   ResultSummary,
   'total' | 'passed' | 'failed' | 'timedOut' | 'skipped'
-> & { interrupted?: number; duration?: number };
+> & { flaky?: number; interrupted?: number; duration?: number };
 
 /**
  * Computes status percentages using the Largest Remainder Method (Hare-Niemeyer).
@@ -438,11 +439,13 @@ export type SummaryCountsInput = Pick<
  */
 export function computeStatusPercentages(summary: SummaryCountsInput): StatusPercentages {
   const { total, passed, failed, timedOut, skipped } = summary;
+  const flaky = summary.flaky ?? 0;
   const interrupted = summary.interrupted ?? 0;
 
   if (total === 0) {
     return {
       passed: 0,
+      flaky: 0,
       failed: 0,
       timedOut: 0,
       interrupted: 0,
@@ -452,13 +455,13 @@ export function computeStatusPercentages(summary: SummaryCountsInput): StatusPer
     };
   }
 
-  // 0: passed, 1: failed, 2: timedOut, 3: interrupted, 4: skipped
-  const counts = [passed, failed, timedOut, interrupted, skipped];
-  const floors = [0, 0, 0, 0, 0];
-  const remainders = [0, 0, 0, 0, 0];
+  // 0: passed, 1: flaky, 2: failed, 3: timedOut, 4: interrupted, 5: skipped
+  const counts = [passed, flaky, failed, timedOut, interrupted, skipped];
+  const floors = [0, 0, 0, 0, 0, 0];
+  const remainders = [0, 0, 0, 0, 0, 0];
   let sumFloors = 0;
 
-  for (let i = 0; i < 5; i++) {
+  for (let i = 0; i < 6; i++) {
     const pct = (counts[i] / total) * 100;
     const floor = Math.floor(pct);
     floors[i] = floor;
@@ -468,24 +471,26 @@ export function computeStatusPercentages(summary: SummaryCountsInput): StatusPer
 
   const remainderToDistribute = 100 - sumFloors;
 
-  // Order indices 0..4 by remainder descending, with original index as tie-breaker
-  const indices = [0, 1, 2, 3, 4];
+  // Order indices 0..5 by remainder descending, with original index as tie-breaker
+  const indices = [0, 1, 2, 3, 4, 5];
   indices.sort((a, b) => remainders[b] - remainders[a] || a - b);
 
-  for (let i = 0; i < remainderToDistribute && i < 5; i++) {
+  for (let i = 0; i < remainderToDistribute && i < 6; i++) {
     floors[indices[i]] += 1;
   }
 
-  const failureRate = floors[1] + floors[2] + floors[3];
+  const failureRate = floors[2] + floors[3] + floors[4];
+  const passRate = floors[0] + floors[1];
 
   return {
     passed: floors[0],
-    failed: floors[1],
-    timedOut: floors[2],
-    interrupted: floors[3],
-    skipped: floors[4],
+    flaky: floors[1],
+    failed: floors[2],
+    timedOut: floors[3],
+    interrupted: floors[4],
+    skipped: floors[5],
     failureRate,
-    passRate: floors[0],
+    passRate,
   };
 }
 

@@ -403,19 +403,46 @@ class ZenReporter implements Reporter {
    * @returns ResultSummary metrics object.
    */
   private computeResultSummary(endTime: string, wallClockDuration: number): ResultSummary {
-    const passed = this.testCases.filter((tc) => tc.status === 'passed').length;
-    const failed = this.testCases.filter((tc) => tc.status === 'failed').length;
-    const skipped = this.testCases.filter((tc) => tc.status === 'skipped').length;
-    const timedOut = this.testCases.filter((tc) => tc.status === 'timedOut').length;
-    const interrupted = this.testCases.filter((tc) => tc.status === 'interrupted').length;
+    let flaky = 0;
+    let passed = 0;
+    let failed = 0;
+    let skipped = 0;
+    let timedOut = 0;
+    let interrupted = 0;
+    let totalSequentialDuration = 0;
+
+    for (const tc of this.testCases) {
+      totalSequentialDuration += tc.duration || 0;
+      switch (tc.status) {
+        case 'passed':
+          if ((tc.failedAttempts?.length ?? 0) > 0) {
+            flaky++;
+          } else {
+            passed++;
+          }
+          break;
+        case 'failed':
+          failed++;
+          break;
+        case 'skipped':
+          skipped++;
+          break;
+        case 'timedOut':
+          timedOut++;
+          break;
+        case 'interrupted':
+          interrupted++;
+          break;
+      }
+    }
     const numberOfProjects = this.config.projects.length;
-    const totalSequentialDuration = this.testCases.reduce((sum, tc) => sum + (tc.duration || 0), 0);
 
     const gitCommitInfo = getGitCommit();
 
     return {
       total: this.testCases.length,
       passed,
+      flaky,
       failed,
       skipped,
       timedOut,
@@ -602,7 +629,20 @@ class ZenReporter implements Reporter {
     if (status === 'failed' || status === 'timedOut' || status === 'interrupted') {
       this.progressPrinter.clearLineProgress();
       const durationStr = testCase.duration > 0 ? ` (${testCase.duration}ms)` : '';
-      console.log(`❌ [FAILED] ${shortName}${durationStr}`);
+      const isRetrying = (result.retry ?? 0) < (test.retries ?? 0);
+      if (isRetrying) {
+        console.log(
+          `🔁 [RETRYING] ${shortName}${durationStr} (attempt ${result.retry + 1}/${test.retries + 1})`
+        );
+      } else {
+        console.log(`❌ [FAILED] ${shortName}${durationStr}`);
+      }
+    } else if (status === 'passed' && (result.retry ?? 0) > 0) {
+      this.progressPrinter.clearLineProgress();
+      const durationStr = testCase.duration > 0 ? ` (${testCase.duration}ms)` : '';
+      console.log(
+        `🔄 [FLAKY] ${shortName}${durationStr} (passed on attempt ${result.retry + 1}/${(test.retries ?? 0) + 1})`
+      );
     }
 
     let dotStatus: 'passed' | 'failed' | 'timedOut' | 'skipped' | 'interrupted' | 'flaky' = status;

@@ -51,6 +51,7 @@ export interface TestSuite {
 export interface ResultSummary {
   total: number;
   passed: number;
+  flaky?: number;
   failed: number;
   skipped: number;
   timedOut: number;

@@ -11,6 +11,7 @@ export class ProgressPrinter {
   private completedTests = 0;
   private completedTestIds = new Set<string>();
   private passedCount = 0;
+  private flakyCount = 0;
   private failedCount = 0;
   private timedOutCount = 0;
   private skippedCount = 0;
@@ -39,6 +40,7 @@ export class ProgressPrinter {
     this.completedTests = 0;
     this.completedTestIds.clear();
     this.passedCount = 0;
+    this.flakyCount = 0;
     this.failedCount = 0;
     this.timedOutCount = 0;
     this.skippedCount = 0;
@@ -81,8 +83,10 @@ export class ProgressPrinter {
 
       switch (status) {
         case 'passed':
-        case 'flaky':
           this.passedCount += 1;
+          break;
+        case 'flaky':
+          this.flakyCount += 1;
           break;
         case 'failed':
           this.failedCount += 1;
@@ -123,7 +127,8 @@ export class ProgressPrinter {
     const workersCount = this.activeWorkers.size;
     const workerStr = `${workersCount} active worker${workersCount === 1 ? '' : 's'}`;
 
-    let line = `[ ${this.completedTests}/${this.totalTests} ] ${pct}% | ✅ ${this.passedCount} | ❌ ${this.failedCount + this.timedOutCount} | ⏭️  ${this.skippedCount} (${workerStr})`;
+    const flakySegment = this.flakyCount > 0 ? ` | 🔄 ${this.flakyCount}` : '';
+    let line = `[ ${this.completedTests}/${this.totalTests} ] ${pct}% | ✅ ${this.passedCount}${flakySegment} | ❌ ${this.failedCount + this.timedOutCount} | ⏭️  ${this.skippedCount} (${workerStr})`;
 
     if (this.lastCompletedTest) {
       line += ` | Last: ${this.lastCompletedTest}`;

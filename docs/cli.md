@@ -28,6 +28,26 @@ When run with specific command-line arguments or in non-TTY environments (such a
 
 ---
 
+## Test Execution Terminal Summary
+
+When tests are executed with Zen Reporter configured in Playwright (`npx playwright test`), Zen Reporter streams test status in real-time and prints an ASCII summary table on completion:
+
+- **Live TTY Stream**: Differentiates between initial failure retry attempts (`🔁 [RETRYING] ... (attempt 1/2)`), tests recovered on retry (`🔄 [FLAKY] ... (passed on attempt 2/2)`), and fatal failures (`❌ [FAILED] ...`).
+- **Terminal Summary Table**: Provides complete visibility into all outcomes, ensuring column counts sum to the total:
+
+  ```text
+  Test Summary: My E2E Project — Test Run #1
+  +--------+----------+-----------+-------+--------+-------+--------+-----------+-------------+---------+
+  | Status | Duration | Pass Rate | Total | Passed | Flaky | Failed | Timed Out | Interrupted | Skipped |
+  +--------+----------+-----------+-------+--------+-------+--------+-----------+-------------+---------+
+  | PASSED | 12s      | 100%      | 25    | 24     | 1     | 0      | 0         | 0           | 0       |
+  +--------+----------+-----------+-------+--------+-------+--------+-----------+-------------+---------+
+  ```
+
+  _(Note: `Passed` represents first-run clean passes, while `Flaky` tracks tests that failed initially but passed on retry)._
+
+---
+
 ## Core Commands
 
 ### Report & Environment

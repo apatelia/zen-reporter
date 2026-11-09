@@ -8,6 +8,13 @@ export interface TestResultsHeroProps {
   suites: TestSuite[];
 }
 
+/**
+ * Renders executive dashboard summary hero card including metadata strip,
+ * pass rate gauge ring, progress breakdown bar, and 6-status outcome cards.
+ *
+ * @param props - Component props containing summary metrics and suites array.
+ * @returns React functional component rendering the test results hero section.
+ */
 export default function TestResultsHero({ summary, suites }: TestResultsHeroProps) {
   const statusPercents = computeStatusPercentages(summary);
   const totalFailures = summary.failed + summary.timedOut + (summary.interrupted ?? 0);
@@ -23,6 +30,7 @@ export default function TestResultsHero({ summary, suites }: TestResultsHeroProp
   const items = [
     {
       label: 'Passed',
+      subTitle: 'First Run',
       value: summary.passed,
       pct: statusPercents.passed,
       color: 'bg-success-500',
@@ -37,6 +45,30 @@ export default function TestResultsHero({ summary, suites }: TestResultsHeroProp
           strokeWidth={2.5}
         >
           <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+        </svg>
+      ),
+    },
+    {
+      label: 'Flaky',
+      subTitle: 'Recovered',
+      value: summary.flaky ?? 0,
+      pct: statusPercents.flaky,
+      color: 'bg-warning-500',
+      text: 'text-warning-600 dark:text-warning-500',
+      bg: 'bg-warning-500/5 dark:bg-warning-500/10 border-warning-500/20',
+      icon: (
+        <svg
+          className="h-4 w-4"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+          strokeWidth={2.5}
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+          />
         </svg>
       ),
     },
@@ -131,7 +163,12 @@ export default function TestResultsHero({ summary, suites }: TestResultsHeroProp
       <div className="flex flex-col gap-6 lg:flex-row lg:items-stretch">
         {/* Left Side: Pass Rate Gauge */}
         <div className="flex flex-col items-center justify-between border-b border-border-default pb-5 lg:w-64 lg:border-b-0 lg:border-r lg:pb-0 lg:pr-6 dark:border-white/15">
-          <PassRateRing passRate={statusPercents.passRate} />
+          <PassRateRing
+            passRate={statusPercents.passRate}
+            cleanPassed={summary.passed}
+            flakyCount={summary.flaky ?? 0}
+            total={summary.total}
+          />
         </div>
 
         {/* Right Side: Integrated Unbordered Metadata Strip + Execution Breakdown */}
@@ -266,15 +303,22 @@ export default function TestResultsHero({ summary, suites }: TestResultsHeroProp
               )}
             </div>
 
-            {/* 5 Status Cards Grid */}
-            <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-5">
+            {/* 6 Status Cards Grid */}
+            <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-6">
               {items.map((item) => (
                 <div
                   key={item.label}
                   className={`flex flex-col justify-between rounded-md border p-3 shadow-2xs transition-all ${item.bg}`}
                 >
                   <div className="flex items-center justify-between text-xs font-semibold uppercase tracking-wider text-text-body-mid dark:text-text-muted">
-                    <span>{item.label}</span>
+                    <span className="flex items-center gap-1">
+                      <span>{item.label}</span>
+                      {'subTitle' in item && item.subTitle && (
+                        <span className="text-[10px] font-normal lowercase tracking-normal opacity-70">
+                          ({item.subTitle})
+                        </span>
+                      )}
+                    </span>
                     <span className={item.text}>{item.icon}</span>
                   </div>
                   <div className="mt-2 flex items-baseline justify-between">

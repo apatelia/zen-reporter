@@ -205,18 +205,45 @@ export function processRawData(rawData: RawPlaywrightData): ReportData {
   const endTimeMs = new Date(endTime).getTime();
   const wallClockDuration = Math.max(0, endTimeMs - startTimeMs);
 
-  const passed = testCases.filter((tc) => tc.status === 'passed').length;
-  const failed = testCases.filter((tc) => tc.status === 'failed').length;
-  const skipped = testCases.filter((tc) => tc.status === 'skipped').length;
-  const timedOut = testCases.filter((tc) => tc.status === 'timedOut').length;
-  const interrupted = testCases.filter((tc) => tc.status === 'interrupted').length;
+  let flaky = 0;
+  let passed = 0;
+  let failed = 0;
+  let skipped = 0;
+  let timedOut = 0;
+  let interrupted = 0;
+  let totalSequentialDuration = 0;
+  const projects = new Set<string>();
 
-  const projects = new Set(testCases.map((tc) => tc.project));
-  const totalSequentialDuration = testCases.reduce((sum, tc) => sum + (tc.duration || 0), 0);
+  for (const tc of testCases) {
+    if (tc.project) projects.add(tc.project);
+    totalSequentialDuration += tc.duration || 0;
+    switch (tc.status) {
+      case 'passed':
+        if ((tc.failedAttempts?.length ?? 0) > 0) {
+          flaky++;
+        } else {
+          passed++;
+        }
+        break;
+      case 'failed':
+        failed++;
+        break;
+      case 'skipped':
+        skipped++;
+        break;
+      case 'timedOut':
+        timedOut++;
+        break;
+      case 'interrupted':
+        interrupted++;
+        break;
+    }
+  }
 
   const summary: ResultSummary = {
     total: testCases.length,
     passed,
+    flaky,
     failed,
     skipped,
     timedOut,

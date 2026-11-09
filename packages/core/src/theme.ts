@@ -63,11 +63,13 @@ export const HEALTH_CATEGORY_CONFIG = {
   },
 } as const;
 
-export type StatusType = 'passed' | 'failed' | 'timedOut' | 'interrupted' | 'skipped';
+export type StatusType = 'passed' | 'flaky' | 'failed' | 'timedOut' | 'interrupted' | 'skipped';
 
 export const STATUS_BADGE_STYLE_MAP: Record<StatusType, string> = {
   passed:
     'bg-success-50 text-success-600 dark:bg-success-500/20 dark:text-success-400 dark:ring-1 dark:ring-success-500/30',
+  flaky:
+    'bg-warning-50 text-warning-600 dark:bg-warning-500/20 dark:text-warning-400 dark:ring-1 dark:ring-warning-500/30',
   failed:
     'bg-danger-50 text-danger-600 dark:bg-danger-500/20 dark:text-danger-400 dark:ring-1 dark:ring-danger-500/30',
   timedOut:
