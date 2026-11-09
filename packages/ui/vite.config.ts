@@ -108,7 +108,8 @@ const serveReportAssets: Plugin = {
         };
         searchSuites(runReport.testRun.suites);
 
-        if (!foundCase) {
+        const matchedCase = foundCase as TestCase | null;
+        if (!matchedCase) {
           res.statusCode = 404;
           res.setHeader('content-type', 'application/json; charset=utf-8');
           res.end(JSON.stringify({ error: `Test "${testId}" not found in run "${runId}"` }));
@@ -119,11 +120,11 @@ const serveReportAssets: Plugin = {
         res.setHeader('content-type', 'application/json; charset=utf-8');
         res.end(
           JSON.stringify({
-            steps: foundCase.steps || [],
-            errors: foundCase.errors || [],
-            stdout: foundCase.stdout || [],
-            stderr: foundCase.stderr || [],
-            attachments: foundCase.attachments || [],
+            steps: matchedCase.steps || [],
+            errors: matchedCase.errors || [],
+            stdout: matchedCase.stdout || [],
+            stderr: matchedCase.stderr || [],
+            attachments: matchedCase.attachments || [],
           })
         );
       } catch (err) {
