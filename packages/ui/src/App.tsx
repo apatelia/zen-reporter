@@ -825,7 +825,7 @@ export default function App() {
                 {summary && (
                   <>
                     <span className="text-text-muted/60 font-medium">·</span>
-                    <div className="flex items-center gap-1.5">
+                    <div className="inline-flex items-center gap-1.5 leading-none">
                       <svg
                         className="h-3.5 w-3.5 text-text-muted shrink-0"
                         fill="none"
@@ -844,7 +844,8 @@ export default function App() {
                         {formatDateRange(summary.startTime, summary.endTime)}
                       </span>
                     </div>
-                    <span className="inline-flex items-center gap-1.5 rounded-full bg-success-500/10 px-2.5 py-0.5 text-[11px] font-bold text-success-600 ring-1 ring-inset ring-success-500/20 dark:bg-success-500/20 dark:text-success-400 dark:ring-success-500/30">
+                    <span className="text-text-muted/60 font-medium">·</span>
+                    <span className="inline-flex items-center gap-1.5 h-5 px-2 rounded-full bg-success-500/10 text-[11px] font-semibold text-success-700 dark:text-success-400 border border-success-500/25 dark:border-success-500/35 leading-none shrink-0">
                       <svg
                         className="h-3 w-3 text-success-600 dark:text-success-400 shrink-0"
                         fill="none"
@@ -857,7 +858,7 @@ export default function App() {
                         <circle cx="12" cy="12" r="9" />
                         <polyline points="12 6 12 12 16 14" />
                       </svg>
-                      <span>{formatDuration(summary.duration)}</span>
+                      <span className="leading-none">{formatDuration(summary.duration)}</span>
                     </span>
                     {(summary.gitBranch || summary.gitCommit) && (
                       <>
@@ -867,7 +868,7 @@ export default function App() {
                             <button
                               type="button"
                               onClick={handleCopyBranch}
-                              className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-semibold leading-normal transition-all cursor-pointer shadow-2xs max-w-44 truncate ${
+                              className={`group inline-flex items-center gap-1.5 h-5 rounded-full border px-2 text-[11px] font-medium leading-none transition-all cursor-pointer shadow-2xs max-w-44 shrink-0 ${
                                 branchCopied
                                   ? 'border-success-500 bg-success-500/15 text-success-700 dark:text-success-400 dark:border-success-500/40'
                                   : 'border-border-default bg-surface-100 dark:bg-surface-200 text-text-ink dark:text-text-on-primary hover:border-accent-blue hover:text-accent-blue dark:hover:border-accent-blue dark:hover:text-accent-blue'
@@ -891,7 +892,7 @@ export default function App() {
                                   >
                                     <polyline points="20 6 9 17 4 12" />
                                   </svg>
-                                  <span>Copied!</span>
+                                  <span className="leading-none">Copied!</span>
                                 </>
                               ) : (
                                 <>
@@ -907,9 +908,9 @@ export default function App() {
                                     <line x1="6" y1="3" x2="6" y2="15" />
                                     <circle cx="18" cy="6" r="3" />
                                     <circle cx="6" cy="18" r="3" />
-                                    <path d="M18 9a9 9 0 0 1-9 9" />
+                                    <path d="M18 9a9 9 0 0 1-9 9H6" />
                                   </svg>
-                                  <span className="truncate">{summary.gitBranch}</span>
+                                  <span className="truncate leading-none">{summary.gitBranch}</span>
                                 </>
                               )}
                             </button>
@@ -918,7 +919,7 @@ export default function App() {
                             <button
                               type="button"
                               onClick={handleCopyCommit}
-                              className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-mono font-semibold leading-normal transition-all cursor-pointer shadow-2xs ${
+                              className={`group inline-flex items-center gap-1.5 h-5 rounded-full border px-2 text-[11px] leading-none transition-all cursor-pointer shadow-2xs shrink-0 ${
                                 commitCopied
                                   ? 'border-success-500 bg-success-500/15 text-success-700 dark:text-success-400 dark:border-success-500/40'
                                   : 'border-border-default bg-surface-100 dark:bg-surface-200 text-text-ink dark:text-text-on-primary hover:border-accent-blue hover:text-accent-blue dark:hover:border-accent-blue dark:hover:text-accent-blue'
@@ -942,12 +943,12 @@ export default function App() {
                                   >
                                     <polyline points="20 6 9 17 4 12" />
                                   </svg>
-                                  <span>Copied!</span>
+                                  <span className="leading-none">Copied!</span>
                                 </>
                               ) : (
                                 <>
                                   <svg
-                                    className="h-3 w-3 text-text-muted shrink-0"
+                                    className="h-3 w-3 text-text-muted shrink-0 transition-colors group-hover:text-accent-blue dark:group-hover:text-accent-blue"
                                     fill="none"
                                     viewBox="0 0 24 24"
                                     stroke="currentColor"
@@ -955,11 +956,13 @@ export default function App() {
                                     strokeLinecap="round"
                                     strokeLinejoin="round"
                                   >
-                                    <circle cx="12" cy="12" r="4" />
-                                    <line x1="1.05" y1="12" x2="7" y2="12" />
-                                    <line x1="17.05" y1="12" x2="22.95" y2="12" />
+                                    <circle cx="12" cy="12" r="3" />
+                                    <line x1="3" y1="12" x2="9" y2="12" />
+                                    <line x1="15" y1="12" x2="21" y2="12" />
                                   </svg>
-                                  <span>{summary.gitCommit}</span>
+                                  <span className="font-mono font-medium leading-none">
+                                    {summary.gitCommit}
+                                  </span>
                                 </>
                               )}
                             </button>
