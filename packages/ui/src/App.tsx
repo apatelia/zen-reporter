@@ -855,10 +855,13 @@ export default function App() {
                         strokeLinecap="round"
                         strokeLinejoin="round"
                       >
-                        <circle cx="12" cy="12" r="9" />
-                        <polyline points="12 6 12 12 16 14" />
+                        <line x1="10" x2="14" y1="2" y2="2" />
+                        <line x1="12" x2="15" y1="14" y2="11" />
+                        <circle cx="12" cy="14" r="8" />
                       </svg>
-                      <span className="leading-none">{formatDuration(summary.duration)}</span>
+                      <span className="leading-none translate-y-px">
+                        {formatDuration(summary.duration)}
+                      </span>
                     </span>
                     {(summary.gitBranch || summary.gitCommit) && (
                       <>
@@ -892,25 +895,20 @@ export default function App() {
                                   >
                                     <polyline points="20 6 9 17 4 12" />
                                   </svg>
-                                  <span className="leading-none">Copied!</span>
+                                  <span className="leading-none translate-y-px">Copied!</span>
                                 </>
                               ) : (
                                 <>
                                   <svg
                                     className="h-3 w-3 text-accent-blue shrink-0"
-                                    fill="none"
-                                    viewBox="0 0 24 24"
-                                    stroke="currentColor"
-                                    strokeWidth={2}
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
+                                    viewBox="0 0 16 16"
+                                    fill="currentColor"
                                   >
-                                    <line x1="6" y1="3" x2="6" y2="15" />
-                                    <circle cx="18" cy="6" r="3" />
-                                    <circle cx="6" cy="18" r="3" />
-                                    <path d="M18 9a9 9 0 0 1-9 9H6" />
+                                    <path d="M9.5 3.25a2.25 2.25 0 1 1 3 2.122V6A2.5 2.5 0 0 1 10 8.5H6a1 1 0 0 0-1 1v1.128a2.251 2.251 0 1 1-1.5 0V5.372a2.25 2.25 0 1 1 1.5 0v1.836A2.493 2.493 0 0 1 6 7h4a1 1 0 0 0 1-1v-.628A2.25 2.25 0 0 1 9.5 3.25Zm-6 0a.75.75 0 1 0 1.5 0 .75.75 0 0 0-1.5 0Zm8.25-.75a.75.75 0 1 0 0 1.5.75.75 0 0 0 0-1.5ZM4.25 12a.75.75 0 1 0 0 1.5.75.75 0 0 0 0-1.5Z" />
                                   </svg>
-                                  <span className="truncate leading-none">{summary.gitBranch}</span>
+                                  <span className="truncate leading-none translate-y-px">
+                                    {summary.gitBranch}
+                                  </span>
                                 </>
                               )}
                             </button>
@@ -943,24 +941,18 @@ export default function App() {
                                   >
                                     <polyline points="20 6 9 17 4 12" />
                                   </svg>
-                                  <span className="leading-none">Copied!</span>
+                                  <span className="leading-none translate-y-px">Copied!</span>
                                 </>
                               ) : (
                                 <>
                                   <svg
                                     className="h-3 w-3 text-text-muted shrink-0 transition-colors group-hover:text-accent-blue dark:group-hover:text-accent-blue"
-                                    fill="none"
-                                    viewBox="0 0 24 24"
-                                    stroke="currentColor"
-                                    strokeWidth={2}
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
+                                    viewBox="0 0 16 16"
+                                    fill="currentColor"
                                   >
-                                    <circle cx="12" cy="12" r="3" />
-                                    <line x1="3" y1="12" x2="9" y2="12" />
-                                    <line x1="15" y1="12" x2="21" y2="12" />
+                                    <path d="M10.5 8a2.5 2.5 0 1 1-5 0 2.5 2.5 0 0 1 5 0Zm1.43.75a4.002 4.002 0 0 0-7.86 0H.75a.75.75 0 0 1 0-1.5h3.32a4.002 4.002 0 0 0 7.86 0h3.32a.75.75 0 0 1 0 1.5h-3.32Z" />
                                   </svg>
-                                  <span className="font-mono font-medium leading-none">
+                                  <span className="font-mono font-medium leading-none tracking-tight translate-y-px">
                                     {summary.gitCommit}
                                   </span>
                                 </>
