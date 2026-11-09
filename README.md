@@ -6,7 +6,11 @@
 
 Beautiful test execution reports for Playwright.
 
-[🚀 Live Demo](https://zen-reporter.vercel.app/demo) | [📚 Documentation](https://zen-reporter.vercel.app) | [📦 NPM Package](https://www.npmjs.com/package/@arpanp/zen-reporter) | [🐛 Report an Issue](https://github.com/apatelia/zen-reporter/issues)
+[🚀 Live Demo](https://zen-reporter.vercel.app/demo) | [📚 Documentation](https://zen-reporter.vercel.app) | [📦 NPM Package](https://www.npmjs.com/package/@arpanp/zen-reporter)
+
+[📝 Release Notes](https://github.com/apatelia/zen-reporter/releases) | [🐛 Report an Issue](https://github.com/apatelia/zen-reporter/issues)
+
+> **Warning**: **Deprecation Notice**: `v0.19.x` will be the last release series to support `.jsonl` files for history tracking. Future versions will move away from `.jsonl` and transition to SQLite. A migration path will be provided for this switch.
 
 Zen Reporter transforms Playwright's raw test results into an interactive, visually stunning dashboard. It provides a clean, modern interface for exploring test suites, analyzing pass/fail rates, and diving into individual test failures with full step-by-step execution traces, source code snippets, syntax highlighting, and error stacks.
 

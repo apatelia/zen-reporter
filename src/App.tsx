@@ -474,7 +474,7 @@ export default function App() {
         </header>
 
         <div ref={contentContainerRef} className="flex-1 overflow-auto">
-          <div className="mx-auto max-w-full px-6 sm:px-8 pt-6 sm:pt-8 pb-8">
+          <div className="mx-auto max-w-full px-6 sm:px-8 pt-6 sm:pt-8 pb-16">
             {isLoading && (
               <div className="flex items-center justify-center py-24">
                 <div className="text-center">
