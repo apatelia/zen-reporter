@@ -17,15 +17,7 @@ export interface TestResultsHeroProps {
  */
 export default function TestResultsHero({ summary, suites }: TestResultsHeroProps) {
   const statusPercents = computeStatusPercentages(summary);
-  const totalFailures = summary.failed + summary.timedOut + (summary.interrupted ?? 0);
   const isParallel = Boolean(summary.workers && summary.workers > 1);
-
-  const failureRateClass =
-    statusPercents.failureRate === 0 || statusPercents.failureRate <= 10
-      ? 'bg-success-500/10 text-success-600 dark:text-success-400 border-success-500/20'
-      : statusPercents.failureRate <= 40
-        ? 'bg-warning-500/10 text-warning-600 dark:text-warning-400 border-warning-500/20'
-        : 'bg-danger-500/10 text-danger-600 dark:text-danger-400 border-danger-500/20';
 
   const items = [
     {
@@ -276,16 +268,6 @@ export default function TestResultsHero({ summary, suites }: TestResultsHeroProp
                 <p className="text-xs text-text-body-mid dark:text-text-muted">
                   Distribution across {summary.total} total test case execution outcomes
                 </p>
-              </div>
-
-              <div
-                className={`inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-semibold ${failureRateClass}`}
-              >
-                <span>Failure Rate: {statusPercents.failureRate}%</span>
-                <span className="opacity-40">•</span>
-                <span>
-                  {totalFailures} {totalFailures === 1 ? 'failure' : 'failures'}
-                </span>
               </div>
             </div>
 

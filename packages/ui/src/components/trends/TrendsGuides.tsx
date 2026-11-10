@@ -195,9 +195,22 @@ export default function TrendsGuides({
               Overview
             </h4>
             <p>
-              This chart categorizes and tracks every automated step executed in your Playwright
-              test runs, revealing the architectural composition of your test suite over time.
+              This chart categorizes the automated steps that were actually executed in your
+              Playwright test runs. It measures executed work, not declared test composition: only
+              steps that began running are counted, and each test is counted once, from its final
+              attempt.
             </p>
+            <ul className="mt-1.5 space-y-1 pl-4 list-disc">
+              <li>
+                Steps a test never reaches are not counted: a test with 10 steps that always fails
+                at step 5 contributes only 5.
+              </li>
+              <li>
+                Retries are not double-counted: only the final attempt's steps are tallied. Steps
+                from earlier failed attempts are shown under the test's failed attempts but are
+                excluded from these totals.
+              </li>
+            </ul>
           </div>
           <div>
             <h4 className="font-bold text-sm text-text-ink dark:text-text-on-primary mb-2">

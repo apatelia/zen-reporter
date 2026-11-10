@@ -76,23 +76,51 @@ export function formatDurationVerbose(ms?: number | null): string {
 }
 
 /**
+ * Shared implementation for `formatDate` and `formatDateLocal`: renders a
+ * "date · time" string in the viewer's local timezone, optionally with a short
+ * timezone name appended to the time.
+ *
+ * @param iso - ISO 8601 timestamp string.
+ * @param withTimeZoneName - Whether to append a short timezone name (e.g. "IST") to the time.
+ * @returns Formatted date and time string.
+ */
+function formatDateTime(iso: string, withTimeZoneName: boolean): string {
+  const d = new Date(iso);
+
+  return (
+    d.toLocaleDateString('en-US', DATE_FMT) +
+    ' · ' +
+    d.toLocaleTimeString(
+      'en-US',
+      withTimeZoneName
+        ? { hour: '2-digit', minute: '2-digit', timeZoneName: 'short' }
+        : { hour: '2-digit', minute: '2-digit' }
+    )
+  );
+}
+
+/**
  * Formats an ISO 8601 timestamp string into a human-readable date and time (e.g. "Sep 20, 2026 · 05:38 AM IST").
  *
  * @param iso - ISO timestamp string.
  * @returns Formatted date and time string.
  */
 export function formatDate(iso: string): string {
-  const d = new Date(iso);
+  return formatDateTime(iso, true);
+}
 
-  return (
-    d.toLocaleDateString('en-US', DATE_FMT) +
-    ' · ' +
-    d.toLocaleTimeString('en-US', {
-      hour: '2-digit',
-      minute: '2-digit',
-      timeZoneName: 'short',
-    })
-  );
+/**
+ * Formats an ISO 8601 timestamp string into a human-readable date and time in the
+ * viewer's local timezone, without a timezone name (e.g. "Sep 20, 2026 · 05:38 AM").
+ *
+ * Use when every row is already rendered in the viewer's timezone and the
+ * timezone label would be redundant noise.
+ *
+ * @param iso - ISO 8601 timestamp string.
+ * @returns Formatted date and time string without a timezone name.
+ */
+export function formatDateLocal(iso: string): string {
+  return formatDateTime(iso, false);
 }
 
 /**

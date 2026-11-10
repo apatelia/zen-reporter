@@ -311,17 +311,20 @@ export default function RunSwitcherModal({
                             {run.run_name}
                           </span>
                           {run.run_id === latestRunId && (
-                            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-surface-200 dark:bg-surface-300 text-text-muted shrink-0 leading-tight">
-                              <span>Latest</span>
+                            <>
+                              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-surface-200 dark:bg-surface-300 text-text-muted shrink-0 leading-tight">
+                                Latest
+                              </span>
                               <Kbd
                                 size="sm"
-                                variant="accent"
+                                variant="keycap"
+                                showKeyboardIcon
                                 className="hidden sm:inline-flex"
-                                title="Shortcut key: L (jump to latest run)"
+                                title="Press L to jump to latest run"
                               >
                                 L
                               </Kbd>
-                            </span>
+                            </>
                           )}
                         </div>
 
@@ -358,7 +361,7 @@ export default function RunSwitcherModal({
                               title={`Commit SHA: ${run.git_commit_full || run.git_commit}`}
                             >
                               <svg
-                                className="h-3.5 w-3.5 text-text-muted shrink-0"
+                                className="h-3.5 w-3.5 text-accent-blue shrink-0"
                                 fill="none"
                                 viewBox="0 0 24 24"
                                 stroke="currentColor"
@@ -417,19 +420,29 @@ export default function RunSwitcherModal({
                           >
                             {isCurrent ? 'Viewing' : 'Switch'}
                           </button>
-                          {shortcutNumber !== null ? (
-                            <Kbd
-                              size="sm"
-                              variant="keycap"
-                              showKeyboardIcon
-                              className="hidden sm:inline-flex"
-                              title={`Press ${shortcutNumber} to switch to this run`}
-                            >
-                              {shortcutNumber}
-                            </Kbd>
-                          ) : (
-                            <div className="hidden sm:block w-7.5" aria-hidden="true" />
-                          )}
+                          {/*
+                            Keycap area is a constant 1-keycap width on every row. The numbered
+                            shortcut is always rendered (visible on switchable runs, an invisible
+                            placeholder on the Viewing run), so the area never changes width and
+                            the Switch/Viewing button + Pass Rate badge stay vertically aligned.
+                            The "L" shortcut now lives next to the "Latest" badge in the title row.
+                          */}
+                          <Kbd
+                            size="sm"
+                            variant="keycap"
+                            showKeyboardIcon
+                            className={`hidden sm:inline-flex ${
+                              shortcutNumber === null ? 'opacity-0 pointer-events-none' : ''
+                            }`}
+                            aria-hidden={shortcutNumber === null ? true : undefined}
+                            title={
+                              shortcutNumber !== null
+                                ? `Press ${shortcutNumber} to switch to this run`
+                                : undefined
+                            }
+                          >
+                            {shortcutNumber ?? '0'}
+                          </Kbd>
                         </div>
                       </div>
                     </div>

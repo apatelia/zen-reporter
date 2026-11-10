@@ -436,7 +436,6 @@ export interface StatusPercentages {
   timedOut: number;
   interrupted: number;
   skipped: number;
-  failureRate: number;
   passRate: number;
 }
 
@@ -447,8 +446,7 @@ export type SummaryCountsInput = Pick<
 
 /**
  * Computes status percentages using the Largest Remainder Method (Hare-Niemeyer).
- * Guarantees that individual integer status percentages sum to 100% and that constituent
- * failure status cards (failed + timedOut + interrupted) exactly match the total failureRate.
+ * Guarantees that individual integer status percentages sum to 100%.
  *
  * @param summary - Result summary or counts object.
  * @returns StatusPercentages object.
@@ -466,7 +464,6 @@ export function computeStatusPercentages(summary: SummaryCountsInput): StatusPer
       timedOut: 0,
       interrupted: 0,
       skipped: 0,
-      failureRate: 0,
       passRate: 0,
     };
   }
@@ -495,7 +492,6 @@ export function computeStatusPercentages(summary: SummaryCountsInput): StatusPer
     floors[indices[i]] += 1;
   }
 
-  const failureRate = floors[2] + floors[3] + floors[4];
   const passRate = floors[0] + floors[1];
 
   return {
@@ -505,7 +501,6 @@ export function computeStatusPercentages(summary: SummaryCountsInput): StatusPer
     timedOut: floors[3],
     interrupted: floors[4],
     skipped: floors[5],
-    failureRate,
     passRate,
   };
 }

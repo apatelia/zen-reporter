@@ -68,8 +68,12 @@ export default function ProjectParityScorecard({ suites }: ProjectParityScorecar
     // 2. Lowest pass rate project
     const lowestProj = sortedByPassRate[sortedByPassRate.length - 1];
 
-    // 3. Slowest project (by total duration)
-    const sortedByDuration = [...projectStats].sort((a, b) => b.totalDuration - a.totalDuration);
+    // 3. Slowest project (by total duration; duration tie → highest avg time per test, then name)
+    const sortedByDuration = [...projectStats].sort((a, b) => {
+      if (b.totalDuration !== a.totalDuration) return b.totalDuration - a.totalDuration;
+      if (b.avgDuration !== a.avgDuration) return b.avgDuration - a.avgDuration;
+      return a.name.localeCompare(b.name);
+    });
     const slowestProj = sortedByDuration[0];
 
     // Map each project to its applicable roles
@@ -83,9 +87,9 @@ export default function ProjectParityScorecard({ suites }: ProjectParityScorecar
       }
     };
 
-    addRole(highestProj.name, 'highest');
-    // If lowest is distinct from highest, or if there's only 2 projects and they have different pass rates
-    if (lowestProj.name !== highestProj.name || lowestProj.passRate !== highestProj.passRate) {
+    // Assign Most/Least Stable only when there's a real pass-rate spread; suppress when all equal
+    if (highestProj.passRate !== lowestProj.passRate) {
+      addRole(highestProj.name, 'highest');
       addRole(lowestProj.name, 'lowest');
     }
     addRole(slowestProj.name, 'slowest');
@@ -138,51 +142,60 @@ export default function ProjectParityScorecard({ suites }: ProjectParityScorecar
       header: 'Project',
       headerClassName: 'w-auto',
       className: 'w-auto',
+      cell: (p) => (
+        <div className="flex items-center gap-1.5 min-w-0 max-w-full">
+          <span
+            className="font-semibold text-text-ink dark:text-text-on-primary truncate shrink min-w-0"
+            title={p.name}
+          >
+            {p.name}
+          </span>
+          <span className="text-[11px] text-text-muted tabular-nums shrink-0">({p.total})</span>
+        </div>
+      ),
+    },
+    {
+      key: 'flag',
+      header: 'Flag',
+      align: 'center',
+      headerClassName: 'w-24 whitespace-nowrap',
+      className: 'w-24 whitespace-nowrap',
       cell: (p) => {
-        const badges: React.ReactNode[] = [];
-        if (p.highlightRoles?.length) {
-          for (const role of p.highlightRoles) {
-            if (role === 'highest') {
-              badges.push(
-                <span
-                  key="highest"
-                  className="inline-block rounded px-1.5 py-0.5 text-[10px] font-bold border border-success-500/40 bg-success-500/15 text-success-800 dark:bg-success-950/60 dark:text-success-300 dark:border-success-500/50 shadow-xs shrink-0"
-                >
-                  Highest
-                </span>
-              );
-            } else if (role === 'lowest') {
-              badges.push(
-                <span
-                  key="lowest"
-                  className="inline-block rounded px-1.5 py-0.5 text-[10px] font-bold border border-danger-500/40 bg-danger-500/15 text-danger-800 dark:bg-danger-950/60 dark:text-danger-300 dark:border-danger-500/50 shadow-xs shrink-0"
-                >
-                  Lowest
-                </span>
-              );
-            } else if (role === 'slowest') {
-              badges.push(
+        if (!p.highlightRoles?.length) {
+          return <span className="text-text-muted">—</span>;
+        }
+        return (
+          <div className="flex flex-col items-center gap-1">
+            {p.highlightRoles.map((role) => {
+              if (role === 'highest') {
+                return (
+                  <span
+                    key="highest"
+                    className="inline-block rounded px-1.5 py-0.5 text-[10px] font-bold border border-success-500/40 bg-success-500/15 text-success-800 dark:bg-success-950/60 dark:text-success-300 dark:border-success-500/50 shadow-xs"
+                  >
+                    Most Stable
+                  </span>
+                );
+              }
+              if (role === 'lowest') {
+                return (
+                  <span
+                    key="lowest"
+                    className="inline-block rounded px-1.5 py-0.5 text-[10px] font-bold border border-danger-500/40 bg-danger-500/15 text-danger-800 dark:bg-danger-950/60 dark:text-danger-300 dark:border-danger-500/50 shadow-xs"
+                  >
+                    Least Stable
+                  </span>
+                );
+              }
+              return (
                 <span
                   key="slowest"
-                  className="inline-block rounded px-1.5 py-0.5 text-[10px] font-bold border border-amber-500/40 bg-amber-500/15 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 dark:border-amber-500/50 shadow-xs shrink-0"
+                  className="inline-block rounded px-1.5 py-0.5 text-[10px] font-bold border border-amber-500/40 bg-amber-500/15 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 dark:border-amber-500/50 shadow-xs"
                 >
                   Slowest
                 </span>
               );
-            }
-          }
-        }
-
-        return (
-          <div className="flex items-center gap-1.5 min-w-0 max-w-full">
-            <span
-              className="font-semibold text-text-ink dark:text-text-on-primary truncate shrink min-w-0"
-              title={p.name}
-            >
-              {p.name}
-            </span>
-            <span className="text-[11px] text-text-muted tabular-nums shrink-0">({p.total})</span>
-            {badges.length > 0 && <div className="flex items-center gap-1 shrink-0">{badges}</div>}
+            })}
           </div>
         );
       },
@@ -289,32 +302,6 @@ export default function ProjectParityScorecard({ suites }: ProjectParityScorecar
             </div>
           }
         />
-      </div>
-
-      {/* Footer Parity Insights */}
-      <div className="mt-3 pt-2.5 border-t border-border-default/80 flex items-center justify-between text-[11px] text-text-muted">
-        <span>
-          {hasMultipleProjects && kpis.mostStableProject ? (
-            <>
-              Highest stability:{' '}
-              <strong className="text-text-ink dark:text-text-on-primary font-medium">
-                {kpis.mostStableProject.name}
-              </strong>{' '}
-              ({kpis.mostStableProject.passRate}%)
-            </>
-          ) : (
-            'Single project run'
-          )}
-        </span>
-        {hasMultipleProjects && kpis.slowestProject && (
-          <span>
-            Slowest:{' '}
-            <strong className="text-text-ink dark:text-text-on-primary font-medium">
-              {kpis.slowestProject.name}
-            </strong>{' '}
-            ({formatDuration(kpis.slowestProject.totalDuration)})
-          </span>
-        )}
       </div>
     </div>
   );

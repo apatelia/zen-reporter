@@ -14,7 +14,7 @@ import DateFilterControl, { type DateFilterRange } from '@/components/shared/Dat
 import LearnMoreButton from '@/components/shared/LearnMoreButton';
 import SearchInput from '@/components/shared/SearchInput';
 import type { HistoryRun } from '@arpanp/zen-core';
-import { formatDate, formatDuration } from '@arpanp/zen-core';
+import { formatDateLocal, formatDuration } from '@arpanp/zen-core';
 import { generateExportFilename } from '@arpanp/zen-core';
 import { computePassRate } from '@arpanp/zen-core';
 
@@ -103,23 +103,10 @@ export function HistoryRunsTableSection({
           }
           return (
             <span
-              className="inline-flex items-center gap-1 rounded-full bg-surface-100 dark:bg-surface-200 border border-border-default px-2 py-0.5 text-xs font-semibold text-text-ink dark:text-text-on-primary max-w-36 truncate shadow-2xs"
+              className="block max-w-36 truncate"
               title={`Branch: ${run.git_branch}${run.git_commit ? ` (${run.git_commit})` : ''}`}
             >
-              <svg
-                className="h-2.5 w-2.5 text-accent-blue shrink-0"
-                fill="none"
-                viewBox="0 0 24 24"
-                strokeWidth="2.5"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M13.19 8.688a4.5 4.5 0 0 1 1.242 7.244l-4.5 4.5a4.5 4.5 0 0 1-6.364-6.364l1.757-1.757m13.35-.622 1.757-1.757a4.5 4.5 0 0 0-6.364-6.364l-4.5 4.5a4.5 4.5 0 0 0 1.242 7.244"
-                />
-              </svg>
-              <span className="truncate">{run.git_branch}</span>
+              {run.git_branch}
             </span>
           );
         },
@@ -142,7 +129,7 @@ export function HistoryRunsTableSection({
         key: 'started_at',
         header: (
           <span className="inline-flex items-center gap-1.5">
-            <span>Started</span>
+            <span>Start Time</span>
             {isFiltered && (
               <span
                 className="inline-flex items-center gap-1 rounded bg-success-500/10 px-1.5 py-0.5 text-[10px] font-semibold text-success-600 dark:bg-success-500/20 dark:text-success-400"
@@ -153,9 +140,9 @@ export function HistoryRunsTableSection({
             )}
           </span>
         ),
-        headerLabel: 'Started',
-        cell: (run) => formatDate(run.started_at),
-        csvValue: (run) => formatDate(run.started_at),
+        headerLabel: 'Start Time',
+        cell: (run) => formatDateLocal(run.started_at),
+        csvValue: (run) => formatDateLocal(run.started_at),
       },
       {
         key: 'duration',
@@ -324,20 +311,43 @@ export function HistoryRunsTableSection({
         align: 'center',
         cell: (run) => {
           const isCurrent = selectedRunId === run.run_id;
+          if (isCurrent) {
+            return (
+              <span
+                title="Currently viewing this run"
+                className="inline-flex h-6 w-6 items-center justify-center text-text-muted-soft dark:text-text-muted"
+              >
+                <svg
+                  className="h-4 w-4"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  strokeWidth="2"
+                  stroke="currentColor"
+                >
+                  <path d="M2.061 12.358a1 1 0 0 1 0-.716C3.583 7.96 6.27 6 12 6c5.73 0 8.417 1.96 9.939 5.642a1 1 0 0 1 0 .716C20.417 16.04 17.73 18 12 18c-5.73 0-8.417-1.96-9.939-5.642Z" />
+                  <circle cx="12" cy="12" r="3" />
+                </svg>
+              </span>
+            );
+          }
           return (
             <button
               type="button"
               onClick={() => onSelectRun?.(run.run_id)}
-              disabled={isCurrent}
-              title={isCurrent ? 'Currently viewing this run' : `View ${run.run_name} report`}
-              className={`inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold rounded-md transition-colors ${
-                isCurrent
-                  ? 'bg-surface-200 text-text-muted cursor-default'
-                  : 'bg-surface-100 hover:bg-surface-200 text-accent-blue border border-border-default hover:border-accent-blue/40 shadow-2xs'
-              }`}
+              title={`Switch to ${run.run_name}`}
+              aria-label={`Switch to ${run.run_name}`}
+              className="inline-flex h-6 w-6 items-center justify-center rounded-md border border-border-default bg-surface-100 text-accent-blue shadow-2xs transition-colors hover:bg-surface-200 dark:bg-surface-200 dark:hover:bg-surface-100 focus:outline-none focus:ring-2 focus:ring-success-500"
             >
-              <span>{isCurrent ? 'Viewing' : 'View Report'}</span>
-              {!isCurrent && <span className="text-[10px]">↗</span>}
+              <svg
+                className="h-4 w-4"
+                fill="none"
+                viewBox="0 0 24 24"
+                strokeWidth="2"
+                stroke="currentColor"
+              >
+                <path d="M5 12h14" />
+                <path d="m12 5 7 7-7 7" />
+              </svg>
             </button>
           );
         },

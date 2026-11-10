@@ -6,7 +6,7 @@ export interface KbdProps extends React.HTMLAttributes<HTMLElement> {
   /** Size variant */
   size?: 'sm' | 'md';
   /** Visual variant */
-  variant?: 'default' | 'accent' | 'ghost' | 'keycap';
+  variant?: 'default' | 'keycap';
   /** Whether to prefix with a subtle keyboard icon */
   showKeyboardIcon?: boolean;
   /** Optional title attribute tooltip */
@@ -124,13 +124,9 @@ export const Kbd: React.FC<KbdProps> = ({
   const keyboardIconSize = size === 'sm' ? 'h-2.5 w-2.5' : 'h-3 w-3';
 
   const variantClasses =
-    variant === 'accent'
-      ? 'text-accent-blue border border-accent-blue/40 bg-accent-blue/10 dark:bg-accent-blue/15'
-      : variant === 'ghost'
-        ? 'text-text-muted border border-border-default/40 bg-transparent'
-        : variant === 'keycap'
-          ? 'text-text-ink dark:text-text-on-primary border border-border-default border-b-[2px] bg-surface-50 dark:bg-surface-200 shadow-2xs'
-          : 'text-text-ink dark:text-text-on-primary border border-border-default bg-surface-100 dark:bg-surface-200/50 shadow-2xs';
+    variant === 'keycap'
+      ? 'text-text-ink dark:text-text-on-primary border border-border-default border-b-[2px] bg-surface-50 dark:bg-surface-200 shadow-2xs'
+      : 'text-text-ink dark:text-text-on-primary border border-border-default bg-surface-100 dark:bg-surface-200/50 shadow-2xs';
 
   return (
     <kbd
