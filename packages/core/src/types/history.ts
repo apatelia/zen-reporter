@@ -11,6 +11,7 @@ export interface HistoryRun {
   run_files?: number;
   run_total: number;
   run_passed: number;
+  run_flaky?: number;
   run_failed: number;
   run_skipped: number;
   run_timed_out: number;
@@ -21,6 +22,8 @@ export interface HistoryRun {
   git_branch?: string;
   git_commit?: string;
   git_commit_full?: string;
+  playwright_version?: string;
+  os_name?: string;
 }
 
 export interface HistoryFlakyRow {
@@ -67,6 +70,7 @@ export interface HistoryFileRow {
   file: string;
   total: number;
   passed: number;
+  flaky?: number;
   failed: number;
   timed_out: number;
   interrupted: number;
@@ -82,6 +86,7 @@ export interface HistoryTestRow {
   project: string;
   total: number;
   passed: number;
+  flaky?: number;
   failed: number;
   timed_out: number;
   interrupted: number;

@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
 import type { TestCase, TestStep, TestError, Attachment } from '@arpanp/zen-core';
-import { getTagColor } from '@arpanp/zen-core';
+import { getTagColor, isFlakyTest } from '@arpanp/zen-core';
 import TestCaseDetail from './TestCaseDetail';
 
 export interface TestCaseCardProps {
@@ -15,6 +15,12 @@ const statusConfig = {
     text: 'text-success-600 dark:text-success-500',
     dot: 'bg-success-50 text-success-600 dark:bg-success-500/20 dark:text-success-400 dark:ring-1 dark:ring-success-500/30',
     ring: 'ring-success-100 dark:ring-success-500/20',
+  },
+  flaky: {
+    bg: 'bg-surface-50 dark:bg-surface-50',
+    text: 'text-warning-600 dark:text-warning-500',
+    dot: 'bg-warning-50 text-warning-600 dark:bg-warning-500/20 dark:text-warning-400 dark:ring-1 dark:ring-warning-500/30',
+    ring: 'ring-warning-100 dark:ring-warning-500/20',
   },
   failed: {
     bg: 'bg-surface-50 dark:bg-surface-50',
@@ -46,7 +52,9 @@ export default function TestCaseCard({ testCase, showSteps, runId }: TestCaseCar
   const [isExpanded, setIsExpanded] = useState(false);
   const [isLoadingDetails, setIsLoadingDetails] = useState(false);
   const [detailedCase, setDetailedCase] = useState<TestCase>(testCase);
-  const config = statusConfig[testCase.status];
+  const isFlaky = isFlakyTest(testCase);
+  const effectiveStatus = isFlaky ? 'flaky' : testCase.status;
+  const config = statusConfig[effectiveStatus];
 
   const handleToggle = useCallback(async () => {
     const nextExpanded = !isExpanded;
@@ -123,6 +131,8 @@ export default function TestCaseCard({ testCase, showSteps, runId }: TestCaseCar
               stdout,
               stderr,
               attachments: mappedAttachments.length > 0 ? mappedAttachments : prev.attachments,
+              failedAttempts: data.failedAttempts || prev.failedAttempts,
+              attempts: data.attempts ?? prev.attempts,
             };
           });
         }
@@ -203,6 +213,21 @@ export default function TestCaseCard({ testCase, showSteps, runId }: TestCaseCar
         />
       </svg>
     ),
+    flaky: (
+      <svg
+        className="h-3 w-3"
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke="currentColor"
+        strokeWidth={2.5}
+      >
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+        />
+      </svg>
+    ),
   };
 
   return (
@@ -221,7 +246,7 @@ export default function TestCaseCard({ testCase, showSteps, runId }: TestCaseCar
             <span
               className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full ${config.dot}`}
             >
-              {statusIcons[testCase.status]}
+              {statusIcons[effectiveStatus]}
             </span>
 
             {/* Test name */}
@@ -233,13 +258,13 @@ export default function TestCaseCard({ testCase, showSteps, runId }: TestCaseCar
           {/* Right side */}
           <div className="flex items-center gap-2 shrink-0">
             <span
-              className={`hidden sm:inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold ${config.text} ${testCase.status === 'passed' ? 'bg-success-50 dark:bg-success-500/10' : testCase.status === 'failed' || testCase.status === 'interrupted' ? 'bg-danger-50 dark:bg-danger-500/10' : testCase.status === 'timedOut' ? 'bg-warning-50 dark:bg-warning-500/10' : 'bg-slate-200/80 text-slate-800 ring-1 ring-slate-300 dark:bg-slate-700/60 dark:text-slate-200 dark:ring-slate-600'}`}
+              className={`hidden sm:inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold ${config.text} ${effectiveStatus === 'passed' ? 'bg-success-50 dark:bg-success-500/10' : effectiveStatus === 'flaky' ? 'bg-warning-50 dark:bg-warning-500/10' : effectiveStatus === 'failed' || effectiveStatus === 'interrupted' ? 'bg-danger-50 dark:bg-danger-500/10' : effectiveStatus === 'timedOut' ? 'bg-warning-50 dark:bg-warning-500/10' : 'bg-slate-200/80 text-slate-800 ring-1 ring-slate-300 dark:bg-slate-700/60 dark:text-slate-200 dark:ring-slate-600'}`}
             >
-              {testCase.status === 'timedOut'
+              {effectiveStatus === 'timedOut'
                 ? 'Timed Out'
-                : testCase.status === 'interrupted'
+                : effectiveStatus === 'interrupted'
                   ? 'Interrupted'
-                  : testCase.status.charAt(0).toUpperCase() + testCase.status.slice(1)}
+                  : effectiveStatus.charAt(0).toUpperCase() + effectiveStatus.slice(1)}
             </span>
             {testCase.attempts && testCase.attempts > 1 && (
               <span

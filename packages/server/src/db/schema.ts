@@ -60,6 +60,7 @@ export const runs = pgTable(
     runSequentialDurationMs: integer('run_sequential_duration_ms'),
     runTotal: integer('run_total').notNull(),
     runPassed: integer('run_passed').notNull(),
+    runFlaky: integer('run_flaky').default(0).notNull(),
     runFailed: integer('run_failed').notNull(),
     runSkipped: integer('run_skipped').notNull(),
     runTimedOut: integer('run_timed_out').default(0).notNull(),

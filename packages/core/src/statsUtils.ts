@@ -202,6 +202,21 @@ export function isFlakyTest(tc: TestCase): boolean {
 }
 
 /**
+ * Returns the effective status of a test case, mapping flaky passes to 'flaky'.
+ *
+ * @param tc - TestCase model to evaluate.
+ * @returns 'flaky' if test passed on retry, or the original status otherwise.
+ */
+export function getTestCaseEffectiveStatus(
+  tc: TestCase
+): 'passed' | 'flaky' | 'failed' | 'skipped' | 'timedOut' | 'interrupted' {
+  if (isFlakyTest(tc)) {
+    return 'flaky';
+  }
+  return tc.status;
+}
+
+/**
  * Computes aggregated execution statistics, pass rates, flakiness, duration percentiles,
  * and relative speed multipliers grouped by Playwright project profile.
  *
@@ -256,7 +271,8 @@ export function computeProjectStats(allCases: TestCase[]): ProjectStats[] {
         flakyCount++;
       }
 
-      switch (tc.status) {
+      const effectiveStatus = getTestCaseEffectiveStatus(tc);
+      switch (effectiveStatus) {
         case 'passed':
           passed++;
           break;
@@ -283,7 +299,7 @@ export function computeProjectStats(allCases: TestCase[]): ProjectStats[] {
 
     const total = cases.length;
     const executed = durations.length;
-    const passRate = total > 0 ? Math.round((passed / total) * 100) : 0;
+    const passRate = total > 0 ? Math.round(((passed + flakyCount) / total) * 100) : 0;
     const flakyRate = executed > 0 ? Math.round((flakyCount / executed) * 100) : 0;
     const avgDuration = executed > 0 ? Math.round(totalDuration / executed) : 0;
 
@@ -577,7 +593,8 @@ export function computeFileStats(allCases: TestCase[]): FileStats[] {
       stats.flakyCount++;
     }
 
-    switch (tc.status) {
+    const effectiveStatus = getTestCaseEffectiveStatus(tc);
+    switch (effectiveStatus) {
       case 'passed':
         stats.passed++;
         break;

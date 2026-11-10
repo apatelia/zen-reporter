@@ -173,6 +173,11 @@ export class SqliteHistoryStore implements HistoryStore {
       /* column already exists */
     }
     try {
+      this.db.exec('ALTER TABLE history_test_cases ADD COLUMN failed_attempts_json TEXT;');
+    } catch {
+      /* column already exists */
+    }
+    try {
       this.db.exec('ALTER TABLE history_test_cases ADD COLUMN stdout_json TEXT;');
     } catch {
       /* column already exists */
@@ -194,6 +199,21 @@ export class SqliteHistoryStore implements HistoryStore {
     }
     try {
       this.db.exec('ALTER TABLE history_runs ADD COLUMN git_commit_full TEXT;');
+    } catch {
+      /* column already exists */
+    }
+    try {
+      this.db.exec('ALTER TABLE history_runs ADD COLUMN run_flaky INTEGER DEFAULT 0;');
+    } catch {
+      /* column already exists */
+    }
+    try {
+      this.db.exec('ALTER TABLE history_runs ADD COLUMN playwright_version TEXT;');
+    } catch {
+      /* column already exists */
+    }
+    try {
+      this.db.exec('ALTER TABLE history_runs ADD COLUMN os_name TEXT;');
     } catch {
       /* column already exists */
     }
@@ -265,17 +285,19 @@ export class SqliteHistoryStore implements HistoryStore {
       INSERT INTO history_runs (
         run_id, run_name, project_name, started_at, ended_at,
         run_duration_ms, run_sequential_duration_ms, run_total,
-        run_passed, run_failed, run_skipped, run_timed_out, run_interrupted,
+        run_passed, run_flaky, run_failed, run_skipped, run_timed_out, run_interrupted,
         run_workers, run_projects, step_assertions, step_actions,
         step_network, step_hooks, step_waits, step_others,
-        git_branch, git_commit, git_commit_full
+        git_branch, git_commit, git_commit_full,
+        playwright_version, os_name
       ) VALUES (
         ?, ?, ?, ?, ?,
         ?, ?, ?,
-        ?, ?, ?, ?, ?,
+        ?, ?, ?, ?, ?, ?,
         ?, ?, ?, ?,
         ?, ?, ?, ?,
-        ?, ?, ?
+        ?, ?, ?,
+        ?, ?
       )
     `);
 
@@ -289,6 +311,7 @@ export class SqliteHistoryStore implements HistoryStore {
       summary.totalSequentialDuration ?? null,
       summary.total,
       summary.passed,
+      summary.flaky ?? 0,
       summary.failed,
       summary.skipped,
       summary.timedOut,
@@ -303,7 +326,9 @@ export class SqliteHistoryStore implements HistoryStore {
       stepCategories?.others ?? 0,
       summary.gitBranch ?? null,
       summary.gitCommit ?? null,
-      summary.gitCommitFull ?? null
+      summary.gitCommitFull ?? null,
+      summary.playwrightVersion ?? null,
+      summary.osName ?? null
     );
 
     if (options.testCases.length > 0) {
@@ -312,12 +337,12 @@ export class SqliteHistoryStore implements HistoryStore {
           run_id, file, suite, title, project, status,
           duration_ms, attempts, failed_attempts, passed_on_retry,
           error_message, error_stack, error_file, error_line, tags,
-          steps_json, stdout_json, stderr_json
+          steps_json, failed_attempts_json, stdout_json, stderr_json
         ) VALUES (
           ?, ?, ?, ?, ?, ?,
           ?, ?, ?, ?,
           ?, ?, ?, ?, ?,
-          ?, ?, ?
+          ?, ?, ?, ?
         )
       `);
 
@@ -355,6 +380,8 @@ export class SqliteHistoryStore implements HistoryStore {
     const errorLine = tc.errors?.[0]?.location?.line ?? null;
     const tagsJson = tc.tags && tc.tags.length > 0 ? JSON.stringify(tc.tags) : null;
     const stepsJson = tc.steps && tc.steps.length > 0 ? JSON.stringify(tc.steps) : null;
+    const failedAttemptsJson =
+      tc.failedAttempts && tc.failedAttempts.length > 0 ? JSON.stringify(tc.failedAttempts) : null;
     const stdoutJson = tc.stdout && tc.stdout.length > 0 ? JSON.stringify(tc.stdout) : null;
     const stderrJson = tc.stderr && tc.stderr.length > 0 ? JSON.stringify(tc.stderr) : null;
 
@@ -375,6 +402,7 @@ export class SqliteHistoryStore implements HistoryStore {
       errorLine,
       tagsJson,
       stepsJson,
+      failedAttemptsJson,
       stdoutJson,
       stderrJson
     );
@@ -497,6 +525,7 @@ export class SqliteHistoryStore implements HistoryStore {
              count(DISTINCT t.file) AS run_files,
              r.run_total,
              r.run_passed,
+             coalesce(r.run_flaky, 0) AS run_flaky,
              r.run_failed,
              r.run_skipped,
              r.run_timed_out,
@@ -504,7 +533,7 @@ export class SqliteHistoryStore implements HistoryStore {
            FROM history_runs r
            LEFT JOIN history_test_cases t ON r.run_id = t.run_id
            WHERE r.run_name = ?
-           GROUP BY r.run_id, r.run_name, r.started_at, r.git_branch, r.run_total, r.run_passed, r.run_failed, r.run_skipped, r.run_timed_out, r.run_interrupted
+           GROUP BY r.run_id, r.run_name, r.started_at, r.git_branch, r.run_total, r.run_passed, r.run_flaky, r.run_failed, r.run_skipped, r.run_timed_out, r.run_interrupted
            ORDER BY r.started_at ASC`
         )
         .all<{
@@ -515,6 +544,7 @@ export class SqliteHistoryStore implements HistoryStore {
           run_files: number;
           run_total: number;
           run_passed: number;
+          run_flaky: number;
           run_failed: number;
           run_skipped: number;
           run_timed_out: number;
@@ -533,6 +563,7 @@ export class SqliteHistoryStore implements HistoryStore {
             ? computePassRate({
                 total: m.run_total,
                 passed: m.run_passed,
+                flaky: m.run_flaky,
                 failed: m.run_failed,
                 skipped: m.run_skipped,
                 timedOut: m.run_timed_out,
@@ -790,10 +821,11 @@ export class SqliteHistoryStore implements HistoryStore {
           r.run_id, r.run_name, r.started_at, r.run_duration_ms,
           r.run_sequential_duration_ms, r.run_workers,
           (SELECT count(DISTINCT file) FROM history_test_cases WHERE run_id = r.run_id) AS run_files,
-          r.run_total, r.run_passed, r.run_failed, r.run_skipped, r.run_timed_out, r.run_interrupted,
-          round(100.0 * r.run_passed / nullif(r.run_total, 0), 1) AS pass_rate,
+          r.run_total, r.run_passed, coalesce(r.run_flaky, 0) AS run_flaky, r.run_failed, r.run_skipped, r.run_timed_out, r.run_interrupted,
+          round(100.0 * (r.run_passed + coalesce(r.run_flaky, 0)) / nullif(r.run_total, 0), 1) AS pass_rate,
           r.step_assertions, r.step_actions, r.step_network, r.step_hooks, r.step_waits, r.step_others,
-          r.git_branch, r.git_commit, r.git_commit_full
+          r.git_branch, r.git_commit, r.git_commit_full,
+          r.playwright_version, r.os_name
         FROM history_runs r
         ORDER BY r.started_at DESC
         LIMIT ?
@@ -832,6 +864,7 @@ export class SqliteHistoryStore implements HistoryStore {
         run_files: Number(r.run_files || 0),
         run_total: Number(r.run_total),
         run_passed: Number(r.run_passed),
+        run_flaky: Number(r.run_flaky || 0),
         run_failed: Number(r.run_failed),
         run_skipped: Number(r.run_skipped),
         run_timed_out: Number(r.run_timed_out),
@@ -840,6 +873,8 @@ export class SqliteHistoryStore implements HistoryStore {
         git_branch: r.git_branch ? String(r.git_branch) : undefined,
         git_commit: r.git_commit ? String(r.git_commit) : undefined,
         git_commit_full: r.git_commit_full ? String(r.git_commit_full) : undefined,
+        playwright_version: r.playwright_version ? String(r.playwright_version) : undefined,
+        os_name: r.os_name ? String(r.os_name) : undefined,
         step_categories: hasStepCategories
           ? {
               assertions: Number(r.step_assertions || 0),
@@ -871,7 +906,7 @@ export class SqliteHistoryStore implements HistoryStore {
       FROM history_test_cases t
       JOIN recent_runs r ON t.run_id = r.run_id
       GROUP BY t.suite, t.file, t.title, t.project
-      HAVING failed_runs > 0 AND passed_runs > 0
+      HAVING (failed_runs > 0 AND passed_runs > 0) OR sum(t.passed_on_retry) > 0
       ORDER BY failed_runs DESC, passed_runs DESC
       LIMIT 100
     `);
@@ -970,7 +1005,8 @@ export class SqliteHistoryStore implements HistoryStore {
         r.started_at,
         t.file,
         count(*) AS total,
-        count(CASE WHEN t.status = 'passed' THEN 1 END) AS passed,
+        count(CASE WHEN t.status = 'passed' AND coalesce(t.passed_on_retry, 0) = 0 THEN 1 END) AS passed,
+        count(CASE WHEN t.status = 'passed' AND coalesce(t.passed_on_retry, 0) > 0 THEN 1 END) AS flaky,
         count(CASE WHEN t.status = 'failed' THEN 1 END) AS failed,
         count(CASE WHEN t.status = 'timedOut' THEN 1 END) AS timed_out,
         count(CASE WHEN t.status = 'interrupted' THEN 1 END) AS interrupted,
@@ -998,7 +1034,8 @@ export class SqliteHistoryStore implements HistoryStore {
         t.title,
         t.project,
         count(*) AS total,
-        count(CASE WHEN t.status = 'passed' THEN 1 END) AS passed,
+        count(CASE WHEN t.status = 'passed' AND coalesce(t.passed_on_retry, 0) = 0 THEN 1 END) AS passed,
+        count(CASE WHEN t.status = 'passed' AND coalesce(t.passed_on_retry, 0) > 0 THEN 1 END) AS flaky,
         count(CASE WHEN t.status = 'failed' THEN 1 END) AS failed,
         count(CASE WHEN t.status = 'timedOut' THEN 1 END) AS timed_out,
         count(CASE WHEN t.status = 'interrupted' THEN 1 END) AS interrupted,
@@ -1149,6 +1186,15 @@ export class SqliteHistoryStore implements HistoryStore {
         }
       }
 
+      let failedAttempts: TestCaseModel['failedAttempts'] = undefined;
+      if (tc.failed_attempts_json) {
+        try {
+          failedAttempts = JSON.parse(String(tc.failed_attempts_json));
+        } catch {
+          failedAttempts = undefined;
+        }
+      }
+
       let stdout: string[] = [];
       if (tc.stdout_json) {
         try {
@@ -1183,6 +1229,7 @@ export class SqliteHistoryStore implements HistoryStore {
         tags,
         describePath,
         attempts: Number(tc.attempts || 1),
+        failedAttempts,
       };
     });
 
@@ -1191,6 +1238,7 @@ export class SqliteHistoryStore implements HistoryStore {
     const summary: ResultSummary = {
       total: Number(runRow.run_total || 0),
       passed: Number(runRow.run_passed || 0),
+      flaky: Number(runRow.run_flaky || 0),
       failed: Number(runRow.run_failed || 0),
       skipped: Number(runRow.run_skipped || 0),
       timedOut: Number(runRow.run_timed_out || 0),
@@ -1207,6 +1255,8 @@ export class SqliteHistoryStore implements HistoryStore {
       gitBranch: runRow.git_branch ? String(runRow.git_branch) : undefined,
       gitCommit: runRow.git_commit ? String(runRow.git_commit) : undefined,
       gitCommitFull: runRow.git_commit_full ? String(runRow.git_commit_full) : undefined,
+      playwrightVersion: runRow.playwright_version ? String(runRow.playwright_version) : undefined,
+      osName: runRow.os_name ? String(runRow.os_name) : undefined,
     };
 
     const testRun: TestRun = {
@@ -1264,17 +1314,19 @@ export class SqliteHistoryStore implements HistoryStore {
       INSERT OR IGNORE INTO history_runs (
         run_id, run_name, project_name, started_at, ended_at,
         run_duration_ms, run_sequential_duration_ms, run_total,
-        run_passed, run_failed, run_skipped, run_timed_out, run_interrupted,
+        run_passed, run_flaky, run_failed, run_skipped, run_timed_out, run_interrupted,
         run_workers, run_projects, step_assertions, step_actions,
         step_network, step_hooks, step_waits, step_others,
-        git_branch, git_commit, git_commit_full
+        git_branch, git_commit, git_commit_full,
+        playwright_version, os_name
       ) VALUES (
         ?, ?, ?, ?, ?,
         ?, ?, ?,
-        ?, ?, ?, ?, ?,
+        ?, ?, ?, ?, ?, ?,
         ?, ?, ?, ?,
         ?, ?, ?, ?,
-        ?, ?, ?
+        ?, ?, ?,
+        ?, ?
       )
     `);
 
@@ -1330,6 +1382,7 @@ export class SqliteHistoryStore implements HistoryStore {
           optNumber(firstRow.run_sequential_duration_ms),
           Number(firstRow.run_total || 0),
           Number(firstRow.run_passed || 0),
+          Number(firstRow.run_flaky || 0),
           Number(firstRow.run_failed || 0),
           Number(firstRow.run_skipped || 0),
           Number(firstRow.run_timed_out || 0),
@@ -1344,7 +1397,9 @@ export class SqliteHistoryStore implements HistoryStore {
           Number(firstRow.step_others || 0),
           optString(firstRow.git_branch),
           optString(firstRow.git_commit),
-          optString(firstRow.git_commit_full)
+          optString(firstRow.git_commit_full),
+          optString(firstRow.playwright_version),
+          optString(firstRow.os_name)
         );
 
         existingRunIds.add(runId);

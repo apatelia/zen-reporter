@@ -253,6 +253,13 @@ export function HistoryRunsTableSection({
         csvValue: (run) => run.run_passed,
       },
       {
+        key: 'flaky',
+        header: 'Flaky',
+        align: 'center',
+        cell: (run) => <StatusCountBadge count={run.run_flaky ?? 0} type="flaky" />,
+        csvValue: (run) => run.run_flaky ?? 0,
+      },
+      {
         key: 'failed',
         header: 'Failed',
         align: 'center',
@@ -288,6 +295,7 @@ export function HistoryRunsTableSection({
           const passRate = computePassRate({
             total: run.run_total,
             passed: run.run_passed,
+            flaky: run.run_flaky ?? 0,
             failed: run.run_failed,
             timedOut: run.run_timed_out,
             skipped: run.run_skipped,
@@ -300,6 +308,7 @@ export function HistoryRunsTableSection({
           const passRate = computePassRate({
             total: run.run_total,
             passed: run.run_passed,
+            flaky: run.run_flaky ?? 0,
             failed: run.run_failed,
             timedOut: run.run_timed_out,
             skipped: run.run_skipped,

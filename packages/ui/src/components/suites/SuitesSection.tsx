@@ -1,4 +1,5 @@
 import type { TestSuite } from '@arpanp/zen-core';
+import { getTestCaseEffectiveStatus } from '@arpanp/zen-core';
 import { useMemo, useState, useCallback, useEffect } from 'react';
 import MultiSelectFilter, { FilterCountBadge } from '@/components/shared/MultiSelectFilter';
 import StatCard from '@/components/shared/StatCard';
@@ -7,7 +8,7 @@ import TagCloudModal from '@/components/shared/TagCloudModal';
 import type { TagCloudOption } from '@/components/shared/TagCloudModal';
 import SuiteView from './SuiteView';
 
-type TestCaseStatus = 'passed' | 'failed' | 'skipped' | 'timedOut' | 'interrupted';
+type TestCaseStatus = 'passed' | 'flaky' | 'failed' | 'skipped' | 'timedOut' | 'interrupted';
 
 export interface SuitesSectionProps {
   suites: TestSuite[];
@@ -18,7 +19,7 @@ function getAllStatuses(suites: TestSuite[]): TestCaseStatus[] {
 
   function collect(suite: TestSuite) {
     for (const c of suite.cases) {
-      statusSet.add(c.status);
+      statusSet.add(getTestCaseEffectiveStatus(c));
     }
     for (const sub of suite.subSuites || []) {
       collect(sub);
@@ -29,7 +30,14 @@ function getAllStatuses(suites: TestSuite[]): TestCaseStatus[] {
     collect(suite);
   }
 
-  const statusOrder: TestCaseStatus[] = ['passed', 'failed', 'skipped', 'timedOut', 'interrupted'];
+  const statusOrder: TestCaseStatus[] = [
+    'passed',
+    'flaky',
+    'failed',
+    'skipped',
+    'timedOut',
+    'interrupted',
+  ];
   return statusOrder.filter((s) => statusSet.has(s));
 }
 
@@ -111,7 +119,8 @@ function hasTestCases(
     parentMatch || Boolean(query && suite.title && suite.title.toLowerCase().includes(query));
 
   const hasMatchingCases = suite.cases.some((c) => {
-    const statusMatch = filterStatuses.length === 0 || filterStatuses.includes(c.status);
+    const effectiveStatus = getTestCaseEffectiveStatus(c);
+    const statusMatch = filterStatuses.length === 0 || filterStatuses.includes(effectiveStatus);
     const projectMatch = filterProjects.length === 0 || filterProjects.includes(c.project);
     const tagMatch =
       filterTags.length === 0 || (c.tags || []).some((tag) => filterTags.includes(tag));

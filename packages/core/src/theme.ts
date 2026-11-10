@@ -4,11 +4,13 @@
  */
 export const TEST_STATUS_COLOR_MAP: Record<string, string> = {
   Passed: 'var(--color-status-chart-passed)',
+  Flaky: 'var(--color-status-chart-flaky)',
   Failed: 'var(--color-status-chart-failed)',
   Interrupted: 'var(--color-status-chart-interrupted)',
   Skipped: 'var(--color-status-chart-skipped)',
   'Timed Out': 'var(--color-status-chart-timed-out)',
   passed: 'var(--color-status-chart-passed)',
+  flaky: 'var(--color-status-chart-flaky)',
   failed: 'var(--color-status-chart-failed)',
   interrupted: 'var(--color-status-chart-interrupted)',
   skipped: 'var(--color-status-chart-skipped)',

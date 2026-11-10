@@ -61,6 +61,7 @@ runsRouter.post('/', async (c) => {
     runSequentialDurationMs,
     runTotal,
     runPassed,
+    runFlaky = 0,
     runFailed,
     runSkipped,
     runTimedOut = 0,
@@ -103,6 +104,7 @@ runsRouter.post('/', async (c) => {
         runSequentialDurationMs: runSequentialDurationMs ? Number(runSequentialDurationMs) : null,
         runTotal: Number(runTotal) || 0,
         runPassed: Number(runPassed) || 0,
+        runFlaky: Number(runFlaky) || 0,
         runFailed: Number(runFailed) || 0,
         runSkipped: Number(runSkipped) || 0,
         runTimedOut: Number(runTimedOut) || 0,
@@ -125,6 +127,7 @@ runsRouter.post('/', async (c) => {
           runName,
           runTotal: Number(runTotal) || 0,
           runPassed: Number(runPassed) || 0,
+          runFlaky: Number(runFlaky) || 0,
           runFailed: Number(runFailed) || 0,
         },
       });

@@ -15,6 +15,7 @@ CREATE TABLE IF NOT EXISTS history_runs (
   run_sequential_duration_ms INTEGER,
   run_total INTEGER NOT NULL,
   run_passed INTEGER NOT NULL,
+  run_flaky INTEGER DEFAULT 0,
   run_failed INTEGER NOT NULL,
   run_skipped INTEGER NOT NULL,
   run_timed_out INTEGER NOT NULL,
@@ -30,6 +31,8 @@ CREATE TABLE IF NOT EXISTS history_runs (
   git_branch TEXT,
   git_commit TEXT,
   git_commit_full TEXT,
+  playwright_version TEXT,
+  os_name TEXT,
   created_at TEXT DEFAULT CURRENT_TIMESTAMP
 );
 `;
@@ -53,6 +56,7 @@ CREATE TABLE IF NOT EXISTS history_test_cases (
   error_line INTEGER,
   tags TEXT,
   steps_json TEXT,
+  failed_attempts_json TEXT,
   stdout_json TEXT,
   stderr_json TEXT,
   FOREIGN KEY (run_id) REFERENCES history_runs(run_id) ON DELETE CASCADE
@@ -98,6 +102,7 @@ SELECT
   r.run_sequential_duration_ms,
   r.run_total,
   r.run_passed,
+  r.run_flaky,
   r.run_failed,
   r.run_skipped,
   r.run_timed_out,
@@ -113,6 +118,8 @@ SELECT
   r.git_branch,
   r.git_commit,
   r.git_commit_full,
+  r.playwright_version,
+  r.os_name,
   t.file,
   t.suite,
   t.title,

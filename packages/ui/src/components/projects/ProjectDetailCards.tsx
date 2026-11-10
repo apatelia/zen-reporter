@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef, useEffect } from 'react';
 import type { ProjectStats } from '@arpanp/zen-core';
 import { formatDuration } from '@arpanp/zen-core';
 import LearnMoreButton from '@/components/shared/LearnMoreButton';
@@ -12,10 +12,40 @@ export interface ProjectDetailCardsProps {
 
 type SortOption = 'passRate' | 'duration' | 'flakiness' | 'total' | 'name';
 
+const SORT_OPTIONS: { value: SortOption; label: string }[] = [
+  { value: 'passRate', label: 'Highest Pass Rate' },
+  { value: 'duration', label: 'Longest Duration' },
+  { value: 'flakiness', label: 'Most Flaky Tests' },
+  { value: 'total', label: 'Most Tests' },
+  { value: 'name', label: 'Project Name' },
+];
+
 export default function ProjectDetailCards({ projectStats, onOpenGuide }: ProjectDetailCardsProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [sortBy, setSortBy] = useState<SortOption>('passRate');
+  const [isSortOpen, setIsSortOpen] = useState(false);
+  const sortContainerRef = useRef<HTMLDivElement>(null);
   const [expandedProjects, setExpandedProjects] = useState<Record<string, boolean>>({});
+
+  useEffect(() => {
+    if (!isSortOpen) return;
+    function handleClickOutside(event: MouseEvent) {
+      if (sortContainerRef.current && !sortContainerRef.current.contains(event.target as Node)) {
+        setIsSortOpen(false);
+      }
+    }
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === 'Escape') {
+        setIsSortOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isSortOpen]);
 
   const toggleExpand = (name: string) => {
     setExpandedProjects((prev) => ({
@@ -84,38 +114,83 @@ export default function ProjectDetailCards({ projectStats, onOpenGuide }: Projec
 
             {/* Sort Dropdown */}
             <div className="flex items-center gap-2">
-              <label
-                htmlFor="project-sort-select"
-                className="text-xs text-text-body-mid dark:text-text-muted shrink-0 font-medium"
-              >
+              <span className="text-xs text-text-body-mid dark:text-text-muted shrink-0 font-medium">
                 Sort by:
-              </label>
-              <div className="relative inline-flex items-center">
-                <select
-                  id="project-sort-select"
-                  value={sortBy}
-                  onChange={(e) => setSortBy(e.target.value as SortOption)}
-                  className="appearance-none rounded-md border border-border-default bg-surface-100 pl-3 pr-8 py-1.5 text-xs text-text-ink focus:border-accent-blue focus:outline-none dark:bg-surface-200 dark:text-text-on-primary font-medium cursor-pointer"
+              </span>
+              <div ref={sortContainerRef} className="relative inline-flex items-center shrink-0">
+                <button
+                  type="button"
+                  id="project-sort-button"
+                  onClick={() => setIsSortOpen((prev) => !prev)}
+                  aria-haspopup="true"
+                  aria-expanded={isSortOpen}
+                  aria-label="Sort projects"
+                  className={`group inline-flex items-center justify-between gap-2 h-7.5 min-w-37.5 px-2.5 rounded-lg border text-xs font-medium leading-none shadow-2xs transition-all cursor-pointer select-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-blue ${
+                    isSortOpen
+                      ? 'border-accent-blue bg-accent-blue/15 text-accent-blue'
+                      : 'border-border-default bg-surface-100 hover:bg-surface-200/80 text-text-ink dark:bg-surface-200 dark:text-text-on-primary hover:border-border-default'
+                  }`}
                 >
-                  <option value="passRate">Highest Pass Rate</option>
-                  <option value="duration">Longest Duration</option>
-                  <option value="flakiness">Most Flaky Tests</option>
-                  <option value="total">Most Tests</option>
-                  <option value="name">Project Name</option>
-                </select>
-                <svg
-                  className="pointer-events-none absolute right-2.5 h-3.5 w-3.5 text-text-body-mid dark:text-text-muted shrink-0"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                  strokeWidth={2}
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M19.5 8.25l-7.5 7.5-7.5-7.5"
-                  />
-                </svg>
+                  <span className="truncate">
+                    {SORT_OPTIONS.find((opt) => opt.value === sortBy)?.label ?? 'Sort'}
+                  </span>
+                  <svg
+                    className={`h-3 w-3 shrink-0 text-text-body-mid dark:text-text-muted transition-transform duration-150 ${
+                      isSortOpen ? 'rotate-180 text-accent-blue' : ''
+                    }`}
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    strokeWidth={2}
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+
+                {isSortOpen && (
+                  <div
+                    role="menu"
+                    aria-label="Project sort options"
+                    className="absolute right-0 top-full mt-1.5 z-50 w-48 rounded-lg border border-border-default bg-surface-50 dark:bg-surface-100 shadow-xl py-1 text-xs animate-in fade-in zoom-in-95 duration-100"
+                  >
+                    {SORT_OPTIONS.map((opt) => {
+                      const isSelected = sortBy === opt.value;
+                      return (
+                        <button
+                          key={opt.value}
+                          type="button"
+                          role="menuitem"
+                          onClick={() => {
+                            setSortBy(opt.value);
+                            setIsSortOpen(false);
+                          }}
+                          className={`w-full flex items-center justify-between px-3 py-2 text-left transition-colors cursor-pointer ${
+                            isSelected
+                              ? 'bg-accent-blue/10 text-accent-blue font-semibold'
+                              : 'text-text-ink dark:text-text-on-primary hover:bg-surface-100 dark:hover:bg-surface-200 font-medium'
+                          }`}
+                        >
+                          <span>{opt.label}</span>
+                          {isSelected && (
+                            <svg
+                              className="h-3.5 w-3.5 text-accent-blue shrink-0"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                              stroke="currentColor"
+                              strokeWidth={2.5}
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                d="M4.5 12.75l6 6 9-13.5"
+                              />
+                            </svg>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -271,7 +346,7 @@ export default function ProjectDetailCards({ projectStats, onOpenGuide }: Projec
                       <div
                         className={`flex h-10 min-w-14 items-center justify-center rounded-md px-3 font-bold text-sm ${passRateColor}`}
                       >
-                        {project.passed}/{project.total}
+                        {project.passed + project.flakyCount}/{project.total}
                       </div>
                     </div>
                   </div>
@@ -285,112 +360,144 @@ export default function ProjectDetailCards({ projectStats, onOpenGuide }: Projec
                   </div>
 
                   {/* Status & Performance Metrics Pills Grid */}
-                  <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-6 text-xs">
+                  <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6 text-xs">
                     {/* Status Breakdown Pills */}
-                    <div className="rounded-md bg-canvas dark:bg-canvas border border-border-default px-3 py-2 shadow-2xs">
+                    <div className="rounded-md bg-canvas dark:bg-canvas border border-border-default px-3 py-2 shadow-2xs flex flex-col justify-between">
                       <span className="text-[10px] font-semibold text-text-muted uppercase block">
                         Status Breakdown
                       </span>
-                      <div className="mt-1 flex items-center gap-1.5 flex-wrap font-medium">
-                        <span className="text-success-600 dark:text-success-500">
-                          {project.passed} Pass
-                        </span>
-                        {project.failed > 0 && (
-                          <span className="text-danger-600 dark:text-danger-500">
-                            • {project.failed} Fail
+                      <div className="mt-1 space-y-0.5 font-medium leading-tight">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span className="text-success-600 dark:text-success-500 font-bold">
+                            {project.passed} Passed
                           </span>
-                        )}
-                        {project.timedOut > 0 && (
-                          <span className="text-warning-600 dark:text-warning-500">
-                            • {project.timedOut} Timeout
-                          </span>
-                        )}
-                        {project.skipped > 0 && (
-                          <span className="text-text-muted">• {project.skipped} Skip</span>
-                        )}
+                          {project.flakyCount > 0 && (
+                            <span className="text-warning-600 dark:text-warning-500 font-bold">
+                              • {project.flakyCount} Flaky
+                            </span>
+                          )}
+                          {project.skipped > 0 && (
+                            <span className="text-text-muted">• {project.skipped} Skipped</span>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-1.5 flex-wrap text-[11px]">
+                          {project.failed === 0 &&
+                          project.timedOut === 0 &&
+                          project.interrupted === 0 ? (
+                            <span className="text-text-muted text-[11px]">0 Failures</span>
+                          ) : (
+                            <>
+                              {project.failed > 0 && (
+                                <span className="text-danger-600 dark:text-danger-500 font-bold">
+                                  {project.failed} Failed
+                                </span>
+                              )}
+                              {project.timedOut > 0 && (
+                                <span className="text-warning-600 dark:text-warning-500 font-bold">
+                                  {project.failed > 0 ? '• ' : ''}
+                                  {project.timedOut} Timed Out
+                                </span>
+                              )}
+                              {project.interrupted > 0 && (
+                                <span className="text-amber-600 dark:text-amber-500 font-bold">
+                                  {project.failed > 0 || project.timedOut > 0 ? '• ' : ''}
+                                  {project.interrupted} Interrupted
+                                </span>
+                              )}
+                            </>
+                          )}
+                        </div>
                       </div>
                     </div>
 
                     {/* Duration & Latency */}
-                    <div className="rounded-md bg-canvas dark:bg-canvas border border-border-default px-3 py-2 shadow-2xs">
+                    <div className="rounded-md bg-canvas dark:bg-canvas border border-border-default px-3 py-2 shadow-2xs flex flex-col justify-between">
                       <span className="text-[10px] font-semibold text-text-muted uppercase block">
                         Total Duration
                       </span>
-                      <span className="mt-1 font-bold text-text-ink dark:text-text-on-primary block">
-                        {formatDuration(project.totalDuration)}
-                      </span>
+                      <div className="mt-1">
+                        <span className="font-bold text-text-ink dark:text-text-on-primary block leading-tight">
+                          {formatDuration(project.totalDuration)}
+                        </span>
+                        <span className="text-[11px] text-text-muted block leading-tight mt-0.5">
+                          Cumulative
+                        </span>
+                      </div>
                     </div>
 
-                    <div className="rounded-md bg-canvas dark:bg-canvas border border-border-default px-3 py-2 shadow-2xs">
+                    <div className="rounded-md bg-canvas dark:bg-canvas border border-border-default px-3 py-2 shadow-2xs flex flex-col justify-between">
                       <span className="text-[10px] font-semibold text-text-muted uppercase block">
                         Avg / Test
                       </span>
-                      <span className="mt-1 font-bold text-text-ink dark:text-text-on-primary block">
-                        {formatDuration(project.avgDuration)}
-                      </span>
+                      <div className="mt-1">
+                        <span className="font-bold text-text-ink dark:text-text-on-primary block leading-tight">
+                          {formatDuration(project.avgDuration)}
+                        </span>
+                        <span className="text-[11px] text-text-muted block leading-tight mt-0.5">
+                          Per executed
+                        </span>
+                      </div>
                     </div>
 
-                    <div className="rounded-md bg-canvas dark:bg-canvas border border-border-default px-3 py-2 shadow-2xs">
+                    <div className="rounded-md bg-canvas dark:bg-canvas border border-border-default px-3 py-2 shadow-2xs flex flex-col justify-between">
                       <span className="text-[10px] font-semibold text-text-muted uppercase block">
                         P95 Latency
                       </span>
-                      <span className="mt-1 font-bold text-text-ink dark:text-text-on-primary block">
-                        {formatDuration(project.p95Duration)}
-                      </span>
+                      <div className="mt-1">
+                        <span className="font-bold text-text-ink dark:text-text-on-primary block leading-tight">
+                          {formatDuration(project.p95Duration)}
+                        </span>
+                        <span className="text-[11px] text-text-muted block leading-tight mt-0.5">
+                          95th percentile
+                        </span>
+                      </div>
                     </div>
 
                     {/* Flakiness */}
-                    <div className="rounded-md bg-canvas dark:bg-canvas border border-border-default px-3 py-2 shadow-2xs">
+                    <div className="rounded-md bg-canvas dark:bg-canvas border border-border-default px-3 py-2 shadow-2xs flex flex-col justify-between">
                       <span className="text-[10px] font-semibold text-text-muted uppercase block">
                         Flaky / Retries
                       </span>
-                      <span
-                        className={`mt-1 font-bold block ${
-                          project.flakyCount > 0
-                            ? 'text-warning-600 dark:text-warning-500'
-                            : 'text-text-ink dark:text-text-on-primary'
-                        }`}
-                      >
-                        {project.flakyCount} ({project.flakyRate}%)
-                      </span>
+                      <div className="mt-1">
+                        <span
+                          className={`font-bold block leading-tight ${
+                            project.flakyCount > 0
+                              ? 'text-warning-600 dark:text-warning-500'
+                              : 'text-text-ink dark:text-text-on-primary'
+                          }`}
+                        >
+                          {project.flakyCount} Flaky
+                        </span>
+                        <span className="text-[11px] text-text-muted block leading-tight mt-0.5">
+                          {project.flakyRate}% Flaky Rate
+                        </span>
+                      </div>
                     </div>
 
-                    {/* Scope / Tags */}
-                    <div className="rounded-md bg-canvas dark:bg-canvas border border-border-default px-3 py-2 shadow-2xs">
+                    {/* Scope & Tags */}
+                    <div className="rounded-md bg-canvas dark:bg-canvas border border-border-default px-3 py-2 shadow-2xs flex flex-col justify-between">
                       <span className="text-[10px] font-semibold text-text-muted uppercase block">
                         Scope & Tags
                       </span>
-                      <span className="mt-1 font-bold text-text-ink dark:text-text-on-primary block">
-                        {project.uniqueFiles} Files / {project.uniqueTagsCount} Tags
-                      </span>
+                      <div className="mt-1">
+                        <span className="font-bold text-text-ink dark:text-text-on-primary block leading-tight">
+                          {project.uniqueFiles} {project.uniqueFiles === 1 ? 'File' : 'Files'}
+                        </span>
+                        <span className="text-[11px] text-text-muted block leading-tight mt-0.5">
+                          {project.uniqueTagsCount} {project.uniqueTagsCount === 1 ? 'Tag' : 'Tags'}
+                        </span>
+                      </div>
                     </div>
                   </div>
 
                   {/* Expand Toggle for Failing/Slow Tests */}
                   {failingOrSlowCases.length > 0 && (
-                    <div className="mt-4 pt-3 border-t border-border-default flex items-center justify-between">
-                      <span className="text-xs font-semibold text-danger-600 dark:text-danger-500 flex items-center gap-1.5">
-                        <svg
-                          className="h-4 w-4"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          stroke="currentColor"
-                          strokeWidth={2}
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z"
-                          />
-                        </svg>
-                        {failingOrSlowCases.length} Failing / Timed Out test(s) in {project.name}
-                      </span>
-
+                    <div className="mt-3 flex items-center">
                       <button
+                        type="button"
                         onClick={() => toggleExpand(project.name)}
-                        className="inline-flex items-center gap-1.5 text-xs font-semibold text-accent-blue hover:underline cursor-pointer"
+                        className="inline-flex items-center gap-1.5 text-xs font-semibold text-accent-blue hover:text-accent-blue/80 transition-colors cursor-pointer"
                       >
-                        <span>{isExpanded ? 'Hide Failures' : 'View Failures'}</span>
                         <svg
                           className={`h-4 w-4 transition-transform duration-200 ${
                             isExpanded ? 'rotate-180' : ''
@@ -406,6 +513,7 @@ export default function ProjectDetailCards({ projectStats, onOpenGuide }: Projec
                             d="M19.5 8.25l-7.5 7.5-7.5-7.5"
                           />
                         </svg>
+                        <span>{isExpanded ? 'Hide Failures' : 'View Failures'}</span>
                       </button>
                     </div>
                   )}

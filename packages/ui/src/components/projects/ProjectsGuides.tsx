@@ -149,16 +149,48 @@ export default function ProjectsGuides({
           </div>
           <ul className="list-disc list-inside space-y-1.5">
             <li>
-              <strong>Pass Rate:</strong> Percentage of test cases in the project profile that
-              executed cleanly to completion.
+              <strong>Pass Rate:</strong> Percentage of executed test cases in the project profile
+              that succeeded (calculated as{' '}
+              <code className="bg-surface-200 px-1 rounded font-mono text-[10px]">
+                (Passed + Flaky) / Total * 100
+              </code>
+              ). Tests that passed after automatic retries are recognized as successful runs.
             </li>
             <li>
-              <strong>Execution Duration:</strong> Cumulative runtime and average duration per test
-              case within the project target.
+              <strong>Status Breakdown (Two-Row Hierarchy):</strong>
+              <ul className="list-disc pl-4 mt-1 space-y-1 text-xs">
+                <li>
+                  <strong className="text-text-ink dark:text-text-on-primary">
+                    Row 1 (Successful & Skipped):
+                  </strong>{' '}
+                  <span className="text-success-600 dark:text-success-500 font-semibold">Pass</span>{' '}
+                  (clean passes on first attempt),{' '}
+                  <span className="text-warning-600 dark:text-warning-500 font-semibold">
+                    Flaky
+                  </span>{' '}
+                  (passed on retry), and <span className="text-text-muted">Skip</span>.
+                </li>
+                <li>
+                  <strong className="text-text-ink dark:text-text-on-primary">
+                    Row 2 (Unresolved Failures):
+                  </strong>{' '}
+                  <span className="text-danger-600 dark:text-danger-500 font-semibold">Fail</span>{' '}
+                  (assertion or runtime errors),{' '}
+                  <span className="text-warning-600 dark:text-warning-500 font-semibold">
+                    Timeout
+                  </span>{' '}
+                  (exceeded execution time limits), and{' '}
+                  <span className="text-amber-600 dark:text-amber-500 font-semibold">
+                    Interrupted
+                  </span>{' '}
+                  (cancelled execution), or <em>0 Failures</em> when all executed tests passed.
+                </li>
+              </ul>
             </li>
             <li>
-              <strong>Duration Percentiles (p95, Median, Min, Max):</strong> Detailed timing stats
-              to identify long-tail execution bottlenecks across specs.
+              <strong>Execution Duration & Percentiles:</strong> Cumulative runtime across all
+              tests, average duration per executed test, and 95th percentile (p95) execution latency
+              to spot long-tail bottlenecks.
             </li>
             <li>
               <strong>Relative Speed Multiplier:</strong> The speed badge next to the project title
@@ -184,8 +216,16 @@ export default function ProjectsGuides({
               </ul>
             </li>
             <li>
-              <strong>Retries & In-Run Flakiness:</strong> Count and percentage of test cases that
-              failed on initial attempt but succeeded after automatic retries.
+              <strong>Flaky / Retries:</strong> Dedicated count and percentage rate of tests that
+              required retries to achieve a passing outcome (
+              <code className="bg-surface-200 px-1 rounded font-mono text-[10px]">
+                Flaky / Total * 100
+              </code>
+              ).
+            </li>
+            <li>
+              <strong>Scope & Tags:</strong> Number of unique test spec files and categorized tags
+              executed within this project target.
             </li>
           </ul>
         </div>
@@ -197,12 +237,13 @@ export default function ProjectsGuides({
           <ul className="list-disc list-inside space-y-1.5">
             <li>
               <strong>Search & Sort:</strong> Quickly filter project profiles by name or sort by
-              Pass Rate, Cumulative Duration, Retry Count, or Total Test Volume.
+              Highest Pass Rate, Longest Duration, Most Flaky Tests, Most Tests, or Project Name
+              using the custom styled dropdown.
             </li>
             <li>
-              <strong>Expandable Failure Details:</strong> Click any project card with errors to
-              expand and inspect step-by-step logs, stack traces, snippets, and attachments scoped
-              strictly to that project target.
+              <strong>Inline Failure Inspection:</strong> Click the <em>View Failures</em> toggle
+              directly beneath the status metrics to inspect step-by-step logs, error stack traces,
+              code snippets, and attachments for any failing or timed out tests.
             </li>
           </ul>
         </div>

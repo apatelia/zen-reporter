@@ -8,7 +8,7 @@ zen-reporter/
 │   │   ├── ExecutionTimingEfficiencyCard.tsx
 │   │   ├── Overview.tsx       # Main Overview layout
 │   │   ├── PassRateRing.tsx   # Radial pass rate chart (dual-tone clean/flaky arcs & theme tokens)
-│   │   ├── TestHealthCard.tsx # Test health breakdown
+│   │   ├── ProjectParityScorecard.tsx # Cross-project stability & execution parity scorecard
 │   │   └── TestResultsHero.tsx # Header summary metrics & run metadata cards
 │   ├── failures/              # Failures tab components
 │   │   ├── FailureList.tsx    # Failure lists with trace & error details
@@ -64,6 +64,7 @@ zen-reporter/
 │   │   ├── GuideModal.tsx     # Reusable modal for feature documentation
 │   │   ├── HistoryDisabledBanner.tsx # Alert banner shown when history recording is disabled
 │   │   ├── InfoTooltip.tsx    # Tooltip component
+│   │   ├── Kbd.tsx            # Standardized keyboard keycap indicator component
 │   │   ├── LearnMoreButton.tsx
 │   │   ├── MultiSelectFilter.tsx
 │   │   ├── OfflineHistoryNotice.tsx # Server-mode recommendation banner for standalone offline viewing

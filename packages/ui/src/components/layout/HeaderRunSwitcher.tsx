@@ -2,6 +2,7 @@ import { useState, useRef, useEffect, useMemo } from 'react';
 import type { HistoryRun } from '@arpanp/zen-core';
 import { formatDate, formatDuration, computePassRate } from '@arpanp/zen-core';
 import { PassRateBadge } from '@/components/shared/PassRateBadge';
+import Kbd from '@/components/shared/Kbd';
 
 export interface HeaderRunSwitcherProps {
   currentRunId: string | null;
@@ -52,8 +53,19 @@ export function HeaderRunSwitcher({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [isOpen]);
 
-  // Show up to 5 recent runs in the quick switcher
-  const recentRuns = sortedRuns.slice(0, 5);
+  // Render active run at the top of the menu, followed by the latest remaining runs (up to 5 total)
+  const recentRuns = useMemo(() => {
+    if (!currentRunId) return sortedRuns.slice(0, 5);
+
+    const activeIdx = sortedRuns.findIndex((r) => r.run_id === currentRunId);
+    if (activeIdx === -1) {
+      return sortedRuns.slice(0, 5);
+    }
+
+    const activeRun = sortedRuns[activeIdx];
+    const otherRuns = sortedRuns.filter((r) => r.run_id !== currentRunId);
+    return [activeRun, ...otherRuns].slice(0, 5);
+  }, [sortedRuns, currentRunId]);
 
   // Key navigation while dropdown is open
   useEffect(() => {
@@ -87,21 +99,27 @@ export function HeaderRunSwitcher({
             onActiveRunSelected?.(latestRun);
           } else {
             onSelectRun(latestRun.run_id);
+            setIsOpen(false);
           }
-          setIsOpen(false);
         }
       } else if (['1', '2', '3', '4', '5'].includes(event.key)) {
-        const targetIndex = parseInt(event.key, 10) - 1;
-        const targetRun = recentRuns[targetIndex];
+        const pressedNum = parseInt(event.key, 10);
+        // Shortcuts 1-4 correspond to switchable (non-active) runs only
+        const switchableRuns = recentRuns.filter((r) => r.run_id !== currentRunId);
+        const targetRun = switchableRuns[pressedNum - 1];
         if (targetRun) {
           event.preventDefault();
           event.stopPropagation();
-          if (targetRun.run_id === currentRunId) {
-            onActiveRunSelected?.(targetRun);
-          } else {
-            onSelectRun(targetRun.run_id);
-          }
+          onSelectRun(targetRun.run_id);
           setIsOpen(false);
+        } else if (pressedNum === 1 && recentRuns.some((r) => r.run_id === currentRunId)) {
+          // If 1 was pressed thinking it was row 1 (the active run), inform user without closing menu
+          const activeRun = runs.find((r) => r.run_id === currentRunId);
+          if (activeRun) {
+            event.preventDefault();
+            event.stopPropagation();
+            onActiveRunSelected?.(activeRun);
+          }
         }
       } else if (['6', '7', '8', '9', '0'].includes(event.key)) {
         // Prevent numeric keys from propagating outside the quick switcher menu
@@ -119,6 +137,7 @@ export function HeaderRunSwitcher({
     onActiveRunSelected,
     recentRuns,
     currentRunId,
+    runs,
   ]);
 
   // If there are no multiple runs to switch between, do not render a switcher button
@@ -171,32 +190,180 @@ export function HeaderRunSwitcher({
         <div
           role="menu"
           aria-label="Test run quick switcher"
-          className="absolute left-0 top-full mt-1.5 z-50 w-80 sm:w-96 rounded-lg border border-border-default bg-surface-50 dark:bg-surface-100 shadow-xl py-1.5 divide-y divide-border-default/60 text-xs animate-in fade-in zoom-in-95 duration-100"
+          className="absolute left-0 top-full mt-1.5 z-50 w-80 sm:w-[28rem] rounded-lg border border-border-default bg-surface-50 dark:bg-surface-100 shadow-xl py-1.5 divide-y divide-border-default/60 text-xs animate-in fade-in zoom-in-95 duration-100"
         >
-          {/* Quick jump to Latest Run if not already viewing it */}
-          {latestRun && (
+          {/* Recent Runs list */}
+          <div className="p-1.5">
+            <div className="px-2.5 py-1 text-[11px] font-semibold text-text-muted tracking-wider uppercase">
+              Recent Executions
+            </div>
+            <div className="space-y-1 mt-0.5">
+              {(() => {
+                let switchableIndex = 0;
+                return recentRuns.map((run) => {
+                  const isCurrent = run.run_id === currentRunId;
+                  const shortcutNumber = !isCurrent ? ++switchableIndex : null;
+                  const passRate = computePassRate({
+                    total: run.run_total,
+                    passed: run.run_passed,
+                    flaky: run.run_flaky ?? 0,
+                    failed: run.run_failed,
+                    timedOut: run.run_timed_out,
+                    skipped: run.run_skipped,
+                    interrupted: run.run_interrupted,
+                    duration: run.run_duration_ms,
+                  });
+
+                  return (
+                    <div
+                      key={run.run_id}
+                      role="menuitem"
+                      onClick={() => {
+                        if (!isCurrent) {
+                          onSelectRun(run.run_id);
+                          setIsOpen(false);
+                        } else {
+                          onActiveRunSelected?.(run);
+                        }
+                      }}
+                      className={`w-full flex items-center justify-between gap-3 px-3 py-2 rounded-md text-left transition-colors ${
+                        isCurrent
+                          ? 'bg-accent-blue/5 border-l-4 border-l-accent-blue cursor-default select-none'
+                          : 'hover:bg-surface-200/80 dark:hover:bg-surface-200 text-text-ink dark:text-text-on-primary cursor-pointer'
+                      }`}
+                    >
+                      {/* Left: 3-row layout */}
+                      <div className="min-w-0 flex-1">
+                        {/* Row 1: Run Name + Latest tag + Viewing tag */}
+                        <div className="flex items-center gap-1.5">
+                          <span
+                            className={`truncate font-semibold text-xs ${
+                              isCurrent
+                                ? 'text-accent-blue'
+                                : 'text-text-ink dark:text-text-on-primary'
+                            }`}
+                          >
+                            {run.run_name}
+                          </span>
+                          {run.run_id === latestRun?.run_id && (
+                            <span className="px-1.5 py-0.5 rounded text-[9px] font-semibold bg-surface-200 dark:bg-surface-300 text-text-body-mid dark:text-text-on-primary border border-border-default/80 shrink-0 leading-tight">
+                              Latest
+                            </span>
+                          )}
+                          {isCurrent && (
+                            <span className="px-1.5 py-0.5 rounded text-[9px] font-semibold bg-accent-blue/15 dark:bg-accent-blue/25 text-accent-blue dark:text-accent-blue border border-accent-blue/30 shrink-0 leading-tight">
+                              Viewing
+                            </span>
+                          )}
+                        </div>
+
+                        {/* Row 2: Git Metadata (Branch & Commit) */}
+                        <div className="mt-1 flex items-center gap-2.5 text-[11px]">
+                          {run.git_branch ? (
+                            <div
+                              className="inline-flex items-center gap-1 max-w-[15rem] truncate text-text-ink dark:text-text-on-primary font-medium"
+                              title={`Branch: ${run.git_branch}`}
+                            >
+                              <svg
+                                className="h-3 w-3 text-accent-blue shrink-0"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                                stroke="currentColor"
+                                strokeWidth={2}
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                              >
+                                <line x1="6" y1="3" x2="6" y2="15" />
+                                <circle cx="18" cy="6" r="3" />
+                                <circle cx="6" cy="18" r="3" />
+                                <path d="M18 9a9 9 0 0 1-9 9" />
+                              </svg>
+                              <span className="truncate">{run.git_branch}</span>
+                            </div>
+                          ) : null}
+
+                          {run.git_commit && (
+                            <div
+                              className="inline-flex items-center gap-1 font-mono text-[10.5px] text-text-body-mid dark:text-text-muted"
+                              title={`Commit SHA: ${run.git_commit_full || run.git_commit}`}
+                            >
+                              <svg
+                                className="h-2.5 w-2.5 text-accent-blue shrink-0"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                                stroke="currentColor"
+                                strokeWidth={2}
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                              >
+                                <circle cx="12" cy="12" r="4" />
+                                <line x1="12" y1="1.05" x2="12" y2="7" />
+                                <line x1="12" y1="17.05" x2="12" y2="22.95" />
+                              </svg>
+                              <span>{run.git_commit}</span>
+                            </div>
+                          )}
+
+                          {!run.git_branch && !run.git_commit && (
+                            <span className="italic text-text-muted/60 text-[10.5px]">
+                              No git metadata
+                            </span>
+                          )}
+                        </div>
+
+                        {/* Row 3: Telemetry (Timestamp, Duration, Test Count) */}
+                        <div className="mt-1 flex items-center gap-1.5 text-[10.5px] text-text-muted flex-wrap">
+                          {run.started_at && <span>{formatDate(run.started_at)}</span>}
+                          {run.run_duration_ms > 0 && (
+                            <>
+                              <span>·</span>
+                              <span>{formatDuration(run.run_duration_ms)}</span>
+                            </>
+                          )}
+                          <span>·</span>
+                          <span>{run.run_total} tests</span>
+                        </div>
+                      </div>
+
+                      {/* Right: Pass Rate Badge + Shortcut Keycap */}
+                      <div className="shrink-0 flex items-center gap-2">
+                        <PassRateBadge passRate={passRate} />
+                        {shortcutNumber !== null ? (
+                          <Kbd
+                            size="sm"
+                            variant="keycap"
+                            showKeyboardIcon
+                            className="hidden sm:inline-flex"
+                            title={`Press ${shortcutNumber} to switch to this run`}
+                          >
+                            {shortcutNumber}
+                          </Kbd>
+                        ) : (
+                          <div className="hidden sm:block w-7.5" aria-hidden="true" />
+                        )}
+                      </div>
+                    </div>
+                  );
+                });
+              })()}
+            </div>
+          </div>
+
+          {/* Quick jump to Latest Run if NOT already viewing it */}
+          {latestRun && !isViewingLatest && (
             <div className="p-1.5">
               <button
                 type="button"
                 role="menuitem"
-                disabled={isViewingLatest}
                 onClick={() => {
-                  if (!isViewingLatest) {
-                    onSelectRun(latestRun.run_id);
-                  } else {
-                    onActiveRunSelected?.(latestRun);
-                  }
+                  onSelectRun(latestRun.run_id);
                   setIsOpen(false);
                 }}
-                className={`w-full flex items-center justify-between gap-2.5 px-2.5 py-2 rounded-md transition-colors text-left ${
-                  isViewingLatest
-                    ? 'opacity-60 bg-surface-100/50 dark:bg-surface-200/30 cursor-default'
-                    : 'bg-accent-blue/10 hover:bg-accent-blue/15 text-accent-blue font-semibold cursor-pointer'
-                }`}
+                className="w-full flex items-center justify-between px-2.5 py-2 rounded-md hover:bg-surface-200/80 dark:hover:bg-surface-200 text-text-ink dark:text-text-on-primary transition-colors text-left cursor-pointer group"
               >
                 <div className="flex items-center gap-2 min-w-0">
                   <svg
-                    className={`h-4 w-4 shrink-0 ${isViewingLatest ? 'text-text-muted' : 'text-accent-blue'}`}
+                    className="h-3.5 w-3.5 shrink-0 text-accent-blue"
                     fill="none"
                     viewBox="0 0 24 24"
                     stroke="currentColor"
@@ -209,114 +376,26 @@ export function HeaderRunSwitcher({
                     />
                   </svg>
                   <div className="min-w-0">
-                    <div className="flex items-center gap-1.5">
-                      <span className="font-semibold text-text-ink dark:text-text-on-primary truncate">
-                        {isViewingLatest ? 'Currently viewing latest run' : 'Jump to Latest Run'}
-                      </span>
-                    </div>
-                    <div className="text-[11px] text-text-muted font-normal truncate">
-                      {latestRun.run_name}
-                    </div>
+                    <span className="font-semibold text-xs text-text-ink dark:text-text-on-primary">
+                      Jump to Latest Run
+                    </span>
+                    <span className="text-[11px] text-text-muted ml-1.5 truncate">
+                      ({latestRun.run_name})
+                    </span>
                   </div>
                 </div>
-                {isViewingLatest ? (
-                  <span className="shrink-0 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-surface-200 text-text-body-mid">
-                    Latest
-                  </span>
-                ) : (
-                  <kbd className="hidden sm:inline-flex h-4.5 min-w-4.5 items-center justify-center rounded px-1.5 text-[10px] font-medium leading-none text-accent-blue border border-accent-blue/40 bg-accent-blue/10">
-                    L
-                  </kbd>
-                )}
+                <Kbd
+                  size="sm"
+                  variant="keycap"
+                  showKeyboardIcon
+                  className="hidden sm:inline-flex"
+                  title="Press L to jump to latest run"
+                >
+                  L
+                </Kbd>
               </button>
             </div>
           )}
-
-          {/* Recent Runs list */}
-          <div className="p-1.5">
-            <div className="px-2.5 py-1 text-[11px] font-semibold text-text-muted tracking-wider uppercase">
-              Recent Executions
-            </div>
-            <div className="space-y-0.5 mt-0.5">
-              {recentRuns.map((run, index) => {
-                const isCurrent = run.run_id === currentRunId;
-                const shortcutNumber = index + 1;
-                const passRate = computePassRate({
-                  total: run.run_total,
-                  passed: run.run_passed,
-                  failed: run.run_failed,
-                  timedOut: run.run_timed_out,
-                  skipped: run.run_skipped,
-                  interrupted: run.run_interrupted,
-                  duration: run.run_duration_ms,
-                });
-
-                return (
-                  <button
-                    key={run.run_id}
-                    type="button"
-                    role="menuitem"
-                    onClick={() => {
-                      if (!isCurrent) {
-                        onSelectRun(run.run_id);
-                      } else {
-                        onActiveRunSelected?.(run);
-                      }
-                      setIsOpen(false);
-                    }}
-                    className={`w-full flex items-center justify-between gap-3 px-2.5 py-1.5 rounded-md text-left transition-colors ${
-                      isCurrent
-                        ? 'bg-accent-blue/10 text-accent-blue font-semibold cursor-default'
-                        : 'hover:bg-surface-200/80 dark:hover:bg-surface-200 text-text-ink dark:text-text-on-primary cursor-pointer'
-                    }`}
-                  >
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-1.5">
-                        <span className="truncate font-medium">{run.run_name}</span>
-                        {run.run_id === latestRun?.run_id && (
-                          <span className="px-1 py-0.2 rounded text-[9px] font-semibold bg-surface-200 dark:bg-surface-300 text-text-muted shrink-0 leading-tight">
-                            Latest
-                          </span>
-                        )}
-                      </div>
-                      <div className="flex items-center gap-1.5 text-[11px] text-text-muted mt-0.5">
-                        {run.started_at && <span>{formatDate(run.started_at)}</span>}
-                        {run.run_duration_ms > 0 && (
-                          <>
-                            <span>•</span>
-                            <span>{formatDuration(run.run_duration_ms)}</span>
-                          </>
-                        )}
-                        {run.git_branch && (
-                          <>
-                            <span>•</span>
-                            <span className="truncate max-w-28">{run.git_branch}</span>
-                          </>
-                        )}
-                      </div>
-                    </div>
-                    <div className="shrink-0 flex items-center gap-1.5">
-                      <PassRateBadge passRate={passRate} />
-                      <kbd className="hidden sm:inline-flex h-4 min-w-4 items-center justify-center rounded px-1 text-[9px] font-medium leading-none text-text-muted border border-border-default/60 bg-surface-100 dark:bg-surface-200/50">
-                        {shortcutNumber}
-                      </kbd>
-                      {isCurrent && (
-                        <svg
-                          className="h-3.5 w-3.5 text-accent-blue shrink-0"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          stroke="currentColor"
-                          strokeWidth={2.5}
-                        >
-                          <polyline points="20 6 9 17 4 12" />
-                        </svg>
-                      )}
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
 
           {/* Footer action: Open full switcher modal */}
           <div className="p-1.5">
@@ -345,9 +424,15 @@ export function HeaderRunSwitcher({
                 </svg>
                 <span>Browse all {runs.length} runs & search...</span>
               </div>
-              <kbd className="hidden sm:inline-flex h-4.5 min-w-4.5 items-center justify-center rounded px-1.5 text-[10px] font-medium leading-none text-text-muted border border-border-default/60 bg-surface-100 dark:bg-surface-200/50">
+              <Kbd
+                size="sm"
+                variant="keycap"
+                showKeyboardIcon
+                className="hidden sm:inline-flex"
+                title="Press / to open full run search modal"
+              >
                 /
-              </kbd>
+              </Kbd>
             </button>
           </div>
         </div>

@@ -72,6 +72,13 @@ export default function FileSummary({ suites, title, testRunName }: FileSummaryP
       csvValue: (f) => f.passed,
     },
     {
+      key: 'flaky',
+      header: 'Flaky',
+      align: 'center',
+      cell: (f) => <StatusCountBadge count={f.flakyCount} type="flaky" />,
+      csvValue: (f) => f.flakyCount,
+    },
+    {
       key: 'failed',
       header: 'Failed',
       align: 'center',
@@ -104,10 +111,10 @@ export default function FileSummary({ suites, title, testRunName }: FileSummaryP
       header: 'Pass Rate',
       align: 'center',
       cell: (f) => {
-        const passRate = calculatePassRate(f.passed, f.total);
+        const passRate = calculatePassRate(f.passed + f.flakyCount, f.total);
         return <PassRateBadge passRate={passRate} />;
       },
-      csvValue: (f) => calculatePassRate(f.passed, f.total) ?? 0,
+      csvValue: (f) => calculatePassRate(f.passed + f.flakyCount, f.total) ?? 0,
     },
   ];
 

@@ -22,7 +22,7 @@ Dark mode:
 
 ## Features
 
-- **High-Level Test Dashboard**: Visual summary metrics featuring pass rate radial indicators (with dual-tone arcs and flakiness warnings when tests pass via retries), execution efficiency, test stability and flakiness, test run details (duration, Git branch & commit hash with one-click copy and toast notifications, projects, suites, test counts, worker threads, Playwright version, operating system), and calculation tooltips.
+- **High-Level Test Dashboard**: Visual summary metrics featuring pass rate radial indicators (with dual-tone arcs and flakiness warnings when tests pass via retries), execution efficiency, cross-project parity and stability scorecard (highlighting pass rate delta spread, slowest projects, and target environment parity), test run details (duration, Git branch & commit hash with one-click copy and toast notifications, projects, suites, test counts, worker threads, Playwright version, operating system), and calculation tooltips.
 - **Header Run Switcher**: Quick-switch dropdown in the top navigation bar to seamlessly toggle between recent historical runs without leaving the active view, complemented by the full historical run switcher modal (`/`).
 - **Per-Project Execution Analytics**: Detailed status bar charts, volume and coverage distribution, and project detail cards comparing Playwright project profiles.
 - **Suite & Spec File Explorer**: Interactive, searchable tree view container for nested `describe` suites with collapsible nodes, bulk expand/collapse controls, retry badges, test case cards, and paginated spec file summary tables.
@@ -44,7 +44,7 @@ Dark mode:
   - **Interactive Configuration Generator**: Built-in visual Playwright configuration generator accessible right from the sidebar footer. Easily adjust reporter options, explore history modes (Local SQLite vs Remote SaaS), preview syntax-highlighted TypeScript/JavaScript configuration diffs in real-time with modified property indicators, and copy directly to `playwright.config.ts` or `playwright.config.js`.
   - **Keyboard Navigation & Hotkeys**: Full single-key shortcuts for rapid dashboard navigation (`1-8` for tabs, `[`/`]` for cycling, `/` for run switcher, `x`/`s` for expanding/collapsing suites & failures, `f` for search focus, `p`/`n` for table & attachment pagination, `d` for dark mode, `t` for themes, `r` for back-to-top, and `?` for the interactive cheat-sheet). See the complete [Keyboard Shortcuts Guide](docs/keyboard-shortcuts.md).
   - **Themes & Dark Mode**: Multiple design themes (`Sage`, `Lotus`, `Oasis`) with light, dark, and auto system mode toggles (following OS preferences), built with WCAG-compliant color tokens and configurable default states.
-  - **Self-Contained Report Bundle Output**: Generates an interactive HTML dashboard (`index.html`) backed by per-run JSONL execution history (`runs/`) and test attachments (`attachments/`) for easy CI/CD artifact storage. Optionally creates a lightweight standalone `summary.html` dedicated to executive dashboards.
+  - **Self-Contained Report Bundle Output**: Generates an interactive HTML dashboard (`index.html`) backed by local SQLite execution history (`history.db`) and test attachments (`attachments/`) for easy CI/CD artifact storage. Optionally creates a lightweight standalone `summary.html` dedicated to executive dashboards.
 
 > **Note**: Designed and built with AI pair-programming tools; fully tested, maintained, and quality-assured by human hands.
 

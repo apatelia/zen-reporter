@@ -1,8 +1,14 @@
 import React, { useEffect } from 'react';
+import Kbd from '@/components/shared/Kbd';
 
 export interface ModalShortcut {
   keyDesc: string | string[];
   label: string;
+  /**
+   * If true, keeps the exact casing of `label`.
+   * Defaults to false, which automatically formats the label to Title/Proper Case.
+   */
+  preserveCase?: boolean;
 }
 
 export interface BaseModalProps {
@@ -16,6 +22,17 @@ export interface BaseModalProps {
   maxHeightClass?: string;
   children: React.ReactNode;
   shortcuts?: ModalShortcut[];
+}
+
+/**
+ * Converts a string to Proper Case (Capitalizes the first letter of each word).
+ *
+ * @param str - Input string to capitalize.
+ * @returns Capitalized string in Proper Case.
+ */
+function toProperCase(str: string): string {
+  if (!str) return str;
+  return str.replace(/\b[a-z]/g, (char) => char.toUpperCase());
 }
 
 /**
@@ -151,29 +168,28 @@ export default function BaseModal({
 
         {/* Modal Keyboard Shortcuts Bar */}
         {effectiveShortcuts.length > 0 && (
-          <div className="hidden sm:flex items-center gap-2 pt-3 mt-3 border-t border-border-default/60 text-[11px] text-text-muted shrink-0 select-none">
+          <div className="hidden sm:flex items-center gap-2.5 pt-3 mt-3 border-t border-border-default/60 text-[11px] text-text-muted shrink-0 select-none">
             <span className="font-semibold text-text-muted/80">Shortcuts:</span>
             {effectiveShortcuts.map((sc, index) => {
               const keys = Array.isArray(sc.keyDesc) ? sc.keyDesc : [sc.keyDesc];
+              const displayLabel = sc.preserveCase ? sc.label : toProperCase(sc.label);
               return (
                 <span
                   key={`${keys.join('-')}-${sc.label}`}
-                  className="inline-flex items-center gap-1"
+                  className="inline-flex items-center gap-1.5"
                 >
                   {index > 0 && <span className="text-text-muted/40 mr-1">·</span>}
-                  <span className="inline-flex items-center gap-0.5">
+                  <span className="inline-flex items-center gap-1">
                     {keys.map((k, kIdx) => (
                       <React.Fragment key={k}>
                         {kIdx > 0 && (
                           <span className="text-[10px] text-text-muted/60 mx-0.5">/</span>
                         )}
-                        <kbd className="h-4 min-w-4 px-1 rounded border border-border-default bg-surface-100 dark:bg-surface-200/50 text-[10px] text-center font-mono leading-tight">
-                          {k}
-                        </kbd>
+                        <Kbd size="sm">{k}</Kbd>
                       </React.Fragment>
                     ))}
                   </span>
-                  <span>{sc.label}</span>
+                  <span className="leading-none">{displayLabel}</span>
                 </span>
               );
             })}

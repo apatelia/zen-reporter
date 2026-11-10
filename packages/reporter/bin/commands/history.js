@@ -35,7 +35,7 @@ import { printHelp } from './help.js';
 export async function generateHistoryReport(conn, historyDir, cwd = process.cwd()) {
   await setupHistorySource(conn, historyDir, cwd);
 
-  const runsSql = `SELECT DISTINCT run_id, run_name, started_at, run_duration_ms, coalesce(max(run_sequential_duration_ms), sum(duration_ms)) AS run_sequential_duration_ms, max(run_workers) AS run_workers, count(DISTINCT file) AS run_files, run_total, run_passed, run_failed, run_timed_out, run_skipped, run_interrupted, round(100.0 * run_passed / nullif(run_total, 0), 1) AS pass_rate, max(coalesce(step_assertions, 0)) AS step_assertions, max(coalesce(step_actions, 0)) AS step_actions, max(coalesce(step_network, 0)) AS step_network, max(coalesce(step_hooks, 0)) AS step_hooks, max(coalesce(step_waits, 0)) AS step_waits, max(coalesce(step_others, 0)) AS step_others, max(git_branch) AS git_branch, max(git_commit) AS git_commit, max(git_commit_full) AS git_commit_full FROM ${SRC} GROUP BY run_id, run_name, started_at, run_duration_ms, run_total, run_passed, run_failed, run_timed_out, run_skipped, run_interrupted ORDER BY started_at DESC LIMIT 50`;
+  const runsSql = `SELECT DISTINCT run_id, run_name, started_at, run_duration_ms, coalesce(max(run_sequential_duration_ms), sum(duration_ms)) AS run_sequential_duration_ms, max(run_workers) AS run_workers, count(DISTINCT file) AS run_files, run_total, run_passed, coalesce(max(run_flaky), 0) AS run_flaky, run_failed, run_timed_out, run_skipped, run_interrupted, round(100.0 * (run_passed + coalesce(max(run_flaky), 0)) / nullif(run_total, 0), 1) AS pass_rate, max(coalesce(step_assertions, 0)) AS step_assertions, max(coalesce(step_actions, 0)) AS step_actions, max(coalesce(step_network, 0)) AS step_network, max(coalesce(step_hooks, 0)) AS step_hooks, max(coalesce(step_waits, 0)) AS step_waits, max(coalesce(step_others, 0)) AS step_others, max(git_branch) AS git_branch, max(git_commit) AS git_commit, max(git_commit_full) AS git_commit_full FROM ${SRC} GROUP BY run_id, run_name, started_at, run_duration_ms, run_total, run_passed, run_failed, run_timed_out, run_skipped, run_interrupted ORDER BY started_at DESC LIMIT 50`;
 
   const windowedFilesSql = `
     WITH recent_runs AS (
@@ -50,7 +50,8 @@ export async function generateHistoryReport(conn, historyDir, cwd = process.cwd(
       t.started_at,
       t.file,
       count(*) AS total,
-      count(*) FILTER (status = 'passed') AS passed,
+      count(*) FILTER (status = 'passed' AND coalesce(t.passed_on_retry, 0) = 0) AS passed,
+      count(*) FILTER (status = 'passed' AND coalesce(t.passed_on_retry, 0) > 0) AS flaky,
       count(*) FILTER (status = 'failed') AS failed,
       count(*) FILTER (status = 'timedOut') AS timed_out,
       count(*) FILTER (status = 'interrupted') AS interrupted,
@@ -78,7 +79,8 @@ export async function generateHistoryReport(conn, historyDir, cwd = process.cwd(
       t.title,
       t.project,
       count(*) AS total,
-      count(*) FILTER (status = 'passed') AS passed,
+      count(*) FILTER (status = 'passed' AND coalesce(t.passed_on_retry, 0) = 0) AS passed,
+      count(*) FILTER (status = 'passed' AND coalesce(t.passed_on_retry, 0) > 0) AS flaky,
       count(*) FILTER (status = 'failed') AS failed,
       count(*) FILTER (status = 'timedOut') AS timed_out,
       count(*) FILTER (status = 'interrupted') AS interrupted,

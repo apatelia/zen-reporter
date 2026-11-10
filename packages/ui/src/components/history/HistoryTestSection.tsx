@@ -52,7 +52,8 @@ export function HistoryTestSection({
           title: f.title,
           project: f.project,
           total: f.total_runs,
-          passed: f.passed_runs,
+          passed: Math.max(0, f.passed_runs - (f.recovered_by_retry ?? 0)),
+          flaky: f.recovered_by_retry ?? 0,
           failed: f.failed_runs,
           timed_out: 0,
           interrupted: 0,
@@ -103,6 +104,7 @@ export function HistoryTestSection({
         project: string;
         total: number;
         passed: number;
+        flaky: number;
         failed: number;
         timedOut: number;
         interrupted: number;
@@ -125,6 +127,7 @@ export function HistoryTestSection({
           project: row.project || '',
           total: 0,
           passed: 0,
+          flaky: 0,
           failed: 0,
           timedOut: 0,
           interrupted: 0,
@@ -137,6 +140,7 @@ export function HistoryTestSection({
       }
       item.total += row.total ?? 1;
       item.passed += row.passed ?? 0;
+      item.flaky += row.flaky ?? 0;
       item.failed += row.failed ?? 0;
       item.timedOut += row.timed_out ?? 0;
       item.interrupted += row.interrupted ?? 0;
@@ -153,7 +157,7 @@ export function HistoryTestSection({
     return Array.from(map.values())
       .map((item) => {
         const total = item.total;
-        const passRate = calculatePassRate(item.passed, total);
+        const passRate = calculatePassRate(item.passed + item.flaky, total);
         const avgDurationMs =
           item.durationCount > 0 ? Math.round(item.totalDurationMs / item.durationCount) : null;
         return {
@@ -165,6 +169,7 @@ export function HistoryTestSection({
           runsCount: item.runIds.size || 1,
           total,
           passed: item.passed,
+          flaky: item.flaky,
           failed: item.failed,
           timedOut: item.timedOut,
           interrupted: item.interrupted,
@@ -247,6 +252,13 @@ export function HistoryTestSection({
         align: 'center',
         cell: (t) => <StatusCountBadge count={t.passed} type="passed" />,
         csvValue: (t) => t.passed,
+      },
+      {
+        key: 'flaky',
+        header: 'Flaky',
+        align: 'center',
+        cell: (t) => <StatusCountBadge count={t.flaky} type="flaky" />,
+        csvValue: (t) => t.flaky,
       },
       {
         key: 'failed',

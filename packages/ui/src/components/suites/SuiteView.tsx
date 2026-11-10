@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import type { TestSuite, TestCase } from '@arpanp/zen-core';
-import { formatDurationVerbose } from '@arpanp/zen-core';
+import { formatDurationVerbose, getTestCaseEffectiveStatus } from '@arpanp/zen-core';
 import TestCaseCard from '@/components/shared/TestCaseCard';
 import TestSuiteNode from './TestSuiteNode';
 
@@ -28,7 +28,8 @@ function filterCases(
 ): TestCase[] {
   const query = fileSearchTerm?.trim().toLowerCase();
   return cases.filter((c) => {
-    const statusMatch = filterStatuses.length === 0 || filterStatuses.includes(c.status);
+    const effectiveStatus = getTestCaseEffectiveStatus(c);
+    const statusMatch = filterStatuses.length === 0 || filterStatuses.includes(effectiveStatus);
     const projectMatch = filterProjects.length === 0 || filterProjects.includes(c.project);
     const tagMatch =
       filterTags.length === 0 || (c.tags || []).some((tag) => filterTags.includes(tag));
@@ -111,7 +112,8 @@ function hasTestCases(
     parentMatch || Boolean(query && suite.title && suite.title.toLowerCase().includes(query));
 
   const hasMatchingCases = suite.cases.some((c) => {
-    const statusMatch = filterStatuses.length === 0 || filterStatuses.includes(c.status);
+    const effectiveStatus = getTestCaseEffectiveStatus(c);
+    const statusMatch = filterStatuses.length === 0 || filterStatuses.includes(effectiveStatus);
     const projectMatch = filterProjects.length === 0 || filterProjects.includes(c.project);
     const tagMatch =
       filterTags.length === 0 || (c.tags || []).some((tag) => filterTags.includes(tag));
@@ -157,6 +159,7 @@ function countCases(
 ): {
   total: number;
   passed: number;
+  flaky: number;
   failed: number;
   skipped: number;
   timedOut: number;
@@ -177,19 +180,42 @@ function countCases(
     currentSuiteMatch
   );
   let total = cases.length;
-  let passed = cases.filter((c) => c.status === 'passed').length;
-  let failed = cases.filter((c) => c.status === 'failed').length;
-  let skipped = cases.filter((c) => c.status === 'skipped').length;
-  let timedOut = cases.filter((c) => c.status === 'timedOut').length;
-  let interrupted = cases.filter((c) => c.status === 'interrupted').length;
-  let duration = cases.reduce(
-    (sum, c) =>
-      sum +
-      (c.steps && c.steps.length > 0
+  let passed = 0;
+  let flaky = 0;
+  let failed = 0;
+  let skipped = 0;
+  let timedOut = 0;
+  let interrupted = 0;
+  let duration = 0;
+
+  for (const c of cases) {
+    const status = getTestCaseEffectiveStatus(c);
+    switch (status) {
+      case 'passed':
+        passed++;
+        break;
+      case 'flaky':
+        flaky++;
+        break;
+      case 'failed':
+        failed++;
+        break;
+      case 'skipped':
+        skipped++;
+        break;
+      case 'timedOut':
+        timedOut++;
+        break;
+      case 'interrupted':
+        interrupted++;
+        break;
+    }
+
+    duration +=
+      c.steps && c.steps.length > 0
         ? c.steps.reduce((acc, step) => acc + (step.duration || 0), 0)
-        : c.duration || 0),
-    0
-  );
+        : c.duration || 0;
+  }
 
   for (const sub of suite.subSuites || []) {
     const subCount = countCases(
@@ -203,6 +229,7 @@ function countCases(
     );
     total += subCount.total;
     passed += subCount.passed;
+    flaky += subCount.flaky;
     failed += subCount.failed;
     skipped += subCount.skipped;
     timedOut += subCount.timedOut;
@@ -210,7 +237,7 @@ function countCases(
     duration += subCount.duration;
   }
 
-  return { total, passed, failed, skipped, timedOut, interrupted, duration };
+  return { total, passed, flaky, failed, skipped, timedOut, interrupted, duration };
 }
 
 export default function SuiteView({
@@ -251,7 +278,7 @@ export default function SuiteView({
       : suite;
   }, [suite, filterStatuses, filterProjects, filterTags, filterFiles, fileSearchTerm]);
 
-  const { total, passed, failed, skipped, timedOut, interrupted, duration } = useMemo(
+  const { total, passed, flaky, failed, skipped, timedOut, interrupted, duration } = useMemo(
     () =>
       countCases(
         filteredSuite,
@@ -263,7 +290,7 @@ export default function SuiteView({
       ),
     [filteredSuite, filterStatuses, filterProjects, filterTags, filterFiles, fileSearchTerm]
   );
-  const passRate = total > 0 ? Math.round((passed / total) * 100) : 100;
+  const passRate = total > 0 ? Math.round(((passed + flaky) / total) * 100) : 100;
 
   return (
     <details
@@ -324,7 +351,12 @@ export default function SuiteView({
               {failed} failed
             </span>
           )}
-          {total > 0 && (
+          {flaky > 0 && (
+            <span className="inline-flex items-center rounded-full bg-warning-50 dark:bg-warning-500/20 ring-1 ring-warning-500/20 px-3 py-1 text-xs font-semibold text-warning-600 dark:text-warning-500">
+              {flaky} flaky
+            </span>
+          )}
+          {passed > 0 && (
             <span className="hidden sm:inline-flex items-center rounded-full bg-success-50 dark:bg-success-500/20 ring-1 ring-success-500/20 px-3 py-1 text-xs font-semibold text-success-600 dark:text-success-500">
               {passed} passed
             </span>

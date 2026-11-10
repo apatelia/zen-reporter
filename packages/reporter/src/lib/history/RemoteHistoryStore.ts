@@ -17,6 +17,7 @@ interface RemoteRunDto {
   runSequentialDurationMs: number | null;
   runTotal: number;
   runPassed: number;
+  runFlaky?: number;
   runFailed: number;
   runSkipped: number;
   runTimedOut: number;
@@ -287,6 +288,7 @@ export class RemoteHistoryStore implements HistoryStore {
       runSequentialDurationMs: options.summary.totalSequentialDuration ?? null,
       runTotal: options.summary.total,
       runPassed: options.summary.passed,
+      runFlaky: options.summary.flaky ?? 0,
       runFailed: options.summary.failed,
       runSkipped: options.summary.skipped,
       runTimedOut: options.summary.timedOut ?? 0,
@@ -378,12 +380,16 @@ export class RemoteHistoryStore implements HistoryStore {
         run_workers: r.runWorkers ?? undefined,
         run_total: r.runTotal,
         run_passed: r.runPassed,
+        run_flaky: r.runFlaky ?? 0,
         runFailed: r.runFailed,
         run_failed: r.runFailed,
         run_skipped: r.runSkipped,
         run_timed_out: r.runTimedOut,
         run_interrupted: r.runInterrupted,
-        pass_rate: r.runTotal > 0 ? (r.runPassed / r.runTotal) * 100 : null,
+        pass_rate:
+          r.runTotal > 0
+            ? Math.round(((r.runPassed + (r.runFlaky ?? 0)) / r.runTotal) * 100)
+            : null,
         git_branch: r.gitBranch ?? undefined,
         git_commit: r.gitCommit ?? undefined,
         git_commit_full: r.gitCommitFull ?? undefined,
@@ -455,6 +461,7 @@ export class RemoteHistoryStore implements HistoryStore {
         summary: {
           total: run.runTotal,
           passed: run.runPassed,
+          flaky: run.runFlaky ?? 0,
           failed: run.runFailed,
           skipped: run.runSkipped,
           timedOut: run.runTimedOut,

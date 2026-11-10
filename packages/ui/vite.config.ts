@@ -125,6 +125,8 @@ const serveReportAssets: Plugin = {
             stdout: matchedCase.stdout || [],
             stderr: matchedCase.stderr || [],
             attachments: matchedCase.attachments || [],
+            failedAttempts: matchedCase.failedAttempts || [],
+            attempts: matchedCase.attempts,
           })
         );
       } catch (err) {

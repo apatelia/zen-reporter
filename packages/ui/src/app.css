@@ -92,6 +92,7 @@
 :root {
   color-scheme: light;
   --color-status-chart-passed: var(--color-success-500);
+  --color-status-chart-flaky: var(--color-warning-500);
   --color-status-chart-failed: var(--color-danger-500);
   --color-status-chart-timed-out: var(--color-danger-600);
   --color-status-chart-interrupted: #d97706; /* amber-600 */
@@ -115,6 +116,7 @@
 html.dark {
   color-scheme: dark;
   --color-status-chart-passed: var(--color-success-500);
+  --color-status-chart-flaky: var(--color-warning-500);
   --color-status-chart-failed: var(--color-danger-500);
   --color-status-chart-timed-out: var(--color-danger-400, #f87171);
   --color-status-chart-interrupted: #f59e0b; /* amber-500 */

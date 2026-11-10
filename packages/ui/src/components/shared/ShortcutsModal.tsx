@@ -1,4 +1,5 @@
 import BaseModal from '@/components/shared/BaseModal';
+import Kbd from '@/components/shared/Kbd';
 
 export interface ShortcutsModalProps {
   isOpen: boolean;
@@ -113,12 +114,9 @@ export function ShortcutsModal({ isOpen, onClose }: ShortcutsModalProps) {
                   </span>
                   <div className="flex items-center gap-1 shrink-0 ml-3">
                     {item.keyDesc.map((k) => (
-                      <kbd
-                        key={k}
-                        className="inline-flex min-w-5 h-5 items-center justify-center px-1.5 rounded border border-border-default bg-surface-50 text-[11px] font-mono font-semibold text-text-ink shadow-2xs dark:bg-surface-200 dark:text-text-on-primary"
-                      >
+                      <Kbd key={k} size="md">
                         {k}
-                      </kbd>
+                      </Kbd>
                     ))}
                   </div>
                 </div>

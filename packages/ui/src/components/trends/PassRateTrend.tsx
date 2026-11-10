@@ -47,6 +47,7 @@ export default function PassRateTrend({ history, onOpenGuide }: PassRateTrendPro
     pass_rate: computePassRate({
       total: run.run_total,
       passed: run.run_passed,
+      flaky: run.run_flaky ?? 0,
       failed: run.run_failed,
       timedOut: run.run_timed_out,
       skipped: run.run_skipped,

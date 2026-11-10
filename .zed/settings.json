@@ -54,5 +54,12 @@
       "format_on_save": "on",
       "formatter": "prettier"
     }
+  },
+  "lsp": {
+    "markdownlint": {
+      "settings": {
+        "MD033": false
+      }
+    },
   }
 }

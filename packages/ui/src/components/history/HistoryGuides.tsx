@@ -64,8 +64,8 @@ export default function HistoryGuides({
               <strong>Tests:</strong> Total number of individual test cases executed in the run.
             </li>
             <li>
-              <strong>Status Breakdown:</strong> Counts for Passed, Failed, Skipped, Timed Out, and
-              Interrupted test outcomes.
+              <strong>Status Breakdown:</strong> Counts for Passed, Flaky, Failed, Skipped, Timed
+              Out, and Interrupted test outcomes.
             </li>
           </ul>
         </div>
@@ -164,12 +164,12 @@ export default function HistoryGuides({
               matching runs for this spec file.
             </li>
             <li>
-              <strong>Status Breakdown:</strong> Aggregate counts for Passed, Failed, Timed Out,
-              Interrupted, and Skipped test outcomes.
+              <strong>Status Breakdown:</strong> Aggregate counts for Passed, Flaky, Failed, Timed
+              Out, Interrupted, and Skipped test outcomes.
             </li>
             <li>
               <strong>Pass Rate:</strong> Overall pass percentage across all test executions for
-              this file (`(Passed / Total) * 100`).
+              this file (`((Passed + Flaky) / Total) * 100`).
             </li>
           </ul>
         </div>
@@ -227,15 +227,15 @@ export default function HistoryGuides({
               <strong>Runs:</strong> Count of unique historical test runs that executed this test.
             </li>
             <li>
-              <strong>Status Breakdown:</strong> Aggregate execution counts for Passed, Failed,
-              Timed Out, Interrupted, and Skipped outcomes.
+              <strong>Status Breakdown:</strong> Aggregate execution counts for Passed, Flaky,
+              Failed, Timed Out, Interrupted, and Skipped outcomes.
             </li>
             <li>
               <strong>Avg Duration:</strong> Average runtime duration of the test case across runs.
             </li>
             <li>
               <strong>Pass Rate:</strong> Percentage of successful executions for this test
-              (`(Passed / Total) * 100`).
+              (`((Passed + Flaky) / Total) * 100`).
             </li>
           </ul>
         </div>

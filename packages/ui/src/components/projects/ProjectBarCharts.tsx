@@ -65,6 +65,7 @@ export interface ProjectBarChartsProps {
 interface ChartDataItem {
   name: string;
   Passed: number;
+  Flaky: number;
   Failed: number;
   Interrupted: number;
   Skipped: number;
@@ -85,6 +86,7 @@ export default function ProjectBarCharts({
   const data: ChartDataItem[] = projectStats.map((project) => ({
     name: project.name,
     Passed: project.passed,
+    Flaky: project.flakyCount,
     Failed: project.failed,
     Interrupted: project.interrupted,
     Skipped: project.skipped,
@@ -183,6 +185,12 @@ export default function ProjectBarCharts({
               dataKey="Passed"
               stackId="status"
               fill="var(--color-status-chart-passed)"
+              radius={[0, 0, 0, 0]}
+            />
+            <Bar
+              dataKey="Flaky"
+              stackId="status"
+              fill="var(--color-status-chart-flaky)"
               radius={[0, 0, 0, 0]}
             />
             <Bar

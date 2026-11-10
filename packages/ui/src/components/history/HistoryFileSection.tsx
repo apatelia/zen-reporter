@@ -61,6 +61,7 @@ export function HistoryFileSection({
         file: string;
         total: number;
         passed: number;
+        flaky: number;
         failed: number;
         timedOut: number;
         interrupted: number;
@@ -76,6 +77,7 @@ export function HistoryFileSection({
           file: row.file,
           total: 0,
           passed: 0,
+          flaky: 0,
           failed: 0,
           timedOut: 0,
           interrupted: 0,
@@ -86,6 +88,7 @@ export function HistoryFileSection({
       }
       item.total += row.total;
       item.passed += row.passed;
+      item.flaky += row.flaky ?? 0;
       item.failed += row.failed;
       item.timedOut += row.timed_out;
       item.interrupted += row.interrupted;
@@ -98,12 +101,13 @@ export function HistoryFileSection({
     return Array.from(map.values())
       .map((item) => {
         const total = item.total;
-        const passRate = calculatePassRate(item.passed, total);
+        const passRate = calculatePassRate(item.passed + item.flaky, total);
         return {
           file: item.file,
           runsCount: item.runIds.size || 1,
           total,
           passed: item.passed,
+          flaky: item.flaky,
           failed: item.failed,
           timedOut: item.timedOut,
           interrupted: item.interrupted,
@@ -166,6 +170,13 @@ export function HistoryFileSection({
         align: 'center',
         cell: (f) => <StatusCountBadge count={f.passed} type="passed" />,
         csvValue: (f) => f.passed,
+      },
+      {
+        key: 'flaky',
+        header: 'Flaky',
+        align: 'center',
+        cell: (f) => <StatusCountBadge count={f.flaky} type="flaky" />,
+        csvValue: (f) => f.flaky,
       },
       {
         key: 'failed',
