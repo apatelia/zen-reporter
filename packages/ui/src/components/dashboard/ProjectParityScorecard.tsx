@@ -150,7 +150,6 @@ export default function ProjectParityScorecard({ suites }: ProjectParityScorecar
           >
             {p.name}
           </span>
-          <span className="text-[11px] text-text-muted tabular-nums shrink-0">({p.total})</span>
         </div>
       ),
     },
@@ -204,9 +203,20 @@ export default function ProjectParityScorecard({ suites }: ProjectParityScorecar
       key: 'passRate',
       header: 'Pass Rate',
       align: 'center',
-      headerClassName: 'w-20 whitespace-nowrap',
-      className: 'w-20 whitespace-nowrap',
-      cell: (p) => <PassRateBadge passRate={p.passRate} />,
+      headerClassName: 'w-28 whitespace-nowrap',
+      className: 'w-28 whitespace-nowrap',
+      /**
+       * Renders the pass rate badge with the project's total test count in parentheses.
+       *
+       * @param p - Project row data containing the computed pass rate and total test count.
+       * @returns The rendered pass rate cell element.
+       */
+      cell: (p) => (
+        <span className="inline-flex items-center gap-1">
+          <PassRateBadge passRate={p.passRate} />
+          <span className="text-[11px] text-text-muted tabular-nums">({p.total})</span>
+        </span>
+      ),
     },
     {
       key: 'failed',

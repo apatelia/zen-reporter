@@ -157,11 +157,11 @@ export default function FileMetricsSection({ suites, isMinimalReport }: FileMetr
       description: 'Spec file containing the largest number of individual test cases',
     },
     {
-      title: 'Files with Retries',
-      value: `${flakyFilesCount}`,
-      unit: `(${flakyFilesPct}%)`,
+      title: 'Total Test Duration',
+      value: formatDuration(totalExecutionTime),
+      unit: '',
       description:
-        'Count and percentage of spec files containing tests that required retries to pass in this run',
+        'Sum of all individual test durations across all spec files (sequential test-execution time, excluding setup/teardown and worker overhead). Equals "Avg Spec Duration" when a single spec file ran.',
     },
   ];
 

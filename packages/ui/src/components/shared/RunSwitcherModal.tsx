@@ -118,7 +118,7 @@ export default function RunSwitcherModal({
         label: 'select run',
       });
     }
-    list.push({ keyDesc: 'L', label: 'latest' }, { keyDesc: 'F', label: 'search' });
+    list.push({ keyDesc: 'L', label: 'latest run' }, { keyDesc: 'F', label: 'search' });
     if (filteredRuns.length > pagination.pageSize) {
       list.push(
         { keyDesc: ['P', '←'], label: 'previous page' },
@@ -247,7 +247,7 @@ export default function RunSwitcherModal({
         </div>
       }
       subtitle="Select a previous test execution to view its complete dashboard, test suites, failures, and attachments."
-      maxWidthClass="max-w-4xl"
+      maxWidthClass="max-w-[52rem]"
       shortcuts={modalShortcuts}
     >
       <div ref={modalContainerRef} className="space-y-4">
@@ -408,42 +408,35 @@ export default function RunSwitcherModal({
                           <PassRateBadge passRate={passRate} />
                         </div>
 
-                        <div className="flex items-center gap-1.5">
-                          <button
-                            type="button"
-                            disabled={isCurrent}
-                            className={`text-xs font-semibold w-20 py-1 rounded-md text-center inline-flex items-center justify-center transition-colors select-none ${
-                              isCurrent
-                                ? 'border border-border-default bg-surface-100 text-text-ink dark:bg-surface-200 dark:text-text-on-primary opacity-40 cursor-not-allowed'
-                                : 'bg-surface-100 hover:bg-surface-200 text-accent-blue border border-border-default shadow-2xs cursor-pointer'
-                            }`}
-                          >
-                            {isCurrent ? 'Viewing' : 'Switch'}
-                          </button>
+                        <button
+                          type="button"
+                          disabled={isCurrent}
+                          className={`text-xs font-semibold w-20 py-1 rounded-md inline-flex items-center justify-center gap-1.5 transition-colors select-none ${
+                            isCurrent
+                              ? 'border border-border-default bg-surface-100 text-text-ink dark:bg-surface-200 dark:text-text-on-primary opacity-40 cursor-not-allowed'
+                              : 'bg-surface-100 hover:bg-surface-200 text-accent-blue border border-border-default shadow-2xs cursor-pointer'
+                          }`}
+                        >
+                          {isCurrent ? 'Viewing' : 'Switch'}
                           {/*
-                            Keycap area is a constant 1-keycap width on every row. The numbered
-                            shortcut is always rendered (visible on switchable runs, an invisible
-                            placeholder on the Viewing run), so the area never changes width and
-                            the Switch/Viewing button + Pass Rate badge stay vertically aligned.
-                            The "L" shortcut now lives next to the "Latest" badge in the title row.
+                            Numbered shortcut embedded inside the button as a small flat Kbd
+                            keycap (no height override, no keyboard icon prefix, 3D pressed-key
+                            look disabled) so it reads as part of the button. It is rendered
+                            only for switchable runs; on the Viewing run no keycap space is
+                            reserved, so the "Viewing" label stays centered. The "L" shortcut
+                            still uses the small Kbd keycap next to the "Latest" badge.
                           */}
-                          <Kbd
-                            size="sm"
-                            variant="keycap"
-                            showKeyboardIcon
-                            className={`hidden sm:inline-flex ${
-                              shortcutNumber === null ? 'opacity-0 pointer-events-none' : ''
-                            }`}
-                            aria-hidden={shortcutNumber === null ? true : undefined}
-                            title={
-                              shortcutNumber !== null
-                                ? `Press ${shortcutNumber} to switch to this run`
-                                : undefined
-                            }
-                          >
-                            {shortcutNumber ?? '0'}
-                          </Kbd>
-                        </div>
+                          {shortcutNumber !== null && (
+                            <Kbd
+                              size="sm"
+                              variant="keycap"
+                              flat
+                              title={`Press ${shortcutNumber} to switch to this run`}
+                            >
+                              {shortcutNumber}
+                            </Kbd>
+                          )}
+                        </button>
                       </div>
                     </div>
                   );

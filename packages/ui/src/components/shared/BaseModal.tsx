@@ -168,8 +168,10 @@ export default function BaseModal({
 
         {/* Modal Keyboard Shortcuts Bar */}
         {effectiveShortcuts.length > 0 && (
-          <div className="hidden sm:flex items-center gap-2.5 pt-3 mt-3 border-t border-border-default/60 text-[11px] text-text-muted shrink-0 select-none">
-            <span className="font-semibold text-text-muted/80">Shortcuts:</span>
+          <div
+            aria-label="Keyboard shortcuts"
+            className="hidden sm:flex items-center gap-2.5 pt-3 mt-3 border-t border-border-default/60 text-[11px] text-text-muted shrink-0 select-none"
+          >
             {effectiveShortcuts.map((sc, index) => {
               const keys = Array.isArray(sc.keyDesc) ? sc.keyDesc : [sc.keyDesc];
               const displayLabel = sc.preserveCase ? sc.label : toProperCase(sc.label);

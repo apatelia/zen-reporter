@@ -9,6 +9,8 @@ export interface KbdProps extends React.HTMLAttributes<HTMLElement> {
   variant?: 'default' | 'keycap';
   /** Whether to prefix with a subtle keyboard icon */
   showKeyboardIcon?: boolean;
+  /** When true, disables the 3D pressed-key look of the keycap variant (no thick bottom border or shadow) */
+  flat?: boolean;
   /** Optional title attribute tooltip */
   title?: string;
   className?: string;
@@ -108,12 +110,23 @@ function renderKeyContent(content: React.ReactNode, size: 'sm' | 'md'): React.Re
 /**
  * Reusable, pixel-aligned keyboard shortcut component.
  * Solves baseline misalignment, font quirks with arrows, and vertical centering.
+ *
+ * @param props - Properties for the keyboard shortcut element.
+ * @param props.children - Key string or symbol to display (e.g., '1', 'Esc', '←', 'Ctrl').
+ * @param props.size - Size variant ('sm' | 'md') controlling height, min-width, and font size.
+ * @param props.variant - Visual variant ('default' | 'keycap'); keycap adds a pressed-key bottom border and shadow.
+ * @param props.showKeyboardIcon - When true, prefixes the key with a subtle keyboard icon.
+ * @param props.flat - When true, renders the keycap variant without its 3D pressed-key styling.
+ * @param props.title - Optional tooltip text shown on hover.
+ * @param props.className - Additional CSS classes appended to the element.
+ * @returns The rendered <kbd> element.
  */
 export const Kbd: React.FC<KbdProps> = ({
   children,
   size = 'sm',
   variant = 'default',
   showKeyboardIcon = false,
+  flat = false,
   title,
   className = '',
   ...rest
@@ -125,7 +138,9 @@ export const Kbd: React.FC<KbdProps> = ({
 
   const variantClasses =
     variant === 'keycap'
-      ? 'text-text-ink dark:text-text-on-primary border border-border-default border-b-[2px] bg-surface-50 dark:bg-surface-200 shadow-2xs'
+      ? `text-text-ink dark:text-text-on-primary border border-border-default bg-surface-50 dark:bg-surface-200${
+          flat ? '' : ' border-b-[2px] shadow-2xs'
+        }`
       : 'text-text-ink dark:text-text-on-primary border border-border-default bg-surface-100 dark:bg-surface-200/50 shadow-2xs';
 
   return (
