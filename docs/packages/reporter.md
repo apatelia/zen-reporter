@@ -1,6 +1,6 @@
 # `@arpanp/zen-reporter` — Playwright Reporter & CLI
 
-> Package: `packages/reporter` · Deps: `@arpanp/zen-core` (+ `zen-ui` as a build-time template) · Entry: `dist/reporter.cjs`
+> Package: `packages/reporter` · Runtime dep: `@arpanp/zen-core` · Dev dep: `@arpanp/zen-ui` (build-time template only) · Entry: `dist/reporter.cjs`
 
 The core of Zen Reporter. It plugs into Playwright as a custom reporter,
 processes test execution data, persists run history, generates the

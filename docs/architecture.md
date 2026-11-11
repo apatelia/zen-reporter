@@ -20,8 +20,10 @@ zen-reporter/
 
 ## Package Dependency Graph
 
-The packages form a **star topology** — every package depends only on
-`@arpanp/zen-core`, which has no internal dependencies:
+The packages form a **star topology** — every package's runtime dependency is
+only `@arpanp/zen-core`, which has no internal dependencies. The one addition:
+`zen-reporter` declares `zen-ui` as a **devDependency** purely for the
+build-time template copy (it never imports it at runtime):
 
 ```mermaid
 flowchart TD
@@ -33,21 +35,23 @@ flowchart TD
     UI -->|depends on| CORE
     REP -->|depends on| CORE
     SRV -->|depends on| CORE
+    REP -. devDependency (build-time template) .-> UI
 ```
 
 ### Package Overview
 
-| Package                | Role                                                                                                                           | Depends on                                 | Built with                  |
-| :--------------------- | :----------------------------------------------------------------------------------------------------------------------------- | :----------------------------------------- | :-------------------------- |
-| `@arpanp/zen-core`     | Shared domain types, report/history schemas, and pure utility functions (CSV export, formatting, stats, theming, highlighting) | —                                          | `tsc` (ESM + CJS dual emit) |
-| `@arpanp/zen-ui`       | Interactive HTML report dashboard; single-file Vite/React bundle with all UI tabs                                              | `zen-core`                                 | `vite`                      |
-| `@arpanp/zen-reporter` | Playwright reporter lifecycle, history persistence (SQLite / remote SaaS), report bundle generation, and the `zr` CLI          | `zen-core`, `zen-ui` (build-time template) | `vite` + `tsc`              |
-| `@arpanp/zen-server`   | Multi-tenant Hono API for run ingestion, PostgreSQL persistence, and multi-cloud (S3/GCS/Azure) attachment storage             | `zen-core`                                 | `tsc`                       |
+| Package                | Role                                                                                                                           | Depends on                                                          | Built with                  |
+| :--------------------- | :----------------------------------------------------------------------------------------------------------------------------- | :------------------------------------------------------------------ | :-------------------------- |
+| `@arpanp/zen-core`     | Shared domain types, report/history schemas, and pure utility functions (CSV export, formatting, stats, theming, highlighting) | —                                                                   | `tsc` (ESM + CJS dual emit) |
+| `@arpanp/zen-ui`       | Interactive HTML report dashboard; single-file Vite/React bundle with all UI tabs                                              | `zen-core`                                                          | `vite`                      |
+| `@arpanp/zen-reporter` | Playwright reporter lifecycle, history persistence (SQLite / remote SaaS), report bundle generation, and the `zr` CLI          | `zen-core` (runtime); `zen-ui` (devDependency, build-time template) | `vite` + `tsc`              |
+| `@arpanp/zen-server`   | Multi-tenant Hono API for run ingestion, PostgreSQL persistence, and multi-cloud (S3/GCS/Azure) attachment storage             | `zen-core`                                                          | `tsc`                       |
 
-> **Note:** `zen-reporter` consumes the built UI bundle as a build-time asset
-> (`build:template` copies `packages/ui/dist/index.html` into the reporter's
-> `dist/`), so it is a build-order dependency even though it does not import
-> `zen-ui` at runtime. Build order: `core → ui → reporter → server`
+> **Note:** `zen-reporter` consumes the built UI bundle as a build-time asset:
+> `zen-ui` is declared as a devDependency, and `build:template`
+> (`scripts/copy-template.mjs`) copies `index.html` + `favicon-*.svg` from the
+> resolved `zen-ui` package into the reporter's `dist/`. It is never imported
+> at runtime. Build order: `core → ui → reporter → server`
 > (root script: `npm run build`).
 
 ---
