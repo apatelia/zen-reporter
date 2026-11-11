@@ -1,237 +1,83 @@
 # Project Structure & Architecture
 
+Zen Reporter is a **multi-package monorepo** (npm workspaces). The root `package.json` (`zen-reporter-monorepo`) owns the workspaces config, shared
+lint/test/format scripts, and the Playwright test configuration. All runtime code lives under `packages/`.
+
 ```text
 zen-reporter/
-├── src/
-├── components/
-│   ├── dashboard/             # Dashboard / Overview tab components
-│   │   ├── ExecutionTimingEfficiencyCard.tsx
-│   │   ├── Overview.tsx       # Main Overview layout
-│   │   ├── PassRateRing.tsx   # Radial pass rate chart (dual-tone clean/flaky arcs & theme tokens)
-│   │   ├── ProjectParityScorecard.tsx # Cross-project stability & execution parity scorecard
-│   │   └── TestResultsHero.tsx # Header summary metrics & run metadata cards
-│   ├── failures/              # Failures tab components
-│   │   ├── FailureList.tsx    # Failure lists with trace & error details
-│   │   └── FailuresSection.tsx# Failure view with search & grouping
-│   ├── files/                 # Spec Files tab components
-│   │   ├── FileMetricsSection.tsx
-│   │   ├── FileSummary.tsx
-│   │   └── FilesSection.tsx
-│   ├── history/               # History tab components & sub-sections
-│   │   ├── HistoryFileSection.tsx        # Spec files execution history breakdown
-│   │   ├── HistoryGuides.tsx             # Interactive guide modals for History tab
-│   │   ├── HistoryRunsTableSection.tsx   # Test runs audit log table
-│   │   ├── HistorySection.tsx            # Main History tab container
-│   │   └── HistoryTestSection.tsx        # Individual test case history breakdown
-│   ├── insights/              # Insights tab components
-│   │   ├── FlakyTestsTableSection.tsx    # Paginated flaky tests table with date filtering & CSV export
-│   │   ├── InsightsGuides.tsx # Guide modal for Insights tab
-│   │   ├── InsightsSection.tsx
-│   │   ├── ProjectDurationChart.tsx
-│   │   ├── ProjectFlakyRateChart.tsx
-│   │   ├── RegressionsTableSection.tsx   # Paginated regressions table with date filtering & CSV export
-│   │   └── SlowestTestsTableSection.tsx  # Paginated slowest tests table with CSV export
-│   ├── layout/                # Layout & navigation components
-│   │   ├── ConfigGeneratorModal.tsx # Interactive Playwright configuration generator modal
-│   │   ├── HeaderRunSwitcher.tsx    # Header run switcher dropdown for quick historical run toggling
-│   │   ├── Sidebar.tsx        # Navigation sidebar layout component
-│   │   └── ThemeControls.tsx  # Theme selector & dark mode toggle controls
-│   ├── pagination/            # Centralized pagination components & hooks
-│   │   ├── PageSizeControl.tsx
-│   │   ├── PaginationFooter.tsx
-│   │   └── usePagination.ts
-│   ├── projects/              # Projects tab components
-│   │   ├── ProjectBarCharts.tsx
-│   │   ├── ProjectDetailCards.tsx
-│   │   ├── ProjectVolumeCoverageChart.tsx
-│   │   ├── ProjectsGuides.tsx  # Guide modal for Projects tab
-│   │   ├── ProjectsOverviewCards.tsx
-│   │   └── ProjectsSection.tsx
-│   ├── shared/                # Shared cross-tab components
-│   │   ├── test-case-detail/  # Decomposed Test Case Detail modal sub-components
-│   │   │   ├── AttemptTabSelector.tsx # Multi-attempt retry selection tab bar
-│   │   │   ├── AttemptView.ts         # Attempt normalization & attachment helpers
-│   │   │   ├── StepItem.tsx           # Step execution tree row & accordion
-│   │   │   ├── TestAttachments.tsx    # Attachment grid & preview modal
-│   │   │   ├── TestErrorAlert.tsx     # Failure details & stack trace alert box
-│   │   │   ├── TestStdOutput.tsx      # Console stdout/stderr output blocks
-│   │   │   └── UniversalPreviewModal.tsx # Universal attachment preview modal (images, video, text, zip)
-│   │   ├── BackToTopButton.tsx # Back to top floating button
-│   │   ├── BaseModal.tsx      # Accessible base modal dialog component
-│   │   ├── DataTable.tsx      # Reusable styled data table component
-│   │   ├── DateFilterControl.tsx # Date-range filter selector control
-│   │   ├── DatePicker.tsx     # Custom date picker component
-│   │   ├── GuideModal.tsx     # Reusable modal for feature documentation
-│   │   ├── HistoryDisabledBanner.tsx # Alert banner shown when history recording is disabled
-│   │   ├── InfoTooltip.tsx    # Tooltip component
-│   │   ├── Kbd.tsx            # Standardized keyboard keycap indicator component
-│   │   ├── LearnMoreButton.tsx
-│   │   ├── MultiSelectFilter.tsx
-│   │   ├── OfflineHistoryNotice.tsx # Server-mode recommendation banner for standalone offline viewing
-│   │   ├── PassRateBadge.tsx  # Color-coded pass rate badge
-│   │   ├── RunSwitcherModal.tsx # Interactive modal to browse and switch between historical runs
-│   │   ├── SearchInput.tsx    # Shared real-time text search filter input component
-│   │   ├── ShortcutsModal.tsx # Keyboard shortcuts cheat-sheet modal dialog
-│   │   ├── StatCard.tsx
-│   │   ├── StatusCountBadge.tsx # Test status badge
-│   │   ├── TagCloudModal.tsx  # Searchable tag cloud & multi-select modal dialog
-│   │   ├── TestCaseCard.tsx
-│   │   └── TestCaseDetail.tsx # Lightweight modal container
-│   ├── suites/                # Suites tab tree view components
-│   │   ├── SuiteView.tsx      # Tree view container for test suites
-│   │   ├── SuitesSection.tsx  # Suites tab container
-│   │   └── TestSuiteNode.tsx  # Collapsible suite node
-│   ├── trends/                # Quality & duration trends tab
-│   │   ├── step-category/     # Step category trend sub-components
-│   │   │   ├── StepCategoryChart.tsx        # Recharts stacked bar chart
-│   │   │   └── StepCategorySummaryCards.tsx # Ratio KPI summary cards
-│   │   ├── DurationTrend.tsx
-│   │   ├── PassRateTrend.tsx
-│   │   ├── StepCategoryTrend.tsx
-│   │   ├── TrendTick.tsx      # Consolidated SVG trend tick renderer & timestamp parser
-│   │   ├── TrendsGuides.tsx   # Guide modal for Trends tab
-│   │   └── TrendsSection.tsx
-│   └── visual-regression/     # Visual regression diff viewer components
-│       ├── DiffHighlightViewer.tsx # Overlay & difference highlight viewer
-│       ├── ImageSliderViewer.tsx   # Interactive split-screen slider viewer
-│       ├── SideBySideViewer.tsx    # Side-by-side snapshot comparison view
-│       ├── ViewModeSelector.tsx    # Toggle controls for diff comparison modes
-│       └── VisualDiffViewer.tsx    # Main visual diff modal / container component
-├── lib/
-│   ├── history/               # History persistence & schema management
-│   │   ├── HistoryStore.ts    # Storage interface definition for test run persistence
-│   │   ├── RemoteHistoryStore.ts # Remote SaaS ingestion client
-│   │   ├── SqliteHistoryStore.ts # SQLite storage implementation (lifecycle: tables ➔ migrations ➔ indexes ➔ views)
-│   │   ├── migration.ts       # Legacy JSONL to SQLite database migration handler
-│   │   └── schema.ts          # Relational DDL definitions (tables, column migrations, indexes, view)
-│   ├── types/                 # Modular domain type definitions
-│   │   ├── history.ts         # DuckDB historical analytics & JSONL row schemas
-│   │   └── report.ts          # Core Playwright execution report models (TestCase, ResultSummary, etc.)
-│   ├── attachmentManager.ts   # Test result attachment extraction, MIME resolution & disk persistence
-│   ├── codeHighlighting.ts    # Syntax highlighting for step code snippets & error stack traces
-│   ├── cryptoUtils.ts         # MD5/SHA-256 hashing & error signature clustering
-│   ├── dataProcessor.ts       # Raw data conversion, duration calculations & package manager detection
-│   ├── exportFilename.ts      # Sanitized export filename builder
-│   ├── exportToCsv.ts         # Zero-dependency RFC 4180 CSV exporter with UTF-8 BOM
-│   ├── formatters.ts          # Duration, timestamp, text & cross-platform file path formatting helpers
-│   ├── gitUtils.ts            # Git environment resolution (CI env variables & local Git CLI rev-parse)
-│   ├── htmlReportGenerator.ts # HTML template loading, JSON data script injection & report emission
-│   ├── progressPrinter.ts     # Dedicated TTY console progress rendering ('line' | 'dot' | 'none')
-│   ├── reporter.ts            # Playwright reporter lifecycle event orchestrator (onBegin, onTestEnd, onEnd)
-│   ├── runHistory.ts          # Run identifier builder & DuckDB row flattening utilities
-│   ├── runHistoryWriter.ts    # Self-contained per-run JSONL persistence helper under <outputDir>/runs/
-│   ├── statsUtils.ts          # Single-pass O(N) project stats calculator & executive KPI generator
-│   ├── stepCategoryClassifier.ts # Title classification & category counter for steps
-│   ├── tagColors.ts           # Deterministic HSL color generator for tags
-│   └── theme.ts               # Unified UI theme tokens, brand color maps & status color palettes
-├── App.tsx                    # Root component with theme/darkMode initial loading, version title header & tab routing
-├── app.css                    # Design system CSS with theme palettes (Sage, Lotus, Oasis), WCAG contrast tokens & dark mode styles
-├── main.tsx                   # React application entry point
-├── vite-env.d.ts              # Vite type declarations
-└── vite-plugin-inject-data.ts # Vite plugin to inline report.json & history.json into HTML
-├── bin/                       # Modularized CLI commands
-│   ├── commands/              # Sub-command handlers
-│   │   ├── common.js          # Shared CLI helpers, colorful ANSI-safe table formatting & DuckDB loader
-│   │   ├── env.js             # System environment diagnostics handler ('zr env')
-│   │   ├── help.js            # Help and usage documentation renderer
-│   │   ├── history.js         # History report and query engine handler ('zr history ...')
-│   │   ├── menu.js            # Interactive Clack-powered menu and navigation prompt router
-│   │   ├── show.js            # Internal 127.0.0.1 static HTTP report server launcher ('zr show')
-│   │   ├── summary.js         # Markdown summary snippet generator ('zr summary')
-│   │   ├── system.d.ts        # TypeScript declarations for system environment utilities
-│   │   └── system.js          # Canonical OS name and package version resolution utilities
-│   └── zen-reporter.js        # Executable CLI entry point dispatching interactive menu or direct commands
-├── zen-report/                # Generated self-contained report bundle folder
-│   ├── index.html             # Main interactive HTML dashboard interface
-│   ├── summary.html           # Optional executive summary HTML (when singleSummaryFile: true)
-│   ├── summary.json           # Optional pruned executive summary dataset (when singleSummaryFile: true)
-│   ├── history.db             # SQLite database storing historical runs, test executions & attachments
-│   ├── attachments/           # Copied test assets (screenshots, videos, trace files)
-│   ├── report.json            # Processed test execution JSON dataset
-│   ├── history.json           # Historical test analytics & DuckDB trend dataset
-│   └── runs/                  # (Legacy / JSONL mode) Historical per-run JSONL archives
-├── tests/                     # Playwright test files
-├── playwright.config.ts       # Playwright test configuration with retries & dynamic testRunName
-├── vite.config.ts             # Vite single-file bundling configuration
-└── package.json
+├── package.json               # Monorepo root (npm workspaces: packages/*)
+├── playwright.config.ts       # Playwright config for the repo's own test suite
+├── tests/                     # Playwright specs for Zen Reporter itself
+├── zen-report/                # Generated self-contained report bundle output
+└── packages/
+    ├── core/                  # @arpanp/zen-core      → see [core](packages/core.md)
+    ├── ui/                    # @arpanp/zen-ui        → see [ui](packages/ui.md)
+    ├── reporter/              # @arpanp/zen-reporter  → see [reporter](packages/reporter.md)
+    └── server/                # @arpanp/zen-server    → see [server](packages/server.md)
 ```
 
 ---
 
-## Data Flow & Architecture Diagram
+## Package Dependency Graph
 
-### 1. Local Architecture (SQLite + Filesystem)
+The packages form a **star topology** — every package depends only on
+`@arpanp/zen-core`, which has no internal dependencies:
 
 ```mermaid
 flowchart TD
-    A["Playwright Test Execution"] -->|onBegin / onTestEnd / onEnd| B["ZenReporter (packages/reporter)"]
-    B -->|Delegates progress rendering| B1["ProgressPrinter"]
-    B1 -->|Prints TTY status| B2["Console (line / dot mode)"]
-    B -->|Writes run result| C["report.json (<outputDir>/report.json)"]
-    B -->|Delegates history persistence| D1["SqliteHistoryStore"]
-    D1 -->|Stores historical runs & attachments| D["SQLite (<outputDir>/history.db)"]
-    B -->|Copies media attachments| AT["Local Filesystem (<outputDir>/attachments/)"]
-    C & D -->|Injects datasets| G["Report Bundle Generator"]
-    G -->|Bundles dashboard web app| H["Report Bundle Folder (<outputDir>/index.html)"]
-    H -->|Renders UI Tabs| I["React UI Components (Overview, Suites, Failures, History, Insights, Trends)"]
+    CORE["@arpanp/zen-core<br/>types, schemas & shared utilities"]
+    UI["@arpanp/zen-ui<br/>React dashboard (report viewer)"]
+    REP["@arpanp/zen-reporter<br/>Playwright reporter + CLI"]
+    SRV["@arpanp/zen-server<br/>Hono SaaS ingestion API"]
+
+    UI -->|depends on| CORE
+    REP -->|depends on| CORE
+    SRV -->|depends on| CORE
 ```
 
-### 2. Remote Multi-Cloud Architecture (PostgreSQL + S3 / GCS / Azure)
+### Package Overview
+
+| Package                | Role                                                                                                                           | Depends on                                 | Built with                  |
+| :--------------------- | :----------------------------------------------------------------------------------------------------------------------------- | :----------------------------------------- | :-------------------------- |
+| `@arpanp/zen-core`     | Shared domain types, report/history schemas, and pure utility functions (CSV export, formatting, stats, theming, highlighting) | —                                          | `tsc` (ESM + CJS dual emit) |
+| `@arpanp/zen-ui`       | Interactive HTML report dashboard; single-file Vite/React bundle with all UI tabs                                              | `zen-core`                                 | `vite`                      |
+| `@arpanp/zen-reporter` | Playwright reporter lifecycle, history persistence (SQLite / remote SaaS), report bundle generation, and the `zr` CLI          | `zen-core`, `zen-ui` (build-time template) | `vite` + `tsc`              |
+| `@arpanp/zen-server`   | Multi-tenant Hono API for run ingestion, PostgreSQL persistence, and multi-cloud (S3/GCS/Azure) attachment storage             | `zen-core`                                 | `tsc`                       |
+
+> **Note:** `zen-reporter` consumes the built UI bundle as a build-time asset
+> (`build:template` copies `packages/ui/dist/index.html` into the reporter's
+> `dist/`), so it is a build-order dependency even though it does not import
+> `zen-ui` at runtime. Build order: `core → ui → reporter → server`
+> (root script: `npm run build`).
+
+---
+
+## High-Level Data Flow
 
 ```mermaid
-flowchart LR
-    subgraph Client["Playwright Test Runner"]
-        R["ZenReporter"] --> RMS["RemoteHistoryStore"]
-    end
-
-    subgraph Server["@arpanp/zen-server (Hono API)"]
-        AUTH["Auth & Multi-Tenancy"]
-        INGEST["Run Ingestion Routes"]
-        STORAGE["Multi-Cloud Storage Provider"]
-    end
-
-    subgraph StorageBackends["Cloud Infrastructure"]
-        PG[("PostgreSQL Database")]
-        S3[("AWS S3 / MinIO / R2")]
-        GCS[("Google Cloud Storage")]
-        AZURE[("Azure Blob Storage")]
-    end
-
-    RMS -- "1. Request presigned upload URL" --> INGEST
-    INGEST --> STORAGE
-    STORAGE -- Presigned URL / SAS --> RMS
-    RMS -- "2. Direct HTTP PUT binary buffer" --> S3
-    RMS -. Direct HTTP PUT .-> GCS
-    RMS -. Direct HTTP PUT .-> AZURE
-    RMS -- "3. Stream lightweight metadata" --> INGEST
-    INGEST --> PG
+flowchart TD
+    PW["Playwright Test Execution"] -->|lifecycle hooks| REP["zen-reporter<br/>(reporter.ts, history stores)"]
+    REP -->|report.json + history + attachments| BUNDLE["Self-contained report bundle<br/>(index.html)"]
+    BUNDLE -->|embedded datasets| UI["zen-ui dashboard<br/>(Overview, Suites, Failures, History, Insights, Trends)"]
+    REP -->|remote mode| SRV["zen-server (Hono API)"]
+    SRV --> PG[("PostgreSQL")]
+    SRV --> OBJ[("S3 / GCS / Azure object storage")]
+    UI -->|lazy-load remote details| SRV
 ```
 
-```text
-               Playwright Test Execution
-                         │
-                         ▼
-        ZenReporter (src/lib/reporter.ts)
-  Hooks: onBegin ➔ onTestBegin ➔ onTestEnd ➔ onEnd
-  Orchestrates Playwright lifecycle events:
-    ├── TTY Progress ──► ProgressPrinter (src/lib/progressPrinter.ts)
-    ├── Attachments ──► processAttachments (src/lib/attachmentManager.ts)
-    ├── Git Metadata ──► getGitCommit & getGitBranch (src/lib/gitUtils.ts)
-    └── History Writer ──► runHistoryWriter (src/lib/runHistoryWriter.ts)
-                         │
-                         ▼
-             <outputDir>/report.json
-    Structured JSON dataset containing testRun & summary
-                         │
-                         ▼
-     HTML Generation (src/lib/htmlReportGenerator.ts)
-  Inlines report.json & history.json into <script id="report-data">
-                         │
-                         ▼
-         <outputDir>/index.html (Report Dashboard)
-  Interactive React web application rendering test suites & analytics
-                         │
-                         ▼
-         CLI Report Server (npx zr show)
-  Launches local web server to display index.html in default browser
-```
+- **Local mode:** the reporter writes `report.json`, SQLite `history.db`, and
+  attachment files next to the generated `index.html`. The UI renders from
+  datasets inlined into that single HTML file. See [reporter](packages/reporter.md).
+- **Remote mode:** `RemoteHistoryStore` (in the reporter) uploads attachments
+  directly to cloud storage via presigned URLs and streams run metadata to the
+  server. The UI lazily fetches heavy test details from the server. See
+  [server](packages/server.md) and [reporter](packages/reporter.md).
+
+---
+
+## Detailed Package Documentation
+
+- [`packages/core.md`](packages/core.md) — shared types, schemas & utilities
+- [`packages/ui.md`](packages/ui.md) — dashboard architecture, tabs & components
+- [`packages/reporter.md`](packages/reporter.md) — reporter lifecycle, CLI & data flow
+- [`packages/server.md`](packages/server.md) — backend API, storage & REST reference

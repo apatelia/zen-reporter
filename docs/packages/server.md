@@ -1,10 +1,14 @@
-# Backend API Server (`@arpanp/zen-server`)
+# `@arpanp/zen-server` — Backend SaaS Ingestion & Reporting Service
 
-The Zen Reporter backend server (`packages/server`) provides a multi-tenant ingestion, reporting, and asset management service for cross-run history persistence in CI/CD pipelines and hosted team dashboards.
+> Package: `packages/server` · Deps: `@arpanp/zen-core` · Build: `tsc` (Hono + Node)
+
+The Zen Reporter backend server provides a multi-tenant ingestion, reporting,
+and asset management service for cross-run history persistence in CI/CD
+pipelines and hosted team dashboards.
 
 ---
 
-## 🏗️ Architecture & Tech Stack
+## Architecture & Tech Stack
 
 - **HTTP Framework**: [Hono](https://hono.dev/) with `@hono/node-server`
 - **Database & ORM**: PostgreSQL with [Drizzle ORM](https://orm.drizzle.team/)
@@ -18,7 +22,7 @@ The Zen Reporter backend server (`packages/server`) provides a multi-tenant inge
 flowchart LR
     subgraph Clients["Clients"]
         A["Playwright Runner (RemoteHistoryStore)"]
-        B["Browser Dashboard (UI)"]
+        B["Browser Dashboard (zen-ui)"]
     end
 
     subgraph Server["packages/server (Hono)"]
@@ -44,7 +48,29 @@ flowchart LR
 
 ---
 
-## ⚙️ Environment Variables & Configuration
+## Source Layout
+
+```text
+packages/server/
+├── drizzle.config.ts
+├── src/
+│   ├── index.ts               # Hono app bootstrap, middleware & route mounting
+│   ├── types.ts               # Route/service type definitions
+│   ├── routes/
+│   │   └── runs.ts            # Ingestion, run listing, lazy test details & presign endpoints
+│   ├── services/
+│   │   ├── auth.ts            # Multi-tenant API key auth (SHA-256 hashing)
+│   │   └── storage.ts         # S3 / GCS / Azure storage provider abstraction
+│   └── db/
+│       ├── index.ts           # PostgreSQL connection (Drizzle)
+│       ├── schema.ts          # Table definitions (runs, test cases, attachments)
+│       └── migrations/        # Generated Drizzle migrations
+└── tsconfig.json
+```
+
+---
+
+## Environment Variables & Configuration
 
 The server reads configuration from environment variables or standard defaults:
 
@@ -85,7 +111,7 @@ The server reads configuration from environment variables or standard defaults:
 
 ---
 
-## 🚀 Running the Server
+## Running the Server
 
 ### 1. Database Migrations
 
@@ -121,7 +147,7 @@ Upon startup, the server automatically bootstraps a default development tenant:
 
 ---
 
-## 🔐 Authentication
+## Authentication
 
 All routes under `/api/v1/` require an API key passed in either of the following headers:
 
@@ -132,7 +158,7 @@ Requests with missing or invalid keys return `401 Unauthorized` or `403 Forbidde
 
 ---
 
-## 📡 REST API Reference
+## REST API Reference
 
 ### 1. Health Check
 
@@ -306,14 +332,14 @@ Fetches heavy execution details (detailed steps, console stdout/stderr, stack tr
 
 ```json
 {
-  "id": "2026-11-04T17-00-00__unit-tests::auth.spec.ts::user can log in",
+  "id": "2026-11-04T17-00-00__unit-tests::chromium::auth.spec.ts::user can log in",
   "runId": "2026-11-04T17-00-00__unit-tests",
   "file": "auth.spec.ts",
   "title": "user can log in",
   "status": "passed",
   "durationMs": 1250,
   "details": {
-    "testId": "2026-11-04T17-00-00__unit-tests::auth.spec.ts::user can log in",
+    "testId": "2026-11-04T17-00-00__unit-tests::chromium::auth.spec.ts::user can log in",
     "errorStack": null,
     "stepsJson": [{ "title": "navigate to /login", "duration": 300 }],
     "stdoutJson": ["Redirected to dashboard"],
@@ -359,7 +385,7 @@ Requests a short-lived presigned PUT URL (or Azure SAS URL) allowing clients to 
 }
 ```
 
-_(Note: For Azure Blob Storage, `headers` will include `{"x-ms-blob-type": "BlockBlob"}` which `RemoteHistoryStore` automatically transmits)._
+_(Note: For Azure Blob Storage, `headers` will include `{"x-ms-blob-type": "BlockBlob"}` which `RemoteHistoryStore` automatically transmits._)
 
 The client then executes a direct HTTP PUT:
 
