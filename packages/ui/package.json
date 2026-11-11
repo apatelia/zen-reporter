@@ -1,6 +1,6 @@
 {
   "name": "@arpanp/zen-ui",
-  "version": "0.19.1",
+  "version": "0.20.0-dev",
   "type": "module",
   "description": "Interactive HTML report viewer and React dashboard components for Zen Reporter",
   "main": "dist/index.html",
@@ -18,7 +18,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@arpanp/zen-core": "^0.19.1"
+    "@arpanp/zen-core": "^0.20.0-dev"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.3.3",

@@ -1,6 +1,6 @@
 {
   "name": "@arpanp/zen-server",
-  "version": "0.19.1",
+  "version": "0.20.0-dev",
   "type": "module",
   "description": "Backend SaaS ingestion and reporting service for Zen Reporter",
   "main": "dist/index.js",
@@ -18,7 +18,7 @@
     "db:migrate": "tsx src/db/migrate.ts"
   },
   "dependencies": {
-    "@arpanp/zen-core": "^0.19.1",
+    "@arpanp/zen-core": "^0.20.0-dev",
     "@aws-sdk/client-s3": "^3.1164.0",
     "@aws-sdk/s3-request-presigner": "^3.1164.0",
     "@azure/storage-blob": "^12.34.0",

@@ -1,6 +1,6 @@
 {
   "name": "@arpanp/zen-reporter",
-  "version": "0.19.1",
+  "version": "0.20.0-dev",
   "type": "module",
   "description": "Beautiful test execution reports for Playwright",
   "bin": {
@@ -29,11 +29,11 @@
   "license": "MIT",
   "scripts": {
     "build:reporter": "vite build --config vite.reporter.config.ts && tsc -p tsconfig.lib.json",
-    "build:template": "cp ../ui/dist/index.html dist/index.html && cp ../ui/dist/favicon-BduA2ejy.svg dist/ 2>/dev/null || true",
+    "build:template": "node scripts/copy-template.mjs",
     "build": "mkdir -p dist && npm run build:template && npm run build:reporter"
   },
   "dependencies": {
-    "@arpanp/zen-core": "^0.19.1",
+    "@arpanp/zen-core": "^0.20.0-dev",
     "@clack/prompts": "^1.8.1",
     "picocolors": "^1.1.1"
   },
@@ -50,6 +50,7 @@
     }
   },
   "devDependencies": {
+    "@arpanp/zen-ui": "^0.20.0-dev",
     "@types/node": "^26.6.6",
     "typescript": "^6.0.3",
     "vite": "^8.3.6"
