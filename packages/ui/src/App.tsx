@@ -41,6 +41,7 @@ declare global {
     'zen:expand-all': CustomEvent<void>;
     'zen:collapse-all': CustomEvent<void>;
     'zen:open-quick-switcher': CustomEvent<void>;
+    'zen:close-quick-switcher': CustomEvent<void>;
   }
 }
 
@@ -267,73 +268,95 @@ export default function App() {
     [historyData]
   );
 
-  const loadLatestRun = useCallback(async (shouldPushState = true) => {
-    setIsLoading(true);
-    setLoadError(null);
-
-    if (shouldPushState && typeof window !== 'undefined') {
-      const url = new URL(window.location.href);
-      url.searchParams.delete('runId');
-      window.history.pushState({}, '', url.pathname + (url.search ? url.search : ''));
-    }
-
-    // Check inline report data
-    const inlineEl = document.getElementById('report-data');
-    if (inlineEl) {
-      const text = inlineEl.textContent?.trim();
-      if (text) {
-        try {
-          const data = JSON.parse(text) as ReportData;
-          setReportData(data);
-          applyThemeAndDarkMode(data);
-          setSelectedRunId(null);
-          setIsLoading(false);
-          setToastNotification({
-            id: String(Date.now()),
-            type: 'success',
-            title: 'Switched to Latest Execution Run',
-            message: `Now viewing the latest run: ${data.testRun?.testRunName || 'Latest Run'}. All report data and dashboards are updated.`,
-            duration: 5000,
-          });
-          return;
-        } catch {
-          /* fall through */
-        }
-      }
-    }
-
-    // Fetch latest report.json
-    if (typeof window !== 'undefined' && window.location.protocol !== 'file:') {
-      try {
-        const resp = await fetch('./report.json');
-        if (resp.ok) {
-          const data = (await resp.json()) as ReportData;
-          setReportData(data);
-          applyThemeAndDarkMode(data);
-          setSelectedRunId(null);
-          setToastNotification({
-            id: String(Date.now()),
-            type: 'success',
-            title: 'Switched to Latest Execution Run',
-            message: `Now viewing the latest run: ${data.testRun?.testRunName || 'Latest Run'}. All report data and dashboards are updated.`,
-            duration: 5000,
-          });
-          return;
-        }
-      } catch {
-        /* ignore error */
-      } finally {
-        setIsLoading(false);
-      }
-    }
+  /**
+   * Applies the latest run's report data to the dashboard, resets the selected run state
+   * to null (canonical latest-run state), and shows the success toast confirming the switch.
+   *
+   * @param data - Parsed report data payload of the latest execution run.
+   * @returns {void} No return value; updates dashboard state, loading state, and toast notification.
+   */
+  const applyLatestReport = useCallback((data: ReportData) => {
+    setReportData(data);
+    applyThemeAndDarkMode(data);
+    setSelectedRunId(null);
     setIsLoading(false);
+    setToastNotification({
+      id: String(Date.now()),
+      type: 'success',
+      title: 'Switched to Latest Execution Run',
+      message: `Now viewing the latest run: ${data.testRun?.testRunName || 'Latest Run'}. All report data and dashboards are updated.`,
+      duration: 5000,
+    });
   }, []);
 
+  const loadLatestRun = useCallback(
+    async (shouldPushState = true) => {
+      setIsLoading(true);
+      setLoadError(null);
+
+      if (shouldPushState && typeof window !== 'undefined') {
+        const url = new URL(window.location.href);
+        url.searchParams.delete('runId');
+        window.history.pushState({}, '', url.pathname + (url.search ? url.search : ''));
+      }
+
+      // Check inline report data
+      const inlineEl = document.getElementById('report-data');
+      if (inlineEl) {
+        const text = inlineEl.textContent?.trim();
+        if (text) {
+          try {
+            const data = JSON.parse(text) as ReportData;
+            applyLatestReport(data);
+            return;
+          } catch {
+            /* fall through */
+          }
+        }
+      }
+
+      // Fetch latest report.json
+      if (typeof window !== 'undefined' && window.location.protocol !== 'file:') {
+        try {
+          const resp = await fetch('./report.json');
+          if (resp.ok) {
+            const data = (await resp.json()) as ReportData;
+            applyLatestReport(data);
+            return;
+          }
+        } catch {
+          /* ignore error */
+        } finally {
+          setIsLoading(false);
+        }
+      }
+      setIsLoading(false);
+    },
+    [applyLatestReport]
+  );
+
+  /**
+   * Routes run selection to the appropriate loader. Selecting the latest run goes through
+   * loadLatestRun so the canonical latest-run state (no `runId` in the URL, selectedRunId
+   * reset to null, latest-run toast) is consistent across all switcher paths (L shortcut,
+   * number shortcuts, and row clicks); every other run goes through loadRunById.
+   *
+   * @param runId - Unique identifier of the run the user requested to switch to.
+   * @returns {void} No return value; triggers loadLatestRun for the latest run or loadRunById otherwise.
+   */
   const handleSelectRun = useCallback(
     (runId: string) => {
-      void loadRunById(runId, true);
+      const latestRunId =
+        historyData && historyData.runs.length > 0
+          ? historyData.runs[historyData.runs.length - 1].run_id
+          : null;
+      if (latestRunId !== null && runId === latestRunId) {
+        void loadLatestRun(true);
+      } else {
+        void loadRunById(runId, true);
+      }
     },
-    [loadRunById]
+    [historyData, loadRunById, loadLatestRun]
   );
 
   useEffect(() => {
@@ -797,8 +820,16 @@ export default function App() {
     onPrevTab: handlePrevTab,
     onToggleDarkMode: handleToggleDarkMode,
     onCycleTheme: handleCycleTheme,
+    /**
+     * Opens the full run switcher modal and closes the quick switcher dropdown so both
+     * keydown handlers are never active at the same time.
+     *
+     * @returns {void} No return value; dispatches the 'zen:close-quick-switcher' window event
+     * and sets the run switcher modal open state to true when at least one run exists.
+     */
     onOpenRunSwitcher: () => {
       if (historyData && historyData.runs && historyData.runs.length > 0) {
+        window.dispatchEvent(new CustomEvent('zen:close-quick-switcher'));
         setIsRunSwitcherOpen(true);
       }
     },
@@ -900,7 +931,7 @@ export default function App() {
                       (historyData?.runs?.[historyData.runs.length - 1]?.run_id ?? null)
                     }
                     runs={historyData.runs}
-                    onSelectRun={(runId) => void loadRunById(runId)}
+                    onSelectRun={handleSelectRun}
                     onOpenFullModal={() => setIsRunSwitcherOpen(true)}
                     onActiveRunSelected={handleActiveRunSelected}
                   />

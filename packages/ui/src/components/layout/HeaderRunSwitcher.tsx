@@ -53,6 +53,19 @@ export function HeaderRunSwitcher({
     return () => window.removeEventListener('zen:open-quick-switcher', onOpen);
   }, []);
 
+  // Close the dropdown when the full Run Switcher modal opens so its keydown handler
+  // does not shadow the modal's handler (document listeners fire before window listeners)
+  useEffect(() => {
+    /**
+     * Closes the quick switcher dropdown when the full run switcher modal is opened.
+     *
+     * @returns {void} No return value; sets the dropdown open state to false.
+     */
+    const onClose = () => setIsOpen(false);
+    window.addEventListener('zen:close-quick-switcher', onClose);
+    return () => window.removeEventListener('zen:close-quick-switcher', onClose);
+  }, []);
+
   // Close dropdown on outside click
   useEffect(() => {
     if (!isOpen) return;
