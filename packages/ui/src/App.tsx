@@ -40,9 +40,16 @@ declare global {
   interface WindowEventMap {
     'zen:expand-all': CustomEvent<void>;
     'zen:collapse-all': CustomEvent<void>;
+    'zen:open-quick-switcher': CustomEvent<void>;
   }
 }
 
+/**
+ * Zen Reporter root application component. Loads run history, manages tab state, theming,
+ * keyboard shortcuts, and renders the dashboard layout.
+ *
+ * @returns The rendered root application component.
+ */
 export default function App() {
   const isSummaryView = useMemo(() => {
     if (typeof window === 'undefined') return false;
@@ -793,6 +800,16 @@ export default function App() {
     onOpenRunSwitcher: () => {
       if (historyData && historyData.runs && historyData.runs.length > 0) {
         setIsRunSwitcherOpen(true);
+      }
+    },
+    /**
+     * Opens the header quick run switcher dropdown.
+     *
+     * @returns {void} No return value; dispatches the 'zen:open-quick-switcher' window event when multiple runs exist.
+     */
+    onOpenRunSwitcherQuick: () => {
+      if (historyData && historyData.runs && historyData.runs.length > 1) {
+        window.dispatchEvent(new CustomEvent('zen:open-quick-switcher'));
       }
     },
     onOpenConfigGenerator: () => setIsConfigGeneratorOpen(true),

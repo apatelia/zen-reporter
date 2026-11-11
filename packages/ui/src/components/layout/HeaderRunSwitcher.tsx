@@ -41,6 +41,18 @@ export function HeaderRunSwitcher({
   const latestRun = sortedRuns[0] ?? null;
   const isViewingLatest = Boolean(latestRun && currentRunId === latestRun.run_id);
 
+  // Open the dropdown when the Q shortcut dispatches the event
+  useEffect(() => {
+    /**
+     * Opens the quick switcher dropdown.
+     *
+     * @returns {void} No return value; sets the dropdown open state to true.
+     */
+    const onOpen = () => setIsOpen(true);
+    window.addEventListener('zen:open-quick-switcher', onOpen);
+    return () => window.removeEventListener('zen:open-quick-switcher', onOpen);
+  }, []);
+
   // Close dropdown on outside click
   useEffect(() => {
     if (!isOpen) return;
@@ -152,7 +164,7 @@ export function HeaderRunSwitcher({
         onClick={() => setIsOpen((prev) => !prev)}
         aria-haspopup="true"
         aria-expanded={isOpen}
-        title="Switch test run (Click for quick menu or press / for full search)"
+        title="Switch test run (Press Q or click for quick menu, / for full search)"
         className={`group inline-flex items-center gap-1.5 h-7.5 px-2.5 rounded-lg border text-xs font-semibold leading-none shadow-2xs transition-all cursor-pointer select-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-blue ${
           isOpen
             ? 'border-accent-blue bg-accent-blue/15 text-accent-blue'

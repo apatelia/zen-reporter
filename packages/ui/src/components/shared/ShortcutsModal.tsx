@@ -46,12 +46,6 @@ const SHORTCUT_SECTIONS: ShortcutSection[] = [
   {
     title: 'Search & Quick Actions',
     shortcuts: [
-      { keyDesc: ['/'], description: 'Open test run switcher' },
-      {
-        keyDesc: ['1', '…', '5'],
-        description: 'Select run on current view (when Switch Run menu or modal is open)',
-      },
-      { keyDesc: ['L'], description: 'Jump to latest run (when Switch Run menu or modal is open)' },
       { keyDesc: ['X'], description: 'Expand all (Suites & Failures tabs)' },
       { keyDesc: ['S'], description: 'Collapse all (Suites & Failures tabs)' },
       { keyDesc: ['F'], description: 'Focus contextual search / filter input' },
@@ -59,6 +53,18 @@ const SHORTCUT_SECTIONS: ShortcutSection[] = [
       { keyDesc: ['B'], description: 'Copy Git branch name' },
       { keyDesc: ['?'], description: 'Show keyboard shortcuts cheatsheet' },
       { keyDesc: ['Esc'], description: 'Close any open modal or dialog' },
+    ],
+  },
+  {
+    title: 'Run Switching',
+    shortcuts: [
+      { keyDesc: ['/'], description: 'Open test run switcher' },
+      { keyDesc: ['Q'], description: 'Open Switch Run quick menu in the header' },
+      {
+        keyDesc: ['1', '…', '5'],
+        description: 'Select run on current view (when Switch Run menu or modal is open)',
+      },
+      { keyDesc: ['L'], description: 'Jump to latest run (when Switch Run menu or modal is open)' },
     ],
   },
 ];
@@ -94,7 +100,7 @@ export function ShortcutsModal({ isOpen, onClose }: ShortcutsModalProps) {
           <span>Keyboard Shortcuts</span>
         </div>
       }
-      subtitle="Press any of the single-key shortcuts from anywhere outside text inputs"
+      subtitle="Press any of the single-key, case-insensitive shortcuts from anywhere outside text inputs"
       maxWidthClass="max-w-3xl"
     >
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 py-1">

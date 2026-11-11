@@ -8,6 +8,7 @@ export interface ShortcutHandlers {
   onToggleDarkMode?: () => void;
   onCycleTheme?: () => void;
   onOpenRunSwitcher?: () => void;
+  onOpenRunSwitcherQuick?: () => void;
   onOpenConfigGenerator?: () => void;
   onOpenHelp?: () => void;
   onCopyCommit?: () => void;
@@ -39,6 +40,7 @@ function isInputElement(target: EventTarget | null): boolean {
  * search focus, and modal control.
  *
  * @param handlers - Mapping of shortcut action callbacks and modal state flag.
+ * @returns {void} No return value; attaches a window keydown listener for the lifetime of the component.
  */
 export function useKeyboardShortcuts(handlers: ShortcutHandlers) {
   const handlersRef = useRef(handlers);
@@ -139,6 +141,14 @@ export function useKeyboardShortcuts(handlers: ShortcutHandlers) {
         case '/': {
           event.preventDefault();
           currentHandlers.onOpenRunSwitcher?.();
+          break;
+        }
+
+        // Quick switcher dropdown in the header
+        case 'q':
+        case 'Q': {
+          event.preventDefault();
+          currentHandlers.onOpenRunSwitcherQuick?.();
           break;
         }
 
