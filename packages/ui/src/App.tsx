@@ -14,7 +14,7 @@ import Toast, { type ToastNotification } from '@/components/shared/Toast';
 import SuitesSection from '@/components/suites/SuitesSection';
 import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts';
 import { copyToClipboard } from '@/utils/clipboard';
-import { formatDateRange, formatDuration } from '@arpanp/zen-core';
+import { formatDateRange, formatDuration, normalizeTheme, parseDarkMode } from '@arpanp/zen-core';
 import type { HistoryData, HistoryRun } from '@arpanp/zen-core';
 import type { ReportData, TestSuite } from '@arpanp/zen-core';
 import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -27,13 +27,16 @@ const faviconUri = `data:image/svg+xml;utf8,${encodeURIComponent(faviconRaw)}`;
 
 export type ThemeMode = 'sage' | 'lotus' | 'oasis';
 
-function normalizeTheme(val?: string | null): ThemeMode | null {
-  if (!val) return null;
-  const lower = val.toLowerCase();
-  if (lower === 'sage' || lower === 'cafe') return 'sage';
-  if (lower === 'lotus' || lower === 'sentinel') return 'lotus';
-  if (lower === 'oasis' || lower === 'streak') return 'oasis';
-  return null;
+/**
+ * Normalizes a raw theme value into the dashboard's lowercase `ThemeMode` id.
+ *
+ * @param value - Raw theme from localStorage, report data, or the theme switcher.
+ * @returns The canonical lowercase theme id, or `null` when unrecognized.
+ */
+function toThemeMode(value: string | null | undefined): ThemeMode | null {
+  const normalized = normalizeTheme(value);
+  if (!normalized) return null;
+  return normalized.toLowerCase() as ThemeMode;
 }
 
 declare global {
@@ -94,7 +97,7 @@ export default function App() {
   const [theme, setTheme] = useState<ThemeMode>(() => {
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem('zen-theme');
-      const normalized = normalizeTheme(saved);
+      const normalized = toThemeMode(saved);
       if (normalized) {
         return normalized;
       }
@@ -104,7 +107,7 @@ export default function App() {
     const configuredTheme = testRun?.theme;
 
     if (configuredTheme) {
-      const normalized = normalizeTheme(configuredTheme);
+      const normalized = toThemeMode(configuredTheme);
       if (normalized) {
         return normalized;
       }
@@ -121,13 +124,7 @@ export default function App() {
       }
     }
 
-    const testRun = initialReportData?.testRun;
-
-    if (testRun?.darkMode !== undefined) {
-      return testRun.darkMode ? 'dark' : 'light';
-    }
-
-    return 'system';
+    return parseDarkMode(initialReportData?.testRun?.darkMode);
   });
 
   const [commitCopied, setCommitCopied] = useState(false);
@@ -138,7 +135,7 @@ export default function App() {
 
     if (testRun) {
       if (testRun.theme && typeof window !== 'undefined' && !localStorage.getItem('zen-theme')) {
-        const normalized = normalizeTheme(testRun.theme);
+        const normalized = toThemeMode(testRun.theme);
         if (normalized) {
           setTheme(normalized);
         }
@@ -148,7 +145,7 @@ export default function App() {
         typeof window !== 'undefined' &&
         !localStorage.getItem('zen-dark-mode')
       ) {
-        setDarkMode(testRun.darkMode ? 'dark' : 'light');
+        setDarkMode(parseDarkMode(testRun.darkMode));
       }
     }
   };
@@ -1092,7 +1089,7 @@ export default function App() {
               layout="stack"
               theme={theme}
               setTheme={(t) => {
-                const normalized = normalizeTheme(t);
+                const normalized = toThemeMode(t);
                 if (normalized) setTheme(normalized);
               }}
               darkMode={darkMode}

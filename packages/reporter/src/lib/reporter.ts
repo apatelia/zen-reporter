@@ -11,7 +11,13 @@ import * as path from 'path';
 import { createRequire } from 'module';
 import { getOsName, getPlaywrightVersion } from '../../bin/commands/system.js';
 import { processAttachments } from './attachmentManager';
-import { convertPlaywrightSteps, sanitizeAnsi, setFsModule } from '@arpanp/zen-core';
+import {
+  convertPlaywrightSteps,
+  normalizeTheme,
+  parseDarkMode,
+  sanitizeAnsi,
+  setFsModule,
+} from '@arpanp/zen-core';
 import { generateTerminalSummaryTable } from '@arpanp/zen-core';
 import { detectPackageManager } from './dataProcessor';
 import { getGitBranch, getGitCommit } from './gitUtils';
@@ -60,6 +66,50 @@ function getDescribePath(test: TestCase): string[] {
   return describePath;
 }
 
+/**
+ * Loads the optional `zen.config.json` file from the given directory, if present.
+ *
+ * @param configDir - Directory containing the Playwright configuration file.
+ * @returns The parsed options object, or `null` when no `zen.config.json` exists.
+ * @throws {Error} When `zen.config.json` exists but contains invalid JSON or is not a plain object.
+ */
+function loadZenConfigFile(configDir: string): Record<string, unknown> | null {
+  const filePath = path.join(configDir, 'zen.config.json');
+
+  let raw: string;
+  try {
+    raw = fs.readFileSync(filePath, 'utf8');
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
+      return null;
+    }
+    throw new Error(
+      `Zen Reporter: failed to read ${filePath}. Fix or remove the file; its options are not used silently. ` +
+        `Cause: ${error instanceof Error ? error.message : String(error)}`,
+      { cause: error }
+    );
+  }
+
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(raw);
+  } catch (error) {
+    throw new Error(
+      `Zen Reporter: failed to parse ${filePath} as JSON. Fix or remove the file; its options are not used silently. ` +
+        `Cause: ${error instanceof Error ? error.message : String(error)}`,
+      { cause: error }
+    );
+  }
+
+  if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) {
+    throw new Error(
+      `Zen Reporter: ${filePath} must contain a plain object of reporter options (e.g. { "projectName": "My Project" }).`
+    );
+  }
+
+  return parsed as Record<string, unknown>;
+}
+
 export interface ReporterConfig {
   outputDir: string;
   packageManager: string;
@@ -67,7 +117,7 @@ export interface ReporterConfig {
   testRunName: string;
   singleSummaryFile?: boolean;
   theme?: string;
-  darkMode?: boolean;
+  darkMode: 'system' | 'light' | 'dark';
   enableHistory: 'auto' | boolean;
   history?: HistoryConfig;
   minimalReport?: boolean;
@@ -78,14 +128,20 @@ export interface ReporterConfig {
 /**
  * Resolves user options and defaults into a complete `ReporterConfig` object.
  *
- * @param rawConfig - Optional raw configuration options from Playwright config.
+ * @param inlineConfig - Options passed inline in the Playwright reporter tuple.
  * @param cwd - Current working directory (defaults to process.cwd()).
+ * @param configDir - Directory of the Playwright config file; probed for `zen.config.json` (defaults to no discovery).
  * @returns Fully resolved reporter configuration.
  */
 export function resolveConfig(
-  rawConfig?: Record<string, unknown>,
-  cwd: string = process.cwd()
+  inlineConfig?: Record<string, unknown>,
+  cwd: string = process.cwd(),
+  configDir?: string
 ): ReporterConfig {
+  const rawConfig: Record<string, unknown> = {
+    ...(configDir ? loadZenConfigFile(configDir) : {}),
+    ...inlineConfig,
+  };
   const outputDir = rawConfig?.outputDir ? String(rawConfig.outputDir) : 'zen-report';
   const packageManager = detectPackageManager(cwd);
   const projectName = rawConfig?.projectName
@@ -172,16 +228,9 @@ export function resolveConfig(
   const rawTestRunName = rawConfig?.testRunName ? String(rawConfig.testRunName) : 'Test Run #{N}';
   const testRunName = rawTestRunName.replaceAll('{N}', String(runNumber));
   const singleSummaryFile = Boolean(rawConfig?.singleSummaryFile);
-  const rawTheme = rawConfig?.theme !== undefined ? String(rawConfig.theme) : 'Sage';
   const theme =
-    rawTheme.toLowerCase() === 'cafe'
-      ? 'Sage'
-      : rawTheme.toLowerCase() === 'sentinel'
-        ? 'Lotus'
-        : rawTheme.toLowerCase() === 'streak'
-          ? 'Oasis'
-          : rawTheme;
-  const darkMode = rawConfig?.darkMode !== undefined ? Boolean(rawConfig.darkMode) : undefined;
+    normalizeTheme(rawConfig?.theme != null ? String(rawConfig.theme) : undefined) ?? 'Sage';
+  const darkMode = parseDarkMode(rawConfig?.darkMode);
   const minimalReport = Boolean(rawConfig?.minimalReport);
 
   let enableHistory: 'auto' | boolean = 'auto';
@@ -471,7 +520,9 @@ class ZenReporter implements Reporter {
     this.config = config;
     this.reportConfig = resolveConfig(
       this.options ||
-        (config as FullConfig & { reporterConfig?: Record<string, unknown> }).reporterConfig
+        (config as FullConfig & { reporterConfig?: Record<string, unknown> }).reporterConfig,
+      process.cwd(),
+      config.configFile ? path.dirname(config.configFile) : process.cwd()
     );
 
     if (this.reportConfig.enableHistory === true) {

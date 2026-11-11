@@ -3,7 +3,7 @@ import BaseModal from '../shared/BaseModal';
 import InfoTooltip from '../shared/InfoTooltip';
 import { copyToClipboard } from '@/utils/clipboard';
 import type { ThemeMode } from '@/App';
-import { escapeHTML, highlightSyntaxLine } from '@arpanp/zen-core';
+import { escapeHTML, highlightSyntaxLine, parseDarkMode } from '@arpanp/zen-core';
 
 export interface ConfigGeneratorModalProps {
   isOpen: boolean;
@@ -13,7 +13,7 @@ export interface ConfigGeneratorModalProps {
     projectName?: string;
     testRunName?: string;
     theme?: ThemeMode | 'Sage' | 'Lotus' | 'Oasis';
-    darkMode?: 'system' | boolean | 'true' | 'false';
+    darkMode?: 'system' | 'light' | 'dark' | boolean;
     singleSummaryFile?: boolean;
     minimalReport?: boolean;
     enableHistory?: 'auto' | boolean;
@@ -57,13 +57,9 @@ function ModifiedDot() {
 export function ConfigGeneratorModal({ isOpen, onClose, activeConfig }: ConfigGeneratorModalProps) {
   // Baseline initial config from current active test run
   const initialConfig = useMemo<ConfigState>(() => {
-    const rawDark = activeConfig?.darkMode;
+    const dark = parseDarkMode(activeConfig?.darkMode);
     const darkVal: 'system' | 'true' | 'false' =
-      rawDark === true || rawDark === 'true'
-        ? 'true'
-        : rawDark === false || rawDark === 'false'
-          ? 'false'
-          : 'system';
+      dark === 'dark' ? 'true' : dark === 'light' ? 'false' : 'system';
 
     const historyVal: 'auto' | 'enabled' | 'disabled' | 'remote' =
       activeConfig?.enableHistory === false

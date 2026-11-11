@@ -125,3 +125,40 @@ export function getProjectColor(project: string, index: number): string {
   }
   return DISTINCT_PROJECT_COLORS[index % DISTINCT_PROJECT_COLORS.length];
 }
+
+/**
+ * Normalizes a raw `darkMode` value into the canonical tri-state.
+ *
+ * Accepts legacy boolean values (`true`/`false`) as well as the canonical
+ * strings (`'system'`, `'light'`, `'dark'`) and falls back to `'system'`
+ * for any unrecognized input.
+ *
+ * @param value - Raw value from report data or user config, or `undefined`.
+ * @returns The canonical dark mode state (`'system' | 'light' | 'dark'`).
+ */
+export function parseDarkMode(value: unknown): 'system' | 'light' | 'dark' {
+  if (value === true || value === 'dark') return 'dark';
+  if (value === false || value === 'light') return 'light';
+  return 'system';
+}
+
+/**
+ * Normalizes a raw theme name into the canonical theme title.
+ *
+ * Accepts canonical names (`'Sage'`, `'Lotus'`, `'Oasis'`) in any case, plus
+ * legacy aliases (`'Cafe'`, `'Sentinel'`, `'Streak'`) kept for backwards
+ * compatibility with older reports and configurations.
+ *
+ * @param value - Raw theme name from report data, user config, or localStorage, or `undefined`.
+ * @returns The canonical theme title (`'Sage' | 'Lotus' | 'Oasis'`), or `null` when unrecognized.
+ */
+export function normalizeTheme(
+  value: string | null | undefined
+): 'Sage' | 'Lotus' | 'Oasis' | null {
+  if (!value) return null;
+  const lower = value.toLowerCase();
+  if (lower === 'sage' || lower === 'cafe') return 'Sage';
+  if (lower === 'lotus' || lower === 'sentinel') return 'Lotus';
+  if (lower === 'oasis' || lower === 'streak') return 'Oasis';
+  return null;
+}

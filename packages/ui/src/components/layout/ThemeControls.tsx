@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { normalizeTheme } from '@arpanp/zen-core';
 
 export type ThemeId = 'sage' | 'lotus' | 'oasis' | 'cafe' | 'sentinel' | 'streak';
 
@@ -127,14 +128,7 @@ export function ThemeControls({
       />
 
       {themes.map((t) => {
-        const normalizedTheme =
-          theme === 'cafe'
-            ? 'sage'
-            : theme === 'sentinel'
-              ? 'lotus'
-              : theme === 'streak'
-                ? 'oasis'
-                : theme;
+        const normalizedTheme = normalizeTheme(theme)?.toLowerCase() ?? theme;
         const isActive = normalizedTheme === t.id;
         return (
           <button

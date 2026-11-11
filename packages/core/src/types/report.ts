@@ -75,7 +75,7 @@ export interface TestRun {
   projectName?: string;
   testRunName?: string;
   theme?: string;
-  darkMode?: boolean;
+  darkMode?: 'system' | 'light' | 'dark';
   enableHistory?: 'auto' | boolean;
   history?: HistoryConfig;
   minimalReport?: boolean;
@@ -122,7 +122,7 @@ export interface ReporterConfig {
   testRunName?: string;
   singleSummaryFile?: boolean;
   theme?: string;
-  darkMode?: boolean;
+  darkMode?: 'system' | 'light' | 'dark' | boolean;
   enableHistory?: 'auto' | boolean;
   history?: HistoryConfig;
   minimalReport?: boolean;
