@@ -368,6 +368,7 @@ export function highlightSyntaxLine(line: string, language?: string): string {
 
 /**
  * Renders a single code line into HTML with status indicators and syntax highlighting.
+ * The target (failure) line gets a permanent row background highlight so it stands out.
  *
  * @param codeLine - Code line string with optional prefix.
  * @param status - Step execution status.
@@ -394,13 +395,25 @@ export function highlightCodeLine(codeLine: string, status?: string, lineNoWidth
 
     const paddedLineNo = lineNo ? lineNo.padStart(lineNoWidth, ' ') : ' '.repeat(lineNoWidth);
 
-    const gutterHtml = `<span class="inline-flex items-center shrink-0 select-none font-mono"><span class="w-3.5 shrink-0 inline-flex items-center justify-center font-black ${isTarget ? indicatorColorClass : 'invisible'}" aria-hidden="true">▶</span><span class="whitespace-pre font-mono ${isTarget ? `${indicatorColorClass} font-bold` : 'text-text-muted/70 dark:text-slate-500'}">${paddedLineNo}</span><span class="mx-2 font-mono ${isTarget ? `${indicatorColorClass} font-bold` : 'text-text-muted/70 dark:text-slate-500'}">|</span></span>`;
+    // Render the ▶ marker only on the target line; other lines keep an empty
+    // fixed-width span so the line-number column alignment is unchanged.
+    const indicatorHtml = `<span class="w-3.5 shrink-0 inline-flex items-center justify-center font-mono ${isTarget ? `font-black ${indicatorColorClass}` : ''}" aria-hidden="true">${isTarget ? '▶' : ''}</span>`;
+
+    const gutterClass = isTarget
+      ? `${indicatorColorClass} font-bold`
+      : 'text-text-muted/70 dark:text-slate-500';
+
+    const gutterHtml = `<span class="inline-flex items-center shrink-0 select-none font-mono">${indicatorHtml}<span class="whitespace-pre font-mono ${gutterClass}">${paddedLineNo}</span><span class="mx-2 font-mono ${gutterClass}">|</span></span>`;
 
     const codeHtml = isCaretLine
       ? `<span class="whitespace-pre font-bold ${indicatorColorClass}">${escapeHTML(codePart)}</span>`
       : `<span class="whitespace-pre">${highlightJsTokens(codePart)}</span>`;
 
-    return `<div class="flex items-center px-2 py-0.5 font-mono text-[12px] leading-relaxed min-w-fit">${gutterHtml}${codeHtml}</div>`;
+    const rowClass = `flex items-center px-2 py-0.5 font-mono text-[12px] leading-relaxed min-w-fit${
+      isTarget ? ' bg-surface-200 dark:bg-surface-200/50' : ''
+    }`;
+
+    return `<div class="${rowClass}">${gutterHtml}${codeHtml}</div>`;
   }
 
   return `<div class="flex items-center px-2 py-0.5 font-mono text-[12px] leading-relaxed min-w-fit"><span class="whitespace-pre">${highlightJsTokens(codeLine)}</span></div>`;
@@ -606,16 +619,19 @@ export function parseAnsiToHtml(str: string): string {
 }
 
 /**
- * Highlights "Expected" vs "Received" assertion failure diff text in stack traces.
+ * Highlights "Expected" vs "Received" assertion failure diff text in stack traces,
+ * and colors the leading "Error:" line in danger red so it stands apart from the
+ * plain trace text.
  *
  * @param str - Stack trace string.
- * @returns HTML string with colored Expected (green) and Received (red) spans.
+ * @returns HTML string with colored Expected (green), Received (red), and leading
+ *   Error (red) spans.
  */
 export function highlightExpectedReceived(str: string): string {
   if (!str) return '';
 
   const parsed = parseAnsiToHtml(str);
-  return parsed
+  const highlighted = parsed
     .replace(
       /(Expected:?\s*)([^\n<]+)/g,
       (_, p1, p2) => `${p1}<span class="text-success-500 font-bold">${p2}</span>`
@@ -624,4 +640,10 @@ export function highlightExpectedReceived(str: string): string {
       /(Received:?\s*)([^\n<]+)/g,
       (_, p1, p2) => `${p1}<span class="text-danger-500 font-bold">${p2}</span>`
     );
+
+  const lines = highlighted.split('\n');
+  if (lines[0]?.startsWith('Error:')) {
+    lines[0] = `<span class="text-danger-500">${lines[0]}</span>`;
+  }
+  return lines.join('\n');
 }

@@ -8,6 +8,9 @@ export interface TestErrorAlertProps {
   status: AttemptView['status'];
 }
 
+const codeBlockClass =
+  'rounded-md bg-surface-100 dark:bg-surface-950 text-[13px] font-mono leading-relaxed text-text-ink dark:text-slate-200 border border-border-default dark:border-border-subtle overflow-x-auto';
+
 export function TestErrorAlert({ error, status }: TestErrorAlertProps) {
   const [copied, setCopied] = useState(false);
 
@@ -89,10 +92,6 @@ export function TestErrorAlert({ error, status }: TestErrorAlertProps) {
             </button>
           </div>
           <div className="px-3 py-2">
-            <p className="text-sm text-danger-700 dark:text-danger-400 font-medium">
-              {error.message?.split('\n')[0] || error.message}
-            </p>
-
             {error.cause && (
               <div className="mt-2 rounded-md bg-danger-500/10 p-2 text-xs border border-danger-500/20">
                 <span className="font-bold text-danger-600 dark:text-danger-400">Cause: </span>
@@ -104,31 +103,31 @@ export function TestErrorAlert({ error, status }: TestErrorAlertProps) {
               </div>
             )}
 
-            {error.snippet && (
-              <div className="mt-2">
-                <p className="text-xs font-semibold text-text-body-mid dark:text-text-muted mb-1">
-                  Code Snippet:
-                </p>
-                <div
-                  className="rounded-md bg-surface-100 dark:bg-surface-950 p-2.5 text-[13px] font-mono leading-relaxed text-text-ink dark:text-slate-200 border border-border-default dark:border-border-subtle overflow-x-auto"
-                  /* eslint-disable-next-line @eslint-react/dom-no-dangerously-set-innerhtml */
-                  dangerouslySetInnerHTML={{
-                    __html: highlightCodeSnippet(sanitizeAnsi(error.snippet), status),
-                  }}
-                />
-              </div>
-            )}
-
             {error.stack && (
               <div className="mt-2">
                 <p className="text-xs font-semibold text-text-body-mid dark:text-text-muted mb-1">
                   Stack Trace:
                 </p>
                 <pre
-                  className="rounded-md bg-surface-100 dark:bg-surface-950 p-3 text-[13px] font-mono leading-relaxed text-text-ink dark:text-slate-200 border border-border-default dark:border-border-subtle overflow-x-auto"
+                  className={`${codeBlockClass} p-3`}
                   /* eslint-disable-next-line @eslint-react/dom-no-dangerously-set-innerhtml */
                   dangerouslySetInnerHTML={{
                     __html: highlightExpectedReceived(error.stack),
+                  }}
+                />
+              </div>
+            )}
+
+            {error.snippet && (
+              <div className="mt-2">
+                <p className="text-xs font-semibold text-text-body-mid dark:text-text-muted mb-1">
+                  Code Snippet:
+                </p>
+                <div
+                  className={`${codeBlockClass} p-2.5`}
+                  /* eslint-disable-next-line @eslint-react/dom-no-dangerously-set-innerhtml */
+                  dangerouslySetInnerHTML={{
+                    __html: highlightCodeSnippet(sanitizeAnsi(error.snippet), status),
                   }}
                 />
               </div>
