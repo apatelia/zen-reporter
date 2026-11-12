@@ -13,6 +13,13 @@ interface InsightsGuidesProps {
   onClose: () => void;
 }
 
+/**
+ * Renders the Insights tab guide modals: one modal per insight type, opened by
+ * the active modal id and closed via the onClose callback.
+ * @param activeModal - The insight guide modal id currently open, or null.
+ * @param onClose - Callback that clears the open modal.
+ * @returns The guide modals for the Insights tab.
+ */
 export default function InsightsGuides({ activeModal, onClose }: InsightsGuidesProps) {
   return (
     <>
@@ -304,12 +311,52 @@ export default function InsightsGuides({ activeModal, onClose }: InsightsGuidesP
       <GuideModal
         isOpen={activeModal === 'duration-benchmark'}
         onClose={onClose}
-        title="About Duration & P95 Latency Benchmark"
+        title="About Duration Spread & P95 Latency Benchmark"
       >
         <p>
-          This chart benchmarks the execution latency per test case across project targets,
-          comparing average duration against 95th percentile (P95) latency.
+          Each bar answers one question:{' '}
+          <strong className="text-text-ink dark:text-text-on-primary">
+            how much slower is the slowest 5% of tests than a typical test, in this project?
+          </strong>{' '}
+          The green base is the typical (average) duration; the yellow tail is how far the P95 (95th
+          percentile) extends beyond it. The white dot marks the typical duration, and the value
+          printed at the bar's end is the P95 with its tail multiplier (P95 / avg).
         </p>
+
+        <div className="rounded-md border border-border-default bg-surface-50 p-3 space-y-2">
+          <div className="font-bold text-text-ink dark:text-text-on-primary text-xs tracking-wider">
+            <h5 className="font-semibold text-text-ink dark:text-text-on-primary mb-1">
+              Reading the Bars:
+            </h5>
+          </div>
+          <ul className="list-disc pl-4 space-y-1.5">
+            <li>
+              <strong className="text-success-600 dark:text-success-500">
+                Short or absent yellow tail (dot near the bar's end):
+              </strong>{' '}
+              timings are consistent — the slowest 5% of tests take about as long as a typical test.
+              No slow outliers to chase.
+            </li>
+            <li>
+              <strong className="text-warning-600 dark:text-warning-500">
+                Long yellow tail (dot near the start):
+              </strong>{' '}
+              heavy tail — the slowest 5% of tests take the printed multiple (Nx) of the typical
+              time. Investigate that project's slowest tests or retries.
+            </li>
+            <li>
+              <strong className="text-text-ink dark:text-text-on-primary">Bar order:</strong>{' '}
+              projects are sorted worst tail first, so the top row is the one to act on.
+            </li>
+            <li>
+              <strong className="text-text-ink dark:text-text-on-primary">
+                Logarithmic x-axis:
+              </strong>{' '}
+              each major step (1 ms → 10 ms → 100 ms → 1 s) spans the same visual distance, so a 25
+              ms tail and a 2.4 s tail stay readable side by side.
+            </li>
+          </ul>
+        </div>
 
         <div className="rounded-md border border-border-default bg-surface-50 p-3 space-y-2">
           <div className="font-bold text-text-ink dark:text-text-on-primary text-xs tracking-wider">
@@ -319,7 +366,7 @@ export default function InsightsGuides({ activeModal, onClose }: InsightsGuidesP
           </div>
           <ul className="list-disc pl-4 space-y-1.5">
             <li>
-              <strong className="text-accent-blue">Avg Duration (s):</strong> Calculated as{' '}
+              <strong className="text-accent-blue">Typical (avg) duration:</strong> Calculated as{' '}
               <code className="font-mono bg-surface-100 px-1 py-0.5 rounded text-[10px]">
                 Total Duration / Executed Tests
               </code>
@@ -327,14 +374,19 @@ export default function InsightsGuides({ activeModal, onClose }: InsightsGuidesP
               profile.
             </li>
             <li>
-              <strong className="text-warning-600 dark:text-warning-500">
-                P95 Duration / Latency (s):
-              </strong>{' '}
+              <strong className="text-warning-600 dark:text-warning-500">P95 duration:</strong>{' '}
               Represents the 95th percentile completion threshold.{' '}
               <strong>
                 95% of all executed tests in that project completed faster than this duration
               </strong>
               , while only 5% took longer.
+            </li>
+            <li>
+              <strong className="text-warning-600 dark:text-warning-500">
+                Tail multiplier (Nx):
+              </strong>{' '}
+              P95 divided by the average. Near 1 means consistent timings; well above 1 means a
+              heavy tail worth investigating.
             </li>
           </ul>
         </div>

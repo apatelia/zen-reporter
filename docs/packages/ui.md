@@ -64,7 +64,7 @@ src/components/
 │   └── HistoryGuides.tsx               # Interactive guide modals
 ├── insights/              # Insights tab
 │   ├── InsightsSection.tsx
-│   ├── ProjectDurationChart.tsx
+│   ├── ProjectLatencySpreadChart.tsx
 │   ├── ProjectFlakyRateChart.tsx
 │   ├── FlakyTestsTableSection.tsx      # Paginated flaky tests table + CSV export
 │   ├── RegressionsTableSection.tsx     # Paginated regressions table + CSV export

@@ -4,7 +4,7 @@ import type { TestSuite } from '@arpanp/zen-core';
 import type { HistoryData } from '@arpanp/zen-core';
 import { computeProjectStats, collectAllCases } from '@arpanp/zen-core';
 import ProjectFlakyRateChart from './ProjectFlakyRateChart';
-import ProjectDurationChart from '@/components/insights/ProjectDurationChart';
+import ProjectLatencySpreadChart from '@/components/insights/ProjectLatencySpreadChart';
 import FlakyTestsTableSection from './FlakyTestsTableSection';
 import RegressionsTableSection from './RegressionsTableSection';
 import SlowestTestsTableSection from './SlowestTestsTableSection';
@@ -17,6 +17,14 @@ export interface InsightsSectionProps {
   isHistoryDisabled?: boolean;
 }
 
+/**
+ * Renders the Insights tab: duration/flaky benchmark charts and the flaky,
+ * regressions, and slowest test tables, with per-section Learn More guides.
+ * @param history - Aggregated history data (flaky, regressions, slowest, runs) or null in standalone reports.
+ * @param suites - Test suites for the current run.
+ * @param isHistoryDisabled - True when history analytics are unavailable.
+ * @returns The Insights tab section.
+ */
 export default function InsightsSection({
   history,
   suites,
@@ -34,11 +42,11 @@ export default function InsightsSection({
       {isHistoryDisabled && <HistoryDisabledBanner />}
       <h1 className="sr-only">Analytical Insights</h1>
 
-      {/* 1. Duration & P95 Latency Benchmark Grid */}
+      {/* 1. Duration Spread & P95 Latency Benchmark Grid */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2 items-stretch">
-        <ProjectDurationChart
+        <ProjectLatencySpreadChart
           projectStats={computeProjectStats(collectAllCases(suites))}
-          title="Execution Duration & P95 Latency Benchmark"
+          title="Duration Spread & P95 Latency by Project"
           className="rounded-md border border-border-default bg-surface-50 p-5 shadow-xs flex flex-col justify-between"
           onOpenGuide={() => setActiveModal('duration-benchmark')}
         />
