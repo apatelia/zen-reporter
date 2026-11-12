@@ -12,6 +12,9 @@
     "email": "arpan.is@gmail.com"
   },
   "license": "MIT",
+  "engines": {
+    "node": ">=22.0.0"
+  },
   "scripts": {
     "dev": "vite",
     "build": "cross-env ZEN_REPORTER_DATA_FREE=true vite build",

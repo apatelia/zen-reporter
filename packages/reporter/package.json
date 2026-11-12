@@ -27,6 +27,9 @@
     "email": "arpan.is@gmail.com"
   },
   "license": "MIT",
+  "engines": {
+    "node": ">=22.0.0"
+  },
   "scripts": {
     "build:reporter": "vite build --config vite.reporter.config.ts && tsc -p tsconfig.lib.json",
     "build:template": "node scripts/copy-template.mjs",
