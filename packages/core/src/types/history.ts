@@ -58,6 +58,8 @@ export interface HistorySlowRow {
   avg_duration_ms?: number;
   max_duration_ms?: number;
   last_duration_ms?: number;
+  last_run_at?: string;
+  last_run_status?: string;
   avg_ms?: number;
   max_ms?: number;
   last_ms?: number;

@@ -923,6 +923,30 @@ export class SqliteHistoryStore implements HistoryStore {
         t.suite, t.file, t.title, t.project,
         round(avg(t.duration_ms), 1) AS avg_duration_ms,
         max(t.duration_ms) AS max_duration_ms,
+        (
+          SELECT t2.duration_ms
+          FROM history_test_cases t2
+          JOIN recent_runs r2 ON t2.run_id = r2.run_id
+          WHERE t2.suite = t.suite
+            AND t2.file = t.file
+            AND t2.title = t.title
+            AND t2.project = t.project
+            AND t2.duration_ms IS NOT NULL
+          ORDER BY r2.started_at DESC
+          LIMIT 1
+        ) AS last_duration_ms,
+        max(r.started_at) AS last_run_at,
+        (
+          SELECT t2.status
+          FROM history_test_cases t2
+          JOIN recent_runs r2 ON t2.run_id = r2.run_id
+          WHERE t2.suite = t.suite
+            AND t2.file = t.file
+            AND t2.title = t.title
+            AND t2.project = t.project
+          ORDER BY r2.started_at DESC
+          LIMIT 1
+        ) AS last_run_status,
         count(*) AS runs
       FROM history_test_cases t
       JOIN recent_runs r ON t.run_id = r.run_id
