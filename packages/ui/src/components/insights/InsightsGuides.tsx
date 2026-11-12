@@ -267,7 +267,15 @@ export default function InsightsGuides({ activeModal, onClose }: InsightsGuidesP
               <strong className="text-text-ink dark:text-text-on-primary">
                 Last Run Duration:
               </strong>{' '}
-              The exact runtime recorded during the most recent test run execution.
+              The most recent recorded runtime for the test.
+            </li>
+            <li>
+              <strong className="text-text-ink dark:text-text-on-primary">Last Run:</strong> The
+              timestamp of the test's most recent run.
+            </li>
+            <li>
+              <strong className="text-text-ink dark:text-text-on-primary">Last Run Status:</strong>{' '}
+              The outcome of the test in its most recent run.
             </li>
           </ul>
         </div>

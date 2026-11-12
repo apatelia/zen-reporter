@@ -1,7 +1,8 @@
 import { useMemo } from 'react';
 import type { HistorySlowRow } from '@arpanp/zen-core';
-import { formatDurationVerbose } from '@arpanp/zen-core';
+import { formatDateLocal, formatDurationVerbose } from '@arpanp/zen-core';
 import LearnMoreButton from '@/components/shared/LearnMoreButton';
+import { StatusPill } from '@/components/shared/StatusPill';
 import { DataTable } from '@/components/shared/DataTable';
 import type { ColumnDef } from '@/components/shared/DataTable';
 import { generateExportFilename } from '@arpanp/zen-core';
@@ -32,8 +33,8 @@ export default function SlowestTestsTableSection({
       {
         key: 'suite',
         header: 'Suite',
-        cell: (row) => row.suite || '-',
-        csvValue: (row) => row.suite || '',
+        cell: (row) => row.suite,
+        csvValue: (row) => row.suite,
       },
       {
         key: 'title',
@@ -47,6 +48,13 @@ export default function SlowestTestsTableSection({
         header: 'Project',
         cell: (row) => row.project,
         csvValue: (row) => row.project,
+      },
+      {
+        key: 'runs',
+        header: 'Runs Count',
+        align: 'right',
+        cell: (row) => row.runs,
+        csvValue: (row) => row.runs,
       },
       {
         key: 'avg_duration',
@@ -71,11 +79,26 @@ export default function SlowestTestsTableSection({
         csvValue: (row) => formatDurationVerbose(row.last_duration_ms ?? row.last_ms),
       },
       {
-        key: 'runs',
-        header: 'Runs Count',
-        align: 'right',
-        cell: (row) => row.runs,
-        csvValue: (row) => row.runs,
+        key: 'last_run_at',
+        header: 'Last Run',
+        headerClassName: 'pl-8',
+        className: 'pl-8',
+        cell: (row) => (row.last_run_at ? formatDateLocal(row.last_run_at) : '-'),
+        csvValue: (row) => (row.last_run_at ? formatDateLocal(row.last_run_at) : ''),
+      },
+      {
+        key: 'last_run_status',
+        header: 'Last Run Status',
+        cell: (row) =>
+          row.last_run_status ? (
+            <StatusPill
+              status={row.last_run_status}
+              tooltip="Status of this test in its most recent run."
+            />
+          ) : (
+            '-'
+          ),
+        csvValue: (row) => row.last_run_status ?? '',
       },
     ],
     []
