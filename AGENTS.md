@@ -10,11 +10,12 @@
 
 ## JSDoc Documentation Requirements
 
-1. **Strict JSDoc for New or Updated Functions**: Every newly added or updated function must have a JSDoc comment block directly above it. The JSDoc must at minimum include:
+1. **Strict JSDoc for New or Updated Functions**: Every newly added or updated named full-body function must have a JSDoc comment block directly above it. The JSDoc must at minimum include:
    - `@param <name> - <description>` for every function parameter (match parameter order; describe type and purpose).
    - `@returns <description>` for the return value (use `@returns {void}` for functions that return nothing).
    - A concise one-line summary of what the function does.
-     Apply this to all function styles in the project: function declarations, arrow functions, class methods, and exported helpers. Update existing JSDoc whenever a function's parameters or return type change.
+     Apply this to named function declarations, named arrow-function bindings, class methods, and exported helpers. Update existing JSDoc whenever a function's parameters or return type change.
+2. **Inline Callbacks**: Inline callbacks (anonymous arrow functions passed directly as arguments or props, e.g. `onClick={() => ...}`) do NOT require strict JSDoc. They may carry a single-line description (plain comment or JSDoc summary) only if needed; `@param`/`@returns` tags are not required.
 
 ## Test Execution Invariants
 
