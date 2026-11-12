@@ -11,10 +11,16 @@ import OfflineHistoryNotice from '@/components/shared/OfflineHistoryNotice';
 export interface TrendsSectionProps {
   history: HistoryData | null;
   suites: TestSuite[];
+  projectColorMap: Record<string, string>;
   isHistoryDisabled?: boolean;
 }
 
-export default function TrendsSection({ history, suites, isHistoryDisabled }: TrendsSectionProps) {
+export default function TrendsSection({
+  history,
+  suites,
+  projectColorMap,
+  isHistoryDisabled,
+}: TrendsSectionProps) {
   const [passRateModalOpen, setPassRateModalOpen] = useState(false);
   const [durationModalOpen, setDurationModalOpen] = useState(false);
   const [stepCategoryModalOpen, setStepCategoryModalOpen] = useState(false);
@@ -61,7 +67,11 @@ export default function TrendsSection({ history, suites, isHistoryDisabled }: Tr
       <PassRateTrend history={history} onOpenGuide={() => setPassRateModalOpen(true)} />
 
       {/* 2. Duration Trend Section */}
-      <DurationTrend history={history} onOpenGuide={() => setDurationModalOpen(true)} />
+      <DurationTrend
+        history={history}
+        projectColorMap={projectColorMap}
+        onOpenGuide={() => setDurationModalOpen(true)}
+      />
 
       {/* 3. Step Category Composition & Trend Section */}
       <StepCategoryTrend

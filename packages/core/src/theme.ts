@@ -82,48 +82,46 @@ export const STATUS_BADGE_STYLE_MAP: Record<StatusType, string> = {
     'bg-slate-200/80 text-slate-800 ring-1 ring-slate-300 dark:bg-slate-700/60 dark:text-slate-200 dark:ring-1 dark:ring-slate-600',
 };
 
-export const PROJECT_BRAND_COLORS: Record<string, string> = {
-  chromium: 'var(--color-accent-green)',
-  firefox: 'var(--color-warning-500)',
-  webkit: 'var(--color-accent-gold)',
-  'desktop chrome': 'var(--color-accent-green)',
-  'desktop firefox': 'var(--color-warning-500)',
-  'desktop safari': 'var(--color-accent-gold)',
-  'mobile chrome': 'var(--color-accent-cafe)',
-  'mobile safari': 'var(--color-warning-600)',
-};
-
+/**
+ * Curated palette of project identity colors.
+ *
+ * Every token resolves to a unique value in every theme scope
+ * (Sage/Lotus/Oasis × light/dark), verified against `app.css`. Tokens span
+ * distinct hue groups (green, dark green, orange, amber, pink, red, brown,
+ * blue) so up to 10 projects stay visually distinguishable in any theme
+ * and mode.
+ */
 export const DISTINCT_PROJECT_COLORS = [
-  'var(--color-success-500)',
-  'var(--color-danger-500)',
-  'var(--color-warning-500)',
-  'var(--color-info-600)',
-  'var(--color-accent-house)',
+  'var(--color-accent-green)',
+  'var(--color-accent-orange)',
   'var(--color-accent-gold)',
   'var(--color-accent-pink)',
-  'var(--color-accent-orange)',
-  'var(--color-success-700)',
   'var(--color-danger-700)',
-  'var(--color-warning-700)',
+  'var(--color-info-500)',
+  'var(--color-info-600)',
   'var(--color-info-700)',
+  'var(--color-warning-600)',
+  'var(--color-success-700)',
 ];
 
 /**
- * Resolves a CSS color token for a Playwright project name, matching known brand colors or selecting a distinct palette color.
+ * Assigns each project a unique identity color from `DISTINCT_PROJECT_COLORS`.
  *
- * @param project - Name of the Playwright project profile.
- * @param index - Index fallback for selecting a distinct palette color.
- * @returns CSS color variable token string.
+ * Projects are processed in first-appearance order and each receives the
+ * first unused palette color; when more projects exist than palette entries,
+ * the palette wraps around.
+ *
+ * @param projects - Playwright project names in first-appearance order.
+ * @returns Map of project name to CSS color variable token.
  */
-export function getProjectColor(project: string, index: number): string {
-  const normalized = project.toLowerCase().trim();
-  if (PROJECT_BRAND_COLORS[normalized]) {
-    return PROJECT_BRAND_COLORS[normalized];
+export function buildProjectColorMap(projects: string[]): Record<string, string> {
+  const map: Record<string, string> = {};
+  let index = 0;
+  for (const project of projects) {
+    if (map[project]) continue;
+    map[project] = DISTINCT_PROJECT_COLORS[index++ % DISTINCT_PROJECT_COLORS.length];
   }
-  for (const [key, val] of Object.entries(PROJECT_BRAND_COLORS)) {
-    if (key.length > 3 && normalized.includes(key)) return val;
-  }
-  return DISTINCT_PROJECT_COLORS[index % DISTINCT_PROJECT_COLORS.length];
+  return map;
 }
 
 /**

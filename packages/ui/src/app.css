@@ -111,6 +111,23 @@
   --color-step-cat-waits-border: #ea580c;
   --color-step-cat-others: var(--color-surface-700);
   --color-step-cat-others-border: var(--color-surface-800);
+
+  /* ── Project Identity Palette (Duration trend chart series) ─
+     Declared explicitly on :root so `var()` references from chart
+     code resolve in the default (Sage) scope. Tailwind v4 only emits
+     used @theme variables, so tokens referenced solely from JS chart
+     code are guaranteed here. Scoped theme blocks (html.dark,
+     [data-theme=…]) override these values per theme. */
+  --color-accent-green: #00754a;
+  --color-accent-orange: #ff6b00;
+  --color-accent-gold: #cba258;
+  --color-accent-pink: #ed52cb;
+  --color-danger-700: #8c0c05;
+  --color-info-500: #2563eb;
+  --color-info-600: #1d4ed8;
+  --color-info-700: #1e40af;
+  --color-warning-600: #6d4c0f;
+  --color-success-700: #1e3932;
 }
 
 html.dark {

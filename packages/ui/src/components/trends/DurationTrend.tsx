@@ -1,6 +1,5 @@
 import LearnMoreButton from '@/components/shared/LearnMoreButton';
-import { formatDateParts, formatDuration } from '@arpanp/zen-core';
-import { getProjectColor } from '@arpanp/zen-core';
+import { DISTINCT_PROJECT_COLORS, formatDateParts, formatDuration } from '@arpanp/zen-core';
 import type { HistoryData } from '@arpanp/zen-core';
 import { useMemo } from 'react';
 import {
@@ -18,6 +17,7 @@ import { renderTrendTick } from './TrendTick';
 
 interface DurationTrendProps {
   history: HistoryData;
+  projectColorMap?: Record<string, string>;
   onOpenGuide?: () => void;
 }
 
@@ -52,9 +52,15 @@ const renderDurationTooltip = (props: TooltipContentProps) => {
   );
 };
 
-export default function DurationTrend({ history, onOpenGuide }: DurationTrendProps) {
+export default function DurationTrend({
+  history,
+  projectColorMap,
+  onOpenGuide,
+}: DurationTrendProps) {
   const { durationChartData, projectNames } = useMemo(() => {
-    if (!history || !history.runs.length) return { durationChartData: [], projectNames: [] };
+    if (!history || !history.runs.length) {
+      return { durationChartData: [], projectNames: [] };
+    }
 
     const recentRuns = history.runs.slice(-15);
     const projectSet = new Set<string>();
@@ -184,7 +190,9 @@ export default function DurationTrend({ history, onOpenGuide }: DurationTrendPro
                 }}
               />
               {projectNames.map((proj, idx) => {
-                const color = getProjectColor(proj, idx);
+                const color =
+                  projectColorMap?.[proj] ??
+                  DISTINCT_PROJECT_COLORS[idx % DISTINCT_PROJECT_COLORS.length];
                 return (
                   <Line
                     key={proj}

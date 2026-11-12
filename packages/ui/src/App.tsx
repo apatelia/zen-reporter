@@ -14,7 +14,14 @@ import Toast, { type ToastNotification } from '@/components/shared/Toast';
 import SuitesSection from '@/components/suites/SuitesSection';
 import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts';
 import { copyToClipboard } from '@/utils/clipboard';
-import { formatDateRange, formatDuration, normalizeTheme, parseDarkMode } from '@arpanp/zen-core';
+import {
+  buildProjectColorMap,
+  collectAllCases,
+  formatDateRange,
+  formatDuration,
+  normalizeTheme,
+  parseDarkMode,
+} from '@arpanp/zen-core';
 import type { HistoryData, HistoryRun } from '@arpanp/zen-core';
 import type { ReportData, TestSuite } from '@arpanp/zen-core';
 import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -494,6 +501,28 @@ export default function App() {
       testRunName: reportData.testRun.testRunName,
     };
   }, [reportData]);
+
+  const projectColorMap = useMemo(() => {
+    const candidates: string[] = [
+      ...collectAllCases(suites).map((c) => c.project),
+      ...(historyData
+        ? historyData.runs.flatMap((run) => Object.keys(run.project_durations ?? {}))
+        : []),
+      ...(historyData?.project_trends ?? []).map((pt) => pt.project),
+      ...(historyData?.flaky ?? []).map((f) => f.project),
+      ...(historyData?.slowest ?? []).map((s) => s.project),
+      ...(historyData?.regressions ?? []).map((r) => r.project),
+    ];
+    const seen = new Set<string>();
+    const projects: string[] = [];
+    candidates.forEach((project) => {
+      if (project && !seen.has(project)) {
+        seen.add(project);
+        projects.push(project);
+      }
+    });
+    return buildProjectColorMap(projects);
+  }, [suites, historyData]);
 
   const effectiveRunId = useMemo(() => {
     return (
@@ -1270,6 +1299,7 @@ export default function App() {
                   <TrendsSection
                     history={historyData}
                     suites={suites}
+                    projectColorMap={projectColorMap}
                     isHistoryDisabled={isHistoryDisabled}
                   />
                 </Suspense>

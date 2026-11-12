@@ -29,7 +29,7 @@ packages/core/
     ├── statsUtils.ts        # Single-pass O(N) project stats calculator & executive KPI generator
     ├── stepCategoryClassifier.ts # Title-based step category classification & counters
     ├── tagColors.ts         # Deterministic HSL color generator for tags
-    └── theme.ts             # Unified UI theme tokens, brand color maps & status color palettes
+    └── theme.ts             # Unified UI theme tokens, project identity color palette & status color palettes
 ```
 
 ---
@@ -41,7 +41,7 @@ packages/core/
 | `types/report.ts`           | Canonical report models shared by all packages: `TestCase`, `ResultSummary`, run metadata, attachment records |
 | `types/history.ts`          | Historical run/test row schemas shared by the SQLite store, remote store, and server                          |
 | `statsUtils.ts`             | Single-pass O(N) project statistics and executive KPI computation (used by UI and summary generation)         |
-| `theme.ts`                  | Theme tokens (Sage, Lotus, Oasis), brand color maps, status color palettes consumed by the UI                 |
+| `theme.ts`                  | Theme tokens (Sage, Lotus, Oasis), project identity color palette & status color palettes consumed by the UI  |
 | `exportToCsv.ts`            | RFC 4180 CSV export with UTF-8 BOM (used by UI exports and `zr summary`)                                      |
 | `codeHighlighting.ts`       | Syntax highlighting for step snippets and error stack traces rendered in the UI                               |
 | `cryptoUtils.ts`            | Hashing (MD5/SHA-256) and error signature clustering for flaky/regression detection                           |
