@@ -1,16 +1,15 @@
-import { useState, useMemo } from 'react';
-import type { HistoryFlakyRow } from '@arpanp/zen-core';
-import { formatDate } from '@arpanp/zen-core';
-import { usePagination } from '@/components/pagination/usePagination';
 import { PageSizeControl } from '@/components/pagination/PageSizeControl';
 import { PaginationFooter } from '@/components/pagination/PaginationFooter';
-import LearnMoreButton from '@/components/shared/LearnMoreButton';
-import DateFilterControl from '@/components/shared/DateFilterControl';
-import { DataTable, ExportCsvButton, exportColumnsToCsv } from '@/components/shared/DataTable';
-import SearchInput from '@/components/shared/SearchInput';
+import { usePagination } from '@/components/pagination/usePagination';
 import type { ColumnDef } from '@/components/shared/DataTable';
+import { DataTable, ExportCsvButton, exportColumnsToCsv } from '@/components/shared/DataTable';
 import type { DateFilterRange } from '@/components/shared/DateFilterControl';
-import { generateExportFilename } from '@arpanp/zen-core';
+import DateFilterControl from '@/components/shared/DateFilterControl';
+import LearnMoreButton from '@/components/shared/LearnMoreButton';
+import SearchInput from '@/components/shared/SearchInput';
+import type { HistoryFlakyRow } from '@arpanp/zen-core';
+import { formatDateLocal, generateExportFilename } from '@arpanp/zen-core';
+import { useMemo, useState } from 'react';
 
 export interface FlakyTestsTableSectionProps {
   flaky: HistoryFlakyRow[];
@@ -128,11 +127,11 @@ export default function FlakyTestsTableSection({
         headerLabel: 'Last Flaky Date',
         cell: (row) => {
           const dateStr = row.last_flaky_at || row.last_seen_at;
-          return dateStr ? formatDate(dateStr) : '-';
+          return dateStr ? formatDateLocal(dateStr) : '-';
         },
         csvValue: (row) => {
           const dateStr = row.last_flaky_at || row.last_seen_at;
-          return dateStr ? formatDate(dateStr) : '';
+          return dateStr ? formatDateLocal(dateStr) : '';
         },
       },
       {

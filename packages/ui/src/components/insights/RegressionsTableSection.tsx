@@ -1,16 +1,16 @@
-import { useState, useMemo } from 'react';
-import type { HistoryRegressionRow } from '@arpanp/zen-core';
-import { formatDate } from '@arpanp/zen-core';
-import { usePagination } from '@/components/pagination/usePagination';
 import { PageSizeControl } from '@/components/pagination/PageSizeControl';
 import { PaginationFooter } from '@/components/pagination/PaginationFooter';
-import LearnMoreButton from '@/components/shared/LearnMoreButton';
-import DateFilterControl from '@/components/shared/DateFilterControl';
-import { DataTable, ExportCsvButton, exportColumnsToCsv } from '@/components/shared/DataTable';
-import SearchInput from '@/components/shared/SearchInput';
+import { usePagination } from '@/components/pagination/usePagination';
 import type { ColumnDef } from '@/components/shared/DataTable';
+import { DataTable, ExportCsvButton, exportColumnsToCsv } from '@/components/shared/DataTable';
 import type { DateFilterRange } from '@/components/shared/DateFilterControl';
-import { generateExportFilename } from '@arpanp/zen-core';
+import DateFilterControl from '@/components/shared/DateFilterControl';
+import LearnMoreButton from '@/components/shared/LearnMoreButton';
+import SearchInput from '@/components/shared/SearchInput';
+import { StatusPill } from '@/components/shared/StatusPill';
+import type { HistoryRegressionRow } from '@arpanp/zen-core';
+import { formatDateLocal, generateExportFilename } from '@arpanp/zen-core';
+import { useMemo, useState } from 'react';
 
 export interface RegressionsTableSectionProps {
   regressions: HistoryRegressionRow[];
@@ -22,33 +22,12 @@ const sectionClass =
   'overflow-hidden rounded-md bg-surface-50 border border-border-default shadow-xs p-4';
 const headingClass = 'text-lg font-bold text-text-ink dark:text-text-on-primary';
 
-const lastStatusStyles: Record<string, { label: string; pillClass: string; tooltip: string }> = {
-  passed: {
-    label: 'Passed',
-    pillClass: 'bg-success-50 text-success-600 dark:bg-success-500/10 dark:text-success-500',
-    tooltip: 'Regression resolved: test passed in the latest run.',
-  },
-  failed: {
-    label: 'Failed',
-    pillClass: 'bg-danger-50 text-danger-600 dark:bg-danger-500/10 dark:text-danger-500',
-    tooltip: 'Test failed during the last run. Fixing may be required.',
-  },
-  timedOut: {
-    label: 'Timed Out',
-    pillClass: 'bg-warning-50 text-warning-600 dark:bg-warning-500/10 dark:text-warning-500',
-    tooltip: 'Test timed out during the last run. Fixing may be required.',
-  },
-  interrupted: {
-    label: 'Interrupted',
-    pillClass: 'bg-danger-50 text-danger-600 dark:bg-danger-500/10 dark:text-danger-500',
-    tooltip: 'Test run was interrupted. Try to re-run the test to verify status.',
-  },
-  skipped: {
-    label: 'Skipped',
-    pillClass:
-      'bg-slate-200/80 text-slate-800 ring-1 ring-slate-300 dark:bg-slate-700/60 dark:text-slate-200 dark:ring-slate-600',
-    tooltip: 'Test was skipped. Try to re-run the test to verify status.',
-  },
+const regressionStatusTooltips: Record<string, string> = {
+  passed: 'Regression resolved: test passed in the latest run.',
+  failed: 'Test failed during the last run. Fixing may be required.',
+  timedOut: 'Test timed out during the last run. Fixing may be required.',
+  interrupted: 'Test run was interrupted. Try to re-run the test to verify status.',
+  skipped: 'Test was skipped. Try to re-run the test to verify status.',
 };
 
 /**
@@ -146,33 +125,27 @@ export default function RegressionsTableSection({
         ),
         headerLabel: 'Regressed In',
         className: 'text-danger-600 dark:text-danger-500 font-bold',
-        cell: (row) => formatDate(row.regressed_at),
-        csvValue: (row) => formatDate(row.regressed_at),
+        cell: (row) => formatDateLocal(row.regressed_at),
+        csvValue: (row) => formatDateLocal(row.regressed_at),
       },
       {
         key: 'last_run',
         header: 'Last Run',
-        cell: (row) => formatDate(row.last_run_at),
-        csvValue: (row) => formatDate(row.last_run_at),
+        cell: (row) => formatDateLocal(row.last_run_at),
+        csvValue: (row) => formatDateLocal(row.last_run_at),
       },
       {
         key: 'last_status',
         header: 'Last Run Status',
-        cell: (row) => {
-          const status = lastStatusStyles[row.last_status] ?? {
-            label: row.last_status,
-            pillClass:
-              'bg-slate-200/80 text-slate-800 ring-1 ring-slate-300 dark:bg-slate-700/60 dark:text-slate-200 dark:ring-slate-600',
-            tooltip: 'Try to re-run the test to verify status.',
-          };
-          return (
-            <span
-              className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${status.pillClass}`}
-            >
-              {status.label}
-            </span>
-          );
-        },
+        cell: (row) => (
+          <StatusPill
+            status={row.last_status}
+            tooltip={
+              regressionStatusTooltips[row.last_status] ??
+              'Try to re-run the test to verify status.'
+            }
+          />
+        ),
         csvValue: (row) => row.last_status,
       },
     ],
