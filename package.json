@@ -21,12 +21,12 @@
     "test automation"
   ],
   "scripts": {
-    "dev": "npm run build:reporter && npm run dev -w @arpanp/zen-ui",
+    "dev": "npm run build:core && npm run build:reporter -w @arpanp/zen-reporter && npm run dev -w @arpanp/zen-ui",
     "build:core": "npm run build -w @arpanp/zen-core",
     "build:ui": "npm run build -w @arpanp/zen-ui",
     "build:reporter": "npm run build -w @arpanp/zen-reporter",
     "build:server": "npm run build -w @arpanp/zen-server",
-    "build": "npm run build:core && npm run build:ui && npm run build:reporter && npm run build:server",
+    "build": "npm run build:core && npm run build:reporter -w @arpanp/zen-reporter && npm run build:ui && npm run build:reporter && npm run build:server",
     "preview": "npm run preview -w @arpanp/zen-ui",
     "test": "npx playwright test",
     "show": "npm run build:reporter && node packages/reporter/bin/zen-reporter.js show",

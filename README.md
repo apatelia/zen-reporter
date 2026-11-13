@@ -188,3 +188,9 @@ npx zr history migrate --clean       # Migrate legacy .jsonl runs into SQLite
 ```
 
 > 📖 **Full CLI Documentation**: For all subcommands, interactive menu workflows, SQL query examples (`zr history query`), and complete flag matrices, see the [CLI Reference Guide](docs/cli.md).
+
+---
+
+## Contributing
+
+Want to help build Zen Reporter? See [CONTRIBUTING.md](CONTRIBUTING.md) for monorepo setup, build order, and development workflows.

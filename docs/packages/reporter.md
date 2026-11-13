@@ -100,8 +100,11 @@ npm run build -w @arpanp/zen-reporter
 2. **`build:reporter`** — Vite-bundles the reporter entry (`dist/reporter.js`/`.cjs`)
    and emits type declarations via `tsc -p tsconfig.lib.json`.
 
-Build order from the monorepo root: `core → ui → reporter → server`
-(`npm run build`).
+Build order from the monorepo root: `core → reporter (bundle) → ui →
+reporter (template) → server` (`npm run build`). The reporter is bundled
+before the UI because the UI's `vite.config.ts` imports `@arpanp/zen-reporter`,
+which resolves through the reporter's `dist/`; the template copy then runs
+after the UI build.
 
 ---
 

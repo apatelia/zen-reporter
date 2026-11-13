@@ -51,7 +51,10 @@ flowchart TD
 > `zen-ui` is declared as a devDependency, and `build:template`
 > (`scripts/copy-template.mjs`) copies `index.html` + `favicon-*.svg` from the
 > resolved `zen-ui` package into the reporter's `dist/`. It is never imported
-> at runtime. Build order: `core → ui → reporter → server`
+> at runtime. Conversely, the UI's `vite.config.ts` imports
+> `@arpanp/zen-reporter` (resolved via its `dist/` when Vite bundles the
+> config file), so the reporter must be bundled before the UI builds.
+> Build order: `core → reporter (bundle) → ui → reporter (template) → server`
 > (root script: `npm run build`).
 
 ---
