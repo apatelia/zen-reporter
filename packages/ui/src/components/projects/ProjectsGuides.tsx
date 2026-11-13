@@ -39,7 +39,13 @@ export default function ProjectsGuides({
           <ul className="list-disc pl-4 space-y-1">
             <li>
               <strong className="text-success-600 dark:text-success-500">Passed:</strong> Tests that
-              executed and satisfied all assertion checks within timeout limits.
+              executed and satisfied all assertion checks within timeout limits (clean passes on the
+              first attempt).
+            </li>
+            <li>
+              <strong className="text-warning-600 dark:text-warning-500">Flaky:</strong> Tests that
+              initially failed but passed on an automatic retry, tracked separately from clean
+              passes.
             </li>
             <li>
               <strong className="text-danger-600 dark:text-danger-500">Failed:</strong> Hard
@@ -95,7 +101,7 @@ export default function ProjectsGuides({
           <ul className="list-disc list-inside space-y-1.5">
             <li>
               <strong className="text-sky-600 dark:text-sky-400">Executed Tests:</strong> Active
-              test cases that ran to completion (Passed, Failed, Timed Out, or Interrupted).
+              test cases that ran to completion (Passed, Flaky, Failed, Timed Out, or Interrupted).
             </li>
             <li>
               <strong className="text-slate-600 dark:text-slate-400">Skipped Tests:</strong> Test

@@ -115,8 +115,8 @@ src/components/
     │   ├── UniversalPreviewModal.tsx
     │   ├── AttemptTabSelector.tsx
     │   └── AttemptView.ts              # Attempt normalization & attachment helpers
-    ├── BaseModal.tsx, DataTable.tsx, DateFilterControl.tsx, DatePicker.tsx
-    ├── GuideModal.tsx, LearnMoreButton.tsx, ShortcutsModal.tsx, InfoTooltip.tsx
+    ├── BaseModal.tsx, DataTable.tsx, DateFilterControl.tsx, DatePicker.tsx, Kbd.tsx
+    ├── GuideModal.tsx, LearnMoreButton.tsx, ShortcutsModal.tsx, InfoTooltip.tsx, StatusPill.tsx
     ├── SearchInput.tsx, MultiSelectFilter.tsx, TagCloudModal.tsx
     ├── StatCard.tsx, PassRateBadge.tsx, StatusCountBadge.tsx, TestCaseCard.tsx
     ├── TestCaseDetail.tsx, RunSwitcherModal.tsx, Toast.tsx

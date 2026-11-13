@@ -37,7 +37,7 @@ function toProperCase(str: string): string {
 
 /**
  * Base modal component providing backdrop overlay, escape key trapping, smart input blurring,
- * and a bottom keyboard shortcuts bar.
+ * and a bottom keyboard shortcuts bar (shown only when the modal declares shortcuts beyond Esc).
  *
  * @param props - BaseModal configuration properties.
  * @param props.isOpen - Whether the modal dialog is currently visible.
@@ -49,7 +49,7 @@ function toProperCase(str: string): string {
  * @param props.maxWidthClass - Tailwind CSS max-width class constraint.
  * @param props.maxHeightClass - Tailwind CSS max-height class constraint.
  * @param props.children - Modal body content elements.
- * @param props.shortcuts - Optional array of keyboard shortcuts applicable within this modal.
+ * @param props.shortcuts - Optional array of keyboard shortcuts applicable within this modal; the footer shortcuts bar is rendered only when this array is non-empty.
  * @returns The rendered modal element, or null if isOpen is false.
  */
 export default function BaseModal({
@@ -166,8 +166,8 @@ export default function BaseModal({
           </div>
         )}
 
-        {/* Modal Keyboard Shortcuts Bar */}
-        {effectiveShortcuts.length > 0 && (
+        {/* Modal Keyboard Shortcuts Bar (hidden unless the modal declares shortcuts; Esc is always included when shown) */}
+        {shortcuts && shortcuts.length > 0 && (
           <div
             aria-label="Keyboard shortcuts"
             className="hidden sm:flex items-center gap-2.5 pt-3 mt-3 border-t border-border-default/60 text-[11px] text-text-muted shrink-0 select-none"

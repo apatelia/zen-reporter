@@ -35,8 +35,13 @@ export default function TrendsGuides({
             </h4>
             <p>
               The <strong>Pass Rate Trend</strong> chart tracks overall test pass percentage across
-              historical execution runs stored in Zen Reporter, providing a long-term pulse on test
-              suite stability and build quality.
+              the 15 most recent historical execution runs stored in Zen Reporter (a "Showing the 15
+              most recent runs" note appears when more exist), providing a pulse on test suite
+              stability and build quality.
+            </p>
+            <p>
+              The pass rate counts flaky tests — those that initially failed but passed on automatic
+              retry — as passing: (Passed + Flaky) / Total.
             </p>
           </div>
 
@@ -129,9 +134,9 @@ export default function TrendsGuides({
               Overview & Diagnostic Utility
             </h4>
             <p>
-              The <strong>Project Duration Trend</strong> chart plots execution run times across
-              historical test runs for each project, helping engineering teams spot performance
-              drift, suite bloat, and execution bottlenecks over time.
+              The <strong>Project Duration Trend</strong> chart plots execution run times (in
+              seconds) across the 15 most recent test runs for each project, helping engineering
+              teams spot performance drift, suite bloat, and execution bottlenecks over time.
             </p>
           </div>
 
@@ -210,6 +215,11 @@ export default function TrendsGuides({
                 from earlier failed attempts are shown under the test's failed attempts but are
                 excluded from these totals.
               </li>
+              <li>
+                The trend covers the 15 most recent runs, with the newest plotted as "Current Run";
+                the summary cards above the chart show the current run's per-category breakdown
+                (Waits above 15% is highlighted).
+              </li>
             </ul>
           </div>
           <div>
@@ -266,6 +276,10 @@ export default function TrendsGuides({
                 </p>
               </div>
             </div>
+            <p className="mt-2 text-[11px] text-text-body-mid dark:text-text-muted">
+              The legend below the chart is interactive: click a category to hide or show its bars
+              (at least one category must remain visible).
+            </p>
           </div>
 
           {/* Why & How This Trend Chart Is Useful */}
@@ -279,8 +293,8 @@ export default function TrendsGuides({
                   ⚡ Flakiness & Overhead
                 </span>
                 <p className="text-xs text-text-body-mid dark:text-text-muted leading-relaxed">
-                  Spikes in <strong>Explicit Waits</strong> steps highlight dynamic wait patching or
-                  flaky test practices.
+                  Spikes in <strong>Waits &amp; Sync</strong> steps highlight dynamic wait patching
+                  or flaky test practices.
                 </p>
               </div>
               <div className="rounded-md border border-border-default bg-surface-100/50 p-3 space-y-1 dark:bg-surface-200/20">

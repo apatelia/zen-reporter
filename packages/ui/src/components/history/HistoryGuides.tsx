@@ -45,8 +45,12 @@ export default function HistoryGuides({
               hash details on hover. Displays a dash (`—`) when git metadata was not recorded.
             </li>
             <li>
-              <strong>Mode:</strong> Indicates whether the run executed sequentially (Serial) or
-              concurrently across multiple worker processes (`--workers`).
+              <strong>Mode:</strong> Indicates whether the run executed sequentially (Serial) or in
+              parallel across multiple worker processes (--workers).
+            </li>
+            <li>
+              <strong>Start Time:</strong> Local timestamp of when the run started. Shows a
+              "Filtered" pill in its header when an active date range filter is applied.
             </li>
             <li>
               <strong>Duration:</strong> Total wall-clock execution time elapsed for the test run.
@@ -64,8 +68,17 @@ export default function HistoryGuides({
               <strong>Tests:</strong> Total number of individual test cases executed in the run.
             </li>
             <li>
-              <strong>Status Breakdown:</strong> Counts for Passed, Flaky, Failed, Skipped, Timed
-              Out, and Interrupted test outcomes.
+              <strong>Status Breakdown:</strong> Counts of Passed, Flaky, Failed, Skipped, Timed
+              Out, and Interrupted test results.
+            </li>
+            <li>
+              <strong>Pass Rate:</strong> Overall pass percentage of the run, counting Flaky passes
+              as passing ((Passed + Flaky) / Total). Rendered as a color-coded health badge
+              described in the "Pass Rate Health Categories &amp; Status Badges" section below.
+            </li>
+            <li>
+              <strong>Report:</strong> Action column that switches the dashboard to that run's full
+              report; the currently viewed run shows an eye marker instead of a button.
             </li>
           </ul>
         </div>

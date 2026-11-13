@@ -14,7 +14,7 @@ These shortcuts are globally accessible from any tab in the report when no modal
 
 | Shortcut                     | Action         | Description                                                                                                                                                         |
 | :--------------------------- | :------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| <kbd>1</kbd> – <kbd>8</kbd>  | Jump to Tab    | Instantly jump to any navigation tab by its index (`1`: Overview, `2`: Suites, `3`: Failures, `4`: Files, `5`: Projects, `6`: Trends, `7`: Insights, `8`: History). |
+| <kbd>1</kbd> – <kbd>8</kbd>  | Jump to Tab    | Instantly jump to any navigation tab by its index (`1`: Overview, `2`: Projects, `3`: Suites, `4`: Files, `5`: Failures, `6`: History, `7`: Insights, `8`: Trends). |
 | <kbd>[</kbd>                 | Previous Tab   | Switch to the previous tab in the sidebar navigation order.                                                                                                         |
 | <kbd>]</kbd>                 | Next Tab       | Switch to the next tab in the sidebar navigation order.                                                                                                             |
 | <kbd>\</kbd>                 | Toggle Sidebar | Toggle the sidebar between expanded (with labels) and collapsed (icons-only) states.                                                                                |

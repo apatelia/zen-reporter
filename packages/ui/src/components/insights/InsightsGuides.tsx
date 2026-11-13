@@ -32,8 +32,10 @@ export default function InsightsGuides({ activeModal, onClose }: InsightsGuidesP
         <p>
           The{' '}
           <strong className="text-text-ink dark:text-text-on-primary">Flaky Tests Analytics</strong>{' '}
-          table identifies non-deterministic tests that recorded BOTH passed and failed outcomes
-          across historical test runs (minimum 1 failure and 1 success).
+          table identifies non-deterministic tests across historical test runs: tests that failed
+          (or timed out) in one run and passed in another, or tests that failed on the first attempt
+          but passed on an automatic retry within a single run. Rows are sorted by failed-run count,
+          so the most unstable tests come first.
         </p>
 
         <div className="rounded-md border border-success-500/20 bg-success-500/5 p-3.5 space-y-1.5">
@@ -51,6 +53,43 @@ export default function InsightsGuides({ activeModal, onClose }: InsightsGuidesP
               <strong>Files, Projects & Overview Tabs (In-Run Retries):</strong> Measures
               Playwright&apos;s official in-run retry status (test cases that failed initial
               execution but passed upon automatic retry within the single run).
+            </li>
+          </ul>
+        </div>
+
+        <div className="rounded-md border border-border-default bg-surface-50 p-4 space-y-2">
+          <div className="font-bold text-text-ink dark:text-text-on-primary text-xs tracking-wider">
+            Table Columns:
+          </div>
+          <ul className="list-disc list-inside space-y-1">
+            <li>
+              <strong>Suite:</strong> The suite (folder path) that contains the test.
+            </li>
+            <li>
+              <strong>Test:</strong> The test title.
+            </li>
+            <li>
+              <strong>Project:</strong> The Playwright project the test ran under.
+            </li>
+            <li>
+              <strong>Last Flaky Date:</strong> Local timestamp of the most recent run in which the
+              test was flaky (failed, timed out, or passed after a retry). Shows a "Filtered" pill
+              in its header when a date range filter is active.
+            </li>
+            <li>
+              <strong>Failed Runs:</strong> How many historical runs the test ended as failed or
+              timed out (highlighted when greater than 0).
+            </li>
+            <li>
+              <strong>Passed Runs:</strong> How many historical runs the test passed (highlighted
+              when greater than 0).
+            </li>
+            <li>
+              <strong>Recovered by Retry:</strong> How many historical runs the test failed on the
+              first attempt but passed on an automatic retry (highlighted when greater than 0).
+            </li>
+            <li>
+              <strong>Total Runs:</strong> Total historical runs in which the test appeared.
             </li>
           </ul>
         </div>
@@ -326,9 +365,9 @@ export default function InsightsGuides({ activeModal, onClose }: InsightsGuidesP
           <strong className="text-text-ink dark:text-text-on-primary">
             how much slower is the slowest 5% of tests than a typical test, in this project?
           </strong>{' '}
-          The green base is the typical (average) duration; the yellow tail is how far the P95 (95th
-          percentile) extends beyond it. The white dot marks the typical duration, and the value
-          printed at the bar's end is the P95 with its tail multiplier (P95 / avg).
+          The base segment is the typical (average) duration, and the tail segment is the P95 (95th
+          percentile) extension beyond it. The dot marks the typical duration, and the value printed
+          at the bar's end is the P95 with its tail multiplier (P95 / avg).
         </p>
 
         <div className="rounded-md border border-border-default bg-surface-50 p-3 space-y-2">
@@ -339,15 +378,15 @@ export default function InsightsGuides({ activeModal, onClose }: InsightsGuidesP
           </div>
           <ul className="list-disc pl-4 space-y-1.5">
             <li>
-              <strong className="text-success-600 dark:text-success-500">
-                Short or absent yellow tail (dot near the bar's end):
+              <strong className="text-text-ink dark:text-text-on-primary">
+                Short or absent tail (dot near the end of the bar):
               </strong>{' '}
               timings are consistent — the slowest 5% of tests take about as long as a typical test.
               No slow outliers to chase.
             </li>
             <li>
-              <strong className="text-warning-600 dark:text-warning-500">
-                Long yellow tail (dot near the start):
+              <strong className="text-text-ink dark:text-text-on-primary">
+                Long tail (dot far from the end of the bar):
               </strong>{' '}
               heavy tail — the slowest 5% of tests take the printed multiple (Nx) of the typical
               time. Investigate that project's slowest tests or retries.
@@ -361,7 +400,10 @@ export default function InsightsGuides({ activeModal, onClose }: InsightsGuidesP
                 Logarithmic x-axis:
               </strong>{' '}
               each major step (1 ms → 10 ms → 100 ms → 1 s) spans the same visual distance, so a 25
-              ms tail and a 2.4 s tail stay readable side by side.
+              ms tail and a 2.4 s tail stay readable side by side. Because the axis is logarithmic,
+              a tail's visual length encodes the multiplier (P95 / avg), not an absolute amount of
+              time—read the value printed at the bar's end, or hover the bar for the exact P95, to
+              get the real duration.
             </li>
           </ul>
         </div>
@@ -428,11 +470,33 @@ export default function InsightsGuides({ activeModal, onClose }: InsightsGuidesP
         subtitle="Analyzing cross-project test instability and environmental flakiness"
       >
         <p>
-          A test case is classified as{' '}
-          <strong className="text-warning-600 dark:text-warning-500">Flaky</strong> when it is
-          non-deterministic and recorded BOTH passed and failed outcomes across test executions
-          (minimum 1 failure and 1 success).
+          This chart is scoped to the{' '}
+          <strong className="text-text-ink dark:text-text-on-primary">current run</strong>, unlike
+          the historical Flaky Tests Analytics table below it. A test is classified as{' '}
+          <strong className="text-warning-600 dark:text-warning-500">Flaky</strong> when it
+          initially failed but passed on an automatic retry within the same run.
         </p>
+
+        <div className="rounded-md border border-border-default bg-surface-50 p-3 space-y-2">
+          <div className="font-bold text-text-ink dark:text-text-on-primary text-xs tracking-wider">
+            Key Metrics:
+          </div>
+          <ul className="list-disc list-inside space-y-1">
+            <li>
+              <strong>Bar length (Flaky Tests):</strong> Number of test cases in the project that
+              failed initially but passed on a retry in the current run.
+            </li>
+            <li>
+              <strong>Flakiness Rate (%):</strong> Shown in the tooltip — the flaky test count
+              divided by the executed (non-skipped) tests, times 100. It is the share of the
+              project's tests that needed a retry to pass.
+            </li>
+            <li>
+              <strong>Executed Tests:</strong> Shown in the tooltip — the number of non-skipped test
+              cases in the project.
+            </li>
+          </ul>
+        </div>
 
         <div className="rounded-md border border-border-default bg-surface-50 p-3 space-y-2">
           <div className="font-bold text-text-ink dark:text-text-on-primary text-xs tracking-wider">
@@ -440,8 +504,11 @@ export default function InsightsGuides({ activeModal, onClose }: InsightsGuidesP
           </div>
           <ul className="list-disc list-inside space-y-1">
             <li>
-              <strong>Browser Specific Flakiness:</strong> Compare WebKit, Chromium, and Firefox to
-              isolate rendering engine timing bugs.
+              <strong>Project Comparisons:</strong> Compare projects to isolate environment-specific
+              flakiness — projects may target different browsers (Chromium, Firefox, WebKit,
+              Microsoft Edge, branded Chrome), different viewports or devices, or API-only and web +
+              API test mixes. A spike in one project&apos;s flaky count points at that environment
+              (rendering engine, network, or endpoint behavior).
             </li>
             <li>
               <strong>Viewport & Mobile Emulation:</strong> Identify if responsive layout tests

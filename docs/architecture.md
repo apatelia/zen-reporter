@@ -62,7 +62,7 @@ flowchart TD
 flowchart TD
     PW["Playwright Test Execution"] -->|lifecycle hooks| REP["zen-reporter<br/>(reporter.ts, history stores)"]
     REP -->|report.json + history + attachments| BUNDLE["Self-contained report bundle<br/>(index.html)"]
-    BUNDLE -->|embedded datasets| UI["zen-ui dashboard<br/>(Overview, Suites, Failures, History, Insights, Trends)"]
+    BUNDLE -->|embedded datasets| UI["zen-ui dashboard<br/>(Overview, Projects, Suites, Files, Failures, History, Insights, Trends)"]
     REP -->|remote mode| SRV["zen-server (Hono API)"]
     SRV --> PG[("PostgreSQL")]
     SRV --> OBJ[("S3 / GCS / Azure object storage")]
