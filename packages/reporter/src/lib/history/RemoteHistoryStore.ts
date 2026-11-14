@@ -401,7 +401,6 @@ export class RemoteHistoryStore implements HistoryStore {
         playwright_version: r.playwrightVersion ?? undefined,
         os_name: r.osName ?? undefined,
       })),
-
       flaky: [],
       regressions: [],
       slowest: [],

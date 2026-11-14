@@ -13,6 +13,19 @@ import type { Env } from '../types.js';
 export const runsRouter = new Hono<Env>();
 
 /**
+ * Treats null, undefined, empty strings, and empty arrays as absent JSON payload values.
+ *
+ * @param value - Raw JSON field received from the ingestion payload.
+ * @returns The original value, or null when it carries no content.
+ */
+function jsonIfPresent<T>(value: T | null | undefined): T | null {
+  if (value === null || value === undefined) return null;
+  if (typeof value === 'string' && value === '') return null;
+  if (Array.isArray(value) && (value as T[]).length === 0) return null;
+  return value;
+}
+
+/**
  * GET /api/v1/runs - Paginated list of runs for the tenant
  */
 runsRouter.get('/', async (c) => {
@@ -129,10 +142,29 @@ runsRouter.post('/', async (c) => {
         target: runs.id,
         set: {
           runName,
+          projectName: projectName || 'Default',
+          startedAt: new Date(startedAt),
+          endedAt: new Date(endedAt),
+          runDurationMs: Number(runDurationMs) || 0,
+          runSequentialDurationMs: runSequentialDurationMs ? Number(runSequentialDurationMs) : null,
           runTotal: Number(runTotal) || 0,
           runPassed: Number(runPassed) || 0,
           runFlaky: Number(runFlaky) || 0,
           runFailed: Number(runFailed) || 0,
+          runSkipped: Number(runSkipped) || 0,
+          runTimedOut: Number(runTimedOut) || 0,
+          runInterrupted: Number(runInterrupted) || 0,
+          runWorkers: runWorkers ? Number(runWorkers) : null,
+          runProjects: runProjects ? Number(runProjects) : null,
+          stepAssertions: Number(stepAssertions) || 0,
+          stepActions: Number(stepActions) || 0,
+          stepNetwork: Number(stepNetwork) || 0,
+          stepHooks: Number(stepHooks) || 0,
+          stepWaits: Number(stepWaits) || 0,
+          stepOthers: Number(stepOthers) || 0,
+          gitBranch,
+          gitCommit,
+          gitCommitFull,
           playwrightVersion: playwrightVersion || null,
           osName: osName || null,
         },
@@ -163,20 +195,20 @@ runsRouter.post('/', async (c) => {
         tags: tc.tags || [],
       });
 
-      if (
-        tc.errorStack ||
-        tc.stepsJson ||
-        tc.failedAttemptsJson ||
-        tc.stdoutJson ||
-        tc.stderrJson
-      ) {
+      const errorStack = jsonIfPresent(tc.errorStack);
+      const stepsJson = jsonIfPresent(tc.stepsJson);
+      const failedAttemptsJson = jsonIfPresent(tc.failedAttemptsJson);
+      const stdoutJson = jsonIfPresent(tc.stdoutJson);
+      const stderrJson = jsonIfPresent(tc.stderrJson);
+
+      if (errorStack || stepsJson || failedAttemptsJson || stdoutJson || stderrJson) {
         testDetailRows.push({
           testId,
-          errorStack: tc.errorStack || null,
-          stepsJson: tc.stepsJson || null,
-          failedAttemptsJson: tc.failedAttemptsJson || null,
-          stdoutJson: tc.stdoutJson || null,
-          stderrJson: tc.stderrJson || null,
+          errorStack,
+          stepsJson,
+          failedAttemptsJson,
+          stdoutJson,
+          stderrJson,
         });
       }
     }
