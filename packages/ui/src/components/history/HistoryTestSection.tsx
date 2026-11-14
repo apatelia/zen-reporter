@@ -1,5 +1,4 @@
 import { useMemo, useState } from 'react';
-import { PageSizeControl } from '@/components/pagination/PageSizeControl';
 import { PaginationFooter } from '@/components/pagination/PaginationFooter';
 import { usePagination } from '@/components/pagination/usePagination';
 import {
@@ -310,24 +309,14 @@ export function HistoryTestSection({
 
   return (
     <section className={sectionClass}>
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-3 border-b border-border-default">
-        <div>
-          <div className="flex items-center gap-3">
-            <h2 className={headingClass}>Test Case History</h2>
-            <LearnMoreButton onClick={onOpenGuide} />
-          </div>
-          <p className="mt-1 text-xs text-text-body-mid dark:text-text-muted">
-            Individual test execution breakdown across test runs
-          </p>
+      <div className="pb-3 border-b border-border-default">
+        <div className="flex items-center gap-3">
+          <h2 className={headingClass}>Test Case History</h2>
+          <LearnMoreButton onClick={onOpenGuide} />
         </div>
-        {hasRawTests && aggregatedTests.length > 0 && (
-          <PageSizeControl
-            id="tests-history-page-size"
-            pageSize={testsPag.pageSize}
-            onPageSizeChange={testsPag.changePageSize}
-            totalItems={aggregatedTests.length}
-          />
-        )}
+        <p className="mt-1 text-xs text-text-body-mid dark:text-text-muted">
+          Individual test execution breakdown across test runs
+        </p>
       </div>
 
       {hasRawTests && (
@@ -400,6 +389,9 @@ export function HistoryTestSection({
         currentPage={testsPag.currentPage}
         totalPages={testsPag.totalPages}
         onPageChange={testsPag.setPage}
+        pageSize={testsPag.pageSize}
+        onPageSizeChange={testsPag.changePageSize}
+        pageSizeId="tests-history-page-size"
       />
     </section>
   );

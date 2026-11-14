@@ -1,4 +1,3 @@
-import { PageSizeControl } from '@/components/pagination/PageSizeControl';
 import { PaginationFooter } from '@/components/pagination/PaginationFooter';
 import { usePagination } from '@/components/pagination/usePagination';
 import type { ColumnDef } from '@/components/shared/DataTable';
@@ -191,24 +190,14 @@ export default function FlakyTestsTableSection({
 
   return (
     <section className={sectionClass}>
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-3 border-b border-border-default">
-        <div>
-          <div className="flex items-center gap-2">
-            <h2 className={headingClass}>Flaky tests</h2>
-            <LearnMoreButton onClick={onOpenGuide} />
-          </div>
-          <p className="mt-1 text-xs font-medium text-text-body-mid dark:text-text-muted">
-            Tests that failed in some runs and passed in others (minimum 1 failure and 1 success)
-          </p>
+      <div className="pb-3 border-b border-border-default">
+        <div className="flex items-center gap-2">
+          <h2 className={headingClass}>Flaky tests</h2>
+          <LearnMoreButton onClick={onOpenGuide} />
         </div>
-        {flaky.length > 0 && filteredFlaky.length > 0 && (
-          <PageSizeControl
-            id="flaky-page-size"
-            pageSize={flakyPag.pageSize}
-            onPageSizeChange={flakyPag.changePageSize}
-            totalItems={filteredFlaky.length}
-          />
-        )}
+        <p className="mt-1 text-xs font-medium text-text-body-mid dark:text-text-muted">
+          Tests that failed in some runs and passed in others (minimum 1 failure and 1 success)
+        </p>
       </div>
 
       {flaky.length > 0 && (
@@ -281,6 +270,9 @@ export default function FlakyTestsTableSection({
             currentPage={flakyPag.currentPage}
             totalPages={flakyPag.totalPages}
             onPageChange={flakyPag.setPage}
+            pageSize={flakyPag.pageSize}
+            onPageSizeChange={flakyPag.changePageSize}
+            pageSizeId="flaky-page-size"
           />
         </>
       )}

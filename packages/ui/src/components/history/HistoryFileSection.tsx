@@ -1,5 +1,4 @@
 import { useMemo, useState } from 'react';
-import { PageSizeControl } from '@/components/pagination/PageSizeControl';
 import { PaginationFooter } from '@/components/pagination/PaginationFooter';
 import { usePagination } from '@/components/pagination/usePagination';
 import {
@@ -221,24 +220,14 @@ export function HistoryFileSection({
 
   return (
     <section className={sectionClass}>
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-3 border-b border-border-default">
-        <div>
-          <div className="flex items-center gap-3">
-            <h2 className={headingClass}>File Execution History</h2>
-            <LearnMoreButton onClick={onOpenGuide} />
-          </div>
-          <p className="mt-1 text-xs text-text-body-mid dark:text-text-muted">
-            Spec files test execution breakdown across test runs
-          </p>
+      <div className="pb-3 border-b border-border-default">
+        <div className="flex items-center gap-3">
+          <h2 className={headingClass}>File Execution History</h2>
+          <LearnMoreButton onClick={onOpenGuide} />
         </div>
-        {rawFiles.length > 0 && aggregatedFiles.length > 0 && (
-          <PageSizeControl
-            id="files-history-page-size"
-            pageSize={filesPag.pageSize}
-            onPageSizeChange={filesPag.changePageSize}
-            totalItems={aggregatedFiles.length}
-          />
-        )}
+        <p className="mt-1 text-xs text-text-body-mid dark:text-text-muted">
+          Spec files test execution breakdown across test runs
+        </p>
       </div>
 
       {rawFiles.length > 0 && (
@@ -311,6 +300,9 @@ export function HistoryFileSection({
         currentPage={filesPag.currentPage}
         totalPages={filesPag.totalPages}
         onPageChange={filesPag.setPage}
+        pageSize={filesPag.pageSize}
+        onPageSizeChange={filesPag.changePageSize}
+        pageSizeId="files-history-page-size"
       />
     </section>
   );

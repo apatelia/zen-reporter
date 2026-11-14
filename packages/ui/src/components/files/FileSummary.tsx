@@ -3,7 +3,6 @@ import { truncateFileName, calculatePassRate } from '@arpanp/zen-core';
 import { collectAllCases, computeFileStats, type FileStats } from '@arpanp/zen-core';
 import type { TestSuite } from '@arpanp/zen-core';
 import { usePagination } from '@/components/pagination/usePagination';
-import { PageSizeControl } from '@/components/pagination/PageSizeControl';
 import { PaginationFooter } from '@/components/pagination/PaginationFooter';
 import {
   DataTable,
@@ -120,23 +119,13 @@ export default function FileSummary({ suites, title, testRunName }: FileSummaryP
 
   return (
     <div className="overflow-hidden rounded-md bg-surface-50 border border-border-default shadow-xs p-4">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-3 border-b border-border-default">
-        <div>
-          {title && (
-            <h3 className="text-lg font-bold text-text-ink dark:text-text-on-primary">{title}</h3>
-          )}
-          <p className="mt-1 text-xs text-text-body-mid dark:text-text-muted">
-            Test results and execution breakdown per test file
-          </p>
-        </div>
-        {fileStats.length > 0 && filteredFiles.length > 0 && (
-          <PageSizeControl
-            id="files-page-size"
-            pageSize={pagination.pageSize}
-            onPageSizeChange={pagination.changePageSize}
-            totalItems={filteredFiles.length}
-          />
+      <div className="pb-3 border-b border-border-default">
+        {title && (
+          <h3 className="text-lg font-bold text-text-ink dark:text-text-on-primary">{title}</h3>
         )}
+        <p className="mt-1 text-xs text-text-body-mid dark:text-text-muted">
+          Test results and execution breakdown per test file
+        </p>
       </div>
 
       {fileStats.length > 0 && (
@@ -226,7 +215,10 @@ export default function FileSummary({ suites, title, testRunName }: FileSummaryP
         currentPage={pagination.currentPage}
         totalPages={pagination.totalPages}
         onPageChange={pagination.setPage}
-        className="mt-4 flex items-center justify-between text-xs font-medium text-text-ink dark:text-text-on-primary"
+        pageSize={pagination.pageSize}
+        onPageSizeChange={pagination.changePageSize}
+        pageSizeId="files-page-size"
+        className="mt-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs font-medium text-text-ink dark:text-text-on-primary"
       />
     </div>
   );

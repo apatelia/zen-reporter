@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { PageSizeControl } from './PageSizeControl';
 
 export interface PageChangeEventDetail {
   page: number;
@@ -21,11 +22,15 @@ export interface PaginationFooterProps {
   totalPages: number;
   onPageChange: (page: number) => void;
   className?: string;
+  pageSize?: number;
+  onPageSizeChange?: (size: number) => void;
+  pageSizeOptions?: number[];
+  pageSizeId?: string;
 }
 
 /**
- * Pagination footer component providing item range counts, page navigation buttons,
- * and an editable page number input with strict bounds validation.
+ * Pagination footer component providing item range counts, optional rows-per-page selection,
+ * page navigation buttons, and an editable page number input with strict bounds validation.
  *
  * @param props - Pagination footer properties.
  * @param props.label - Plural label for item type being paginated (e.g. "files", "tests").
@@ -36,6 +41,10 @@ export interface PaginationFooterProps {
  * @param props.totalPages - Total calculated pages available.
  * @param props.onPageChange - Callback invoked when active page changes.
  * @param props.className - Optional container style override.
+ * @param props.pageSize - Optional active page size for the rows per page control.
+ * @param props.onPageSizeChange - Optional callback invoked when the page size changes.
+ * @param props.pageSizeOptions - Optional array of page size choices.
+ * @param props.pageSizeId - Optional HTML id for the page size select input.
  * @returns Rendered pagination footer layout or null if total items is 0.
  */
 export function PaginationFooter({
@@ -46,8 +55,13 @@ export function PaginationFooter({
   currentPage,
   totalPages,
   onPageChange,
-  className = 'mt-4 flex items-center justify-between text-xs font-medium text-text-body-mid dark:text-text-muted',
+  className = 'mt-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs font-medium text-text-body-mid dark:text-text-muted',
+  pageSize,
+  onPageSizeChange,
+  pageSizeOptions,
+  pageSizeId,
 }: PaginationFooterProps) {
+  const footerRef = useRef<HTMLDivElement>(null);
   const [prevPage, setPrevPage] = useState(currentPage);
   const [inputVal, setInputVal] = useState(() => String(currentPage));
   const [showPill, setShowPill] = useState(false);
@@ -67,6 +81,32 @@ export function PaginationFooter({
   }
 
   if (total === 0) return null;
+
+  const handlePageSizeChange = (newSize: number) => {
+    if (!onPageSizeChange) return;
+
+    // Anchor scroll to top of table section if the top is above current viewport
+    const container = footerRef.current?.closest('section') || footerRef.current?.parentElement;
+    if (container) {
+      const topPadding = 16;
+      const rect = container.getBoundingClientRect();
+      const scrollParent = footerRef.current?.closest('.overflow-auto') as HTMLElement | null;
+
+      if (scrollParent) {
+        const parentRect = scrollParent.getBoundingClientRect();
+        if (rect.top < parentRect.top) {
+          const delta = rect.top - parentRect.top - topPadding;
+          scrollParent.scrollBy({ top: delta, behavior: 'smooth' });
+        }
+      } else {
+        if (rect.top < topPadding) {
+          container.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      }
+    }
+
+    onPageSizeChange(newSize);
+  };
 
   const commitPageChange = (valStr: string) => {
     const parsed = parseInt(valStr, 10);
@@ -121,6 +161,7 @@ export function PaginationFooter({
 
   return (
     <div
+      ref={footerRef}
       className={`relative ${className}`}
       data-pagination-footer="true"
       data-current-page={currentPage}
@@ -144,15 +185,34 @@ export function PaginationFooter({
         </div>
       )}
 
-      <span>
-        Showing{' '}
-        <strong className="font-semibold text-text-ink dark:text-text-on-primary">
-          {start + 1}–{start + pageLength}
-        </strong>{' '}
-        of{' '}
-        <strong className="font-semibold text-text-ink dark:text-text-on-primary">{total}</strong>{' '}
-        {label}
-      </span>
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
+        <span>
+          Showing{' '}
+          <strong className="font-semibold text-text-ink dark:text-text-on-primary">
+            {start + 1}–{start + pageLength}
+          </strong>{' '}
+          of{' '}
+          <strong className="font-semibold text-text-ink dark:text-text-on-primary">{total}</strong>{' '}
+          {label}
+        </span>
+        {pageSize !== undefined && onPageSizeChange && (
+          <>
+            <span
+              className="hidden sm:inline-block text-border-default dark:text-border-chart select-none"
+              aria-hidden="true"
+            >
+              •
+            </span>
+            <PageSizeControl
+              id={pageSizeId || `page-size-${label.replace(/\s+/g, '-')}`}
+              pageSize={pageSize}
+              onPageSizeChange={handlePageSizeChange}
+              options={pageSizeOptions}
+              totalItems={total}
+            />
+          </>
+        )}
+      </div>
       <div className="flex items-center gap-3">
         <button
           type="button"

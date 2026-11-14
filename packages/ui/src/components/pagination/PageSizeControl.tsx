@@ -1,6 +1,6 @@
 import { PAGE_SIZE_OPTIONS } from './usePagination';
 
-interface PageSizeControlProps {
+export interface PageSizeControlProps {
   id: string;
   pageSize: number;
   onPageSizeChange: (size: number) => void;
@@ -8,6 +8,17 @@ interface PageSizeControlProps {
   totalItems?: number;
 }
 
+/**
+ * Dropdown control for selecting the number of rows displayed per page.
+ *
+ * @param props - Component properties for the page size control.
+ * @param props.id - HTML id attribute for the select element and its label.
+ * @param props.pageSize - Currently active page size.
+ * @param props.onPageSizeChange - Callback invoked when a new page size is selected.
+ * @param props.options - Optional array of page size choices (defaults to standard options).
+ * @param props.totalItems - Optional total items count to filter out redundant large sizes.
+ * @returns Rendered page size selector label and dropdown.
+ */
 export function PageSizeControl({
   id,
   pageSize,

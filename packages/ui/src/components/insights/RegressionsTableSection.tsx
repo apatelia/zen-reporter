@@ -1,4 +1,3 @@
-import { PageSizeControl } from '@/components/pagination/PageSizeControl';
 import { PaginationFooter } from '@/components/pagination/PaginationFooter';
 import { usePagination } from '@/components/pagination/usePagination';
 import type { ColumnDef } from '@/components/shared/DataTable';
@@ -154,24 +153,14 @@ export default function RegressionsTableSection({
 
   return (
     <section className={sectionClass}>
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-3 border-b border-border-default">
-        <div>
-          <div className="flex items-center gap-2">
-            <h2 className={headingClass}>Regressions</h2>
-            <LearnMoreButton onClick={onOpenGuide} />
-          </div>
-          <p className="mt-1 text-xs font-medium text-text-body-mid dark:text-text-muted">
-            Tests that previously passed in a prior run but failed during a subsequent run
-          </p>
+      <div className="pb-3 border-b border-border-default">
+        <div className="flex items-center gap-2">
+          <h2 className={headingClass}>Regressions</h2>
+          <LearnMoreButton onClick={onOpenGuide} />
         </div>
-        {regressions.length > 0 && filteredRegressions.length > 0 && (
-          <PageSizeControl
-            id="regressions-page-size"
-            pageSize={regressionsPag.pageSize}
-            onPageSizeChange={regressionsPag.changePageSize}
-            totalItems={filteredRegressions.length}
-          />
-        )}
+        <p className="mt-1 text-xs font-medium text-text-body-mid dark:text-text-muted">
+          Tests that previously passed in a prior run but failed during a subsequent run
+        </p>
       </div>
 
       {regressions.length > 0 && (
@@ -244,6 +233,9 @@ export default function RegressionsTableSection({
             currentPage={regressionsPag.currentPage}
             totalPages={regressionsPag.totalPages}
             onPageChange={regressionsPag.setPage}
+            pageSize={regressionsPag.pageSize}
+            onPageSizeChange={regressionsPag.changePageSize}
+            pageSizeId="regressions-page-size"
           />
         </>
       )}
