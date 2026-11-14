@@ -3,6 +3,57 @@ import * as readline from 'readline';
 export type ProgressMode = 'line' | 'dot' | 'none';
 
 /**
+ * Returns the terminal display width of a single Unicode code point.
+ *
+ * @param cp - Unicode code point to measure.
+ * @returns 0 for zero-width marks, 1 for ASCII, 2 for wide symbols and emoji.
+ */
+function charDisplayWidth(cp: number): number {
+  if ((cp >= 0xfe00 && cp <= 0xfe0f) || (cp >= 0x0300 && cp <= 0x036f)) {
+    return 0;
+  }
+  return cp < 0x80 ? 1 : 2;
+}
+
+/**
+ * Computes the terminal display width of a string, counting wide symbols and
+ * emoji as two columns and zero-width marks as none.
+ *
+ * @param s - String to measure.
+ * @returns Display width in terminal columns.
+ */
+function displayWidth(s: string): number {
+  let width = 0;
+  for (const ch of s) {
+    width += charDisplayWidth(ch.codePointAt(0) ?? 0);
+  }
+  return width;
+}
+
+/**
+ * Truncates a string so its display width fits within a column budget,
+ * reserving three columns for an appended ellipsis.
+ *
+ * @param s - String to truncate.
+ * @param maxDisplay - Maximum allowed display width in terminal columns.
+ * @returns The truncated string with ellipsis, or the original string if it fits.
+ */
+function truncateToDisplayWidth(s: string, maxDisplay: number): string {
+  if (displayWidth(s) <= maxDisplay) return s;
+
+  const keep = Math.max(10, maxDisplay - 3);
+  let cut = '';
+  let width = 0;
+  for (const ch of s) {
+    const cw = charDisplayWidth(ch.codePointAt(0) ?? 0);
+    if (width + cw > keep) break;
+    cut += ch;
+    width += cw;
+  }
+  return cut + '...';
+}
+
+/**
  * Encapsulates TTY console progress rendering ('line' mode for interactive terminals,
  * 'dot' mode for CI/non-TTY environments, or 'none').
  */
@@ -135,9 +186,7 @@ export class ProgressPrinter {
     }
 
     const cols = process.stdout.columns || 100;
-    if (line.length > cols - 1) {
-      line = line.slice(0, Math.max(10, cols - 4)) + '...';
-    }
+    line = truncateToDisplayWidth(line, cols - 1);
 
     readline.clearLine(process.stdout, 0);
     readline.cursorTo(process.stdout, 0);
