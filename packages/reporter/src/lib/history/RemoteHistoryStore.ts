@@ -27,6 +27,8 @@ interface RemoteRunDto {
   gitBranch: string | null;
   gitCommit: string | null;
   gitCommitFull: string | null;
+  playwrightVersion?: string | null;
+  osName?: string | null;
 }
 
 interface RemoteTestCaseDto {
@@ -304,6 +306,8 @@ export class RemoteHistoryStore implements HistoryStore {
       gitBranch: gitBranch || null,
       gitCommit: gitCommitInfo?.short || null,
       gitCommitFull: gitCommitInfo?.full || null,
+      playwrightVersion: options.summary.playwrightVersion ?? null,
+      osName: options.summary.osName ?? null,
       testCases: options.testCases.map((tc) => {
         const suite = (tc.describePath?.length ? tc.describePath.join(' > ') : tc.parent) || '';
         const attempts = tc.attempts ?? 1;
@@ -331,6 +335,8 @@ export class RemoteHistoryStore implements HistoryStore {
           errorFile,
           tags: tc.tags || [],
           stepsJson: tc.steps || [],
+          failedAttemptsJson:
+            tc.failedAttempts && tc.failedAttempts.length > 0 ? tc.failedAttempts : null,
           stdoutJson: tc.stdout || [],
           stderrJson: tc.stderr || [],
         };
@@ -381,7 +387,6 @@ export class RemoteHistoryStore implements HistoryStore {
         run_total: r.runTotal,
         run_passed: r.runPassed,
         run_flaky: r.runFlaky ?? 0,
-        runFailed: r.runFailed,
         run_failed: r.runFailed,
         run_skipped: r.runSkipped,
         run_timed_out: r.runTimedOut,
@@ -393,7 +398,10 @@ export class RemoteHistoryStore implements HistoryStore {
         git_branch: r.gitBranch ?? undefined,
         git_commit: r.gitCommit ?? undefined,
         git_commit_full: r.gitCommitFull ?? undefined,
+        playwright_version: r.playwrightVersion ?? undefined,
+        os_name: r.osName ?? undefined,
       })),
+
       flaky: [],
       regressions: [],
       slowest: [],

@@ -77,6 +77,8 @@ runsRouter.post('/', async (c) => {
     gitBranch,
     gitCommit,
     gitCommitFull,
+    playwrightVersion,
+    osName,
     testCases: incomingTestCases = [],
     attachments: incomingAttachments = [],
   } = body;
@@ -120,6 +122,8 @@ runsRouter.post('/', async (c) => {
         gitBranch,
         gitCommit,
         gitCommitFull,
+        playwrightVersion: playwrightVersion || null,
+        osName: osName || null,
       })
       .onConflictDoUpdate({
         target: runs.id,
@@ -129,6 +133,8 @@ runsRouter.post('/', async (c) => {
           runPassed: Number(runPassed) || 0,
           runFlaky: Number(runFlaky) || 0,
           runFailed: Number(runFailed) || 0,
+          playwrightVersion: playwrightVersion || null,
+          osName: osName || null,
         },
       });
 
@@ -157,11 +163,18 @@ runsRouter.post('/', async (c) => {
         tags: tc.tags || [],
       });
 
-      if (tc.errorStack || tc.stepsJson || tc.stdoutJson || tc.stderrJson) {
+      if (
+        tc.errorStack ||
+        tc.stepsJson ||
+        tc.failedAttemptsJson ||
+        tc.stdoutJson ||
+        tc.stderrJson
+      ) {
         testDetailRows.push({
           testId,
           errorStack: tc.errorStack || null,
           stepsJson: tc.stepsJson || null,
+          failedAttemptsJson: tc.failedAttemptsJson || null,
           stdoutJson: tc.stdoutJson || null,
           stderrJson: tc.stderrJson || null,
         });
@@ -212,6 +225,7 @@ runsRouter.post('/', async (c) => {
           testFile: att.file || '',
           testTitle: att.title || '',
           testStatus: att.status || null,
+          project: att.project || null,
           name: att.name,
           contentType: att.contentType || null,
           s3Key: key,
