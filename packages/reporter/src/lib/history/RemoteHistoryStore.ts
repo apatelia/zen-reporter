@@ -5,7 +5,15 @@ import { getGitBranch, getGitCommit } from '../gitUtils.js';
 import { buildSuitesFromCases } from '@arpanp/zen-core';
 import type { HistoryStore } from './HistoryStore.js';
 import type { WriteRunHistoryOptions } from '../runHistoryWriter.js';
-import type { HistoryData, ReportData, RemoteHistoryConfig } from '@arpanp/zen-core';
+import type {
+  Attachment,
+  FailedAttempt,
+  HistoryData,
+  ReportData,
+  RemoteHistoryConfig,
+  TestCase,
+  TestStep,
+} from '@arpanp/zen-core';
 
 interface RemoteRunDto {
   id: string;
@@ -32,7 +40,7 @@ interface RemoteRunDto {
 }
 
 interface RemoteTestCaseDto {
-  id?: string;
+  id: string;
   file: string;
   suite?: string | null;
   title: string;
@@ -47,6 +55,46 @@ interface RemoteTestCaseDto {
   errorFile?: string | null;
   tags?: string[];
 }
+
+/** Attachment row as returned by the server's per-test detail endpoint. */
+interface RemoteAttachmentDto {
+  name: string;
+  contentType?: string | null;
+  s3Url?: string | null;
+  bodyText?: string | null;
+  sizeBytes?: number | null;
+  url?: string | null;
+}
+
+/** Heavy detail blob as returned by the server's per-test detail endpoint. */
+interface RemoteTestDetailDto {
+  details?: {
+    errorStack?: string | null;
+    stepsJson?: unknown | null;
+    failedAttemptsJson?: unknown | null;
+    stdoutJson?: unknown | null;
+    stderrJson?: unknown | null;
+  } | null;
+  attachments?: RemoteAttachmentDto[];
+}
+
+/**
+ * Casts an unknown JSON value to a TestStep list.
+ *
+ * @param value - Raw JSON array from the detail endpoint.
+ * @returns The parsed list, or undefined when absent or empty.
+ */
+const toStepList = (value: unknown): TestStep[] | undefined =>
+  Array.isArray(value) && value.length > 0 ? (value as TestStep[]) : undefined;
+
+/**
+ * Casts an unknown JSON value to a string list.
+ *
+ * @param value - Raw JSON array from the detail endpoint.
+ * @returns The parsed list, or undefined when absent or empty.
+ */
+const toStrList = (value: unknown): string[] | undefined =>
+  Array.isArray(value) && value.length > 0 ? (value as string[]) : undefined;
 
 export interface RemoteHistoryStoreOptions extends RemoteHistoryConfig {
   outputDir?: string;
@@ -72,6 +120,46 @@ export class RemoteHistoryStore implements HistoryStore {
     this.runId = options.runId || process.env.ZEN_REPORTER_RUN_ID || process.env.GITHUB_RUN_ID;
     this.timeoutMs = options.timeoutMs ?? 10000;
     this.outputDir = options.outputDir ?? 'zen-report';
+  }
+
+  /**
+   * Fetches a JSON resource authenticated with the store's API key.
+   *
+   * @param url - Absolute URL of the resource to fetch.
+   * @returns Parsed JSON body, or null when the request fails or returns a non-OK status.
+   */
+  private async fetchJson<T>(url: string): Promise<T | null> {
+    try {
+      const res = await fetch(url, { headers: this.getHeaders() });
+      if (!res.ok) {
+        return null;
+      }
+      return (await res.json()) as T;
+    } catch {
+      return null;
+    }
+  }
+
+  /**
+   * Fetches multiple JSON resources with bounded concurrency (5 at a time), preserving input order.
+   *
+   * @param urls - List of absolute URLs to fetch.
+   * @returns Parsed JSON bodies in the same order as urls (null for failed requests).
+   */
+  private async fetchJsonBatch<T>(urls: string[]): Promise<(T | null)[]> {
+    const results: (T | null)[] = new Array(urls.length).fill(null);
+    if (urls.length === 0) {
+      return results;
+    }
+    const CONCURRENCY = 5;
+    for (let i = 0; i < urls.length; i += CONCURRENCY) {
+      const chunk = urls.slice(i, i + CONCURRENCY);
+      const chunkResults = await Promise.all(chunk.map((url) => this.fetchJson<T>(url)));
+      for (let j = 0; j < chunkResults.length; j++) {
+        results[i + j] = chunkResults[j];
+      }
+    }
+    return results;
   }
 
   private getHeaders(): Record<string, string> {
@@ -410,7 +498,8 @@ export class RemoteHistoryStore implements HistoryStore {
   }
 
   /**
-   * Reconstructs report data for a specific remote test run.
+   * Reconstructs report data for a specific remote test run, including per-test
+   * steps, console output, retry details, and attachments.
    *
    * @param runId - Unique identifier of the test run.
    * @returns ReportData structure for UI hydration, or null if run is not found.
@@ -435,31 +524,67 @@ export class RemoteHistoryStore implements HistoryStore {
     const run = json.run;
     const rawCases = json.testCases || [];
 
-    const testCases = rawCases.map((tc: RemoteTestCaseDto) => ({
-      fileName: tc.file,
-      parent: tc.suite || '',
-      title: tc.title,
-      project: tc.project || '',
-      status: tc.status,
-      duration: tc.durationMs,
-      attempts: tc.attempts,
-      failedAttempts: [],
-      errors: tc.errorMessage
-        ? [
-            {
-              name: 'Error',
-              message: tc.errorMessage,
-              stack: '',
-              location: tc.errorLine
-                ? { file: tc.errorFile || '', line: tc.errorLine, column: 0 }
-                : null,
-              snippet: '',
-              cause: null,
-            },
-          ]
-        : [],
-      tags: tc.tags || [],
-    }));
+    // Lazy-load per-test details (steps, logs, retries, attachments) with bounded concurrency
+    const detailUrls = rawCases.map(
+      (tc) =>
+        `${this.serverUrl}/api/v1/runs/${encodeURIComponent(runId)}/tests/${encodeURIComponent(
+          tc.id
+        )}`
+    );
+    const details = await this.fetchJsonBatch<RemoteTestDetailDto>(detailUrls);
+
+    const testCases: TestCase[] = rawCases.map((tc, i) => {
+      const blob = details[i]?.details;
+      const steps = toStepList(blob?.stepsJson);
+      const rawFailedAttempts = blob?.failedAttemptsJson;
+      const failedAttempts =
+        Array.isArray(rawFailedAttempts) && rawFailedAttempts.length > 0
+          ? (rawFailedAttempts as FailedAttempt[])
+          : undefined;
+      const stdout = toStrList(blob?.stdoutJson);
+      const stderr = toStrList(blob?.stderrJson);
+
+      const attachments: Attachment[] | undefined = details[i]?.attachments?.length
+        ? details[i]!.attachments.map((a) => ({
+            name: a.name,
+            contentType: a.contentType || 'application/octet-stream',
+            path: a.url || a.s3Url || null,
+            body: a.bodyText ?? null,
+          }))
+        : undefined;
+
+      return {
+        title: tc.title,
+        parent: tc.suite || '',
+        project: tc.project || '',
+        fileName: tc.file,
+        status: tc.status,
+        duration: tc.durationMs,
+        steps,
+        errors: tc.errorMessage
+          ? [
+              {
+                name: 'Error',
+                message: tc.errorMessage,
+                stack: blob?.errorStack || '',
+                location: tc.errorLine
+                  ? { file: tc.errorFile || '', line: tc.errorLine, column: 0 }
+                  : null,
+                snippet: '',
+                cause: null,
+              },
+            ]
+          : undefined,
+        stdout,
+        stderr,
+        annotations: [],
+        attachments,
+        tags: tc.tags || [],
+        describePath: tc.suite ? tc.suite.split(' > ') : [],
+        attempts: tc.attempts,
+        failedAttempts,
+      };
+    });
 
     return {
       testRun: {
@@ -479,6 +604,11 @@ export class RemoteHistoryStore implements HistoryStore {
           endTime: run.endedAt,
           workers: run.runWorkers || 1,
           numberOfProjects: run.runProjects || 1,
+          gitBranch: run.gitBranch || undefined,
+          gitCommit: run.gitCommit || undefined,
+          gitCommitFull: run.gitCommitFull || undefined,
+          playwrightVersion: run.playwrightVersion ?? undefined,
+          osName: run.osName ?? undefined,
         },
         suites: buildSuitesFromCases(testCases),
         theme: 'Sage',

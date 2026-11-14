@@ -25,26 +25,49 @@ interface MockRunDto {
   gitBranch: string | null;
   gitCommit: string | null;
   gitCommitFull: string | null;
+  playwrightVersion?: string | null;
+  osName?: string | null;
+}
+
+interface MockTestCaseDto {
+  id?: string;
+  file: string;
+  suite?: string | null;
+  title: string;
+  project?: string | null;
+  status: 'passed' | 'failed' | 'skipped' | 'timedOut' | 'interrupted';
+  durationMs: number;
+  attempts: number;
+  failedAttempts: number;
+  passedOnRetry: number;
+  errorMessage?: string | null;
+  errorLine?: number | null;
+  errorFile?: string | null;
+  tags?: string[];
+  errorStack?: string | null;
+  stepsJson?: unknown;
+  failedAttemptsJson?: unknown;
+  stdoutJson?: unknown;
+  stderrJson?: unknown;
+  details?: {
+    errorStack?: string | null;
+    stepsJson?: unknown | null;
+    failedAttemptsJson?: unknown | null;
+    stdoutJson?: unknown | null;
+    stderrJson?: unknown | null;
+  } | null;
+  attachments?: Array<{
+    name: string;
+    contentType?: string | null;
+    s3Url?: string | null;
+    bodyText?: string | null;
+    url?: string | null;
+  }>;
 }
 
 interface MockReportPayload {
   run: MockRunDto;
-  testCases: Array<{
-    id?: string;
-    file: string;
-    suite?: string | null;
-    title: string;
-    project?: string | null;
-    status: 'passed' | 'failed' | 'skipped' | 'timedOut' | 'interrupted';
-    durationMs: number;
-    attempts: number;
-    failedAttempts: number;
-    passedOnRetry: number;
-    errorMessage?: string | null;
-    errorLine?: number | null;
-    errorFile?: string | null;
-    tags?: string[];
-  }>;
+  testCases: MockTestCaseDto[];
 }
 
 test.describe('RemoteHistoryStore Client', () => {
@@ -113,45 +136,56 @@ test.describe('RemoteHistoryStore Client', () => {
               gitBranch: payload.gitBranch ?? null,
               gitCommit: payload.gitCommit ?? null,
               gitCommitFull: payload.gitCommitFull ?? null,
+              playwrightVersion: payload.playwrightVersion ?? null,
+              osName: payload.osName ?? null,
             };
 
             inMemoryRuns.push(runDto);
 
             inMemoryReports[payload.runId] = {
               run: runDto,
-              testCases: (payload.testCases || []).map(
-                (tc: {
-                  id?: string;
-                  file: string;
-                  suite?: string | null;
-                  title: string;
-                  project?: string | null;
-                  status: 'passed' | 'failed' | 'skipped' | 'timedOut' | 'interrupted';
-                  durationMs: number;
-                  attempts: number;
-                  failedAttempts: number;
-                  passedOnRetry: number;
-                  errorMessage?: string | null;
-                  errorLine?: number | null;
-                  errorFile?: string | null;
-                  tags?: string[];
-                }) => ({
-                  id: tc.id,
-                  file: tc.file,
-                  suite: tc.suite,
-                  title: tc.title,
-                  project: tc.project,
-                  status: tc.status,
-                  durationMs: tc.durationMs,
-                  attempts: tc.attempts,
-                  failedAttempts: tc.failedAttempts,
-                  passedOnRetry: tc.passedOnRetry,
-                  errorMessage: tc.errorMessage,
-                  errorLine: tc.errorLine,
-                  errorFile: tc.errorFile,
-                  tags: tc.tags,
-                })
-              ),
+              testCases: (payload.testCases || []).map((tc: MockTestCaseDto) => ({
+                id: tc.id,
+                file: tc.file,
+                suite: tc.suite,
+                title: tc.title,
+                project: tc.project,
+                status: tc.status,
+                durationMs: tc.durationMs,
+                attempts: tc.attempts,
+                failedAttempts: tc.failedAttempts,
+                passedOnRetry: tc.passedOnRetry,
+                errorMessage: tc.errorMessage,
+                errorLine: tc.errorLine,
+                errorFile: tc.errorFile,
+                tags: tc.tags,
+                details: {
+                  errorStack: tc.errorStack ?? null,
+                  stepsJson: tc.stepsJson ?? null,
+                  failedAttemptsJson: tc.failedAttemptsJson ?? null,
+                  stdoutJson: tc.stdoutJson ?? null,
+                  stderrJson: tc.stderrJson ?? null,
+                },
+                attachments: (payload.attachments || [])
+                  .filter(
+                    (a: { file?: string; title?: string }) =>
+                      a.file === tc.file && a.title === tc.title
+                  )
+                  .map(
+                    (a: {
+                      name: string;
+                      contentType?: string;
+                      s3Key?: string;
+                      bodyText?: string;
+                    }) => ({
+                      name: a.name,
+                      contentType: a.contentType ?? null,
+                      s3Url: a.s3Key ? `http://${req.headers.host}/mock-download/${a.s3Key}` : null,
+                      bodyText: a.bodyText ?? null,
+                      url: null,
+                    })
+                  ),
+              })),
             };
 
             res.writeHead(201, { 'Content-Type': 'application/json' });
@@ -163,6 +197,26 @@ test.describe('RemoteHistoryStore Client', () => {
         if (pathname === '/api/v1/runs' && req.method === 'GET') {
           res.writeHead(200, { 'Content-Type': 'application/json' });
           return res.end(JSON.stringify({ data: inMemoryRuns }));
+        }
+
+        const testDetailMatch = pathname.match(/^\/api\/v1\/runs\/([^/]+)\/tests\/(.+)$/);
+        if (testDetailMatch && req.method === 'GET') {
+          const runId = decodeURIComponent(testDetailMatch[1]);
+          const testId = decodeURIComponent(testDetailMatch[2]);
+          const report = inMemoryReports[runId];
+          const tc = report?.testCases.find((t) => t.id === testId);
+          if (!report || !tc) {
+            res.writeHead(404, { 'Content-Type': 'application/json' });
+            return res.end(JSON.stringify({ error: 'Test case not found' }));
+          }
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          return res.end(
+            JSON.stringify({
+              ...tc,
+              details: tc.details ?? null,
+              attachments: tc.attachments ?? [],
+            })
+          );
         }
 
         if (pathname.startsWith('/api/v1/runs/') && req.method === 'GET') {
@@ -222,6 +276,7 @@ test.describe('RemoteHistoryStore Client', () => {
       summary: {
         total: 1,
         passed: 1,
+        flaky: 1,
         failed: 0,
         skipped: 0,
         timedOut: 0,
@@ -241,6 +296,21 @@ test.describe('RemoteHistoryStore Client', () => {
           project: 'chromium',
           status: 'passed',
           duration: 1200,
+          attempts: 2,
+          failedAttempts: [
+            {
+              status: 'failed',
+              duration: 800,
+              error: {
+                name: 'Error',
+                message: 'boom',
+                stack: 'boom stack',
+                location: null,
+                snippet: '',
+                cause: null,
+              },
+            },
+          ],
           steps: [
             {
               title: 'ping remote server',
@@ -278,6 +348,15 @@ test.describe('RemoteHistoryStore Client', () => {
     expect(reportData).toBeTruthy();
     expect(reportData?.testRun.testRunName).toBe('Remote Client Test Run');
     expect(reportData?.testRun.summary.total).toBe(1);
+
+    // 5. Verify per-test details round-trip (steps, stdout, retries, attachments)
+    const singleCase = reportData?.testRun.suites[0]?.subSuites?.[0]?.cases[0];
+    expect(singleCase?.steps?.[0]?.title).toBe('ping remote server');
+    expect(singleCase?.stdout).toEqual(['Remote ping ok']);
+    expect(singleCase?.attempts).toBe(2);
+    expect(singleCase?.failedAttempts?.[0]?.status).toBe('failed');
+    expect(singleCase?.attachments?.[0]?.name).toBe('screenshot');
+    expect(singleCase?.attachments?.[0]?.path).toContain('mock-download');
 
     await store.close();
   });
