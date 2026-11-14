@@ -516,28 +516,61 @@ export function computePassRate(summary: SummaryCountsInput): number {
   return computeStatusPercentages(summary).passRate;
 }
 
-/**
- * Computes the maximum duration (in ms) among all executed (non-skipped) test cases.
- *
- * @param allCases - Array of test cases.
- * @returns Maximum duration in milliseconds, or 0 if no tests executed.
- */
-export function computeSlowestTest(allCases: TestCase[]): number {
-  const executedCases = allCases.filter((tc) => tc.status !== 'skipped');
-  if (executedCases.length === 0) return 0;
-  return Math.max(...executedCases.map((tc) => tc.duration));
+export interface LatencyPercentiles {
+  p50: number;
+  p75: number;
+  p95: number;
+  min: number;
+  max: number;
+  totalExecuted: number;
 }
 
 /**
- * Computes the minimum duration (in ms) among all executed (non-skipped) test cases.
+ * Computes statistical latency distribution and percentiles across all executed test cases.
  *
- * @param allCases - Array of test cases.
- * @returns Minimum duration in milliseconds, or 0 if no tests executed.
+ * @param allCases - Array of test cases to analyze.
+ * @returns LatencyPercentiles containing min, max, p50, p75, and p95 durations.
  */
-export function computeFastestTest(allCases: TestCase[]): number {
-  const executedCases = allCases.filter((tc) => tc.status !== 'skipped');
-  if (executedCases.length === 0) return 0;
-  return Math.min(...executedCases.map((tc) => tc.duration));
+export function computeLatencyPercentiles(allCases: TestCase[]): LatencyPercentiles {
+  const durations = allCases
+    .filter((tc) => tc.status !== 'skipped')
+    .map((tc) => tc.duration || 0)
+    .sort((a, b) => a - b);
+
+  const len = durations.length;
+  if (len === 0) {
+    return {
+      p50: 0,
+      p75: 0,
+      p95: 0,
+      min: 0,
+      max: 0,
+      totalExecuted: 0,
+    };
+  }
+
+  const min = durations[0];
+  const max = durations[len - 1];
+
+  /**
+   * Helper to retrieve nearest rank percentile duration.
+   *
+   * @param pct - Percentile fraction between 0 and 1.
+   * @returns Duration in milliseconds at specified percentile.
+   */
+  const getPercentile = (pct: number): number => {
+    const idx = Math.min(len - 1, Math.max(0, Math.ceil(pct * len) - 1));
+    return durations[idx];
+  };
+
+  return {
+    p50: getPercentile(0.5),
+    p75: getPercentile(0.75),
+    p95: getPercentile(0.95),
+    min,
+    max,
+    totalExecuted: len,
+  };
 }
 
 export interface FileStats {

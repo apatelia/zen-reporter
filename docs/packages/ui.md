@@ -47,8 +47,9 @@ src/components/
 │   ├── Overview.tsx                    # Main Overview layout
 │   ├── TestResultsHero.tsx             # Header summary metrics & run metadata
 │   ├── PassRateRing.tsx                # Radial pass rate chart (dual-tone clean/flaky arcs)
-│   ├── ProjectParityScorecard.tsx      # Cross-project stability & execution parity scorecard
-│   └── ExecutionTimingEfficiencyCard.tsx
+│   ├── TestSpeedConsistencyCard.tsx    # Test execution speed & outlier consistency
+│   ├── ParallelSpeedupCard.tsx         # Parallel execution acceleration & time saved
+│   └── WorkerUtilizationCard.tsx       # Worker active execution vs idle bottleneck wait
 ├── failures/              # Failures tab
 │   ├── FailuresSection.tsx             # Failure view with search & grouping
 │   └── FailureList.tsx                # Failure lists with trace & error details

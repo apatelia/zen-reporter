@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import type { ResultSummary, TestSuite } from '@arpanp/zen-core';
 import { formatDuration } from '@arpanp/zen-core';
 import { computeStatusPercentages } from '@arpanp/zen-core';
@@ -6,6 +7,17 @@ import PassRateRing from './PassRateRing';
 export interface TestResultsHeroProps {
   summary: ResultSummary;
   suites: TestSuite[];
+}
+
+interface ResultBreakdownItem {
+  label: string;
+  subTitle?: string;
+  value: number;
+  pct: number;
+  color: string;
+  text: string;
+  bg: string;
+  icon: ReactNode;
 }
 
 /**
@@ -19,7 +31,7 @@ export default function TestResultsHero({ summary, suites }: TestResultsHeroProp
   const statusPercents = computeStatusPercentages(summary);
   const isParallel = Boolean(summary.workers && summary.workers > 1);
 
-  const items = [
+  const items: ResultBreakdownItem[] = [
     {
       label: 'Passed',
       subTitle: 'First Run',
@@ -286,26 +298,32 @@ export default function TestResultsHero({ summary, suites }: TestResultsHeroProp
             </div>
 
             {/* 6 Status Cards Grid */}
-            <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-6">
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">
               {items.map((item) => (
                 <div
                   key={item.label}
-                  className={`flex flex-col justify-between rounded-md border p-3 shadow-2xs transition-all ${item.bg}`}
+                  className={`flex flex-col justify-between rounded-md border p-2 sm:p-2.5 shadow-2xs transition-all ${item.bg}`}
                 >
-                  <div className="flex items-center justify-between text-xs font-semibold uppercase tracking-wider text-text-body-mid dark:text-text-muted">
-                    <span className="flex items-center gap-1">
-                      <span>{item.label}</span>
-                      {'subTitle' in item && item.subTitle && (
-                        <span className="text-[10px] font-normal lowercase tracking-normal opacity-70">
+                  <div className="flex items-start justify-between gap-1 text-xs font-semibold uppercase tracking-wider text-text-body-mid dark:text-text-muted">
+                    <div className="flex flex-col min-w-0">
+                      <span className="truncate">{item.label}</span>
+                      {item.subTitle ? (
+                        <span className="text-[10px] font-normal lowercase tracking-normal opacity-70 leading-tight truncate">
                           ({item.subTitle})
                         </span>
+                      ) : (
+                        <span className="text-[10px] leading-tight invisible select-none">
+                          &nbsp;
+                        </span>
                       )}
-                    </span>
-                    <span className={item.text}>{item.icon}</span>
+                    </div>
+                    <span className={`shrink-0 mt-0.5 ${item.text}`}>{item.icon}</span>
                   </div>
-                  <div className="mt-2 flex items-baseline justify-between">
-                    <span className={`text-2xl font-bold ${item.text}`}>{item.value}</span>
-                    <span className="text-xs font-medium text-text-body-mid dark:text-text-muted">
+                  <div className="mt-2 flex items-baseline justify-between gap-1">
+                    <span className={`text-xl sm:text-2xl font-bold truncate ${item.text}`}>
+                      {item.value}
+                    </span>
+                    <span className="text-xs font-medium text-text-body-mid dark:text-text-muted shrink-0">
                       {item.pct}%
                     </span>
                   </div>

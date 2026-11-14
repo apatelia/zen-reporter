@@ -46,7 +46,7 @@ export function InfoTooltip({
         />
       </svg>
       <div
-        className={`pointer-events-none absolute hidden group-hover:block z-50 w-52 rounded-md bg-(--color-tooltip-bg) text-(--color-tooltip-text) p-2 text-left text-xs shadow-lg border border-(--color-tooltip-border) ${
+        className={`pointer-events-none absolute hidden group-hover:block z-50 w-64 rounded-md bg-(--color-tooltip-bg) text-(--color-tooltip-text) p-2.5 text-left text-xs leading-relaxed whitespace-normal break-words shadow-lg border border-(--color-tooltip-border) ${
           isTop ? 'bottom-full mb-2' : 'top-full mt-2'
         } ${tooltipPosClass}`}
       >

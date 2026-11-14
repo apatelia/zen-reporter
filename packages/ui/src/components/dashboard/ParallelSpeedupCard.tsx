@@ -1,17 +1,20 @@
-import type { ResultSummary, TestSuite } from '@arpanp/zen-core';
+import type { ResultSummary } from '@arpanp/zen-core';
 import { formatDurationVerbose } from '@arpanp/zen-core';
-import { computeSlowestTest, computeFastestTest, collectAllCases } from '@arpanp/zen-core';
 
-export interface ExecutionTimingEfficiencyCardProps {
+export interface ParallelSpeedupCardProps {
   summary: ResultSummary;
-  suites: TestSuite[];
 }
 
-export default function ExecutionTimingEfficiencyCard({
-  summary,
-  suites,
-}: ExecutionTimingEfficiencyCardProps) {
-  const isParallel = Boolean(summary.workers && summary.workers > 1);
+/**
+ * Execution speedup & parallel acceleration card.
+ *
+ * @param props - Component props containing summary.
+ * @param props.summary - Test run result summary metrics.
+ * @returns React functional component rendering the parallel speedup card.
+ */
+export default function ParallelSpeedupCard({ summary }: ParallelSpeedupCardProps) {
+  const workers = Math.max(1, summary.workers ?? 1);
+  const isParallel = workers > 1;
   const sequentialMs = summary.totalSequentialDuration ?? 0;
   const parallelMs = summary.duration;
 
@@ -20,8 +23,16 @@ export default function ExecutionTimingEfficiencyCard({
   const savedMs = hasSavings ? sequentialMs - parallelMs : 0;
   const overheadMs = isOverhead ? parallelMs - sequentialMs : 0;
 
+  // Serial runs: wall-clock duration includes harness startup/setup/teardown that the
+  // per-test duration sum excludes, so the gap is run overhead, not wasted time.
+  const serialOverheadMs =
+    isParallel || sequentialMs === 0 ? 0 : Math.max(0, parallelMs - sequentialMs);
+  const isSerialOverhead = !isParallel && serialOverheadMs > 0;
+
   const speedupRatio = sequentialMs > 0 ? sequentialMs / Math.max(1, parallelMs) : 1;
-  const speedup = hasSavings ? speedupRatio.toFixed(1) : speedupRatio.toFixed(1);
+  const speedup = speedupRatio.toFixed(1);
+
+  const savedPct = sequentialMs > 0 ? Math.round((savedMs / sequentialMs) * 100) : 0;
 
   const maxDuration = Math.max(sequentialMs, parallelMs, 1);
   const seqWidthPct =
@@ -29,26 +40,21 @@ export default function ExecutionTimingEfficiencyCard({
   const parWidthPct =
     parallelMs > 0 ? Math.min(100, Math.max(8, (parallelMs / maxDuration) * 100)) : 0;
 
-  const allCases = collectAllCases(suites);
   const executedTotal = summary.total - summary.skipped;
-  const isZeroExecution = executedTotal === 0 || (sequentialMs === 0 && parallelMs === 0);
-  const avgDuration = executedTotal > 0 ? Math.round(summary.duration / executedTotal) : 0;
-  const slowestTest = computeSlowestTest(allCases);
-  const fastestTest = computeFastestTest(allCases);
+  const isZeroExecution = executedTotal === 0;
+  const avgDuration = executedTotal > 0 ? Math.round(sequentialMs / executedTotal) : 0;
 
   return (
     <div className="flex flex-col justify-between w-full h-full rounded-md bg-surface-50 border border-border-default p-5 shadow-xs">
       {/* Header */}
       <div>
-        <div className="flex items-center justify-between gap-2">
-          <div className="flex items-center gap-1.5">
-            <h3 className="text-base font-semibold text-text-ink dark:text-text-on-primary">
-              Execution Efficiency & Timing
-            </h3>
-            <div className="relative group/speedup-tip inline-flex items-center">
+        <div className="flex items-start justify-between gap-2">
+          <h3 className="text-base font-semibold text-text-ink dark:text-text-on-primary">
+            Parallel Speedup{' '}
+            <div className="relative group/speedup-tip inline-flex items-center align-middle ml-1">
               <button
                 type="button"
-                className="inline-flex items-center justify-center p-1 rounded-full text-accent-blue hover:bg-accent-blue/10 dark:text-accent-blue dark:hover:bg-accent-blue/20 transition-colors focus:outline-none cursor-pointer"
+                className="inline-flex items-center justify-center p-0.5 rounded-full text-accent-blue hover:bg-accent-blue/10 dark:text-accent-blue dark:hover:bg-accent-blue/20 transition-colors focus:outline-none cursor-pointer"
                 aria-label="Speedup interpretation info"
               >
                 <svg
@@ -71,74 +77,86 @@ export default function ExecutionTimingEfficiencyCard({
                 </div>
                 <p className="text-[11px] leading-relaxed text-text-body-mid dark:text-text-muted">
                   <span className="font-mono text-text-ink dark:text-text-on-primary">
-                    Sequential Effort / Wall-Clock Duration
+                    Serial Effort / Actual Wall-Clock Duration
                   </span>
                 </p>
                 <ul className="mt-1.5 space-y-1 text-[11px] text-text-body-mid dark:text-text-muted">
                   <li>
                     • <strong className="text-text-ink dark:text-text-on-primary">&gt;1.0x:</strong>{' '}
-                    Time saved via parallelism
+                    Time saved by running tests across parallel workers
                   </li>
                   <li>
                     • <strong className="text-text-ink dark:text-text-on-primary">=1.0x:</strong>{' '}
-                    Equal to sequential effort
+                    Equal to single-worker sequential effort
                   </li>
                   <li>
-                    • <strong className="text-text-ink dark:text-text-on-primary">&lt;1.0x:</strong>{' '}
-                    Parallel worker/setup overhead
+                    • <strong className="text-text-ink dark:text-text-on-primary">Serial:</strong>{' '}
+                    Gap between bars is setup/harness overhead, not lost time
                   </li>
                 </ul>
               </div>
             </div>
-          </div>
-          {hasSavings ? (
+          </h3>
+          {isZeroExecution ? (
+            <span className="inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold border whitespace-nowrap shrink-0 bg-surface-200/50 text-text-body-mid dark:text-text-on-primary border-border-default">
+              No Tests
+            </span>
+          ) : hasSavings ? (
             <span className="inline-flex items-center gap-1 rounded-full bg-success-500/10 px-2.5 py-0.5 text-xs font-semibold text-success-600 dark:text-success-500 border border-success-500/20">
-              ⚡ {speedup}x speedup
+              ⚡ {speedup}x Faster
             </span>
           ) : isOverhead ? (
             <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/10 px-2.5 py-0.5 text-xs font-semibold text-amber-600 dark:text-amber-500 border border-amber-500/20">
-              ⚠️ Overhead ({summary.workers} workers)
+              ⚠️ Overhead ({workers} workers)
             </span>
           ) : (
             <span className="inline-flex items-center gap-1 text-xs font-medium text-text-body-mid dark:text-text-muted">
-              {isParallel ? `${summary.workers} workers` : '1 worker'}
+              {isParallel ? `${workers} workers` : 'Serial run'}
             </span>
           )}
         </div>
         <p className="mt-1 text-xs text-text-body-mid dark:text-text-muted">
-          Parallel execution metrics and test case duration distribution
+          {isZeroExecution
+            ? 'No tests were executed in this run'
+            : !isParallel
+              ? 'No parallelism — gap between bars is setup/harness overhead'
+              : 'Time saved by executing tests across parallel workers'}
         </p>
       </div>
 
       {/* Main Metric */}
-      <div className="my-3 flex items-baseline gap-2">
+      <div className="my-3 flex items-baseline gap-2 min-h-9">
         <span className="text-3xl font-bold tracking-tight text-text-ink dark:text-text-on-primary">
           {hasSavings
             ? formatDurationVerbose(savedMs)
             : isOverhead
               ? formatDurationVerbose(overheadMs)
-              : formatDurationVerbose(parallelMs)}
+              : isSerialOverhead
+                ? formatDurationVerbose(serialOverheadMs)
+                : formatDurationVerbose(parallelMs)}
         </span>
         <span className="text-xs font-medium uppercase tracking-wider text-text-body-mid dark:text-text-muted">
           {hasSavings
-            ? 'Time Saved via Parallelism'
+            ? 'Time Saved via Parallel Execution'
             : isOverhead
               ? 'Parallel Overhead'
-              : 'Wall-Clock Duration'}
+              : isSerialOverhead
+                ? 'Run Overhead (Setup & Teardown)'
+                : 'Run Duration'}
         </span>
       </div>
 
       {/* Dual Bar Comparison */}
-      <div className="space-y-2 mb-4">
+      <div className="space-y-1.5 mb-4">
         {/* Sequential Bar */}
         <div>
-          <div className="flex items-center justify-between text-xs font-medium text-text-body-mid dark:text-text-muted mb-1">
-            <span>Sequential Effort</span>
+          <div className="flex items-center justify-between text-xs font-medium text-text-body-mid dark:text-text-muted mb-1 h-4">
+            <span>If run one-by-one</span>
             <span className="font-mono font-bold text-text-ink dark:text-text-on-primary">
               {formatDurationVerbose(sequentialMs)}
             </span>
           </div>
-          <div className="h-2.5 w-full rounded-full bg-surface-200 dark:bg-surface-200 border border-border-default overflow-hidden">
+          <div className="h-3 w-full rounded-full bg-surface-200 dark:bg-surface-200 border border-border-default overflow-hidden">
             <div
               className="h-full rounded-full bg-slate-600 dark:bg-slate-300 transition-all duration-500"
               style={{ width: `${seqWidthPct}%` }}
@@ -148,13 +166,13 @@ export default function ExecutionTimingEfficiencyCard({
 
         {/* Parallel Bar */}
         <div>
-          <div className="flex items-center justify-between text-xs font-medium text-text-body-mid dark:text-text-muted mb-1">
-            <span>Actual Wall-Clock</span>
+          <div className="flex items-center justify-between text-xs font-medium text-text-body-mid dark:text-text-muted mb-1 h-4">
+            <span>Actual run time</span>
             <span className="font-mono font-bold text-text-ink dark:text-text-on-primary">
               {formatDurationVerbose(parallelMs)}
             </span>
           </div>
-          <div className="h-2.5 w-full rounded-full bg-surface-200 dark:bg-surface-200 border border-border-default overflow-hidden">
+          <div className="h-3 w-full rounded-full bg-surface-200 dark:bg-surface-200 border border-border-default overflow-hidden">
             <div
               className={`h-full rounded-full transition-all duration-500 ${
                 hasSavings ? 'bg-success-500' : isOverhead ? 'bg-amber-500' : 'bg-accent-blue'
@@ -167,82 +185,40 @@ export default function ExecutionTimingEfficiencyCard({
 
       {/* Timing Metric Badges Grid */}
       <div className="grid grid-cols-3 gap-2.5 pt-3 border-t border-border-default dark:border-white/15">
-        <div className="flex flex-col justify-between rounded-md border border-border-default bg-surface-100 dark:bg-surface-100 p-2.5 sm:p-3 shadow-2xs">
+        <div className="flex flex-col justify-between rounded-md border border-border-default bg-surface-100 dark:bg-surface-100 p-2 sm:p-2.5 shadow-2xs">
           <div className="flex items-center justify-between text-[11px] font-semibold text-text-body-mid dark:text-text-muted uppercase tracking-wider">
-            <span>Avg Duration</span>
-            <svg
-              className="h-3.5 w-3.5 text-accent-blue"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              strokeWidth={2}
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z"
-              />
-            </svg>
+            <span className="truncate">Workers</span>
+            <span className="text-accent-blue font-bold shrink-0">⚙</span>
+          </div>
+          <span className="mt-1.5 font-mono font-bold text-sm text-text-ink dark:text-text-on-primary truncate">
+            {isZeroExecution
+              ? `${workers} Configured`
+              : `${workers} ${workers === 1 ? 'Worker' : 'Active'}`}
+          </span>
+        </div>
+
+        <div className="flex flex-col justify-between rounded-md border border-border-default bg-surface-100 dark:bg-surface-100 p-2 sm:p-2.5 shadow-2xs">
+          <div className="flex items-center justify-between text-[11px] font-semibold text-text-body-mid dark:text-text-muted uppercase tracking-wider">
+            <span className="truncate">Average Pace</span>
+            <span className="text-accent-blue font-bold shrink-0">⏱</span>
           </div>
           {isZeroExecution ? (
-            <span className="mt-1.5 font-mono font-bold text-sm text-text-muted">—</span>
+            <span className="mt-1.5 font-mono font-bold text-sm text-text-muted truncate">—</span>
           ) : (
-            <span className="mt-1.5 font-mono font-bold text-sm text-text-ink dark:text-text-on-primary">
+            <span className="mt-1.5 font-mono font-bold text-sm text-text-ink dark:text-text-on-primary truncate">
               {formatDurationVerbose(avgDuration)}
             </span>
           )}
         </div>
 
-        <div className="flex flex-col justify-between rounded-md border border-border-default bg-surface-100 dark:bg-surface-100 p-2.5 sm:p-3 shadow-2xs">
+        <div className="flex flex-col justify-between rounded-md border border-border-default bg-surface-100 dark:bg-surface-100 p-2 sm:p-2.5 shadow-2xs">
           <div className="flex items-center justify-between text-[11px] font-semibold text-text-body-mid dark:text-text-muted uppercase tracking-wider">
-            <span>Slowest Test</span>
-            <svg
-              className="h-3.5 w-3.5 text-amber-500"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              strokeWidth={2}
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z"
-              />
-            </svg>
+            <span className="truncate">Time Saved</span>
+            <span className="text-success-500 font-bold shrink-0">⚡</span>
           </div>
-          {isZeroExecution ? (
-            <span className="mt-1.5 font-mono font-bold text-sm text-text-muted">—</span>
-          ) : (
-            <span className="mt-1.5 font-mono font-bold text-sm text-text-ink dark:text-text-on-primary">
-              {formatDurationVerbose(slowestTest)}
-            </span>
-          )}
-        </div>
-
-        <div className="flex flex-col justify-between rounded-md border border-border-default bg-surface-100 dark:bg-surface-100 p-2.5 sm:p-3 shadow-2xs">
-          <div className="flex items-center justify-between text-[11px] font-semibold text-text-body-mid dark:text-text-muted uppercase tracking-wider">
-            <span>Fastest Test</span>
-            <svg
-              className="h-3.5 w-3.5 text-success-500"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              strokeWidth={2}
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z"
-              />
-            </svg>
-          </div>
-          {isZeroExecution ? (
-            <span className="mt-1.5 font-mono font-bold text-sm text-text-muted">—</span>
-          ) : (
-            <span className="mt-1.5 font-mono font-bold text-sm text-text-ink dark:text-text-on-primary">
-              {formatDurationVerbose(fastestTest)}
-            </span>
-          )}
+          <span className="mt-1.5 font-mono font-bold text-sm text-text-ink dark:text-text-on-primary truncate">
+            {hasSavings ? `${savedPct}%` : isZeroExecution || !isParallel ? '—' : '0%'}
+          </span>
         </div>
       </div>
     </div>
