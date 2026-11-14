@@ -22,7 +22,7 @@ import { generateTerminalSummaryTable } from '@arpanp/zen-core';
 import { detectPackageManager } from './dataProcessor';
 import { getGitBranch, getGitCommit } from './gitUtils';
 import { generateHtmlReport } from './htmlReportGenerator';
-import { ProgressPrinter, type ProgressMode } from './progressPrinter';
+import { ProgressPrinter, type ProgressMode, type TestStatus } from './progressPrinter';
 import { writeRunHistory } from './runHistoryWriter';
 import { buildSuitesFromCases } from '@arpanp/zen-core';
 import { countStepCategories } from '@arpanp/zen-core';
@@ -561,7 +561,7 @@ class ZenReporter implements Reporter {
       const workers = this.config.workers || 1;
       const workerStr = workers === 1 ? '1 worker (serially)' : `${workers} workers (in parallel)`;
       console.log(
-        `Running total ${allTests.length} tests, ${workerStr}\n\nLegend: . passed | F failed | ± flaky | s skipped\n`
+        `Running total ${allTests.length} tests, ${workerStr}\n\nLegend: . passed | F failed | T timed out | I interrupted | ± flaky | s skipped\n`
       );
     }
 
@@ -685,6 +685,10 @@ class ZenReporter implements Reporter {
         console.log(
           `🔁 [RETRYING] ${shortName}${durationStr} (attempt ${result.retry + 1}/${test.retries + 1})`
         );
+      } else if (status === 'timedOut') {
+        console.log(`⏱️ [TIMED OUT] ${shortName}${durationStr}`);
+      } else if (status === 'interrupted') {
+        console.log(`⚡ [INTERRUPTED] ${shortName}${durationStr}`);
       } else {
         console.log(`❌ [FAILED] ${shortName}${durationStr}`);
       }
@@ -696,7 +700,7 @@ class ZenReporter implements Reporter {
       );
     }
 
-    let dotStatus: 'passed' | 'failed' | 'timedOut' | 'skipped' | 'interrupted' | 'flaky' = status;
+    let dotStatus: TestStatus = status;
 
     if (status === 'passed' && (testCase.failedAttempts?.length ?? 0) > 0) {
       dotStatus = 'flaky';
