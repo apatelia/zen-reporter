@@ -23,7 +23,7 @@ import { detectPackageManager } from './dataProcessor';
 import { getGitBranch, getGitCommit } from './gitUtils';
 import { generateHtmlReport } from './htmlReportGenerator';
 import { ProgressPrinter, type ProgressMode, type TestStatus } from './progressPrinter';
-import { writeRunHistory } from './runHistoryWriter';
+import { resolveHistoryDbPath, writeRunHistory } from './runHistoryWriter';
 import { buildSuitesFromCases } from '@arpanp/zen-core';
 import { countStepCategories } from '@arpanp/zen-core';
 import type {
@@ -112,12 +112,16 @@ function loadZenConfigFile(configDir: string): Record<string, unknown> | null {
 
 export interface ReporterConfig {
   outputDir: string;
+  isCustomOutputDir?: boolean;
   packageManager: string;
   projectName: string;
   testRunName: string;
+  rawTestRunName?: string;
   singleSummaryFile?: boolean;
   theme?: string;
+  isCustomTheme?: boolean;
   darkMode: 'system' | 'light' | 'dark';
+  isCustomDarkMode?: boolean;
   enableHistory: 'auto' | boolean;
   history?: HistoryConfig;
   minimalReport?: boolean;
@@ -150,13 +154,11 @@ export function resolveConfig(
   let runNumber = 1;
 
   try {
-    const dbPath =
-      typeof rawConfig?.history === 'object' &&
-      rawConfig.history !== null &&
-      'dbPath' in rawConfig.history &&
-      rawConfig.history.dbPath
-        ? path.resolve(cwd, String(rawConfig.history.dbPath))
-        : path.resolve(cwd, outputDir, 'history.db');
+    const dbPath = resolveHistoryDbPath(
+      cwd,
+      path.resolve(cwd, outputDir),
+      rawConfig?.history as HistoryConfig | undefined
+    );
 
     let countedFromDb = false;
 
@@ -290,12 +292,16 @@ export function resolveConfig(
 
   return {
     outputDir,
+    isCustomOutputDir: Boolean(rawConfig?.outputDir),
     packageManager,
     projectName,
     testRunName,
+    rawTestRunName: rawConfig?.testRunName ? String(rawConfig.testRunName) : undefined,
     singleSummaryFile,
     theme,
+    isCustomTheme: rawConfig?.theme != null && theme !== 'Sage',
     darkMode,
+    isCustomDarkMode: rawConfig?.darkMode != null && darkMode !== 'system',
     enableHistory,
     history,
     minimalReport,
@@ -749,6 +755,7 @@ class ZenReporter implements Reporter {
       await writeRunHistory({
         startTime: this.startTime,
         testRunName: this.reportConfig.testRunName,
+        rawTestRunName: this.reportConfig.rawTestRunName,
         projectName: this.reportConfig.projectName,
         shard: this.config?.shard,
         outputDir: this.reportConfig.outputDir,
@@ -757,7 +764,6 @@ class ZenReporter implements Reporter {
         testCases: this.testCases,
         stepCategories,
         historyConfig: this.reportConfig.history,
-        dbPath: historyOptions?.dbPath,
         maxRuns: historyOptions?.maxRuns,
         windowSize: historyOptions?.windowSize,
       });
@@ -768,10 +774,18 @@ class ZenReporter implements Reporter {
       suites,
       projectName: this.reportConfig.projectName,
       testRunName: this.reportConfig.testRunName,
+      rawTestRunName: this.reportConfig.rawTestRunName,
       theme: this.reportConfig.theme,
+      isCustomTheme: this.reportConfig.isCustomTheme,
       darkMode: this.reportConfig.darkMode,
+      isCustomDarkMode: this.reportConfig.isCustomDarkMode,
       enableHistory: this.reportConfig.enableHistory,
+      history: this.reportConfig.history,
       minimalReport: this.reportConfig.minimalReport,
+      outputDir: this.reportConfig.outputDir,
+      isCustomOutputDir: this.reportConfig.isCustomOutputDir,
+      singleSummaryFile: this.reportConfig.singleSummaryFile,
+      openAutomatically: this.reportConfig.openAutomatically,
     };
 
     const reportData: ReportData = { testRun };

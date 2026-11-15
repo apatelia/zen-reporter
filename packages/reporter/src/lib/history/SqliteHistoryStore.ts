@@ -235,6 +235,11 @@ export class SqliteHistoryStore implements HistoryStore {
       /* column already exists */
     }
     try {
+      this.db.exec('ALTER TABLE history_runs ADD COLUMN raw_test_run_name TEXT;');
+    } catch {
+      /* column already exists */
+    }
+    try {
       this.db.exec('ALTER TABLE history_attachments ADD COLUMN project TEXT;');
     } catch {
       /* column already exists */
@@ -300,7 +305,7 @@ export class SqliteHistoryStore implements HistoryStore {
 
     const insertRunStmt = this.db.prepare(`
       INSERT INTO history_runs (
-        run_id, run_name, project_name, started_at, ended_at,
+        run_id, run_name, raw_test_run_name, project_name, started_at, ended_at,
         run_duration_ms, run_sequential_duration_ms, run_total,
         run_passed, run_flaky, run_failed, run_skipped, run_timed_out, run_interrupted,
         run_workers, run_projects, step_assertions, step_actions,
@@ -308,7 +313,7 @@ export class SqliteHistoryStore implements HistoryStore {
         git_branch, git_commit, git_commit_full,
         playwright_version, os_name
       ) VALUES (
-        ?, ?, ?, ?, ?,
+        ?, ?, ?, ?, ?, ?,
         ?, ?, ?,
         ?, ?, ?, ?, ?, ?,
         ?, ?, ?, ?,
@@ -321,6 +326,7 @@ export class SqliteHistoryStore implements HistoryStore {
     insertRunStmt.run(
       finalRunId,
       options.testRunName,
+      options.rawTestRunName ?? null,
       options.projectName,
       summary.startTime,
       options.endedAt,
@@ -1305,7 +1311,8 @@ export class SqliteHistoryStore implements HistoryStore {
       suites,
       projectName: String(runRow.project_name || 'Zen Reporter'),
       testRunName: String(runRow.run_name || runId),
-      enableHistory: true,
+      rawTestRunName: runRow.raw_test_run_name ? String(runRow.raw_test_run_name) : undefined,
+      enableHistory: 'auto',
     };
 
     return { testRun };

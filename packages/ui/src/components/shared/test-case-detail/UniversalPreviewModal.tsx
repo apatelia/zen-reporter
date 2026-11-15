@@ -716,7 +716,7 @@ export function UniversalPreviewModal({
                     : 'Log content is empty.'}
                 </div>
               ) : (
-                <div className="table w-full border-collapse">
+                <div className="table w-full min-w-full border-collapse">
                   {filteredLines.map(({ originalLineNum, text }) => {
                     const currentLanguage =
                       activeItem.language ||

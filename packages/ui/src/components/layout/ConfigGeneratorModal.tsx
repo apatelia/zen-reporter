@@ -4,19 +4,24 @@ import InfoTooltip from '../shared/InfoTooltip';
 import { copyToClipboard } from '@/utils/clipboard';
 import type { ThemeMode } from '@/App';
 import { escapeHTML, highlightSyntaxLine, parseDarkMode } from '@arpanp/zen-core';
+import type { HistoryConfig } from '@arpanp/zen-core';
 
 export interface ConfigGeneratorModalProps {
   isOpen: boolean;
   onClose: () => void;
   activeConfig?: {
     outputDir?: string;
+    isCustomOutputDir?: boolean;
     projectName?: string;
     testRunName?: string;
     theme?: ThemeMode | 'Sage' | 'Lotus' | 'Oasis';
+    isCustomTheme?: boolean;
     darkMode?: 'system' | 'light' | 'dark' | boolean;
+    isCustomDarkMode?: boolean;
     singleSummaryFile?: boolean;
     minimalReport?: boolean;
     enableHistory?: 'auto' | boolean;
+    history?: HistoryConfig;
     consoleProgress?: 'auto' | 'line' | 'dot' | boolean;
     openAutomatically?: 'always' | 'never' | 'on-failure-only';
   };
@@ -43,8 +48,19 @@ interface ConfigState {
   openAutomatically: 'never' | 'always' | 'on-failure-only';
   serverUrl: string;
   projectId: string;
+  runId: string;
+  fallbackToLocal: boolean;
+  timeoutMs: string;
+  dbFilename: string;
+  windowSize: string;
+  maxRuns: string;
 }
 
+/**
+ * Renders a small blue indicator dot for settings changed from initial baseline values.
+ *
+ * @returns Indicator dot JSX element.
+ */
 function ModifiedDot() {
   return (
     <span
@@ -54,6 +70,84 @@ function ModifiedDot() {
   );
 }
 
+/**
+ * Parses a numeric input string, returning the fallback when the value is empty or not a valid number.
+ *
+ * @param value - Numeric input string from a form field.
+ * @param fallback - Value to use when the input is empty or invalid.
+ * @returns Parsed number, or the fallback.
+ */
+function parseNumberOrDefault(value: string, fallback: number): number {
+  const parsed = Number(value);
+  return value && !Number.isNaN(parsed) ? parsed : fallback;
+}
+
+/**
+ * Resolves effective local history settings and flags whether any deviate from defaults.
+ *
+ * @param dbFilename - Candidate database filename.
+ * @param windowSize - Candidate report window size (string from form input).
+ * @param maxRuns - Candidate retention limit (string from form input).
+ * @returns Resolved local history config plus a `hasCustom` flag.
+ */
+function buildLocalHistoryConfig(
+  dbFilename: string,
+  windowSize: string,
+  maxRuns: string
+): { hasCustom: boolean; mode: 'local'; dbFilename: string; maxRuns: number; windowSize: number } {
+  const resolvedDbFilename = dbFilename || 'history.db';
+  const resolvedMaxRuns = parseNumberOrDefault(maxRuns, 1000);
+  const resolvedWindowSize = parseNumberOrDefault(windowSize, 50);
+  return {
+    hasCustom:
+      resolvedDbFilename !== 'history.db' || resolvedMaxRuns !== 1000 || resolvedWindowSize !== 50,
+    mode: 'local',
+    dbFilename: resolvedDbFilename,
+    maxRuns: resolvedMaxRuns,
+    windowSize: resolvedWindowSize,
+  };
+}
+
+/**
+ * Appends a JSON config entry (single- or multi-line) to the generated config lines with correct
+ * indentation and trailing commas.
+ *
+ * @param lines - Target config lines array to append to.
+ * @param entry - JSON entry with key, serializable value, and modified flag.
+ * @param isLast - Whether this is the final entry (controls the trailing comma).
+ * @returns void.
+ */
+function pushJsonEntry(
+  lines: ConfigLine[],
+  entry: { key: string; value: unknown; isChanged: boolean },
+  isLast: boolean
+): void {
+  const serialized = JSON.stringify(entry.value, null, 2);
+  if (!serialized.includes('\n')) {
+    lines.push({
+      text: `  "${entry.key}": ${serialized}${isLast ? '' : ','}`,
+      isChanged: entry.isChanged,
+    });
+    return;
+  }
+
+  const subLines = serialized.split('\n');
+  subLines.forEach((subLine, subIdx) => {
+    const isFirst = subIdx === 0;
+    const trailingComma = subIdx === subLines.length - 1 && !isLast ? ',' : '';
+    lines.push({
+      text: isFirst ? `  "${entry.key}": ${subLine}` : `  ${subLine}${trailingComma}`,
+      isChanged: entry.isChanged,
+    });
+  });
+}
+
+/**
+ * Interactive modal that allows users to configure Zen Reporter options and copy ready-to-use Playwright configuration code.
+ *
+ * @param props - Modal properties including open status, close handler, and active reporter configuration.
+ * @returns Config generator modal dialog component.
+ */
 export function ConfigGeneratorModal({ isOpen, onClose, activeConfig }: ConfigGeneratorModalProps) {
   // Baseline initial config from current active test run
   const initialConfig = useMemo<ConfigState>(() => {
@@ -61,15 +155,63 @@ export function ConfigGeneratorModal({ isOpen, onClose, activeConfig }: ConfigGe
     const darkVal: 'system' | 'true' | 'false' =
       dark === 'dark' ? 'true' : dark === 'light' ? 'false' : 'system';
 
-    const historyVal: 'auto' | 'enabled' | 'disabled' | 'remote' =
-      activeConfig?.enableHistory === false
-        ? 'disabled'
-        : activeConfig?.enableHistory === true
-          ? 'enabled'
-          : 'auto';
+    const activeHistory = activeConfig?.history;
+    let historyVal: 'auto' | 'enabled' | 'disabled' | 'remote' = 'auto';
+    let initServerUrl = '';
+    let initProjectId = '';
+    let initRunId = '';
+    let initFallbackToLocal = true;
+    let initTimeoutMs = '5000';
+    let initDbFilename = 'history.db';
+    let initWindowSize = '50';
+    let initMaxRuns = '1000';
+
+    if (activeHistory !== undefined) {
+      if (
+        activeHistory === false ||
+        (typeof activeHistory === 'object' &&
+          activeHistory !== null &&
+          activeHistory.mode === 'off')
+      ) {
+        historyVal = 'disabled';
+      } else if (activeHistory === true) {
+        historyVal = 'enabled';
+      } else if (typeof activeHistory === 'object' && activeHistory !== null) {
+        if (activeHistory.mode === 'remote') {
+          historyVal = 'remote';
+          if (activeHistory.serverUrl) initServerUrl = String(activeHistory.serverUrl);
+          if (activeHistory.projectId) initProjectId = String(activeHistory.projectId);
+          if (activeHistory.runId) initRunId = String(activeHistory.runId);
+          if (typeof activeHistory.fallbackToLocal === 'boolean') {
+            initFallbackToLocal = activeHistory.fallbackToLocal;
+          }
+          if (activeHistory.timeoutMs != null) initTimeoutMs = String(activeHistory.timeoutMs);
+        } else {
+          // local mode or unspecified mode
+          historyVal = 'auto';
+          if ('dbFilename' in activeHistory && activeHistory.dbFilename) {
+            initDbFilename = String(activeHistory.dbFilename);
+          } else if ('dbPath' in activeHistory && activeHistory.dbPath) {
+            // Strip dirname if user previously passed path
+            const parts = String(activeHistory.dbPath).split(/[/\\]/);
+            initDbFilename = parts[parts.length - 1] || 'history.db';
+          }
+          if (activeHistory.windowSize != null) initWindowSize = String(activeHistory.windowSize);
+          if (activeHistory.maxRuns != null) initMaxRuns = String(activeHistory.maxRuns);
+        }
+      }
+    } else if (activeConfig?.enableHistory === false) {
+      historyVal = 'disabled';
+    } else if (activeConfig?.enableHistory === true) {
+      historyVal = 'enabled';
+    } else {
+      historyVal = 'auto';
+    }
+
+    const resolvedOutputDir = activeConfig?.outputDir || 'zen-report';
 
     return {
-      outputDir: activeConfig?.outputDir || 'zen-report',
+      outputDir: resolvedOutputDir,
       projectName: activeConfig?.projectName || 'Test Automation Project',
       testRunName: activeConfig?.testRunName || 'Nightly Build #{N}',
       theme: (activeConfig?.theme as 'Sage' | 'Lotus' | 'Oasis') || 'Sage',
@@ -80,13 +222,19 @@ export function ConfigGeneratorModal({ isOpen, onClose, activeConfig }: ConfigGe
       consoleProgress: 'auto',
       openAutomatically: (activeConfig?.openAutomatically || 'never') as
         'never' | 'always' | 'on-failure-only',
-      serverUrl: 'https://zen-reporter.your-company.com',
-      projectId: 'my-e2e-suite',
+      serverUrl: initServerUrl,
+      projectId: initProjectId,
+      runId: initRunId,
+      fallbackToLocal: initFallbackToLocal,
+      timeoutMs: initTimeoutMs,
+      dbFilename: initDbFilename,
+      windowSize: initWindowSize,
+      maxRuns: initMaxRuns,
     };
   }, [activeConfig]);
 
   // Working state initialized with active report values
-  const [format, setFormat] = useState<'ts' | 'js'>('ts');
+  const [format, setFormat] = useState<'ts' | 'js' | 'json'>('ts');
 
   const [outputDir, setOutputDir] = useState(initialConfig.outputDir);
   const [projectName, setProjectName] = useState(initialConfig.projectName);
@@ -107,6 +255,15 @@ export function ConfigGeneratorModal({ isOpen, onClose, activeConfig }: ConfigGe
 
   const [serverUrl, setServerUrl] = useState(initialConfig.serverUrl);
   const [projectId, setProjectId] = useState(initialConfig.projectId);
+  const [runId, setRunId] = useState(initialConfig.runId);
+  const [fallbackToLocal, setFallbackToLocal] = useState(initialConfig.fallbackToLocal);
+  const [timeoutMs, setRemoteTimeoutMs] = useState(initialConfig.timeoutMs);
+
+  const [dbFilename, setDbFilename] = useState(initialConfig.dbFilename);
+  const [windowSize, setWindowSize] = useState(initialConfig.windowSize);
+  const [maxRuns, setMaxRuns] = useState(initialConfig.maxRuns);
+
+  const [isAdvancedHistoryOpen, setIsAdvancedHistoryOpen] = useState(false);
 
   const [copied, setCopied] = useState(false);
 
@@ -127,6 +284,12 @@ export function ConfigGeneratorModal({ isOpen, onClose, activeConfig }: ConfigGe
       setOpenAutomatically(initialConfig.openAutomatically);
       setServerUrl(initialConfig.serverUrl);
       setProjectId(initialConfig.projectId);
+      setRunId(initialConfig.runId);
+      setFallbackToLocal(initialConfig.fallbackToLocal);
+      setRemoteTimeoutMs(initialConfig.timeoutMs);
+      setDbFilename(initialConfig.dbFilename);
+      setWindowSize(initialConfig.windowSize);
+      setMaxRuns(initialConfig.maxRuns);
     }
   }
 
@@ -143,6 +306,12 @@ export function ConfigGeneratorModal({ isOpen, onClose, activeConfig }: ConfigGe
     setOpenAutomatically(initialConfig.openAutomatically);
     setServerUrl(initialConfig.serverUrl);
     setProjectId(initialConfig.projectId);
+    setRunId(initialConfig.runId);
+    setFallbackToLocal(initialConfig.fallbackToLocal);
+    setRemoteTimeoutMs(initialConfig.timeoutMs);
+    setDbFilename(initialConfig.dbFilename);
+    setWindowSize(initialConfig.windowSize);
+    setMaxRuns(initialConfig.maxRuns);
   };
 
   // Difference detection against baseline
@@ -156,7 +325,15 @@ export function ConfigGeneratorModal({ isOpen, onClose, activeConfig }: ConfigGe
   const isHistoryModeChanged =
     historyMode !== initialConfig.historyMode ||
     (historyMode === 'remote' &&
-      (serverUrl !== initialConfig.serverUrl || projectId !== initialConfig.projectId));
+      (serverUrl !== initialConfig.serverUrl ||
+        projectId !== initialConfig.projectId ||
+        runId !== initialConfig.runId ||
+        fallbackToLocal !== initialConfig.fallbackToLocal ||
+        timeoutMs !== initialConfig.timeoutMs)) ||
+    (historyMode === 'enabled' &&
+      (dbFilename !== initialConfig.dbFilename ||
+        windowSize !== initialConfig.windowSize ||
+        maxRuns !== initialConfig.maxRuns));
   const isConsoleProgressChanged = consoleProgress !== initialConfig.consoleProgress;
   const isOpenAutomaticallyChanged = openAutomatically !== initialConfig.openAutomatically;
 
@@ -214,6 +391,126 @@ export function ConfigGeneratorModal({ isOpen, onClose, activeConfig }: ConfigGe
 
   // Generate resultant config lines, tagging each with isChanged
   const configLines = useMemo<ConfigLine[]>(() => {
+    // Shared emit decisions (avoid re-declaring per format branch)
+    const shouldEmitOutputDir =
+      Boolean(activeConfig?.isCustomOutputDir) ||
+      (outputDir && outputDir !== 'zen-report') ||
+      isOutputDirChanged;
+    const shouldEmitDarkMode =
+      Boolean(activeConfig?.isCustomDarkMode) || darkMode !== 'system' || isDarkModeChanged;
+
+    const lines: ConfigLine[] = [];
+
+    // JSON format generates a clean standalone zen.config.json file
+    if (format === 'json') {
+      const jsonEntries: { key: string; value: unknown; isChanged: boolean }[] = [];
+
+      if (shouldEmitOutputDir) {
+        jsonEntries.push({
+          key: 'outputDir',
+          value: outputDir || 'zen-report',
+          isChanged: isOutputDirChanged,
+        });
+      }
+
+      if (projectName) {
+        jsonEntries.push({
+          key: 'projectName',
+          value: projectName,
+          isChanged: isProjectNameChanged,
+        });
+      }
+
+      if (testRunName) {
+        jsonEntries.push({
+          key: 'testRunName',
+          value: testRunName,
+          isChanged: isTestRunNameChanged,
+        });
+      }
+
+      if (theme && theme !== 'Sage') {
+        jsonEntries.push({ key: 'theme', value: theme, isChanged: isThemeChanged });
+      }
+
+      if (shouldEmitDarkMode) {
+        jsonEntries.push({
+          key: 'darkMode',
+          value: darkMode === 'true' ? true : darkMode === 'false' ? false : 'system',
+          isChanged: isDarkModeChanged,
+        });
+      }
+
+      if (singleSummaryFile) {
+        jsonEntries.push({
+          key: 'singleSummaryFile',
+          value: true,
+          isChanged: isSingleSummaryFileChanged,
+        });
+      }
+
+      if (minimalReport) {
+        jsonEntries.push({ key: 'minimalReport', value: true, isChanged: isMinimalReportChanged });
+      }
+
+      // History in JSON (defaults such as fallbackToLocal: true are omitted)
+      if (historyMode === 'remote') {
+        const histObj: Record<string, unknown> = {
+          mode: 'remote',
+          serverUrl: serverUrl.trim() || '<ENTER_SERVER_URL>',
+          projectId: projectId.trim() || '<ENTER_PROJECT_ID>',
+        };
+        if (runId) histObj.runId = runId;
+        if (!fallbackToLocal) histObj.fallbackToLocal = false;
+        const timeout = Number(timeoutMs);
+        if (timeoutMs && !Number.isNaN(timeout) && timeout !== 5000) histObj.timeoutMs = timeout;
+
+        jsonEntries.push({ key: 'history', value: histObj, isChanged: isHistoryModeChanged });
+      } else if (historyMode === 'disabled') {
+        jsonEntries.push({ key: 'enableHistory', value: false, isChanged: isHistoryModeChanged });
+      } else if (historyMode === 'enabled') {
+        const localHistory = buildLocalHistoryConfig(dbFilename, windowSize, maxRuns);
+        if (localHistory.hasCustom) {
+          jsonEntries.push({
+            key: 'history',
+            value: localHistory,
+            isChanged: isHistoryModeChanged,
+          });
+        } else {
+          jsonEntries.push({ key: 'enableHistory', value: true, isChanged: isHistoryModeChanged });
+        }
+      }
+
+      if (consoleProgress === 'false') {
+        jsonEntries.push({
+          key: 'consoleProgress',
+          value: false,
+          isChanged: isConsoleProgressChanged,
+        });
+      } else if (consoleProgress !== 'auto') {
+        jsonEntries.push({
+          key: 'consoleProgress',
+          value: consoleProgress,
+          isChanged: isConsoleProgressChanged,
+        });
+      }
+
+      if (openAutomatically !== 'never') {
+        jsonEntries.push({
+          key: 'openAutomatically',
+          value: openAutomatically,
+          isChanged: isOpenAutomaticallyChanged,
+        });
+      }
+
+      lines.push({ text: '{', isChanged: false });
+      jsonEntries.forEach((entry, idx) => {
+        pushJsonEntry(lines, entry, idx === jsonEntries.length - 1);
+      });
+      lines.push({ text: '}', isChanged: false });
+      return lines;
+    }
+
     const isTs = format === 'ts';
     const headerLines = isTs
       ? [
@@ -237,18 +534,18 @@ export function ConfigGeneratorModal({ isOpen, onClose, activeConfig }: ConfigGe
 
     const footerLines = ['      },', '    ],', '  ],', '});'];
 
-    const lines: ConfigLine[] = [];
-
     // Header boilerplate
     for (const h of headerLines) {
       lines.push({ text: h, isChanged: false });
     }
 
-    // Output dir
-    lines.push({
-      text: `        outputDir: '${outputDir || 'zen-report'}',`,
-      isChanged: isOutputDirChanged,
-    });
+    // Output dir (omit when default 'zen-report' unless user configured or modified it)
+    if (shouldEmitOutputDir) {
+      lines.push({
+        text: `        outputDir: '${outputDir || 'zen-report'}',`,
+        isChanged: isOutputDirChanged,
+      });
+    }
 
     // Project Name
     if (projectName) {
@@ -274,22 +571,24 @@ export function ConfigGeneratorModal({ isOpen, onClose, activeConfig }: ConfigGe
       });
     }
 
-    // Dark Mode
-    if (darkMode === 'true') {
-      lines.push({
-        text: `        darkMode: true,`,
-        isChanged: isDarkModeChanged,
-      });
-    } else if (darkMode === 'false') {
-      lines.push({
-        text: `        darkMode: false,`,
-        isChanged: isDarkModeChanged,
-      });
-    } else {
-      lines.push({
-        text: `        darkMode: 'system',`,
-        isChanged: isDarkModeChanged,
-      });
+    // Dark Mode (omit when default 'system' unless user explicitly configured or modified it)
+    if (shouldEmitDarkMode) {
+      if (darkMode === 'true') {
+        lines.push({
+          text: `        darkMode: true,`,
+          isChanged: isDarkModeChanged,
+        });
+      } else if (darkMode === 'false') {
+        lines.push({
+          text: `        darkMode: false,`,
+          isChanged: isDarkModeChanged,
+        });
+      } else {
+        lines.push({
+          text: `        darkMode: 'system',`,
+          isChanged: isDarkModeChanged,
+        });
+      }
     }
 
     // Summary File
@@ -310,33 +609,77 @@ export function ConfigGeneratorModal({ isOpen, onClose, activeConfig }: ConfigGe
 
     // History
     if (historyMode === 'remote') {
+      const isMissingServerUrl = !serverUrl.trim();
+      const isMissingProjectId = !projectId.trim();
+
       lines.push({ text: `        history: {`, isChanged: isHistoryModeChanged });
       lines.push({ text: `          mode: 'remote',`, isChanged: isHistoryModeChanged });
       lines.push({
-        text: `          serverUrl: '${serverUrl || 'https://zen-reporter.your-company.com'}',`,
+        text: isMissingServerUrl
+          ? `          serverUrl: '<ENTER_SERVER_URL>', // TODO: Replace with your Zen Reporter server URL`
+          : `          serverUrl: '${serverUrl.trim()}',`,
         isChanged: isHistoryModeChanged,
       });
       lines.push({
         text: `          apiKey: process.env.ZEN_REPORTER_API_KEY,`,
         isChanged: isHistoryModeChanged,
       });
-      if (projectId) {
+      lines.push({
+        text: isMissingProjectId
+          ? `          projectId: '<ENTER_PROJECT_ID>', // TODO: Replace with your project ID`
+          : `          projectId: '${projectId.trim()}',`,
+        isChanged: isHistoryModeChanged,
+      });
+      if (runId) {
         lines.push({
-          text: `          projectId: '${projectId}',`,
+          text: `          runId: '${runId}',`,
+          isChanged: isHistoryModeChanged,
+        });
+      }
+      if (!fallbackToLocal) {
+        lines.push({
+          text: `          fallbackToLocal: false,`,
+          isChanged: isHistoryModeChanged,
+        });
+      }
+      const timeout = Number(timeoutMs);
+      if (timeoutMs && !Number.isNaN(timeout) && timeout !== 5000) {
+        lines.push({
+          text: `          timeoutMs: ${timeout},`,
           isChanged: isHistoryModeChanged,
         });
       }
       lines.push({ text: `        },`, isChanged: isHistoryModeChanged });
-    } else if (historyMode === 'enabled') {
-      lines.push({
-        text: `        enableHistory: true,`,
-        isChanged: isHistoryModeChanged,
-      });
     } else if (historyMode === 'disabled') {
       lines.push({
         text: `        enableHistory: false,`,
         isChanged: isHistoryModeChanged,
       });
+    } else if (historyMode === 'enabled') {
+      const localHistory = buildLocalHistoryConfig(dbFilename, windowSize, maxRuns);
+
+      if (localHistory.hasCustom) {
+        lines.push({ text: `        history: {`, isChanged: isHistoryModeChanged });
+        lines.push({ text: `          mode: 'local',`, isChanged: isHistoryModeChanged });
+        lines.push({
+          text: `          dbFilename: '${localHistory.dbFilename}',`,
+          isChanged: isHistoryModeChanged,
+        });
+        lines.push({
+          text: `          maxRuns: ${localHistory.maxRuns},`,
+          isChanged: isHistoryModeChanged,
+        });
+        lines.push({
+          text: `          windowSize: ${localHistory.windowSize},`,
+          isChanged: isHistoryModeChanged,
+        });
+        lines.push({ text: `        },`, isChanged: isHistoryModeChanged });
+      } else {
+        lines.push({
+          text: `        enableHistory: true,`,
+          isChanged: isHistoryModeChanged,
+        });
+      }
     }
 
     // Console Progress
@@ -368,6 +711,7 @@ export function ConfigGeneratorModal({ isOpen, onClose, activeConfig }: ConfigGe
     return lines;
   }, [
     format,
+    activeConfig,
     outputDir,
     projectName,
     testRunName,
@@ -380,6 +724,12 @@ export function ConfigGeneratorModal({ isOpen, onClose, activeConfig }: ConfigGe
     openAutomatically,
     serverUrl,
     projectId,
+    runId,
+    fallbackToLocal,
+    timeoutMs,
+    dbFilename,
+    windowSize,
+    maxRuns,
     isOutputDirChanged,
     isProjectNameChanged,
     isTestRunNameChanged,
@@ -397,7 +747,12 @@ export function ConfigGeneratorModal({ isOpen, onClose, activeConfig }: ConfigGe
     return configLines.map((l) => l.text).join('\n') + '\n';
   }, [configLines]);
 
-  const targetFileName = format === 'ts' ? 'playwright.config.ts' : 'playwright.config.js';
+  const targetFileName =
+    format === 'ts'
+      ? 'playwright.config.ts'
+      : format === 'js'
+        ? 'playwright.config.js'
+        : 'zen.config.json';
 
   const handleCopy = () => {
     copyToClipboard(cleanCode).then((success) => {
@@ -440,15 +795,28 @@ export function ConfigGeneratorModal({ isOpen, onClose, activeConfig }: ConfigGe
         )
       }
       headerActions={
-        totalChangedCount > 0 ? (
-          <button
-            type="button"
-            onClick={handleResetAll}
-            className="text-xs font-semibold text-accent-blue hover:underline cursor-pointer px-2.5 py-1 rounded bg-accent-blue/10 border border-accent-blue/20 transition-colors"
-          >
-            Reset all
-          </button>
-        ) : null
+        <div className="flex items-center gap-2 select-none">
+          {totalChangedCount > 0 ? (
+            <>
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-medium bg-accent-blue/15 text-accent-blue border border-accent-blue/30">
+                <span className="w-1.5 h-1.5 rounded-full bg-accent-blue animate-pulse" />
+                <span>Modified configuration</span>
+              </span>
+              <button
+                type="button"
+                onClick={handleResetAll}
+                className="text-xs font-semibold text-accent-blue hover:underline cursor-pointer px-2.5 py-1 rounded bg-accent-blue/10 border border-accent-blue/20 transition-colors"
+              >
+                Reset all
+              </button>
+            </>
+          ) : (
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-medium bg-surface-200/50 dark:bg-surface-950 text-text-body-mid dark:text-text-muted border border-border-default/70">
+              <span className="w-1.5 h-1.5 rounded-full bg-success-500" />
+              <span>Active configuration</span>
+            </span>
+          )}
+        </div>
       }
       maxWidthClass="max-w-5xl lg:max-w-6xl"
       maxHeightClass="max-h-[92vh]"
@@ -505,6 +873,11 @@ export function ConfigGeneratorModal({ isOpen, onClose, activeConfig }: ConfigGe
             <div>
               <label className="font-medium text-text-ink dark:text-text-on-primary flex items-center gap-1.5 mb-1">
                 <span>Output Directory</span>
+                {!activeConfig?.isCustomOutputDir &&
+                  !isOutputDirChanged &&
+                  outputDir === 'zen-report' && (
+                    <span className="text-[10px] text-text-muted font-normal">(Using default)</span>
+                  )}
                 {isOutputDirChanged && <ModifiedDot />}
               </label>
               <input
@@ -531,7 +904,10 @@ export function ConfigGeneratorModal({ isOpen, onClose, activeConfig }: ConfigGe
               {/* Theme */}
               <div>
                 <label className="font-medium text-text-ink dark:text-text-on-primary flex items-center gap-1.5 mb-1">
-                  <span>Default Theme</span>
+                  <span>Theme</span>
+                  {!activeConfig?.isCustomTheme && !isThemeChanged && theme === 'Sage' && (
+                    <span className="text-[10px] text-text-muted font-normal">(Using default)</span>
+                  )}
                   {isThemeChanged && <ModifiedDot />}
                 </label>
                 <select
@@ -553,6 +929,13 @@ export function ConfigGeneratorModal({ isOpen, onClose, activeConfig }: ConfigGe
               <div>
                 <label className="font-medium text-text-ink dark:text-text-on-primary flex items-center gap-1.5 mb-1">
                   <span>Dark Mode State</span>
+                  {!activeConfig?.isCustomDarkMode &&
+                    !isDarkModeChanged &&
+                    darkMode === 'system' && (
+                      <span className="text-[10px] text-text-muted font-normal">
+                        (Using default)
+                      </span>
+                    )}
                   {isDarkModeChanged && <ModifiedDot />}
                 </label>
                 <select
@@ -631,20 +1014,31 @@ export function ConfigGeneratorModal({ isOpen, onClose, activeConfig }: ConfigGe
             <div>
               <label className="font-medium text-text-ink dark:text-text-on-primary flex items-center gap-1.5 mb-1">
                 <span>History Recording Mode</span>
+                {!isHistoryModeChanged && historyMode === 'auto' && (
+                  <span className="text-[10px] text-text-muted font-normal">(Using default)</span>
+                )}
                 {isHistoryModeChanged && <ModifiedDot />}
               </label>
               <select
                 value={historyMode}
-                onChange={(e) =>
-                  setHistoryMode(e.target.value as 'auto' | 'enabled' | 'disabled' | 'remote')
-                }
+                onChange={(e) => {
+                  const newMode = e.target.value as 'auto' | 'enabled' | 'disabled' | 'remote';
+                  setHistoryMode(newMode);
+                  if (newMode === 'remote') {
+                    if (!timeoutMs) setRemoteTimeoutMs('5000');
+                  } else if (newMode !== 'disabled') {
+                    if (!dbFilename) setDbFilename('history.db');
+                    if (!windowSize) setWindowSize('50');
+                    if (!maxRuns) setMaxRuns('1000');
+                  }
+                }}
                 className={`w-full rounded-md border bg-canvas px-2.5 py-1 text-xs text-text-ink dark:text-text-on-primary focus:border-accent-blue focus:outline-hidden cursor-pointer transition-colors ${
                   isHistoryModeChanged
                     ? 'border-accent-blue ring-1 ring-accent-blue/30'
                     : 'border-border-default'
                 }`}
               >
-                <option value="auto">Auto (Default SQLite / DuckDB if installed)</option>
+                <option value="auto">Auto (SQLite / DuckDB if installed)</option>
                 <option value="enabled">Explicitly Enabled (requires @duckdb/node-api)</option>
                 <option value="disabled">Disabled (Single-run only)</option>
                 <option value="remote">Remote SaaS / Team Server</option>
@@ -655,8 +1049,9 @@ export function ConfigGeneratorModal({ isOpen, onClose, activeConfig }: ConfigGe
               <div className="p-2.5 rounded-md bg-canvas border border-border-default space-y-1.5">
                 <div className="grid grid-cols-2 gap-2.5">
                   <div>
-                    <label className="block font-medium text-text-ink dark:text-text-on-primary mb-1">
-                      Server URL
+                    <label className="font-medium text-text-ink dark:text-text-on-primary flex items-center gap-1.5 mb-1">
+                      <span>Server URL</span>
+                      <span className="text-[10px] text-amber-500/90 font-normal">(Required)</span>
                     </label>
                     <input
                       type="text"
@@ -667,8 +1062,9 @@ export function ConfigGeneratorModal({ isOpen, onClose, activeConfig }: ConfigGe
                     />
                   </div>
                   <div>
-                    <label className="block font-medium text-text-ink dark:text-text-on-primary mb-1">
-                      Project Identifier
+                    <label className="font-medium text-text-ink dark:text-text-on-primary flex items-center gap-1.5 mb-1">
+                      <span>Project Identifier</span>
+                      <span className="text-[10px] text-amber-500/90 font-normal">(Required)</span>
                     </label>
                     <input
                       type="text"
@@ -698,11 +1094,175 @@ export function ConfigGeneratorModal({ isOpen, onClose, activeConfig }: ConfigGe
               </div>
             )}
 
+            {/* Advanced History Options Accordion (visible for Remote SaaS or Explicitly Enabled local) */}
+            {(historyMode === 'remote' || historyMode === 'enabled') && (
+              <div className="rounded-md border border-border-default/70 bg-canvas/60">
+                <button
+                  type="button"
+                  onClick={() => setIsAdvancedHistoryOpen(!isAdvancedHistoryOpen)}
+                  className="w-full px-2.5 py-1.5 flex items-center justify-between text-left font-medium text-text-ink dark:text-text-on-primary hover:bg-surface-100/50 dark:hover:bg-surface-100/20 transition-colors cursor-pointer"
+                >
+                  <span className="flex items-center gap-1.5 text-[11px]">
+                    <span>Advanced History Settings</span>
+                    {(historyMode === 'remote'
+                      ? runId !== initialConfig.runId ||
+                        fallbackToLocal !== initialConfig.fallbackToLocal ||
+                        timeoutMs !== initialConfig.timeoutMs
+                      : dbFilename !== initialConfig.dbFilename ||
+                        windowSize !== initialConfig.windowSize ||
+                        maxRuns !== initialConfig.maxRuns) && <ModifiedDot />}
+                  </span>
+                  <svg
+                    className={`w-3.5 h-3.5 text-text-muted transition-transform duration-200 ${
+                      isAdvancedHistoryOpen ? 'rotate-180' : ''
+                    }`}
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    strokeWidth={2}
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+
+                {isAdvancedHistoryOpen && (
+                  <div className="p-2.5 pt-1.5 border-t border-border-default/70 space-y-2 bg-surface-50/30 dark:bg-surface-100/20">
+                    {historyMode === 'remote' ? (
+                      <>
+                        <div className="grid grid-cols-2 gap-2.5">
+                          <div>
+                            <label className="text-[11px] font-medium text-text-ink dark:text-text-on-primary flex items-center gap-1.5 mb-1">
+                              <span>Run ID (Optional)</span>
+                              <InfoTooltip
+                                text="Unique identifier for deduplication across sharded CI runs. When omitted, Zen Reporter falls back to CI environment variables (ZEN_REPORTER_RUN_ID or GITHUB_RUN_ID), then a deterministic ID derived from the run's start time, name, and shard."
+                                position="top"
+                                isFirst
+                              />
+                            </label>
+                            <input
+                              type="text"
+                              value={runId}
+                              onChange={(e) => setRunId(e.target.value)}
+                              placeholder="e.g. process.env.GITHUB_RUN_ID"
+                              className="w-full rounded-md border border-border-default bg-canvas px-2 py-1 text-xs text-text-ink dark:text-text-on-primary focus:border-accent-blue focus:outline-hidden"
+                            />
+                          </div>
+                          <div>
+                            <label className="text-[11px] font-medium text-text-ink dark:text-text-on-primary flex items-center gap-1.5 mb-1">
+                              <span>Timeout (ms)</span>
+                              {timeoutMs === '5000' && (
+                                <span className="text-[10px] text-text-muted font-normal">
+                                  (Using default)
+                                </span>
+                              )}
+                            </label>
+                            <input
+                              type="number"
+                              min="1000"
+                              step="500"
+                              value={timeoutMs}
+                              onChange={(e) => setRemoteTimeoutMs(e.target.value)}
+                              placeholder="5000"
+                              className="w-full rounded-md border border-border-default bg-canvas px-2 py-1 text-xs text-text-ink dark:text-text-on-primary focus:border-accent-blue focus:outline-hidden"
+                            />
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2 select-none pt-0.5">
+                          <input
+                            type="checkbox"
+                            id="cfg-fallback-to-local"
+                            checked={fallbackToLocal}
+                            onChange={(e) => setFallbackToLocal(e.target.checked)}
+                            className="rounded border-border-default text-accent-blue focus:ring-accent-blue cursor-pointer"
+                          />
+                          <label
+                            htmlFor="cfg-fallback-to-local"
+                            className="text-[11px] font-medium text-text-ink dark:text-text-on-primary cursor-pointer flex items-center gap-1.5"
+                          >
+                            <span>Fallback to local SQLite if remote unreachable</span>
+                            {fallbackToLocal && (
+                              <span className="text-[10px] text-text-muted font-normal">
+                                (Using default)
+                              </span>
+                            )}
+                          </label>
+                          <InfoTooltip
+                            text="When true, saves a local SQLite copy in outputDir/history.db if the remote ingestion server is offline or unreachable."
+                            position="top"
+                            isLast
+                          />
+                        </div>
+                      </>
+                    ) : (
+                      <div className="grid grid-cols-3 gap-2">
+                        <div>
+                          <label className="text-[11px] font-medium text-text-ink dark:text-text-on-primary flex items-center gap-1.5 mb-1">
+                            <span>Database File</span>
+                            {dbFilename === 'history.db' && (
+                              <span className="text-[10px] text-text-muted font-normal">
+                                (Using default)
+                              </span>
+                            )}
+                          </label>
+                          <input
+                            type="text"
+                            value={dbFilename}
+                            onChange={(e) => setDbFilename(e.target.value)}
+                            placeholder="history.db"
+                            className="w-full rounded-md border border-border-default bg-canvas px-2 py-1 text-xs text-text-ink dark:text-text-on-primary focus:border-accent-blue focus:outline-hidden"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-[11px] font-medium text-text-ink dark:text-text-on-primary flex items-center gap-1.5 mb-1">
+                            <span>Report Runs</span>
+                            {windowSize === '50' && (
+                              <span className="text-[10px] text-text-muted font-normal">
+                                (Using default)
+                              </span>
+                            )}
+                          </label>
+                          <input
+                            type="number"
+                            min="1"
+                            value={windowSize}
+                            onChange={(e) => setWindowSize(e.target.value)}
+                            placeholder="50"
+                            className="w-full rounded-md border border-border-default bg-canvas px-2 py-1 text-xs text-text-ink dark:text-text-on-primary focus:border-accent-blue focus:outline-hidden"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-[11px] font-medium text-text-ink dark:text-text-on-primary flex items-center gap-1.5 mb-1">
+                            <span>Retention Limit</span>
+                            {maxRuns === '1000' && (
+                              <span className="text-[10px] text-text-muted font-normal">
+                                (Using default)
+                              </span>
+                            )}
+                          </label>
+                          <input
+                            type="number"
+                            min="0"
+                            value={maxRuns}
+                            onChange={(e) => setMaxRuns(e.target.value)}
+                            placeholder="1000"
+                            className="w-full rounded-md border border-border-default bg-canvas px-2 py-1 text-xs text-text-ink dark:text-text-on-primary focus:border-accent-blue focus:outline-hidden"
+                          />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+
             <div className="grid grid-cols-2 gap-2.5">
               {/* Console Progress */}
               <div>
                 <label className="font-medium text-text-ink dark:text-text-on-primary flex items-center gap-1.5 mb-1">
                   <span>Console Progress</span>
+                  {!isConsoleProgressChanged && consoleProgress === 'auto' && (
+                    <span className="text-[10px] text-text-muted font-normal">(Using default)</span>
+                  )}
                   {isConsoleProgressChanged && <ModifiedDot />}
                 </label>
                 <select
@@ -727,6 +1287,9 @@ export function ConfigGeneratorModal({ isOpen, onClose, activeConfig }: ConfigGe
               <div>
                 <label className="font-medium text-text-ink dark:text-text-on-primary flex items-center gap-1.5 mb-1">
                   <span>Auto-Open Report</span>
+                  {!isOpenAutomaticallyChanged && openAutomatically === 'never' && (
+                    <span className="text-[10px] text-text-muted font-normal">(Using default)</span>
+                  )}
                   {isOpenAutomaticallyChanged && <ModifiedDot />}
                 </label>
                 <select
@@ -740,7 +1303,7 @@ export function ConfigGeneratorModal({ isOpen, onClose, activeConfig }: ConfigGe
                       : 'border-border-default'
                   }`}
                 >
-                  <option value="never">Never (Default)</option>
+                  <option value="never">Never</option>
                   <option value="on-failure-only">On Failure Only</option>
                   <option value="always">Always</option>
                 </select>
@@ -754,51 +1317,68 @@ export function ConfigGeneratorModal({ isOpen, onClose, activeConfig }: ConfigGe
           {/* Code Header Bar */}
           <div className="flex items-center justify-between gap-3 px-3 py-2 border-b border-border-default bg-surface-50 dark:bg-surface-950 shrink-0">
             {/* Left: Segmented File Switcher with Smooth Sliding Indicator (matching ThemeControls style & animation) */}
-            <div
-              ref={tabsContainerRef}
-              className="relative inline-flex items-center h-8.5 rounded-lg border border-border-default bg-surface-100 dark:bg-surface-950/70 p-0.5 shadow-2xs shrink-0"
-            >
-              {/* Sliding Indicator */}
+            <div className="flex items-center gap-2.5">
               <div
-                aria-hidden="true"
-                style={{
-                  transform: `translate3d(${tabIndicator.left}px, ${tabIndicator.top}px, 0)`,
-                  width: `${tabIndicator.width}px`,
-                  height: `${tabIndicator.height}px`,
-                  opacity: tabIndicator.opacity,
-                }}
-                className="pointer-events-none absolute left-0 top-0 rounded-md bg-canvas shadow-xs ring-1 ring-border-default/80 dark:bg-surface-200 dark:ring-1 dark:ring-white/20 dark:shadow-md transition-all duration-250 ease-[cubic-bezier(0.2,0,0,1)]"
-              />
-
-              <button
-                ref={(el) => {
-                  tabButtonsRef.current.ts = el;
-                }}
-                type="button"
-                onClick={() => setFormat('ts')}
-                className={`relative z-10 px-3 h-full flex items-center text-xs font-sans transition-colors duration-150 cursor-pointer ${
-                  format === 'ts'
-                    ? 'font-bold text-text-ink dark:text-text-on-primary'
-                    : 'text-text-body-mid hover:text-text-ink hover:bg-surface-200/40 dark:text-text-muted dark:hover:text-text-on-primary font-medium'
-                }`}
+                ref={tabsContainerRef}
+                className="relative inline-flex items-center h-8.5 rounded-lg border border-border-default bg-surface-100 dark:bg-surface-950/70 p-0.5 shadow-2xs shrink-0"
               >
-                TypeScript (.ts)
-              </button>
+                {/* Sliding Indicator */}
+                <div
+                  aria-hidden="true"
+                  style={{
+                    transform: `translate3d(${tabIndicator.left}px, ${tabIndicator.top}px, 0)`,
+                    width: `${tabIndicator.width}px`,
+                    height: `${tabIndicator.height}px`,
+                    opacity: tabIndicator.opacity,
+                  }}
+                  className="pointer-events-none absolute left-0 top-0 rounded-md bg-canvas shadow-xs ring-1 ring-border-default/80 dark:bg-surface-200 dark:ring-1 dark:ring-white/20 dark:shadow-md transition-all duration-250 ease-[cubic-bezier(0.2,0,0,1)]"
+                />
 
-              <button
-                ref={(el) => {
-                  tabButtonsRef.current.js = el;
-                }}
-                type="button"
-                onClick={() => setFormat('js')}
-                className={`relative z-10 px-3 h-full flex items-center text-xs font-sans transition-colors duration-150 cursor-pointer ${
-                  format === 'js'
-                    ? 'font-bold text-text-ink dark:text-text-on-primary'
-                    : 'text-text-body-mid hover:text-text-ink hover:bg-surface-200/40 dark:text-text-muted dark:hover:text-text-on-primary font-medium'
-                }`}
-              >
-                JavaScript (.js)
-              </button>
+                <button
+                  ref={(el) => {
+                    tabButtonsRef.current.ts = el;
+                  }}
+                  type="button"
+                  onClick={() => setFormat('ts')}
+                  className={`relative z-10 px-3 h-full flex items-center text-xs font-sans transition-colors duration-150 cursor-pointer ${
+                    format === 'ts'
+                      ? 'font-bold text-text-ink dark:text-text-on-primary'
+                      : 'text-text-body-mid hover:text-text-ink hover:bg-surface-200/40 dark:text-text-muted dark:hover:text-text-on-primary font-medium'
+                  }`}
+                >
+                  TypeScript (.ts)
+                </button>
+
+                <button
+                  ref={(el) => {
+                    tabButtonsRef.current.js = el;
+                  }}
+                  type="button"
+                  onClick={() => setFormat('js')}
+                  className={`relative z-10 px-3 h-full flex items-center text-xs font-sans transition-colors duration-150 cursor-pointer ${
+                    format === 'js'
+                      ? 'font-bold text-text-ink dark:text-text-on-primary'
+                      : 'text-text-body-mid hover:text-text-ink hover:bg-surface-200/40 dark:text-text-muted dark:hover:text-text-on-primary font-medium'
+                  }`}
+                >
+                  JavaScript (.js)
+                </button>
+
+                <button
+                  ref={(el) => {
+                    tabButtonsRef.current.json = el;
+                  }}
+                  type="button"
+                  onClick={() => setFormat('json')}
+                  className={`relative z-10 px-3 h-full flex items-center text-xs font-sans transition-colors duration-150 cursor-pointer ${
+                    format === 'json'
+                      ? 'font-bold text-text-ink dark:text-text-on-primary'
+                      : 'text-text-body-mid hover:text-text-ink hover:bg-surface-200/40 dark:text-text-muted dark:hover:text-text-on-primary font-medium'
+                  }`}
+                >
+                  JSON (zen.config.json)
+                </button>
+              </div>
             </div>
 
             {/* Right: Copy Button (styled identically to UniversalPreviewModal Download button) */}
@@ -847,12 +1427,12 @@ export function ConfigGeneratorModal({ isOpen, onClose, activeConfig }: ConfigGe
           </div>
 
           {/* Syntax Highlighted Resultant Code Viewer (aligned with UniversalPreviewModal text log viewport) */}
-          <div className="flex-1 overflow-auto p-4 font-mono text-xs leading-relaxed text-text-ink dark:text-slate-200 select-all">
-            <pre className="font-mono whitespace-pre">
+          <div className="flex-1 overflow-auto p-4 font-mono text-xs leading-relaxed text-text-ink dark:text-slate-200">
+            <pre className="font-mono whitespace-pre w-fit min-w-full">
               {configLines.map((line, idx) => {
                 const highlighted = highlightSyntaxLine(
                   line.text,
-                  format === 'ts' ? 'typescript' : 'javascript'
+                  format === 'json' ? 'json' : format === 'ts' ? 'typescript' : 'javascript'
                 );
 
                 const bgClass = line.isChanged

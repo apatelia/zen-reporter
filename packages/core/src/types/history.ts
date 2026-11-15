@@ -111,7 +111,12 @@ export interface HistoryData {
 export interface LocalHistoryConfig {
   mode?: 'local';
   /**
-   * Custom path or filename for the SQLite database.
+   * Custom filename for the SQLite database within `<outputDir>`.
+   * Defaults to `'history.db'`.
+   */
+  dbFilename?: string;
+  /**
+   * Deprecated: use `dbFilename` instead. Custom path or filename for the SQLite database.
    * Defaults to `${outputDir}/history.db`
    */
   dbPath?: string;
@@ -121,7 +126,7 @@ export interface LocalHistoryConfig {
    */
   windowSize?: number;
   /**
-   * Retention policy: max number of runs to keep in history.db (or 0 for infinite).
+   * Retention policy: max number of runs to keep in database (or 0 for infinite).
    * Default: 1000
    */
   maxRuns?: number;

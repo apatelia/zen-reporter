@@ -7,6 +7,12 @@ import type { HistoryConfig, ResultSummary, TestCase as TestCaseModel } from '@a
 export interface WriteRunHistoryOptions {
   startTime: string;
   testRunName: string;
+  /**
+   * Original user-supplied test run name template (e.g. "Unit Tests Run #{N}"
+   *), before `{N}` is replaced with the actual run number. Persisted so
+   * historical run reconstruction can restore the configured template.
+   */
+  rawTestRunName?: string;
   projectName: string;
   shard?: FullConfig['shard'];
   outputDir: string;
@@ -15,9 +21,35 @@ export interface WriteRunHistoryOptions {
   testCases: TestCaseModel[];
   stepCategories?: Record<string, number>;
   historyConfig?: HistoryConfig;
-  dbPath?: string;
   maxRuns?: number;
   windowSize?: number;
+}
+
+/**
+ * Resolves the absolute path of the history database from the history configuration.
+ * `dbFilename` is treated as a plain filename inside `outputDir` (any directory
+ * components are stripped via `path.basename`); the deprecated `dbPath` is resolved
+ * against `cwd`.
+ *
+ * @param cwd - Current working directory.
+ * @param outputDir - Absolute path of the report output directory.
+ * @param history - User history configuration, if any.
+ * @returns Absolute path of the SQLite history database file.
+ */
+export function resolveHistoryDbPath(
+  cwd: string,
+  outputDir: string,
+  history?: HistoryConfig
+): string {
+  if (typeof history === 'object' && history !== null) {
+    if ('dbFilename' in history && history.dbFilename) {
+      return path.join(outputDir, path.basename(String(history.dbFilename)));
+    }
+    if ('dbPath' in history && history.dbPath) {
+      return path.resolve(cwd, String(history.dbPath));
+    }
+  }
+  return path.join(outputDir, 'history.db');
 }
 
 /**
@@ -46,9 +78,7 @@ export async function writeRunHistory(options: WriteRunHistoryOptions): Promise<
       return;
     }
 
-    const dbPath = options.dbPath
-      ? path.resolve(normalizedCwd, options.dbPath)
-      : path.join(outputDir, 'history.db');
+    const dbPath = resolveHistoryDbPath(normalizedCwd, outputDir, options.historyConfig);
     const store = new SqliteHistoryStore({
       dbPath,
       maxRuns: options.maxRuns,

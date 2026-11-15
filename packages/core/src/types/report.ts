@@ -74,11 +74,18 @@ export interface TestRun {
   suites: TestSuite[];
   projectName?: string;
   testRunName?: string;
+  rawTestRunName?: string;
   theme?: string;
+  isCustomTheme?: boolean;
   darkMode?: 'system' | 'light' | 'dark';
+  isCustomDarkMode?: boolean;
   enableHistory?: 'auto' | boolean;
   history?: HistoryConfig;
   minimalReport?: boolean;
+  outputDir?: string;
+  isCustomOutputDir?: boolean;
+  singleSummaryFile?: boolean;
+  openAutomatically?: 'always' | 'never' | 'on-failure-only';
 }
 
 export interface ReportData {

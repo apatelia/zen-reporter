@@ -15,7 +15,7 @@ Usage:
   npx zr history regressions            Tests that passed in one run, failed in the next (latest regression per test)
   npx zr history slow [--limit N]       Slowest tests across runs (default 10)
   npx zr history trend                  Per-run pass rate over time (default 25; use --all or --limit <N>)
-  npx zr history report                 Generate history.json for server and local history inspection
+  npx zr history report                 Generate history.json and sync index.html for report history inspection
   npx zr history clean [options]        Clean SQLite history runs and delete orphaned disk attachments
                                           --all                 Remove all historical runs
                                           --recent <N>          Delete the most recent N runs

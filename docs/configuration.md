@@ -51,7 +51,7 @@ import type { RemoteHistoryConfig } from '@arpanp/zen-reporter';
 const remoteHistory: RemoteHistoryConfig = {
   mode: 'remote',
   serverUrl: process.env.ZEN_SERVER_URL || 'https://zen-reporter.internal',
-  apiKey: process.env.ZEN_API_KEY,
+  apiKey: process.env.ZEN_REPORTER_API_KEY,
   projectId: 'frontend-e2e',
 };
 ```
@@ -85,8 +85,8 @@ const remoteHistory: RemoteHistoryConfig = {
 ```ts
 history: {
   mode: 'local', // optional; local is the default
-  dbPath: 'data/history.db', // optional; defaults to <outputDir>/history.db
-  maxRuns: 1000, // optional; retention: max runs kept in history.db (0 = unlimited); default 1000
+  dbFilename: 'history.db', // optional; SQLite database filename inside <outputDir>; default 'history.db'
+  maxRuns: 1000, // optional; retention: max runs kept in database (0 = unlimited); default 1000
   windowSize: 50, // optional; max runs embedded into the static HTML report; default 50
 }
 ```
@@ -97,13 +97,22 @@ history: {
 history: {
   mode: 'remote',
   serverUrl: process.env.ZEN_SERVER_URL || 'https://zen-reporter.internal',
-  apiKey: process.env.ZEN_API_KEY, // optional; tenant authentication
+  apiKey: process.env.ZEN_REPORTER_API_KEY, // optional; tenant authentication
   projectId: 'frontend-e2e', // optional; explicit project/repo identifier
   runId: process.env.GITHUB_RUN_ID, // optional; idempotency key; auto-detected from CI env vars if omitted
   fallbackToLocal: true, // optional; default true — keeps a local SQLite copy when the server is unreachable
   timeoutMs: 5000, // optional; default 5000 ms per ingestion request
 }
 ```
+
+**`runId` resolution (idempotency key):** the server de-duplicates runs by `runId`. When it is not set explicitly, the following are tried in order:
+
+1. `runId` from the config (shown above)
+2. `process.env.ZEN_REPORTER_RUN_ID` — portable variable you can export in any CI (Jenkins, Bitbucket, GitLab, CircleCI, …), since `GITHUB_RUN_ID` only exists in GitHub Actions
+3. `process.env.GITHUB_RUN_ID` — set automatically by GitHub Actions
+4. a deterministic ID derived from the run's start time, run name, and shard index
+
+`projectId` works the same way: the config value falls back to `process.env.ZEN_REPORTER_PROJECT_ID`.
 
 **Disabled**:
 
@@ -214,7 +223,7 @@ export default defineConfig({
         history: {
           mode: 'remote',
           serverUrl: process.env.ZEN_SERVER_URL || 'https://zen-reporter.internal',
-          apiKey: process.env.ZEN_API_KEY,
+          apiKey: process.env.ZEN_REPORTER_API_KEY,
           projectId: 'frontend-e2e',
         },
       },
@@ -292,7 +301,7 @@ export default {
   history: {
     mode: 'remote',
     serverUrl: process.env.ZEN_SERVER_URL || 'https://zen-reporter.internal',
-    apiKey: process.env.ZEN_API_KEY,
+    apiKey: process.env.ZEN_REPORTER_API_KEY,
     projectId: 'frontend-e2e',
   },
 };

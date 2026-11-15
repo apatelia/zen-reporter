@@ -8,6 +8,7 @@ export const CREATE_RUNS_TABLE_SQL = `
 CREATE TABLE IF NOT EXISTS history_runs (
   run_id TEXT PRIMARY KEY,
   run_name TEXT NOT NULL,
+  raw_test_run_name TEXT,
   project_name TEXT NOT NULL,
   started_at TEXT NOT NULL,
   ended_at TEXT NOT NULL,

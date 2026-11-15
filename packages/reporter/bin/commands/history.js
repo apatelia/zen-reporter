@@ -11,7 +11,6 @@ import {
   openDuckDb,
   printPaginatedTable,
   printTable,
-  PROJECT_DURATIONS_SQL,
   REGRESSIONS_SQL,
   runQuery,
   RUNS_SQL,
@@ -25,164 +24,31 @@ import { generateExportFilename } from '@arpanp/zen-core';
 import { printHelp } from './help.js';
 
 /**
- * Generates `history.json` aggregate metrics from DuckDB queries and injects data into `index.html`.
+ * Writes `history.json` and strips any legacy embedded `<script id="history-data">`
+ * tag from `index.html` (if `index.html` exists).
  *
- * @param {object} conn - Active DuckDB connection.
+ * @param {object} historyData - Complete aggregated HistoryData payload.
  * @param {string} historyDir - Output report directory path.
  * @param {string} [cwd=process.cwd()] - Current working directory.
- * @returns {Promise<void>}
+ * @returns {void}
  */
-export async function generateHistoryReport(conn, historyDir, cwd = process.cwd()) {
-  await setupHistorySource(conn, historyDir, cwd);
-
-  const runsSql = `SELECT DISTINCT run_id, run_name, started_at, run_duration_ms, coalesce(max(run_sequential_duration_ms), sum(duration_ms)) AS run_sequential_duration_ms, max(run_workers) AS run_workers, count(DISTINCT file) AS run_files, run_total, run_passed, coalesce(max(run_flaky), 0) AS run_flaky, run_failed, run_timed_out, run_skipped, run_interrupted, round(100.0 * (run_passed + coalesce(max(run_flaky), 0)) / nullif(run_total, 0), 1) AS pass_rate, max(coalesce(step_assertions, 0)) AS step_assertions, max(coalesce(step_actions, 0)) AS step_actions, max(coalesce(step_network, 0)) AS step_network, max(coalesce(step_hooks, 0)) AS step_hooks, max(coalesce(step_waits, 0)) AS step_waits, max(coalesce(step_others, 0)) AS step_others, max(git_branch) AS git_branch, max(git_commit) AS git_commit, max(git_commit_full) AS git_commit_full FROM ${SRC} GROUP BY run_id, run_name, started_at, run_duration_ms, run_total, run_passed, run_failed, run_timed_out, run_skipped, run_interrupted ORDER BY started_at DESC LIMIT 50`;
-
-  const windowedFilesSql = `
-    WITH recent_runs AS (
-      SELECT run_id, started_at
-      FROM ${SRC}
-      GROUP BY run_id, started_at
-      ORDER BY started_at DESC
-      LIMIT 50
-    )
-    SELECT
-      t.run_id,
-      t.started_at,
-      t.file,
-      count(*) AS total,
-      count(*) FILTER (status = 'passed' AND coalesce(t.passed_on_retry, 0) = 0) AS passed,
-      count(*) FILTER (status = 'passed' AND coalesce(t.passed_on_retry, 0) > 0) AS flaky,
-      count(*) FILTER (status = 'failed') AS failed,
-      count(*) FILTER (status = 'timedOut') AS timed_out,
-      count(*) FILTER (status = 'interrupted') AS interrupted,
-      count(*) FILTER (status = 'skipped') AS skipped
-    FROM ${SRC} t
-    JOIN recent_runs r ON t.run_id = r.run_id
-    WHERE t.file IS NOT NULL AND t.file != ''
-    GROUP BY t.run_id, t.started_at, t.file
-    ORDER BY t.started_at ASC, t.file ASC
-  `;
-
-  const windowedTestsSql = `
-    WITH recent_runs AS (
-      SELECT run_id, started_at
-      FROM ${SRC}
-      GROUP BY run_id, started_at
-      ORDER BY started_at DESC
-      LIMIT 50
-    )
-    SELECT
-      t.run_id,
-      t.started_at,
-      t.suite,
-      t.file,
-      t.title,
-      t.project,
-      count(*) AS total,
-      count(*) FILTER (status = 'passed' AND coalesce(t.passed_on_retry, 0) = 0) AS passed,
-      count(*) FILTER (status = 'passed' AND coalesce(t.passed_on_retry, 0) > 0) AS flaky,
-      count(*) FILTER (status = 'failed') AS failed,
-      count(*) FILTER (status = 'timedOut') AS timed_out,
-      count(*) FILTER (status = 'interrupted') AS interrupted,
-      count(*) FILTER (status = 'skipped') AS skipped,
-      round(avg(duration_ms), 1) AS avg_duration_ms
-    FROM ${SRC} t
-    JOIN recent_runs r ON t.run_id = r.run_id
-    WHERE t.title IS NOT NULL AND t.title != ''
-    GROUP BY t.run_id, t.started_at, t.suite, t.file, t.title, t.project
-    ORDER BY t.started_at ASC, t.file ASC, t.title ASC
-  `;
-
-  const [
-    runsResult,
-    flakyResult,
-    regressionsResult,
-    slowResult,
-    projectDurationsResult,
-    filesResult,
-    testsResult,
-  ] = await Promise.all([
-    runQuery(conn, runsSql),
-    runQuery(conn, FLAKY_SQL),
-    runQuery(conn, REGRESSIONS_SQL),
-    runQuery(conn, SLOW_SQL, [10]),
-    runQuery(conn, PROJECT_DURATIONS_SQL),
-    runQuery(conn, windowedFilesSql),
-    runQuery(conn, windowedTestsSql),
-  ]);
-
-  const projectDurationsByRun = {};
-
-  for (const row of projectDurationsResult.rows) {
-    if (!projectDurationsByRun[row.run_id]) {
-      projectDurationsByRun[row.run_id] = {};
-    }
-
-    projectDurationsByRun[row.run_id][row.project] = row.duration_sec;
-  }
-
-  const runs = runsResult.rows.map((run) => {
-    const {
-      step_assertions,
-      step_actions,
-      step_network,
-      step_hooks,
-      step_waits,
-      step_others,
-      ...rest
-    } = run;
-
-    const hasStepCategories =
-      (step_assertions || 0) +
-        (step_actions || 0) +
-        (step_network || 0) +
-        (step_hooks || 0) +
-        (step_waits || 0) +
-        (step_others || 0) >
-      0;
-
-    return {
-      ...rest,
-      project_durations: projectDurationsByRun[run.run_id] || {},
-      step_categories: hasStepCategories
-        ? {
-            assertions: step_assertions || 0,
-            actions: step_actions || 0,
-            network: step_network || 0,
-            hooks: step_hooks || 0,
-            waits: step_waits || 0,
-            others: step_others || 0,
-          }
-        : undefined,
-    };
-  });
-
-  // Retain up to 50 runs ordered by started_at ASC for trends and history browsing
-  const sortedRuns = runs.slice().reverse();
-  const history = {
-    generated_at: new Date().toISOString(),
-    runs: sortedRuns,
-    flaky: flakyResult.rows,
-    regressions: regressionsResult.rows,
-    slowest: slowResult.rows,
-    files: filesResult.rows,
-    tests: testsResult.rows,
-    project_trends: projectDurationsResult.rows,
-  };
-
+export function syncHistoryArtifacts(historyData, historyDir, cwd = process.cwd()) {
   const historyPath = resolve(cwd, historyDir, 'history.json');
-  writeFileSync(historyPath, JSON.stringify(history, null, 2), 'utf8');
+  writeFileSync(historyPath, JSON.stringify(historyData, null, 2), 'utf8');
 
-  // Strip legacy embedded history script from index.html if present
   const indexPath = resolve(cwd, historyDir, 'index.html');
   if (existsSync(indexPath)) {
-    let html = readFileSync(indexPath, 'utf8');
-    if (html.includes('<script id="history-data"')) {
-      html = html.replace(
-        /<script id="history-data" type="application\/json">[\s\S]*?<\/script>/,
-        ''
-      );
-      writeFileSync(indexPath, html, 'utf8');
+    try {
+      let html = readFileSync(indexPath, 'utf8');
+      if (html.includes('<script id="history-data"')) {
+        html = html.replace(
+          /<script id="history-data" type="application\/json">[\s\S]*?<\/script>/,
+          ''
+        );
+        writeFileSync(indexPath, html, 'utf8');
+      }
+    } catch {
+      /* ignore index.html update errors */
     }
   }
 
@@ -285,6 +151,28 @@ export async function handleHistory(subArgs, cwd = process.cwd()) {
   const historyDir = process.env.PW_REPORTER_OUTPUT || 'zen-report';
   const runsDirPath = resolve(cwd, historyDir, 'runs');
   const sub = subArgs[0] || 'runs';
+
+  if (sub === 'report') {
+    const dbPath = resolve(cwd, historyDir, 'history.db');
+    if (!existsSync(dbPath)) {
+      throw new Error(
+        `SQLite history database not found at "${historyDir}/history.db". Report generation requires local SQLite engine.`
+      );
+    }
+
+    const { SqliteHistoryStore } = await import('../../dist/reporter.js');
+    const store = new SqliteHistoryStore({
+      dbPath,
+      autoMigrate: false,
+    });
+    try {
+      const historyData = await store.getHistoryData();
+      syncHistoryArtifacts(historyData, historyDir, cwd);
+      return;
+    } finally {
+      await store.close();
+    }
+  }
 
   if (sub === 'clean') {
     const dbPath = resolve(cwd, historyDir, 'history.db');
@@ -637,13 +525,12 @@ export async function handleHistory(subArgs, cwd = process.cwd()) {
         `✓ Successfully deleted ${result.deletedRunIds.length} run(s), ${result.deletedTestCases} test execution(s), and ${result.deletedAttachments} attachment file(s).${vacuumNote}`
       );
 
-      // Refresh history.json if it exists so static reports don't have stale deleted runs
+      // Refresh history.json and index.html embeddings if history.json exists so static reports don't have stale deleted runs
       const historyJsonPath = resolve(cwd, historyDir, 'history.json');
       if (existsSync(historyJsonPath)) {
         try {
           const freshHistory = await store.getHistoryData();
-          writeFileSync(historyJsonPath, JSON.stringify(freshHistory, null, 2), 'utf8');
-          console.log(`✓ Synchronized ${historyDir}/history.json with updated SQLite database.`);
+          syncHistoryArtifacts(freshHistory, historyDir, cwd);
         } catch {
           /* ignore report sync errors */
         }
@@ -847,10 +734,6 @@ export async function handleHistory(subArgs, cwd = process.cwd()) {
           'tests',
           { all: isAllFlag, limit: explicitLimit, interactive: isInteractiveSession && !isExport }
         );
-        break;
-
-      case 'report':
-        await generateHistoryReport(conn, historyDir, cwd);
         break;
 
       case 'query': {

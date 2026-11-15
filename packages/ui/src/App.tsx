@@ -1363,12 +1363,19 @@ export default function App() {
         isOpen={isConfigGeneratorOpen}
         onClose={() => setIsConfigGeneratorOpen(false)}
         activeConfig={{
+          outputDir: reportData?.testRun?.outputDir,
+          isCustomOutputDir: reportData?.testRun?.isCustomOutputDir,
           projectName,
-          testRunName,
+          testRunName: reportData?.testRun?.rawTestRunName || testRunName,
           theme: normalizeTheme(reportData?.testRun?.theme) ?? undefined,
+          isCustomTheme: reportData?.testRun?.isCustomTheme,
           darkMode: reportData?.testRun?.darkMode,
+          isCustomDarkMode: reportData?.testRun?.isCustomDarkMode,
+          singleSummaryFile: reportData?.testRun?.singleSummaryFile,
           minimalReport: reportData?.testRun?.minimalReport,
           enableHistory: reportData?.testRun?.enableHistory,
+          history: reportData?.testRun?.history,
+          openAutomatically: reportData?.testRun?.openAutomatically,
         }}
       />
 

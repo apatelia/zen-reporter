@@ -72,14 +72,31 @@ export default function BaseModal({
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         const activeEl = document.activeElement;
-        // If an input, textarea, or contenteditable element inside this modal is focused, blur it and focus the modal container first instead of closing the modal
-        if (
+        // If an active text-editing control, textarea, select dropdown, or contenteditable element inside this modal
+        // is focused, blur it and focus the modal container first instead of closing the modal.
+        // Non-text input controls (such as checkboxes and radio buttons) do not trap Escape.
+        const isTextInput =
+          activeEl instanceof HTMLInputElement &&
+          ![
+            'checkbox',
+            'radio',
+            'button',
+            'submit',
+            'reset',
+            'file',
+            'image',
+            'range',
+            'color',
+          ].includes(activeEl.type);
+
+        const isTextOrSelectControl =
           activeEl instanceof HTMLElement &&
-          (activeEl.tagName === 'INPUT' ||
+          (isTextInput ||
             activeEl.tagName === 'TEXTAREA' ||
             activeEl.tagName === 'SELECT' ||
-            activeEl.isContentEditable)
-        ) {
+            activeEl.isContentEditable);
+
+        if (isTextOrSelectControl) {
           e.preventDefault();
           e.stopPropagation();
           activeEl.blur();
