@@ -1317,11 +1317,7 @@ export default function App() {
                     </div>
                   }
                 >
-                  <InsightsSection
-                    history={historyData}
-                    suites={suites}
-                    isHistoryDisabled={isHistoryDisabled}
-                  />
+                  <InsightsSection history={historyData} isHistoryDisabled={isHistoryDisabled} />
                 </Suspense>
               )}
 

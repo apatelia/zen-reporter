@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import {
   BarChart,
   Bar,
@@ -9,12 +10,11 @@ import {
   ResponsiveContainer,
   TooltipContentProps,
 } from 'recharts';
-import { computeProjectStats, collectAllCases } from '@arpanp/zen-core';
+import type { ProjectStats } from '@arpanp/zen-core';
 import LearnMoreButton from '@/components/shared/LearnMoreButton';
-import type { TestSuite } from '@arpanp/zen-core';
 
 export interface ProjectFlakyRateChartProps {
-  suites: TestSuite[];
+  projectStats: ProjectStats[];
   title?: string;
   onOpenGuide?: () => void;
 }
@@ -79,26 +79,40 @@ const LegendFormatter = (value: string) => {
   );
 };
 
+/**
+ * Renders the Flaky Test Count & Retry Rate by Project bar chart with optional guide modal.
+ * @param projectStats - Per-project statistics including flaky counts, rates, and executed test totals.
+ * @param title - Section heading for the chart.
+ * @param onOpenGuide - Opens the chart's Learn More guide modal when provided.
+ * @returns The rendered flaky rate chart section.
+ */
 export default function ProjectFlakyRateChart({
-  suites,
+  projectStats,
   title = 'Flaky Test Count & Retry Rate by Project',
   onOpenGuide,
 }: ProjectFlakyRateChartProps) {
-  const allCases = collectAllCases(suites);
-  const projectStats = computeProjectStats(allCases);
-
-  const maxLen = projectStats.reduce((max, p) => Math.max(max, p.name.length), 0);
+  const maxLen = useMemo(
+    () => projectStats.reduce((max, p) => Math.max(max, p.name.length), 0),
+    [projectStats]
+  );
   const yAxisWidth = Math.max(80, Math.min(240, maxLen * 8 + 24));
 
-  const data: ChartDataItem[] = projectStats.map((p) => ({
-    name: p.name,
-    'Flaky Tests': p.flakyCount,
-    'Flaky Rate (%)': p.flakyRate,
-    total: p.total,
-    executed: p.executed,
-  }));
+  const data: ChartDataItem[] = useMemo(
+    () =>
+      projectStats.map((p) => ({
+        name: p.name,
+        'Flaky Tests': p.flakyCount,
+        'Flaky Rate (%)': p.flakyRate,
+        total: p.total,
+        executed: p.executed,
+      })),
+    [projectStats]
+  );
 
-  const hasFlakyData = projectStats.length > 0 && data.some((d) => d['Flaky Tests'] > 0);
+  const hasFlakyData = useMemo(
+    () => projectStats.length > 0 && data.some((d) => d['Flaky Tests'] > 0),
+    [projectStats, data]
+  );
 
   return (
     <div className="rounded-md bg-surface-50 border border-border-default p-5 shadow-xs flex flex-col justify-between">

@@ -13,7 +13,7 @@ import {
   TooltipValueType,
   TooltipPayloadEntry,
 } from 'recharts';
-import type { ReactElement, ReactNode } from 'react';
+import { useMemo, type ReactElement, type ReactNode } from 'react';
 import type { ProjectStats } from '@arpanp/zen-core';
 import { formatDurationVerbose } from '@arpanp/zen-core';
 import LearnMoreButton from '@/components/shared/LearnMoreButton';
@@ -201,16 +201,21 @@ const LegendFormatter = (value: string): ReactElement => (
 export default function ProjectLatencySpreadChart({
   projectStats,
   title = 'Duration Spread & P95 Latency by Project',
-  className = 'rounded-md bg-canvas border border-border-default px-6 py-6 shadow-sm flex flex-col justify-between',
+  className = 'rounded-md bg-surface-50 border border-border-default p-5 shadow-xs flex flex-col justify-between',
   onOpenGuide,
 }: ProjectLatencySpreadChartProps): ReactElement {
-  const maxLen = projectStats.reduce((max, p) => Math.max(max, p.name.length), 0);
+  const maxLen = useMemo(
+    () => projectStats.reduce((max, p) => Math.max(max, p.name.length), 0),
+    [projectStats]
+  );
   const yAxisWidth = Math.max(80, Math.min(240, maxLen * 8 + 24));
 
-  const data = buildChartData(projectStats);
+  const data = useMemo(() => buildChartData(projectStats), [projectStats]);
 
-  const hasDurationData =
-    projectStats.length > 0 && data.some((d) => d.avgRawMs > 0 || d.p95RawMs > 0);
+  const hasDurationData = useMemo(
+    () => projectStats.length > 0 && data.some((d) => d.avgRawMs > 0 || d.p95RawMs > 0),
+    [projectStats, data]
+  );
 
   /**
    * Aligns the longest project name one space away from the axis.
@@ -220,9 +225,9 @@ export default function ProjectLatencySpreadChart({
   const formatYTick = (val: string): string =>
     val.length === maxLen && maxLen > 0 ? `\u00A0${val}` : val;
 
-  const maxP95Ms = data.reduce((max, d) => Math.max(max, d.p95RawMs), 0);
+  const maxP95Ms = useMemo(() => data.reduce((max, d) => Math.max(max, d.p95RawMs), 0), [data]);
   const domainMax = Math.max(Math.log10(Math.max(maxP95Ms, 1)), 0.3) + 0.6;
-  const xTicks = buildLogTicks(Math.max(maxP95Ms, 1));
+  const xTicks = useMemo(() => buildLogTicks(Math.max(maxP95Ms, 1)), [maxP95Ms]);
 
   return (
     <div className={className}>
@@ -313,6 +318,7 @@ export default function ProjectLatencySpreadChart({
               stackId="dur"
               fill="var(--color-accent-green)"
               radius={[4, 0, 0, 4]}
+              isAnimationActive={false}
             />
             <Bar
               dataKey="tailLog"
@@ -320,6 +326,7 @@ export default function ProjectLatencySpreadChart({
               stackId="dur"
               fill="var(--color-accent-house)"
               shape={TailBarShape}
+              isAnimationActive={false}
             >
               <LabelList
                 position="right"

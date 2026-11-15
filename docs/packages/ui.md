@@ -65,8 +65,6 @@ src/components/
 │   └── HistoryGuides.tsx               # Interactive guide modals
 ├── insights/              # Insights tab
 │   ├── InsightsSection.tsx
-│   ├── ProjectLatencySpreadChart.tsx
-│   ├── ProjectFlakyRateChart.tsx
 │   ├── FlakyTestsTableSection.tsx      # Paginated flaky tests table + CSV export
 │   ├── RegressionsTableSection.tsx     # Paginated regressions table + CSV export
 │   ├── SlowestTestsTableSection.tsx    # Paginated slowest tests table + CSV export
@@ -86,6 +84,8 @@ src/components/
 │   ├── ProjectDetailCards.tsx
 │   ├── ProjectBarCharts.tsx
 │   ├── ProjectVolumeCoverageChart.tsx
+│   ├── ProjectLatencySpreadChart.tsx
+│   ├── ProjectFlakyRateChart.tsx
 │   └── ProjectsGuides.tsx
 ├── suites/                # Suites tab (tree view)
 │   ├── SuitesSection.tsx

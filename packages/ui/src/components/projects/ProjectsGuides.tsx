@@ -1,28 +1,32 @@
 import GuideModal from '@/components/shared/GuideModal';
 
+export type ProjectModalType =
+  | 'status-breakdown'
+  | 'volume-coverage'
+  | 'duration-benchmark'
+  | 'project-flaky-rate'
+  | 'project-health'
+  | null;
+
 interface ProjectsGuidesProps {
-  statusBreakdownModalOpen: boolean;
-  onCloseStatusBreakdownModal: () => void;
-  volumeCoverageModalOpen: boolean;
-  onCloseVolumeCoverageModal: () => void;
-  projectHealthModalOpen: boolean;
-  onCloseProjectHealthModal: () => void;
+  activeModal: ProjectModalType;
+  onClose: () => void;
 }
 
-export default function ProjectsGuides({
-  statusBreakdownModalOpen,
-  onCloseStatusBreakdownModal,
-  volumeCoverageModalOpen,
-  onCloseVolumeCoverageModal,
-  projectHealthModalOpen,
-  onCloseProjectHealthModal,
-}: ProjectsGuidesProps) {
+/**
+ * Renders the Projects tab guide modals for status breakdown, test volume coverage,
+ * duration spread benchmark, flaky retry rates, and project health metrics.
+ * @param activeModal - Identifier of the currently open guide modal, or null when no modal is open.
+ * @param onClose - Handler that closes the open guide modal.
+ * @returns The rendered guide modals.
+ */
+export default function ProjectsGuides({ activeModal, onClose }: ProjectsGuidesProps) {
   return (
     <>
       {/* 1. Status Breakdown by Project Guide Modal */}
       <GuideModal
-        isOpen={statusBreakdownModalOpen}
-        onClose={onCloseStatusBreakdownModal}
+        isOpen={activeModal === 'status-breakdown'}
+        onClose={onClose}
         title="About Status Breakdown by Project"
         subtitle="Distribution of test outcomes per configured Playwright project profile"
       >
@@ -84,8 +88,8 @@ export default function ProjectsGuides({
 
       {/* 2. Test Volume & Coverage Density Guide Modal */}
       <GuideModal
-        isOpen={volumeCoverageModalOpen}
-        onClose={onCloseVolumeCoverageModal}
+        isOpen={activeModal === 'volume-coverage'}
+        onClose={onClose}
         title="Test Volume & Coverage Density per Project"
         subtitle="Understanding test suite distribution and active execution coverage"
       >
@@ -132,10 +136,178 @@ export default function ProjectsGuides({
         </div>
       </GuideModal>
 
-      {/* 3. Project Health & Breakdown Guide Modal */}
+      {/* 3. Duration Spread & P95 Latency Benchmark Guide Modal */}
       <GuideModal
-        isOpen={projectHealthModalOpen}
-        onClose={onCloseProjectHealthModal}
+        isOpen={activeModal === 'duration-benchmark'}
+        onClose={onClose}
+        title="About Duration Spread & P95 Latency Benchmark"
+      >
+        <p>
+          Each bar answers one question:{' '}
+          <strong className="text-text-ink dark:text-text-on-primary">
+            how much slower is the slowest 5% of tests than a typical test, in this project?
+          </strong>{' '}
+          The base segment is the typical (average) duration, and the tail segment is the P95 (95th
+          percentile) extension beyond it. The dot marks the typical duration, and the value printed
+          at the bar's end is the P95 with its tail multiplier (P95 / avg).
+        </p>
+
+        <div className="rounded-md border border-border-default bg-surface-50 p-3 space-y-2">
+          <div className="font-bold text-text-ink dark:text-text-on-primary text-xs tracking-wider">
+            <h5 className="font-semibold text-text-ink dark:text-text-on-primary mb-1">
+              Reading the Bars:
+            </h5>
+          </div>
+          <ul className="list-disc pl-4 space-y-1.5">
+            <li>
+              <strong className="text-text-ink dark:text-text-on-primary">
+                Short or absent tail (dot near the end of the bar):
+              </strong>{' '}
+              timings are consistent — the slowest 5% of tests take about as long as a typical test.
+              No slow outliers to chase.
+            </li>
+            <li>
+              <strong className="text-text-ink dark:text-text-on-primary">
+                Long tail (dot far from the end of the bar):
+              </strong>{' '}
+              heavy tail — the slowest 5% of tests take the printed multiple (Nx) of the typical
+              time. Investigate that project's slowest tests or retries.
+            </li>
+            <li>
+              <strong className="text-text-ink dark:text-text-on-primary">Bar order:</strong>{' '}
+              projects are sorted worst tail first, so the top row is the one to act on.
+            </li>
+            <li>
+              <strong className="text-text-ink dark:text-text-on-primary">
+                Logarithmic x-axis:
+              </strong>{' '}
+              each major step (1 ms → 10 ms → 100 ms → 1 s) spans the same visual distance, so a 25
+              ms tail and a 2.4 s tail stay readable side by side. Because the axis is logarithmic,
+              a tail's visual length encodes the multiplier (P95 / avg), not an absolute amount of
+              time—read the value printed at the bar's end, or hover the bar for the exact P95, to
+              get the real duration.
+            </li>
+          </ul>
+        </div>
+
+        <div className="rounded-md border border-border-default bg-surface-50 p-3 space-y-2">
+          <div className="font-bold text-text-ink dark:text-text-on-primary text-xs tracking-wider">
+            <h5 className="font-semibold text-text-ink dark:text-text-on-primary mb-1">
+              Key Metrics Explained:
+            </h5>
+          </div>
+          <ul className="list-disc pl-4 space-y-1.5">
+            <li>
+              <strong className="text-accent-blue">Typical (avg) duration:</strong> Calculated as{' '}
+              <code className="font-mono bg-surface-100 px-1 py-0.5 rounded text-[10px]">
+                Total Duration / Executed Tests
+              </code>
+              . It represents the mean time required to complete a single test case in that project
+              profile.
+            </li>
+            <li>
+              <strong className="text-warning-600 dark:text-warning-500">P95 duration:</strong>{' '}
+              Represents the 95th percentile completion threshold.{' '}
+              <strong>
+                95% of all executed tests in that project completed faster than this duration
+              </strong>
+              , while only 5% took longer.
+            </li>
+            <li>
+              <strong className="text-warning-600 dark:text-warning-500">
+                Tail multiplier (Nx):
+              </strong>{' '}
+              P95 divided by the average. Near 1 means consistent timings; well above 1 means a
+              heavy tail worth investigating.
+            </li>
+          </ul>
+        </div>
+
+        <div className="rounded-md border border-border-default bg-surface-50 p-3 space-y-2">
+          <div className="font-bold text-text-ink dark:text-text-on-primary text-xs tracking-wider">
+            <h5 className="font-semibold text-text-ink dark:text-text-on-primary mb-1">
+              Why P95 Latency is Critical for QA & CI Pipelines:
+            </h5>
+          </div>
+          <p className="mb-1.5">
+            Average duration can be deceptive—a large number of fast 100ms API checks will drag the
+            average down, masking extremely slow 15-second E2E user flows.
+          </p>
+          <p className="mb-1.5">
+            P95 isolates tail latency. High P95 latency exposes tests that suffer from:
+          </p>
+          <ul className="list-disc pl-4 space-y-1">
+            <li>Unnecessary explicit sleep/timeout delays</li>
+            <li>Heavy DOM re-rendering or unoptimized navigation</li>
+            <li>CI worker CPU/RAM throttling on specific browser engines</li>
+            <li>Slow background API network dependencies</li>
+          </ul>
+        </div>
+      </GuideModal>
+
+      {/* 4. Flaky Test Count & Retry Analytics Guide Modal */}
+      <GuideModal
+        isOpen={activeModal === 'project-flaky-rate'}
+        onClose={onClose}
+        title="Flaky Test Count & Retry Analytics Guide"
+        subtitle="Analyzing cross-project test instability and environmental flakiness"
+      >
+        <p>
+          This chart is scoped to the{' '}
+          <strong className="text-text-ink dark:text-text-on-primary">current run</strong>. A test
+          is classified as <strong className="text-warning-600 dark:text-warning-500">Flaky</strong>{' '}
+          when it initially failed but passed on an automatic retry within the same run.
+        </p>
+
+        <div className="rounded-md border border-border-default bg-surface-50 p-3 space-y-2">
+          <div className="font-bold text-text-ink dark:text-text-on-primary text-xs tracking-wider">
+            Key Metrics:
+          </div>
+          <ul className="list-disc list-inside space-y-1">
+            <li>
+              <strong>Bar length (Flaky Tests):</strong> Number of test cases in the project that
+              failed initially but passed on a retry in the current run.
+            </li>
+            <li>
+              <strong>Flakiness Rate (%):</strong> Shown in the tooltip — the flaky test count
+              divided by the executed (non-skipped) tests, times 100. It is the share of the
+              project&apos;s tests that needed a retry to pass.
+            </li>
+            <li>
+              <strong>Executed Tests:</strong> Shown in the tooltip — the number of non-skipped test
+              cases in the project.
+            </li>
+          </ul>
+        </div>
+
+        <div className="rounded-md border border-border-default bg-surface-50 p-3 space-y-2">
+          <div className="font-bold text-text-ink dark:text-text-on-primary text-xs tracking-wider">
+            Diagnostic Value by Project Profile:
+          </div>
+          <ul className="list-disc list-inside space-y-1">
+            <li>
+              <strong>Project Comparisons:</strong> Compare projects to isolate environment-specific
+              flakiness — projects may target different browsers (Chromium, Firefox, WebKit,
+              Microsoft Edge, branded Chrome), different viewports or devices, or API-only and web +
+              API test mixes. A spike in one project&apos;s flaky count points at that environment
+              (rendering engine, network, or endpoint behavior).
+            </li>
+            <li>
+              <strong>Viewport & Mobile Emulation:</strong> Identify if responsive layout tests
+              flake on mobile viewports due to animation delays.
+            </li>
+            <li>
+              <strong>Retry Overhead:</strong> Flaky tests double execution latency. Eliminating
+              flakiness speeds up overall CI build time.
+            </li>
+          </ul>
+        </div>
+      </GuideModal>
+
+      {/* 5. Project Health & Breakdown Guide Modal */}
+      <GuideModal
+        isOpen={activeModal === 'project-health'}
+        onClose={onClose}
         title="Project Health & Breakdown Guide"
         subtitle="Granular execution metrics and deep-dive controls scoped to each project profile"
       >

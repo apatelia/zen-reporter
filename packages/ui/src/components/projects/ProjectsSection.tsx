@@ -1,9 +1,11 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import ProjectBarCharts from '@/components/projects/ProjectBarCharts';
+import ProjectVolumeCoverageChart from '@/components/projects/ProjectVolumeCoverageChart';
+import ProjectLatencySpreadChart from '@/components/projects/ProjectLatencySpreadChart';
+import ProjectFlakyRateChart from '@/components/projects/ProjectFlakyRateChart';
 import ProjectDetailCards from '@/components/projects/ProjectDetailCards';
 import ProjectsOverviewCards from '@/components/projects/ProjectsOverviewCards';
-import ProjectVolumeCoverageChart from '@/components/projects/ProjectVolumeCoverageChart';
-import ProjectsGuides from '@/components/projects/ProjectsGuides';
+import ProjectsGuides, { type ProjectModalType } from '@/components/projects/ProjectsGuides';
 import {
   collectAllCases,
   computeProjectExecutiveKPIs,
@@ -15,14 +17,21 @@ export interface ProjectsSectionProps {
   suites: TestSuite[];
 }
 
+/**
+ * Renders the Projects tab: executive KPIs, visual benchmark charts (status, volume, latency spread, and flakiness),
+ * detailed project cards, and contextual guide modals.
+ * @param suites - Test suites of the current run.
+ * @returns The rendered Projects section.
+ */
 export default function ProjectsSection({ suites }: ProjectsSectionProps) {
-  const [statusBreakdownModalOpen, setStatusBreakdownModalOpen] = useState(false);
-  const [volumeCoverageModalOpen, setVolumeCoverageModalOpen] = useState(false);
-  const [projectHealthModalOpen, setProjectHealthModalOpen] = useState(false);
+  const [activeModal, setActiveModal] = useState<ProjectModalType>(null);
 
-  const allCases = collectAllCases(suites);
-  const projectStats = computeProjectStats(allCases);
-  const executiveKPIs = computeProjectExecutiveKPIs(projectStats);
+  const { projectStats, executiveKPIs } = useMemo(() => {
+    const allCases = collectAllCases(suites);
+    const stats = computeProjectStats(allCases);
+    const kpis = computeProjectExecutiveKPIs(stats);
+    return { projectStats: stats, executiveKPIs: kpis };
+  }, [suites]);
 
   return (
     <div className="w-full space-y-6">
@@ -31,35 +40,38 @@ export default function ProjectsSection({ suites }: ProjectsSectionProps) {
       {/* 1. Top Executive KPI Cards */}
       <ProjectsOverviewCards kpis={executiveKPIs} />
 
-      {/* 2. Visual Charts Row (Status Breakdown + Test Volume & Coverage Density) */}
+      {/* 2. Visual Charts 2x2 Grid */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2 items-stretch">
         <ProjectBarCharts
           suites={suites}
           title="Status Breakdown by Project"
-          onOpenGuide={() => setStatusBreakdownModalOpen(true)}
+          onOpenGuide={() => setActiveModal('status-breakdown')}
         />
         <ProjectVolumeCoverageChart
           projectStats={projectStats}
           title="Test Volume & Coverage Density per Project"
-          onOpenGuide={() => setVolumeCoverageModalOpen(true)}
+          onOpenGuide={() => setActiveModal('volume-coverage')}
+        />
+        <ProjectLatencySpreadChart
+          projectStats={projectStats}
+          title="Duration Spread & P95 Latency by Project"
+          onOpenGuide={() => setActiveModal('duration-benchmark')}
+        />
+        <ProjectFlakyRateChart
+          projectStats={projectStats}
+          title="Flaky Test Count & Retry Rate by Project"
+          onOpenGuide={() => setActiveModal('project-flaky-rate')}
         />
       </div>
 
       {/* 3. Detailed Environment Cards & Failure Breakdown */}
       <ProjectDetailCards
         projectStats={projectStats}
-        onOpenGuide={() => setProjectHealthModalOpen(true)}
+        onOpenGuide={() => setActiveModal('project-health')}
       />
 
       {/* Interactive Modal Guides */}
-      <ProjectsGuides
-        statusBreakdownModalOpen={statusBreakdownModalOpen}
-        onCloseStatusBreakdownModal={() => setStatusBreakdownModalOpen(false)}
-        volumeCoverageModalOpen={volumeCoverageModalOpen}
-        onCloseVolumeCoverageModal={() => setVolumeCoverageModalOpen(false)}
-        projectHealthModalOpen={projectHealthModalOpen}
-        onCloseProjectHealthModal={() => setProjectHealthModalOpen(false)}
-      />
+      <ProjectsGuides activeModal={activeModal} onClose={() => setActiveModal(null)} />
     </div>
   );
 }
