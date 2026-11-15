@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import type { Attachment, TestCase, TestStep } from '@arpanp/zen-core';
 import { extractVisualDiffPairs } from '@arpanp/zen-core';
 import SearchInput from './SearchInput';
@@ -19,19 +19,27 @@ export interface TestCaseDetailProps {
   showSteps?: boolean;
 }
 
+/**
+ * Detailed view of a test case attempt including annotations, steps, attachments, errors, and output.
+ *
+ * @param props - Component properties.
+ * @param props.testCase - The test case object containing attempts and metadata.
+ * @param [props.showSteps=true] - Whether to render the execution steps section.
+ * @returns The rendered test case detail component.
+ */
 export default function TestCaseDetail({ testCase, showSteps = true }: TestCaseDetailProps) {
-  const attempts = buildAttempts(testCase);
+  const attempts = useMemo(() => buildAttempts(testCase), [testCase]);
   const [activeAttemptIdx, setActiveAttemptIdx] = useState(attempts.length - 1);
   const activeAttempt = attempts[Math.max(0, Math.min(activeAttemptIdx, attempts.length - 1))];
   const [previewModalIndex, setPreviewModalIndex] = useState<number | null>(null);
   const [stepSearchTerm, setStepSearchTerm] = useState('');
 
-  const caseAnnotations = testCase.annotations || [];
-  const validAnnotations = caseAnnotations.filter(
-    (anno) => anno.description && anno.description.trim().length > 0
-  );
+  const validAnnotations = useMemo(() => {
+    const caseAnnotations = testCase.annotations || [];
+    return caseAnnotations.filter((anno) => anno.description && anno.description.trim().length > 0);
+  }, [testCase.annotations]);
 
-  const getAttachmentUrl = (att: Attachment): string | null => {
+  const getAttachmentUrl = useCallback((att: Attachment): string | null => {
     if (att.body) {
       if (att.body.startsWith('data:')) {
         return att.body;
@@ -50,14 +58,18 @@ export default function TestCaseDetail({ testCase, showSteps = true }: TestCaseD
       return att.path;
     }
     return null;
-  };
+  }, []);
 
-  const attachments = collectAttemptAttachments(activeAttempt);
-  const visualDiffPairs = extractVisualDiffPairs(attachments, getAttachmentUrl);
+  const attachments = useMemo(() => collectAttemptAttachments(activeAttempt), [activeAttempt]);
+
+  const visualDiffPairs = useMemo(
+    () => extractVisualDiffPairs(attachments, getAttachmentUrl),
+    [attachments, getAttachmentUrl]
+  );
 
   const previewItems = useMemo(
     () => buildAttemptPreviewItems(activeAttempt, attachments, getAttachmentUrl),
-    [activeAttempt, attachments]
+    [activeAttempt, attachments, getAttachmentUrl]
   );
 
   const filteredSteps = useMemo(() => {
@@ -161,6 +173,14 @@ export default function TestCaseDetail({ testCase, showSteps = true }: TestCaseD
         </div>
       )}
 
+      {/* Attachments */}
+      <TestAttachments
+        attachments={attachments}
+        getAttachmentUrl={getAttachmentUrl}
+        previewItems={previewItems}
+        onOpenPreview={(idx) => setPreviewModalIndex(idx)}
+      />
+
       {/* Direct Errors */}
       {activeAttempt.error && (
         <TestErrorAlert error={activeAttempt.error} status={activeAttempt.status} />
@@ -177,14 +197,6 @@ export default function TestCaseDetail({ testCase, showSteps = true }: TestCaseD
           ))}
         </div>
       )}
-
-      {/* Attachments */}
-      <TestAttachments
-        attachments={attachments}
-        getAttachmentUrl={getAttachmentUrl}
-        previewItems={previewItems}
-        onOpenPreview={(idx) => setPreviewModalIndex(idx)}
-      />
 
       {/* Standard Output (stdout & stderr) */}
       <TestStdOutput
