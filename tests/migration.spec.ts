@@ -140,4 +140,109 @@ test.describe('JSONL to SQLite Migration Tests', () => {
     expect(resultNonExistent.totalFiles).toBe(0);
     expect(resultNonExistent.migratedRuns).toBe(0);
   });
+
+  test('logs warning with run_id and file details when encountering corrupted lines', async ({}, testInfo) => {
+    const testDir = testInfo.outputPath('corrupted-lines');
+    const runsDir = path.join(testDir, 'runs');
+    const dbPath = path.join(testDir, 'history.db');
+    fs.mkdirSync(runsDir, { recursive: true });
+
+    // File 1: all lines corrupted -> should skip file entirely
+    const allCorruptFile = path.join(runsDir, 'all-corrupt.jsonl');
+    fs.writeFileSync(allCorruptFile, '{ invalid json line 1\n{ invalid json line 2\n', 'utf8');
+
+    // File 2: line 1 corrupted, line 2 valid test case (extracts run_id from line 2 and migrates!)
+    const corruptFirstLineFile = path.join(runsDir, 'corrupt-first-line.jsonl');
+    const runRow2 = {
+      run_id: 'recovered-from-line-2',
+      run_name: 'Line 2 Run',
+      project_name: 'Test Project',
+      started_at: '2026-11-01T10:00:00.000Z',
+      ended_at: '2026-11-01T10:01:00.000Z',
+      run_duration_ms: 1000,
+      run_total: 1,
+      run_passed: 1,
+      run_failed: 0,
+      run_skipped: 0,
+      run_timed_out: 0,
+      run_interrupted: 0,
+      file: 'sample.spec.ts',
+      suite: 'Suite',
+      title: 'valid test line 2',
+      project: 'chromium',
+      status: 'passed',
+      duration_ms: 50,
+      attempts: 1,
+    };
+    fs.writeFileSync(
+      corruptFirstLineFile,
+      `{ corrupt first line\n${JSON.stringify(runRow2)}\n`,
+      'utf8'
+    );
+
+    // File 3: valid line 1, corrupted line 2, valid line 3
+    const corruptLineFile = path.join(runsDir, 'corrupt-line.jsonl');
+    const runRowHeader = {
+      run_id: 'corrupt-test-run',
+      run_name: 'Corrupt Line Run',
+      project_name: 'Test Project',
+      started_at: '2026-11-01T10:00:00.000Z',
+      ended_at: '2026-11-01T10:01:00.000Z',
+      run_duration_ms: 1000,
+      run_total: 1,
+      run_passed: 1,
+      run_failed: 0,
+      run_skipped: 0,
+      run_timed_out: 0,
+      run_interrupted: 0,
+    };
+    const validTestRow = {
+      run_id: 'corrupt-test-run',
+      file: 'sample.spec.ts',
+      suite: 'Suite',
+      title: 'valid test',
+      project: 'chromium',
+      status: 'passed',
+      duration_ms: 50,
+      attempts: 1,
+    };
+    fs.writeFileSync(
+      corruptLineFile,
+      `${JSON.stringify(runRowHeader)}\n{ broken json line\n${JSON.stringify(validTestRow)}\n`,
+      'utf8'
+    );
+
+    const warnings: string[] = [];
+    const origWarn = console.warn;
+    console.warn = (...args: unknown[]) => {
+      warnings.push(args.join(' '));
+    };
+
+    try {
+      const result = await migrateJsonlToSqlite({ runsDir, dbPath });
+      expect(result.migratedRuns).toBe(2); // File 2 (recovered via line 2) + File 3
+      expect(result.migratedTestCases).toBe(2);
+
+      // Verify warning for all-corrupt file
+      const allCorruptWarn = warnings.find(
+        (w) => w.includes('all-corrupt.jsonl') && w.includes('Could not find any valid test record')
+      );
+      expect(allCorruptWarn).toBeDefined();
+
+      // Verify warning for line 1 of corrupt-first-line.jsonl
+      const firstLineWarn = warnings.find(
+        (w) => w.includes('corrupt-first-line.jsonl') && w.includes('line 1')
+      );
+      expect(firstLineWarn).toBeDefined();
+
+      // Verify warning for line 2 of corrupt-line.jsonl
+      const lineWarning = warnings.find(
+        (w) => w.includes('corrupt-line.jsonl') && w.includes('line 2')
+      );
+      expect(lineWarning).toBeDefined();
+      expect(lineWarning).toContain('run_id: "corrupt-test-run"');
+    } finally {
+      console.warn = origWarn;
+    }
+  });
 });

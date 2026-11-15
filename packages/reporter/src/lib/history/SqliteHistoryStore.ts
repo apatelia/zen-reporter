@@ -52,6 +52,23 @@ function optNumber(val: unknown): number | null {
   return val !== null && val !== undefined ? Number(val) : null;
 }
 
+/**
+ * Emits a formatted console warning for a corrupted JSON line encountered during migration.
+ *
+ * @param file - Name or path of the JSONL file.
+ * @param lineNum - 1-based line number in the file.
+ * @param err - Parser error encountered.
+ * @param runId - Optional run ID if known for the current file.
+ * @returns {void}
+ */
+function warnCorruptedLine(file: string, lineNum: number, err: unknown, runId?: string): void {
+  const runIdSuffix = runId ? `, run_id: "${runId}"` : '';
+  const message = (err as Error)?.message || String(err);
+  console.warn(
+    `\x1b[33m⚠\x1b[0m [history migrate] Corrupted JSON line in "${file}" (line ${lineNum}${runIdSuffix}): ${message}. Skipping line.`
+  );
+}
+
 import type { MigrationResult } from './migration';
 
 export interface SqliteHistoryStoreOptions {
@@ -914,7 +931,7 @@ export class SqliteHistoryStore implements HistoryStore {
 
     const slowestStmt = this.db.prepare(`
       WITH recent_runs AS (
-        SELECT run_id
+        SELECT run_id, started_at
         FROM history_runs
         ORDER BY started_at DESC
         LIMIT ?
@@ -1296,7 +1313,9 @@ export class SqliteHistoryStore implements HistoryStore {
 
   /**
    * Migrates historic test runs from individual JSONL files into the SQLite database.
-   * Skips files whose run_id already exists in the database.
+   * Scans each file line-by-line for the first valid run record, resiliently skipping
+   * corrupted lines while importing all remaining valid test case executions. Skips
+   * files whose run_id already exists in the database.
    *
    * @param runsDir - Directory containing JSONL files.
    * @param deleteSourceFiles - If true, removes source JSONL files after successful migration.
@@ -1380,17 +1399,35 @@ export class SqliteHistoryStore implements HistoryStore {
         const lines = content.trim().split('\n');
         if (lines.length === 0 || !lines[0]) continue;
 
-        let firstRow: Record<string, unknown>;
-        try {
-          firstRow = JSON.parse(lines[0]);
-        } catch {
+        // Scan for the first parseable line that contains a valid run_id
+        let firstRow: Record<string, unknown> | null = null;
+        let firstRowIndex = -1;
+
+        for (let i = 0; i < lines.length; i++) {
+          if (!lines[i].trim()) continue;
+          try {
+            const parsed = JSON.parse(lines[i]);
+            if (parsed && typeof parsed === 'object' && parsed.run_id) {
+              firstRow = parsed;
+              firstRowIndex = i;
+              break;
+            }
+          } catch (parseErr) {
+            warnCorruptedLine(file, i + 1, parseErr);
+          }
+        }
+
+        if (!firstRow || !firstRow.run_id) {
+          console.warn(
+            `\x1b[33m⚠\x1b[0m [history migrate] Could not find any valid test record with a run_id in "${file}". Skipping entire file.`
+          );
           continue;
         }
 
-        const runId = String(firstRow.run_id || '');
-        if (!runId || existingRunIds.has(runId)) {
+        const runId = String(firstRow.run_id);
+        if (existingRunIds.has(runId)) {
           skippedRuns++;
-          if (deleteSourceFiles && runId && existingRunIds.has(runId)) {
+          if (deleteSourceFiles) {
             filesToDelete.push(filePath);
           }
           continue;
@@ -1429,13 +1466,26 @@ export class SqliteHistoryStore implements HistoryStore {
         existingRunIds.add(runId);
         migratedRuns++;
 
-        for (const line of lines) {
+        for (let lineIndex = 0; lineIndex < lines.length; lineIndex++) {
+          const line = lines[lineIndex];
           if (!line.trim()) continue;
           let r: Record<string, unknown>;
-          try {
-            r = JSON.parse(line);
-          } catch {
-            continue;
+          if (lineIndex === firstRowIndex && firstRow) {
+            r = firstRow;
+          } else {
+            try {
+              const parsed = JSON.parse(line);
+              if (!parsed || typeof parsed !== 'object') {
+                continue;
+              }
+              r = parsed as Record<string, unknown>;
+            } catch (parseErr) {
+              // Lines after firstRowIndex were not visited during the initial header scan
+              if (lineIndex > firstRowIndex) {
+                warnCorruptedLine(file, lineIndex + 1, parseErr, runId);
+              }
+              continue;
+            }
           }
 
           if (!r.title && !r.file) continue;

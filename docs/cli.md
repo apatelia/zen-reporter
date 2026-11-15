@@ -179,6 +179,8 @@ npx zr history migrate
 npx zr history migrate --clean
 ```
 
+> 📖 **Full Guide**: For detailed schema mappings, automatic migration options, and troubleshooting, see the [JSONL to SQLite Migration Guide](history-migration.md).
+
 ---
 
 ## Custom SQL Queries (`zr history query`)
