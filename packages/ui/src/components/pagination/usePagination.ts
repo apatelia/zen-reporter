@@ -2,7 +2,13 @@ import { useState } from 'react';
 
 export const PAGE_SIZE_OPTIONS = [10, 25, 50, 100];
 
-export function usePagination(length: number, initialPageSize: number = 25) {
+/**
+ * Provides pagination state for a list of items.
+ * @param length - Total number of items in the list.
+ * @param initialPageSize - Initial number of items per page (defaults to 10).
+ * @returns Pagination state: active pageSize, changePageSize, setPage, currentPage, totalPages, and start offset.
+ */
+export function usePagination(length: number, initialPageSize: number = 10) {
   const [pageSize, setPageSize] = useState(initialPageSize);
   const [page, setPage] = useState(1);
 

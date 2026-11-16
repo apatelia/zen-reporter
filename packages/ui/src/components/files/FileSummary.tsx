@@ -33,7 +33,7 @@ export default function FileSummary({ suites, title, testRunName }: FileSummaryP
     return fileStats.filter((f) => f.fileName.toLowerCase().includes(term));
   }, [fileStats, fileSearchTerm]);
 
-  const pagination = usePagination(filteredFiles.length, 25);
+  const pagination = usePagination(filteredFiles.length, 10);
 
   if (fileStats.length === 0) return null;
 
