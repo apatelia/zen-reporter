@@ -23,7 +23,7 @@
   },
   "license": "MIT",
   "engines": {
-    "node": ">=22.0.0"
+    "node": "^22.5.0 || ^24.0.0 || ^26.0.0"
   },
   "scripts": {
     "build": "tsc -p tsconfig.json"

@@ -52,6 +52,16 @@ Dark mode:
 
 > **Compatibility**: Zen Reporter is designed for standard Playwright test suites and does not support BDD-styled tests (e.g. Cucumber / `playwright-bdd`).
 
+## Prerequisites
+
+Zen Reporter requires an Active or Maintenance LTS release of **Node.js**:
+
+- **Node.js 22.x** (`>= 22.5.0` for built-in `node:sqlite` database support)
+- **Node.js 24.x** (LTS)
+- **Node.js 26.x** (Current / LTS)
+
+Odd-numbered interim versions (e.g., 23.x, 25.x) are unsupported.
+
 ## Installation
 
 ```bash

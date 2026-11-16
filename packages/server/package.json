@@ -7,7 +7,7 @@
   "types": "dist/index.d.ts",
   "license": "FSL-1.1-MIT",
   "engines": {
-    "node": ">=22.0.0"
+    "node": "^22.5.0 || ^24.0.0 || ^26.0.0"
   },
   "author": {
     "name": "Arpan Patelia",
@@ -22,15 +22,15 @@
   },
   "dependencies": {
     "@arpanp/zen-core": "^0.20.0-dev",
-    "@aws-sdk/client-s3": "^3.1164.0",
-    "@aws-sdk/s3-request-presigner": "^3.1164.0",
+    "@aws-sdk/client-s3": "^3.1169.0",
+    "@aws-sdk/s3-request-presigner": "^3.1169.0",
     "@azure/storage-blob": "^12.34.0",
-    "@google-cloud/storage": "^8.4.0",
-    "@hono/node-server": "^2.1.6",
-    "dotenv": "^18.0.9",
+    "@google-cloud/storage": "^9.0.0",
+    "@hono/node-server": "^2.1.8",
+    "dotenv": "^18.0.10",
     "drizzle-orm": "^0.45.4",
-    "hono": "^4.13.17",
-    "postgres": "^4.1.0"
+    "hono": "^4.13.18",
+    "postgres": "^4.1.1"
   },
   "devDependencies": {
     "@types/node": "^26.6.6",
