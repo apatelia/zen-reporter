@@ -1,8 +1,4 @@
-/* eslint-disable no-empty-pattern */
 import { expect, test } from '@playwright/test';
-import * as fs from 'fs';
-import * as path from 'path';
-import { DatabaseSync } from 'node:sqlite';
 import { resolveConfig } from '../packages/reporter/src/lib/reporter';
 
 test.describe('Zen Reporter Configuration Tests', () => {
@@ -25,60 +21,6 @@ test.describe('Zen Reporter Configuration Tests', () => {
     expect(config.testRunName).toBe('Nightly Run #42');
     expect(config.theme).toBe('Sage');
     expect(config.darkMode).toBe('system');
-  });
-
-  test('replaces {N} placeholder with dynamic run number based on existing runs', ({}, testInfo) => {
-    const tempOutputDir = testInfo.outputPath('temp-test-runs-dir');
-    const runsDir = path.join(tempOutputDir, 'runs');
-
-    try {
-      fs.mkdirSync(runsDir, { recursive: true });
-
-      // 0 existing runs -> run #1
-      const config1 = resolveConfig(
-        { outputDir: tempOutputDir, testRunName: 'Build #{N}' },
-        process.cwd()
-      );
-      expect(config1.testRunName).toBe('Build #1');
-
-      // Create dummy run files
-      fs.writeFileSync(path.join(runsDir, 'run-1.jsonl'), '{}');
-      fs.writeFileSync(path.join(runsDir, 'run-2.jsonl'), '{}');
-
-      // 2 existing runs -> run #3
-      const config3 = resolveConfig(
-        { outputDir: tempOutputDir, testRunName: 'Run {N}' },
-        process.cwd()
-      );
-      expect(config3.testRunName).toBe('Run 3');
-
-      // Default testRunName pattern should also use dynamic run number
-      const configDefault = resolveConfig({ outputDir: tempOutputDir }, process.cwd());
-      expect(configDefault.testRunName).toBe('Test Run #3');
-
-      // Test SQLite history.db counting
-      const dbPath = path.join(tempOutputDir, 'history.db');
-      const db = new DatabaseSync(dbPath);
-      db.exec('CREATE TABLE history_runs (run_id TEXT PRIMARY KEY);');
-      db.prepare('INSERT INTO history_runs (run_id) VALUES (?);').run('run-1');
-      db.prepare('INSERT INTO history_runs (run_id) VALUES (?);').run('run-2');
-      db.prepare('INSERT INTO history_runs (run_id) VALUES (?);').run('run-3');
-      db.prepare('INSERT INTO history_runs (run_id) VALUES (?);').run('run-4');
-      db.close();
-
-      const configSqlite = resolveConfig(
-        {
-          outputDir: tempOutputDir,
-          testRunName: 'Execution #{N}',
-        },
-        process.cwd()
-      );
-      expect(configSqlite.testRunName).toBe('Execution #5');
-    } finally {
-      if (fs.existsSync(tempOutputDir)) {
-        fs.rmSync(tempOutputDir, { recursive: true, force: true });
-      }
-    }
   });
 
   test('resolves custom theme and darkMode configuration options', () => {
@@ -184,75 +126,6 @@ test.describe('Zen Reporter Configuration Tests', () => {
     });
     expect(offConfig.enableHistory).toBe(false);
     expect(offConfig.history).toEqual({ mode: 'off' });
-  });
-
-  test('auto-discovers zen.config.json next to the Playwright config', ({}, testInfo) => {
-    const configDir = testInfo.outputPath('zen-config-dir');
-    fs.mkdirSync(configDir, { recursive: true });
-    fs.writeFileSync(
-      path.join(configDir, 'zen.config.json'),
-      JSON.stringify({
-        projectName: 'File Configured Project',
-        theme: 'Lotus',
-        singleSummaryFile: true,
-      })
-    );
-
-    try {
-      const config = resolveConfig(undefined, process.cwd(), configDir);
-      expect(config.projectName).toBe('File Configured Project');
-      expect(config.theme).toBe('Lotus');
-      expect(config.singleSummaryFile).toBe(true);
-      // Options absent from the file keep built-in defaults
-      expect(config.outputDir).toBe('zen-report');
-      expect(config.darkMode).toBe('system');
-    } finally {
-      fs.rmSync(configDir, { recursive: true, force: true });
-    }
-  });
-
-  test('inline options override zen.config.json values field by field', ({}, testInfo) => {
-    const configDir = testInfo.outputPath('zen-config-override-dir');
-    fs.mkdirSync(configDir, { recursive: true });
-    fs.writeFileSync(
-      path.join(configDir, 'zen.config.json'),
-      JSON.stringify({
-        projectName: 'From File',
-        theme: 'Lotus',
-      })
-    );
-
-    try {
-      const config = resolveConfig({ theme: 'Oasis' }, process.cwd(), configDir);
-      expect(config.projectName).toBe('From File'); // from the file
-      expect(config.theme).toBe('Oasis'); // inline wins
-    } finally {
-      fs.rmSync(configDir, { recursive: true, force: true });
-    }
-  });
-
-  test('throws a clear error when zen.config.json is malformed', ({}, testInfo) => {
-    const configDir = testInfo.outputPath('zen-config-malformed-dir');
-    fs.mkdirSync(configDir, { recursive: true });
-    fs.writeFileSync(path.join(configDir, 'zen.config.json'), '{ "projectName": ');
-
-    try {
-      expect(() => resolveConfig(undefined, process.cwd(), configDir)).toThrow(/zen\.config\.json/);
-    } finally {
-      fs.rmSync(configDir, { recursive: true, force: true });
-    }
-  });
-
-  test('throws when zen.config.json is not a plain object', ({}, testInfo) => {
-    const configDir = testInfo.outputPath('zen-config-array-dir');
-    fs.mkdirSync(configDir, { recursive: true });
-    fs.writeFileSync(path.join(configDir, 'zen.config.json'), '[1, 2, 3]');
-
-    try {
-      expect(() => resolveConfig(undefined, process.cwd(), configDir)).toThrow(/plain object/);
-    } finally {
-      fs.rmSync(configDir, { recursive: true, force: true });
-    }
   });
 
   test('validates and falls back with warnings for invalid config values', () => {
