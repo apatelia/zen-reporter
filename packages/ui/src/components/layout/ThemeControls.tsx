@@ -1,11 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
-import { normalizeTheme } from '@arpanp/zen-core';
-
-export type ThemeId = 'sage' | 'lotus' | 'oasis' | 'cafe' | 'sentinel' | 'streak';
+import type { ThemeMode } from '@arpanp/zen-core';
 
 export interface ThemeControlsProps {
-  theme: ThemeId;
-  setTheme: (theme: ThemeId) => void;
+  theme: ThemeMode;
+  setTheme: (theme: ThemeMode) => void;
   darkMode: 'system' | 'light' | 'dark';
   setDarkMode: (mode: 'system' | 'light' | 'dark') => void;
   layout?: 'row' | 'stack';
@@ -59,15 +57,7 @@ export function ThemeControls({
   useEffect(() => {
     const updateThemeIndicator = () => {
       const container = themeContainerRef.current;
-      const normalizedTheme =
-        theme === 'cafe'
-          ? 'sage'
-          : theme === 'sentinel'
-            ? 'lotus'
-            : theme === 'streak'
-              ? 'oasis'
-              : theme;
-      const activeButton = themeButtonsRef.current[normalizedTheme];
+      const activeButton = themeButtonsRef.current[theme];
       if (!container || !activeButton) return;
 
       const containerRect = container.getBoundingClientRect();
@@ -128,8 +118,7 @@ export function ThemeControls({
       />
 
       {themes.map((t) => {
-        const normalizedTheme = normalizeTheme(theme)?.toLowerCase() ?? theme;
-        const isActive = normalizedTheme === t.id;
+        const isActive = theme === t.id;
         return (
           <button
             key={t.id}

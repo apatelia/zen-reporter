@@ -18,8 +18,9 @@ import {
   collectAllCases,
   normalizeTheme,
   parseDarkMode,
+  toThemeMode,
 } from '@arpanp/zen-core';
-import type { HistoryData, HistoryRun } from '@arpanp/zen-core';
+import type { HistoryData, HistoryRun, ThemeMode } from '@arpanp/zen-core';
 import type { ReportData, TestSuite } from '@arpanp/zen-core';
 import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
@@ -28,20 +29,6 @@ const TrendsSection = lazy(() => import('@/components/trends/TrendsSection'));
 const InsightsSection = lazy(() => import('@/components/insights/InsightsSection'));
 
 const faviconUri = `data:image/svg+xml;utf8,${encodeURIComponent(faviconRaw)}`;
-
-export type ThemeMode = 'sage' | 'lotus' | 'oasis';
-
-/**
- * Normalizes a raw theme value into the dashboard's lowercase `ThemeMode` id.
- *
- * @param value - Raw theme from localStorage, report data, or the theme switcher.
- * @returns The canonical lowercase theme id, or `null` when unrecognized.
- */
-function toThemeMode(value: string | null | undefined): ThemeMode | null {
-  const normalized = normalizeTheme(value);
-  if (!normalized) return null;
-  return normalized.toLowerCase() as ThemeMode;
-}
 
 declare global {
   interface WindowEventMap {
@@ -76,10 +63,6 @@ export default function App() {
   const [isRunSwitcherOpen, setIsRunSwitcherOpen] = useState(false);
   const [isConfigGeneratorOpen, setIsConfigGeneratorOpen] = useState(false);
   const [isShortcutsModalOpen, setIsShortcutsModalOpen] = useState(false);
-  const [toastNotification, setToastNotification] = useState<ToastNotification | null>(null);
-  const [loadError, setLoadError] = useState<{ runId: string; message: string } | null>(null);
-  const flashTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
   const initialReportData = useMemo(() => {
     if (typeof document === 'undefined') return null;
 
@@ -97,6 +80,22 @@ export default function App() {
 
     return null;
   }, []);
+
+  const [toastNotification, setToastNotification] = useState<ToastNotification | null>(() => {
+    const warnings = initialReportData?.testRun?.configWarnings;
+    if (warnings && warnings.length > 0) {
+      return {
+        id: 'config-warnings',
+        type: 'warning',
+        title: 'Configuration Notice',
+        message: warnings.join(' • '),
+        duration: 6000,
+      };
+    }
+    return null;
+  });
+  const [loadError, setLoadError] = useState<{ runId: string; message: string } | null>(null);
+  const flashTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const [theme, setTheme] = useState<ThemeMode>(() => {
     if (typeof window !== 'undefined') {

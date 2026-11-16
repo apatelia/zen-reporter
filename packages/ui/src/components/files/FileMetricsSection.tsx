@@ -282,7 +282,7 @@ export default function FileMetricsSection({ suites, isMinimalReport }: FileMetr
                       </div>
                       <div className="h-1.5 w-full rounded-full bg-surface-200 overflow-hidden">
                         <div
-                          className="h-full rounded-full bg-accent-cafe dark:bg-success-500 transition-all duration-300"
+                          className="h-full rounded-full bg-accent-sage dark:bg-success-500 transition-all duration-300"
                           style={{ width: `${Math.max(barPercentage, 4)}%` }}
                         />
                       </div>

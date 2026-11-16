@@ -86,6 +86,7 @@ export interface TestRun {
   isCustomOutputDir?: boolean;
   singleSummaryFile?: boolean;
   openAutomatically?: 'always' | 'never' | 'on-failure-only';
+  configWarnings?: string[];
 }
 
 export interface ReportData {

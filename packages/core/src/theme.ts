@@ -125,9 +125,19 @@ export function buildProjectColorMap(projects: string[]): Record<string, string>
 }
 
 /**
+ * Canonical theme modes supported by Zen Reporter.
+ */
+export type ThemeMode = 'sage' | 'lotus' | 'oasis';
+
+/**
+ * Title-cased canonical theme names.
+ */
+export type ThemeName = 'Sage' | 'Lotus' | 'Oasis';
+
+/**
  * Normalizes a raw `darkMode` value into the canonical tri-state.
  *
- * Accepts legacy boolean values (`true`/`false`) as well as the canonical
+ * Accepts boolean values (`true`/`false`) as well as the canonical
  * strings (`'system'`, `'light'`, `'dark'`) and falls back to `'system'`
  * for any unrecognized input.
  *
@@ -143,20 +153,29 @@ export function parseDarkMode(value: unknown): 'system' | 'light' | 'dark' {
 /**
  * Normalizes a raw theme name into the canonical theme title.
  *
- * Accepts canonical names (`'Sage'`, `'Lotus'`, `'Oasis'`) in any case, plus
- * legacy aliases (`'Cafe'`, `'Sentinel'`, `'Streak'`) kept for backwards
- * compatibility with older reports and configurations.
+ * Accepts canonical names (`'Sage'`, `'Lotus'`, `'Oasis'`) in any case.
+ * Returns `null` when unrecognized or legacy aliases are provided.
  *
  * @param value - Raw theme name from report data, user config, or localStorage, or `undefined`.
  * @returns The canonical theme title (`'Sage' | 'Lotus' | 'Oasis'`), or `null` when unrecognized.
  */
-export function normalizeTheme(
-  value: string | null | undefined
-): 'Sage' | 'Lotus' | 'Oasis' | null {
+export function normalizeTheme(value: string | null | undefined): ThemeName | null {
   if (!value) return null;
   const lower = value.toLowerCase();
-  if (lower === 'sage' || lower === 'cafe') return 'Sage';
-  if (lower === 'lotus' || lower === 'sentinel') return 'Lotus';
-  if (lower === 'oasis' || lower === 'streak') return 'Oasis';
+  if (lower === 'sage') return 'Sage';
+  if (lower === 'lotus') return 'Lotus';
+  if (lower === 'oasis') return 'Oasis';
   return null;
+}
+
+/**
+ * Normalizes a raw theme name into the dashboard's lowercase `ThemeMode` id.
+ *
+ * @param value - Raw theme from report data, user config, or localStorage.
+ * @returns The canonical lowercase `ThemeMode` (`'sage' | 'lotus' | 'oasis'`), or `null` when unrecognized.
+ */
+export function toThemeMode(value: string | null | undefined): ThemeMode | null {
+  const normalized = normalizeTheme(value);
+  if (!normalized) return null;
+  return normalized.toLowerCase() as ThemeMode;
 }

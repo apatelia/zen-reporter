@@ -103,11 +103,14 @@ test.describe('Zen Reporter Configuration Tests', () => {
     });
     expect(lightConfig.darkMode).toBe('light');
 
-    // Verify backwards compatibility for legacy theme names
+    // Legacy or invalid theme names fall back to default Sage theme and record configWarnings
     const legacyConfig = resolveConfig({
       theme: 'Streak',
     });
-    expect(legacyConfig.theme).toBe('Oasis');
+    expect(legacyConfig.theme).toBe('Sage');
+    expect(legacyConfig.configWarnings).toEqual([
+      'Unknown theme "Streak". Falling back to default "Sage" theme.',
+    ]);
   });
 
   test('resolves minimalReport option and forces enableHistory to false when enabled', () => {
@@ -250,5 +253,34 @@ test.describe('Zen Reporter Configuration Tests', () => {
     } finally {
       fs.rmSync(configDir, { recursive: true, force: true });
     }
+  });
+
+  test('validates and falls back with warnings for invalid config values', () => {
+    const config = resolveConfig({
+      outputDir: '   ',
+      projectName: '',
+      testRunName: '',
+      singleSummaryFile: 'false' as unknown as boolean,
+      minimalReport: 'true' as unknown as boolean,
+      history: { mode: 'remote' } as unknown as boolean,
+    });
+
+    expect(config.outputDir).toBe('zen-report');
+    expect(config.projectName).toBe('Test Automation Project');
+    expect(config.testRunName).toMatch(/^Test Run #\d+$/);
+    expect(config.rawTestRunName).toBeUndefined();
+    expect(config.singleSummaryFile).toBe(false);
+    expect(config.minimalReport).toBe(false);
+    expect(config.enableHistory).toBe(true);
+    expect(config.history).toBeUndefined(); // falls back to local history
+
+    expect(config.configWarnings).toEqual([
+      'Invalid outputDir "   ". Falling back to default "zen-report".',
+      'Invalid projectName "". Falling back to default "Test Automation Project".',
+      'Invalid testRunName "". Falling back to default "Test Run #{N}".',
+      'Invalid singleSummaryFile "false" (expected boolean). Falling back to false.',
+      'Invalid minimalReport "true" (expected boolean). Falling back to false.',
+      'Invalid history configuration for remote mode (missing or empty "serverUrl"). Falling back to local history.',
+    ]);
   });
 });

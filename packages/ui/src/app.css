@@ -72,7 +72,6 @@
   --color-info-700: #1e40af;
 
   /* ── Accent Palette ──────────────────────────── */
-  --color-accent-cafe: #006241;
   --color-accent-sage: #006241;
   --color-accent-green: #00754a;
   --color-accent-house: #1e3932;
@@ -159,8 +158,7 @@ html.dark {
 
 /* Sage Dark Mode */
 html.dark,
-html[data-theme='sage'].dark,
-html[data-theme='cafe'].dark {
+html[data-theme='sage'].dark {
   --color-ink: #ffffff;
   --color-ink-strong: #ffffff;
 
@@ -218,7 +216,6 @@ html[data-theme='cafe'].dark {
   --color-info-600: #0284c7;
   --color-info-700: #0369a1;
 
-  --color-accent-cafe: #4ade80;
   --color-accent-sage: #4ade80;
   --color-accent-green: #22c55e;
   --color-accent-house: var(--color-warning-500);
@@ -243,9 +240,7 @@ html[data-theme='cafe'].dark {
 
 /* Lotus Light Mode */
 html[data-theme='lotus'],
-[data-theme='lotus'],
-html[data-theme='sentinel'],
-[data-theme='sentinel'] {
+[data-theme='lotus'] {
   /* ── Brand Primary ───────────────────────────── */
   --color-ink: #150f23;
   --color-ink-strong: #1f1633;
@@ -314,7 +309,6 @@ html[data-theme='sentinel'],
   --color-info-700: #422082;
 
   /* ── Accent Palette ──────────────────────────── */
-  --color-accent-cafe: #150f23;
   --color-accent-sage: #150f23;
   --color-accent-green: #709600;
   --color-accent-house: #1f1633;
@@ -349,9 +343,7 @@ html[data-theme='sentinel'],
 
 /* Lotus Dark Mode */
 html[data-theme='lotus'].dark,
-[data-theme='lotus'] .dark,
-html[data-theme='sentinel'].dark,
-[data-theme='sentinel'] .dark {
+[data-theme='lotus'] .dark {
   /* ── Brand Primary ───────────────────────────── */
   --color-ink: #c2ef4e;
   --color-ink-strong: #ffffff;
@@ -418,7 +410,6 @@ html[data-theme='sentinel'].dark,
   --color-info-700: #8174e5;
 
   /* ── Accent Palette ──────────────────────────── */
-  --color-accent-cafe: #c2ef4e;
   --color-accent-sage: #c2ef4e;
   --color-accent-green: #c2ef4e;
   --color-accent-house: #79628c;
@@ -457,9 +448,7 @@ html[data-theme='sentinel'].dark,
 
 /* Oasis Light Mode */
 html[data-theme='oasis'],
-[data-theme='oasis'],
-html[data-theme='streak'],
-[data-theme='streak'] {
+[data-theme='oasis'] {
   /* ── Brand Primary ───────────────────────────── */
   --color-ink: #533afd;
   --color-ink-strong: #0d253d;
@@ -528,7 +517,6 @@ html[data-theme='streak'],
   --color-info-700: #2e2b8c;
 
   /* ── Accent Palette ──────────────────────────── */
-  --color-accent-cafe: #533afd;
   --color-accent-sage: #533afd;
   --color-accent-green: #00875a;
   --color-accent-house: #1c1e54;
@@ -563,9 +551,7 @@ html[data-theme='streak'],
 
 /* Oasis Dark Mode (Deep Navy Track: Brand Dark 900 / #0d253d / #1c1e54) */
 html[data-theme='oasis'].dark,
-[data-theme='oasis'] .dark,
-html[data-theme='streak'].dark,
-[data-theme='streak'] .dark {
+[data-theme='oasis'] .dark {
   /* ── Brand Primary ───────────────────────────── */
   --color-ink: #665efd;
   --color-ink-strong: #ffffff;
@@ -632,7 +618,6 @@ html[data-theme='streak'].dark,
   --color-info-700: #533afd;
 
   /* ── Accent Palette ──────────────────────────── */
-  --color-accent-cafe: #665efd;
   --color-accent-sage: #665efd;
   --color-accent-green: #36b37e;
   --color-accent-house: #b9b9f9;

@@ -67,7 +67,7 @@ const remoteHistory: RemoteHistoryConfig = {
 | `outputDir`         | `string`                                   | `"zen-report"`              | Directory where the report bundle, media attachments, and SQLite database are saved.                                                                                                                                          |
 | `projectName`       | `string`                                   | `"Test Automation Project"` | Project title displayed in the dashboard navigation header.                                                                                                                                                                   |
 | `testRunName`       | `string`                                   | `"Test Run #{N}"`           | Dynamic run title displayed in the top bar. `{N}` is dynamically replaced with the monotonic run sequence number derived from the most recent run in `history.db`.                                                            |
-| `theme`             | `'Sage' \| 'Lotus' \| 'Oasis'`             | `"Sage"`                    | Initial color theme applied to the web dashboard. Legacy names (`"Cafe"`, `"Sentinel"`, `"Streak"`) are automatically remapped.                                                                                               |
+| `theme`             | `'Sage' \| 'Lotus' \| 'Oasis'`             | `"Sage"`                    | Initial color theme applied to the web dashboard. Unrecognized or legacy theme names safely fall back to `"Sage"` and trigger a dashboard toast notice.                                                                       |
 | `darkMode`          | `'system' \| 'light' \| 'dark' \| boolean` | `'system'`                  | Initial dark/light mode: `'system'` follows the OS preference, `'dark'`/`true` forces dark, `'light'`/`false` forces light                                                                                                    |
 | `singleSummaryFile` | `boolean`                                  | `false`                     | When `true`, generates a standalone `summary.html` and `summary.json` file designed for executive summaries and CI artifact attachments.                                                                                      |
 | `minimalReport`     | `boolean`                                  | `false`                     | When `true`, disables history tracking and suppresses analytical charts (Trends, Insights, Projects) for an ultra-lean report.                                                                                                |
@@ -136,8 +136,8 @@ history: {
 Zen Reporter provides three nature-inspired color themes crafted for data clarity:
 
 - **`Sage`** (Default): Crisp, calm eucalyptus green and slate neutrals.
-- **`Lotus`**: Warm plum, rose, and amethyst accents.
-- **`Oasis`**: Deep ocean teal and cyan tones.
+- **`Lotus`**: Warm plum, deep indigo, and vibrant lime accents.
+- **`Oasis`**: Electric blue, ultramarine, and deep navy tones.
 
 ```ts
 export default defineConfig({

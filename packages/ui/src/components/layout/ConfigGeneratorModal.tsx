@@ -2,9 +2,8 @@ import { useState, useMemo, useRef, useEffect } from 'react';
 import BaseModal from '../shared/BaseModal';
 import InfoTooltip from '../shared/InfoTooltip';
 import { copyToClipboard } from '@/utils/clipboard';
-import type { ThemeMode } from '@/App';
 import { escapeHTML, highlightSyntaxLine, parseDarkMode } from '@arpanp/zen-core';
-import type { HistoryConfig } from '@arpanp/zen-core';
+import type { HistoryConfig, ThemeMode, ThemeName } from '@arpanp/zen-core';
 
 export interface ConfigGeneratorModalProps {
   isOpen: boolean;
@@ -14,7 +13,7 @@ export interface ConfigGeneratorModalProps {
     isCustomOutputDir?: boolean;
     projectName?: string;
     testRunName?: string;
-    theme?: ThemeMode | 'Sage' | 'Lotus' | 'Oasis';
+    theme?: ThemeMode | ThemeName;
     isCustomTheme?: boolean;
     darkMode?: 'system' | 'light' | 'dark' | boolean;
     isCustomDarkMode?: boolean;
@@ -920,8 +919,8 @@ export function ConfigGeneratorModal({ isOpen, onClose, activeConfig }: ConfigGe
                   }`}
                 >
                   <option value="Sage">Sage (Green / Classic)</option>
-                  <option value="Lotus">Lotus (Indigo / Minimal)</option>
-                  <option value="Oasis">Oasis (Blue / Modern)</option>
+                  <option value="Lotus">Lotus (Indigo / Lime)</option>
+                  <option value="Oasis">Oasis (Electric Blue / Navy)</option>
                 </select>
               </div>
 

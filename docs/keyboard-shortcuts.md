@@ -85,10 +85,10 @@ When inspecting test case attachments, screenshots, traces, or standard output i
 
 ## Appearance & Themes
 
-| Shortcut     | Action            | Description                                                                                                        |
-| :----------- | :---------------- | :----------------------------------------------------------------------------------------------------------------- |
-| <kbd>D</kbd> | Cycle Dark Mode   | Cycle dark mode states: **System Mode** (follows OS preferences) → **Light Mode** → **Dark Mode**.                 |
-| <kbd>T</kbd> | Cycle Color Theme | Cycle between WCAG-accessible dashboard color palettes: **Sage** (Emerald) → **Lotus** (Rose) → **Oasis** (Amber). |
+| Shortcut     | Action            | Description                                                                                                                                |
+| :----------- | :---------------- | :----------------------------------------------------------------------------------------------------------------------------------------- |
+| <kbd>D</kbd> | Cycle Dark Mode   | Cycle dark mode states: **System Mode** (follows OS preferences) → **Light Mode** → **Dark Mode**.                                         |
+| <kbd>T</kbd> | Cycle Color Theme | Cycle between WCAG-accessible dashboard color palettes: **Sage** (Emerald) → **Lotus** (Indigo / Plum) → **Oasis** (Electric Blue / Navy). |
 
 ---
 

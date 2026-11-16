@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 
-export type ToastType = 'success' | 'error' | 'info';
+export type ToastType = 'success' | 'error' | 'warning' | 'info';
 
 export interface ToastNotification {
   id: string;
@@ -19,6 +19,9 @@ export interface ToastProps {
 /**
  * Reusable Toast notification component.
  * Positioned fixed or absolute with auto-dismiss timer and hover pause.
+ *
+ * @param props - Component props containing notification, dismiss callback, and optional className.
+ * @returns Toast notification element, or null when notification is empty.
  */
 export default function Toast({ notification, onDismiss, className = '' }: ToastProps) {
   const [isHovered, setIsHovered] = useState(false);
@@ -28,7 +31,9 @@ export default function Toast({ notification, onDismiss, className = '' }: Toast
   useEffect(() => {
     if (!notification) return;
 
-    const duration = notification.duration ?? (notification.type === 'error' ? 4500 : 3200);
+    const duration =
+      notification.duration ??
+      (notification.type === 'error' ? 4500 : notification.type === 'warning' ? 5000 : 3200);
 
     if (!isHovered) {
       const timer = setTimeout(() => {
@@ -45,6 +50,7 @@ export default function Toast({ notification, onDismiss, className = '' }: Toast
 
   const isSuccess = notification.type === 'success';
   const isError = notification.type === 'error';
+  const isWarning = notification.type === 'warning';
 
   return (
     <div
@@ -57,7 +63,9 @@ export default function Toast({ notification, onDismiss, className = '' }: Toast
           ? 'bg-surface-50 dark:bg-surface-200 border-success-500 text-text-ink dark:text-text-on-primary shadow-success-500/10 ring-1 ring-success-500/20'
           : isError
             ? 'bg-surface-50 dark:bg-surface-200 border-danger-500 text-text-ink dark:text-text-on-primary shadow-danger-500/15 ring-1 ring-danger-500/20'
-            : 'bg-surface-50 dark:bg-surface-200 border-border-default text-text-ink dark:text-text-on-primary shadow-2xl'
+            : isWarning
+              ? 'bg-surface-50 dark:bg-surface-200 border-amber-500 text-text-ink dark:text-text-on-primary shadow-amber-500/15 ring-1 ring-amber-500/20'
+              : 'bg-surface-50 dark:bg-surface-200 border-border-default text-text-ink dark:text-text-on-primary shadow-2xl'
       } ${className}`}
     >
       <div className="shrink-0 pt-0.5">
@@ -88,7 +96,24 @@ export default function Toast({ notification, onDismiss, className = '' }: Toast
             </svg>
           </div>
         )}
-        {!isSuccess && !isError && (
+        {isWarning && (
+          <div className="flex h-5 w-5 items-center justify-center rounded-full bg-amber-500 text-white shadow-xs">
+            <svg
+              className="h-3 w-3"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={2.5}
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z"
+              />
+            </svg>
+          </div>
+        )}
+        {!isSuccess && !isError && !isWarning && (
           <div className="flex h-5 w-5 items-center justify-center rounded-full bg-accent-blue text-white shadow-xs">
             <svg
               className="h-3 w-3"

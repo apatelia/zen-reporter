@@ -127,6 +127,7 @@ export interface ReporterConfig {
   minimalReport?: boolean;
   consoleProgress: 'auto' | 'line' | 'dot' | boolean;
   openAutomatically: 'always' | 'never' | 'on-failure-only';
+  configWarnings?: string[];
 }
 
 /**
@@ -146,19 +147,203 @@ export function resolveConfig(
     ...(configDir ? loadZenConfigFile(configDir) : {}),
     ...inlineConfig,
   };
-  const outputDir = rawConfig?.outputDir ? String(rawConfig.outputDir) : 'zen-report';
+
+  const configWarnings: string[] = [];
+
+  let outputDir = 'zen-report';
+  let isCustomOutputDir = false;
+  if (rawConfig?.outputDir !== undefined) {
+    if (typeof rawConfig.outputDir === 'string' && rawConfig.outputDir.trim().length > 0) {
+      outputDir = rawConfig.outputDir.trim();
+      isCustomOutputDir = true;
+    } else {
+      configWarnings.push(
+        `Invalid outputDir "${String(rawConfig.outputDir)}". Falling back to default "zen-report".`
+      );
+    }
+  }
+
   const packageManager = detectPackageManager(cwd);
-  const projectName = rawConfig?.projectName
-    ? String(rawConfig.projectName)
-    : 'Test Automation Project';
+
+  let projectName = 'Test Automation Project';
+  if (rawConfig?.projectName !== undefined) {
+    if (typeof rawConfig.projectName === 'string' && rawConfig.projectName.trim().length > 0) {
+      projectName = rawConfig.projectName.trim();
+    } else {
+      configWarnings.push(
+        `Invalid projectName "${String(rawConfig.projectName)}". Falling back to default "Test Automation Project".`
+      );
+    }
+  }
+
+  let rawTestRunName: string | undefined = undefined;
+  let testRunNamePattern = 'Test Run #{N}';
+  if (rawConfig?.testRunName !== undefined) {
+    if (typeof rawConfig.testRunName === 'string' && rawConfig.testRunName.trim().length > 0) {
+      rawTestRunName = rawConfig.testRunName;
+      testRunNamePattern = rawConfig.testRunName;
+    } else {
+      configWarnings.push(
+        `Invalid testRunName "${String(rawConfig.testRunName)}". Falling back to default "Test Run #{N}".`
+      );
+    }
+  }
+
+  let singleSummaryFile = false;
+  if (rawConfig?.singleSummaryFile !== undefined) {
+    if (typeof rawConfig.singleSummaryFile === 'boolean') {
+      singleSummaryFile = rawConfig.singleSummaryFile;
+    } else {
+      configWarnings.push(
+        `Invalid singleSummaryFile "${String(rawConfig.singleSummaryFile)}" (expected boolean). Falling back to false.`
+      );
+    }
+  }
+
+  let minimalReport = false;
+  if (rawConfig?.minimalReport !== undefined) {
+    if (typeof rawConfig.minimalReport === 'boolean') {
+      minimalReport = rawConfig.minimalReport;
+    } else {
+      configWarnings.push(
+        `Invalid minimalReport "${String(rawConfig.minimalReport)}" (expected boolean). Falling back to false.`
+      );
+    }
+  }
+
+  let theme = 'Sage';
+  if (rawConfig?.theme != null) {
+    const rawThemeStr = String(rawConfig.theme);
+    const normalized = normalizeTheme(rawThemeStr);
+    if (normalized) {
+      theme = normalized;
+    } else {
+      configWarnings.push(`Unknown theme "${rawThemeStr}". Falling back to default "Sage" theme.`);
+    }
+  }
+
+  let darkMode: 'system' | 'light' | 'dark' = 'system';
+  if (rawConfig?.darkMode !== undefined) {
+    const rawDark = rawConfig.darkMode;
+    if (
+      rawDark === true ||
+      rawDark === false ||
+      rawDark === 'system' ||
+      rawDark === 'light' ||
+      rawDark === 'dark'
+    ) {
+      darkMode = parseDarkMode(rawDark);
+    } else {
+      configWarnings.push(
+        `Unknown darkMode "${String(rawDark)}". Falling back to default "system".`
+      );
+      darkMode = 'system';
+    }
+  }
+
+  let enableHistory: 'auto' | boolean = 'auto';
+  let history: HistoryConfig | undefined = undefined;
+
+  if (rawConfig?.history !== undefined) {
+    const rawHistory = rawConfig.history;
+    if (rawHistory === false) {
+      history = false;
+      enableHistory = false;
+    } else if (rawHistory === true) {
+      history = true;
+      enableHistory = true;
+    } else if (
+      typeof rawHistory === 'object' &&
+      rawHistory !== null &&
+      !Array.isArray(rawHistory)
+    ) {
+      const histObj = rawHistory as Record<string, unknown>;
+      const mode = histObj.mode;
+      if (mode === 'off') {
+        history = rawHistory as HistoryConfig;
+        enableHistory = false;
+      } else if (mode === 'local' || mode === undefined) {
+        history = rawHistory as HistoryConfig;
+        enableHistory = true;
+      } else if (mode === 'remote') {
+        if (typeof histObj.serverUrl === 'string' && histObj.serverUrl.trim().length > 0) {
+          history = rawHistory as HistoryConfig;
+          enableHistory = true;
+        } else {
+          configWarnings.push(
+            'Invalid history configuration for remote mode (missing or empty "serverUrl"). Falling back to local history.'
+          );
+          history = undefined;
+          enableHistory = true;
+        }
+      } else {
+        configWarnings.push(
+          `Unknown history mode "${String(mode)}". Falling back to default local history.`
+        );
+        history = undefined;
+        enableHistory = true;
+      }
+    } else {
+      configWarnings.push(
+        `Invalid history configuration "${String(rawHistory)}". Falling back to default local history.`
+      );
+      history = undefined;
+      enableHistory = true;
+    }
+  }
+
+  if (minimalReport) {
+    enableHistory = false;
+  } else if (rawConfig?.enableHistory !== undefined && history === undefined) {
+    if (typeof rawConfig.enableHistory === 'boolean') {
+      enableHistory = rawConfig.enableHistory;
+    } else if (rawConfig.enableHistory === 'auto') {
+      enableHistory = 'auto';
+    } else {
+      configWarnings.push(
+        `Unknown enableHistory "${String(rawConfig.enableHistory)}". Falling back to default "auto".`
+      );
+    }
+  }
+
+  let consoleProgress: 'auto' | 'line' | 'dot' | boolean = 'auto';
+
+  if (rawConfig?.consoleProgress !== undefined) {
+    if (typeof rawConfig.consoleProgress === 'boolean') {
+      consoleProgress = rawConfig.consoleProgress;
+    } else if (
+      rawConfig.consoleProgress === 'auto' ||
+      rawConfig.consoleProgress === 'line' ||
+      rawConfig.consoleProgress === 'dot'
+    ) {
+      consoleProgress = rawConfig.consoleProgress;
+    } else {
+      configWarnings.push(
+        `Unknown consoleProgress "${String(rawConfig.consoleProgress)}". Falling back to default "auto".`
+      );
+    }
+  }
+
+  let openAutomatically: 'always' | 'never' | 'on-failure-only' = 'never';
+
+  if (rawConfig?.openAutomatically !== undefined) {
+    if (
+      rawConfig.openAutomatically === 'always' ||
+      rawConfig.openAutomatically === 'never' ||
+      rawConfig.openAutomatically === 'on-failure-only'
+    ) {
+      openAutomatically = rawConfig.openAutomatically;
+    } else {
+      configWarnings.push(
+        `Unknown openAutomatically "${String(rawConfig.openAutomatically)}". Falling back to default "never".`
+      );
+    }
+  }
+
   let runNumber = 1;
 
   try {
-    const dbPath = resolveHistoryDbPath(
-      cwd,
-      path.resolve(cwd, outputDir),
-      rawConfig?.history as HistoryConfig | undefined
-    );
+    const dbPath = resolveHistoryDbPath(cwd, path.resolve(cwd, outputDir), history);
 
     let countedFromDb = false;
 
@@ -227,76 +412,15 @@ export function resolveConfig(
     runNumber = 1;
   }
 
-  const rawTestRunName = rawConfig?.testRunName ? String(rawConfig.testRunName) : 'Test Run #{N}';
-  const testRunName = rawTestRunName.replaceAll('{N}', String(runNumber));
-  const singleSummaryFile = Boolean(rawConfig?.singleSummaryFile);
-  const theme =
-    normalizeTheme(rawConfig?.theme != null ? String(rawConfig.theme) : undefined) ?? 'Sage';
-  const darkMode = parseDarkMode(rawConfig?.darkMode);
-  const minimalReport = Boolean(rawConfig?.minimalReport);
-
-  let enableHistory: 'auto' | boolean = 'auto';
-  let history: HistoryConfig | undefined = undefined;
-
-  if (rawConfig?.history !== undefined) {
-    history = rawConfig.history as HistoryConfig;
-    if (
-      history === false ||
-      (typeof history === 'object' && history !== null && history.mode === 'off')
-    ) {
-      enableHistory = false;
-    } else if (history === true) {
-      enableHistory = true;
-    } else if (
-      typeof history === 'object' &&
-      history !== null &&
-      (history.mode === 'local' || history.mode === 'remote')
-    ) {
-      enableHistory = true;
-    }
-  }
-
-  if (minimalReport) {
-    enableHistory = false;
-  } else if (rawConfig?.enableHistory !== undefined && history === undefined) {
-    if (typeof rawConfig.enableHistory === 'boolean') {
-      enableHistory = rawConfig.enableHistory;
-    } else if (rawConfig.enableHistory === 'auto') {
-      enableHistory = 'auto';
-    }
-  }
-
-  let consoleProgress: 'auto' | 'line' | 'dot' | boolean = 'auto';
-
-  if (rawConfig?.consoleProgress !== undefined) {
-    if (typeof rawConfig.consoleProgress === 'boolean') {
-      consoleProgress = rawConfig.consoleProgress;
-    } else if (
-      rawConfig.consoleProgress === 'auto' ||
-      rawConfig.consoleProgress === 'line' ||
-      rawConfig.consoleProgress === 'dot'
-    ) {
-      consoleProgress = rawConfig.consoleProgress;
-    }
-  }
-
-  let openAutomatically: 'always' | 'never' | 'on-failure-only' = 'never';
-
-  if (
-    rawConfig?.openAutomatically === 'always' ||
-    rawConfig?.openAutomatically === 'never' ||
-    rawConfig?.openAutomatically === 'on-failure-only'
-  ) {
-    openAutomatically = rawConfig.openAutomatically;
-  }
+  const testRunName = testRunNamePattern.replaceAll('{N}', String(runNumber));
 
   return {
     outputDir,
-    isCustomOutputDir: Boolean(rawConfig?.outputDir),
+    isCustomOutputDir,
     packageManager,
     projectName,
     testRunName,
-    rawTestRunName: rawConfig?.testRunName ? String(rawConfig.testRunName) : undefined,
+    rawTestRunName,
     singleSummaryFile,
     theme,
     isCustomTheme: rawConfig?.theme != null && theme !== 'Sage',
@@ -307,6 +431,7 @@ export function resolveConfig(
     minimalReport,
     consoleProgress,
     openAutomatically,
+    configWarnings: configWarnings.length > 0 ? configWarnings : undefined,
   };
 }
 
@@ -530,6 +655,18 @@ class ZenReporter implements Reporter {
       process.cwd(),
       config.configFile ? path.dirname(config.configFile) : process.cwd()
     );
+
+    if (this.reportConfig.configWarnings?.length) {
+      const isTTY =
+        typeof process !== 'undefined' && process.stderr && Boolean(process.stderr.isTTY);
+      for (const warning of this.reportConfig.configWarnings) {
+        if (isTTY) {
+          console.warn(`\x1b[33m[Zen Reporter Warning]\x1b[0m ${warning}`);
+        } else {
+          console.warn(`[Zen Reporter Warning] ${warning}`);
+        }
+      }
+    }
 
     if (this.reportConfig.enableHistory === true) {
       try {
@@ -786,6 +923,7 @@ class ZenReporter implements Reporter {
       isCustomOutputDir: this.reportConfig.isCustomOutputDir,
       singleSummaryFile: this.reportConfig.singleSummaryFile,
       openAutomatically: this.reportConfig.openAutomatically,
+      configWarnings: this.reportConfig.configWarnings,
     };
 
     const reportData: ReportData = { testRun };

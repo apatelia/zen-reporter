@@ -1,8 +1,7 @@
 import HeaderRunSwitcher from '@/components/layout/HeaderRunSwitcher';
-import ThemeControls, { type ThemeId } from '@/components/layout/ThemeControls';
-import type { ThemeMode } from '@/App';
+import ThemeControls from '@/components/layout/ThemeControls';
 import { formatDateRange, formatDuration } from '@arpanp/zen-core';
-import type { HistoryData, HistoryRun, ResultSummary } from '@arpanp/zen-core';
+import type { HistoryData, HistoryRun, ResultSummary, ThemeMode } from '@arpanp/zen-core';
 
 export interface HeaderProps {
   projectName: string | undefined;
@@ -18,7 +17,7 @@ export interface HeaderProps {
   onCopyCommit: () => void;
   commitCopied: boolean;
   theme: ThemeMode;
-  onThemeChange: (theme: ThemeId) => void;
+  onThemeChange: (theme: ThemeMode) => void;
   darkMode: 'system' | 'light' | 'dark';
   onDarkModeChange: (mode: 'system' | 'light' | 'dark') => void;
 }
