@@ -6,7 +6,10 @@
 2. **Typechecking Standard**: Use `npm run typecheck` (or package manager equivalent) for checking TypeScript types across the project, rather than running sub-config compilation commands (such as `npx tsc -p tsconfig.lib.json`), unless specifically tasked with testing library build output emit.
 3. **Dead Code Hygiene**: Enforce clean dependencies and local bindings by running `npm run lint:unused`. Agents must eliminate any and all detected unused imports, variables, or functions to keep the codebase lean and warning-free.
 4. **Spell Checking**: Ensure spelling accuracy across code, comments, documentation, and commit messages. Run `npm run spellcheck` (or `npm run lint` if integrated) and resolve all spell checker warnings before committing changes. Add domain-specific terms or valid identifiers to `cspell.json` if needed.
-5. **Formatting**: Always check and enforce formatting via package scripts rather than direct tool calls (e.g., avoid invoking `npx prettier` directly). Use `npm run format:check` to verify whether formatting is compliant across the codebase, and run `npm run format` to automatically apply formatting fixes whenever changes are made.
+5. **Formatting**: Always check and enforce formatting via package scripts rather than direct tool calls (e.g., avoid invoking `npx prettier` directly). Run `npm run format` to automatically apply formatting fixes whenever changes are made across code, docs, or configs. Run `npm run format:check` if you need to verify formatting without modifying files.
+
+6. **Build Verification**: Ensure packages build without errors or bundling issues. Run `npm run build` as part of the post-change verification sequence whenever modifying code or assets across packages.
+7. **Multi-Format Linting (`npm run lint`)**: ESLint in this repo is configured to lint not only JavaScript/TypeScript code, but also Markdown (`.md`) and JSON (`.json`) files. Whenever modifying code, markdown docs, or JSON configs, always run `npm run lint` to enforce formatting, syntax, link rules, and CSpell standards across all supported file types.
 
 ## JSDoc Documentation Requirements
 
@@ -25,4 +28,4 @@
    - Targeted tests by title or tag: `npx playwright test -g "<pattern-or-tag>"`
      Do not execute unrelated test specs (such as `tests/config.spec.ts`) during verification of unrelated features or UI changes.
 3. **Intentional Test Failures**: When running the full suite via `npm test` or `npx playwright test`, certain tests are intentionally designed to fail, time out, or flake to generate realistic failure fixtures for the reporter output. Do not attempt to fix or alter intentionally failing tests unless explicitly instructed.
-4. **No Full-Suite Verification**: Never run the full test suite (`npm test` or `npx playwright test` without arguments) as a pre-change baseline or post-change verification step. Because intentional failures exist and run times are substantial, always rely on targeted tests (only when modifying relevant tests) and static checks (`npm run typecheck`, `npm run lint:unused`, `npm run format:check`, `npm run spellcheck`).
+4. **No Full-Suite Verification**: Never run the full test suite (`npm test` or `npx playwright test` without arguments) as a pre-change baseline or post-change verification step. Because intentional failures exist and run times are substantial, always rely on targeted tests (only when modifying relevant tests) and static checks (`npm run typecheck`, `npm run lint`, `npm run lint:unused`, `npm run build`, `npm run format`, `npm run spellcheck`).
