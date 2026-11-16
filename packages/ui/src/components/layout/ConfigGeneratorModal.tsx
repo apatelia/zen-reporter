@@ -257,7 +257,7 @@ export function ConfigGeneratorModal({ isOpen, onClose, activeConfig }: ConfigGe
   const [projectId, setProjectId] = useState(initialConfig.projectId);
   const [runId, setRunId] = useState(initialConfig.runId);
   const [fallbackToLocal, setFallbackToLocal] = useState(initialConfig.fallbackToLocal);
-  const [timeoutMs, setRemoteTimeoutMs] = useState(initialConfig.timeoutMs);
+  const [timeoutMs, setTimeoutMs] = useState(initialConfig.timeoutMs);
 
   const [dbFilename, setDbFilename] = useState(initialConfig.dbFilename);
   const [windowSize, setWindowSize] = useState(initialConfig.windowSize);
@@ -286,7 +286,7 @@ export function ConfigGeneratorModal({ isOpen, onClose, activeConfig }: ConfigGe
       setProjectId(initialConfig.projectId);
       setRunId(initialConfig.runId);
       setFallbackToLocal(initialConfig.fallbackToLocal);
-      setRemoteTimeoutMs(initialConfig.timeoutMs);
+      setTimeoutMs(initialConfig.timeoutMs);
       setDbFilename(initialConfig.dbFilename);
       setWindowSize(initialConfig.windowSize);
       setMaxRuns(initialConfig.maxRuns);
@@ -308,7 +308,7 @@ export function ConfigGeneratorModal({ isOpen, onClose, activeConfig }: ConfigGe
     setProjectId(initialConfig.projectId);
     setRunId(initialConfig.runId);
     setFallbackToLocal(initialConfig.fallbackToLocal);
-    setRemoteTimeoutMs(initialConfig.timeoutMs);
+    setTimeoutMs(initialConfig.timeoutMs);
     setDbFilename(initialConfig.dbFilename);
     setWindowSize(initialConfig.windowSize);
     setMaxRuns(initialConfig.maxRuns);
@@ -1025,7 +1025,7 @@ export function ConfigGeneratorModal({ isOpen, onClose, activeConfig }: ConfigGe
                   const newMode = e.target.value as 'auto' | 'enabled' | 'disabled' | 'remote';
                   setHistoryMode(newMode);
                   if (newMode === 'remote') {
-                    if (!timeoutMs) setRemoteTimeoutMs('5000');
+                    if (!timeoutMs) setTimeoutMs('5000');
                   } else if (newMode !== 'disabled') {
                     if (!dbFilename) setDbFilename('history.db');
                     if (!windowSize) setWindowSize('50');
@@ -1161,7 +1161,7 @@ export function ConfigGeneratorModal({ isOpen, onClose, activeConfig }: ConfigGe
                               min="1000"
                               step="500"
                               value={timeoutMs}
-                              onChange={(e) => setRemoteTimeoutMs(e.target.value)}
+                              onChange={(e) => setTimeoutMs(e.target.value)}
                               placeholder="5000"
                               className="w-full rounded-md border border-border-default bg-canvas px-2 py-1 text-xs text-text-ink dark:text-text-on-primary focus:border-accent-blue focus:outline-hidden"
                             />

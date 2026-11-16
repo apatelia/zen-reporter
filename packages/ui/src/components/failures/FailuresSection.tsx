@@ -84,6 +84,16 @@ function getAllFailureProjects(suites: TestSuite[]): string[] {
   return Array.from(projectSet).sort();
 }
 
+/**
+ * FailuresSection renders failure statistics, filtering controls, and the failure list for test failures.
+ *
+ * @param props - Component properties for the FailuresSection.
+ * @param props.suites - The list of test suites to display failures for.
+ * @param props.failedCount - The number of failed test cases.
+ * @param props.timedOutCount - The number of timed out test cases.
+ * @param props.interruptedCount - The number of interrupted test cases.
+ * @returns The rendered failures section component.
+ */
 export default function FailuresSection({
   suites,
   failedCount,
@@ -161,13 +171,11 @@ export default function FailuresSection({
           value={timedOutCount}
           description="Test cases that exceeded their maximum allotted timeout threshold"
         />
-        {interruptedCount > 0 && (
-          <StatCard
-            label="Interrupted"
-            value={interruptedCount}
-            description="Test cases interrupted by worker crashes or process termination"
-          />
-        )}
+        <StatCard
+          label="Interrupted"
+          value={interruptedCount}
+          description="Test cases interrupted by worker crashes or process termination"
+        />
       </div>
 
       {/* Filter & Command Bar Container */}
