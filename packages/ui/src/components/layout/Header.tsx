@@ -23,6 +23,62 @@ export interface HeaderProps {
   onDarkModeChange: (mode: 'system' | 'light' | 'dark') => void;
 }
 
+interface CopyButtonProps {
+  onClick: () => void;
+  copied: boolean;
+  title: string;
+  ariaLabel: string;
+}
+
+/**
+ * Clipboard-copy icon button used by the git metadata chips; flashes a check
+ * icon while `copied` is true.
+ *
+ * @param onClick - Callback that copies the value to the clipboard and shows the toast.
+ * @param copied - Whether the value was just copied, controlling the check-icon flash.
+ * @param title - Tooltip text, including the copied value and the keyboard shortcut hint.
+ * @param ariaLabel - Accessible label for the button.
+ * @returns The rendered button element.
+ */
+function CopyButton({ onClick, copied, title, ariaLabel }: CopyButtonProps) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="inline-flex items-center justify-center p-1 rounded-md text-text-muted hover:text-accent-blue hover:bg-surface-200/60 transition-colors cursor-pointer"
+      title={title}
+      aria-label={ariaLabel}
+    >
+      {copied ? (
+        <svg
+          className="h-3.5 w-3.5 text-success-600 dark:text-success-400"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+          strokeWidth={2.5}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <polyline points="20 6 9 17 4 12" />
+        </svg>
+      ) : (
+        <svg
+          className="h-3.5 w-3.5"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+          strokeWidth={2}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <rect width="14" height="14" x="8" y="8" rx="2" ry="2" />
+          <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2" />
+        </svg>
+      )}
+    </button>
+  );
+}
+
 /**
  * Header top bar: project/run breadcrumb, quick run switcher, run metadata
  * (date range, duration, git branch/commit with copy buttons), and theme controls.
@@ -152,40 +208,12 @@ export default function Header({
                           <path d="M9.5 3.25a2.25 2.25 0 1 1 3 2.122V6A2.5 2.5 0 0 1 10 8.5H6a1 1 0 0 0-1 1v1.128a2.251 2.251 0 1 1-1.5 0V5.372a2.25 2.25 0 1 1 1.5 0v1.836A2.493 2.493 0 0 1 6 7h4a1 1 0 0 0 1-1v-.628A2.25 2.25 0 0 1 9.5 3.25Zm-6 0a.75.75 0 1 0 1.5 0 .75.75 0 0 0-1.5 0Zm8.25-.75a.75.75 0 1 0 0 1.5.75.75 0 0 0 0-1.5ZM4.25 12a.75.75 0 1 0 0 1.5.75.75 0 0 0 0-1.5Z" />
                         </svg>
                         <span className="truncate max-w-56">{summary.gitBranch}</span>
-                        <button
-                          type="button"
+                        <CopyButton
                           onClick={onCopyBranch}
-                          className="inline-flex items-center justify-center p-1 rounded-md text-text-muted hover:text-accent-blue hover:bg-surface-200/60 transition-colors cursor-pointer"
+                          copied={branchCopied}
                           title={`Copy branch name (${summary.gitBranch}) (b)`}
-                          aria-label="Copy branch name"
-                        >
-                          {branchCopied ? (
-                            <svg
-                              className="h-3.5 w-3.5 text-success-600 dark:text-success-400"
-                              fill="none"
-                              viewBox="0 0 24 24"
-                              stroke="currentColor"
-                              strokeWidth={2.5}
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                            >
-                              <polyline points="20 6 9 17 4 12" />
-                            </svg>
-                          ) : (
-                            <svg
-                              className="h-3.5 w-3.5"
-                              fill="none"
-                              viewBox="0 0 24 24"
-                              stroke="currentColor"
-                              strokeWidth={2}
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                            >
-                              <rect width="14" height="14" x="8" y="8" rx="2" ry="2" />
-                              <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2" />
-                            </svg>
-                          )}
-                        </button>
+                          ariaLabel="Copy branch name"
+                        />
                       </div>
                     </>
                   )}
@@ -207,40 +235,12 @@ export default function Header({
                           <line x1="8" y1="11" x2="8" y2="15" />
                         </svg>
                         <span>{summary.gitCommit}</span>
-                        <button
-                          type="button"
+                        <CopyButton
                           onClick={onCopyCommit}
-                          className="inline-flex items-center justify-center p-1 rounded-md text-text-muted hover:text-accent-blue hover:bg-surface-200/60 transition-colors cursor-pointer font-sans"
+                          copied={commitCopied}
                           title={`Copy commit SHA (${summary.gitCommitFull || summary.gitCommit}) (g)`}
-                          aria-label="Copy commit SHA"
-                        >
-                          {commitCopied ? (
-                            <svg
-                              className="h-3.5 w-3.5 text-success-600 dark:text-success-400"
-                              fill="none"
-                              viewBox="0 0 24 24"
-                              stroke="currentColor"
-                              strokeWidth={2.5}
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                            >
-                              <polyline points="20 6 9 17 4 12" />
-                            </svg>
-                          ) : (
-                            <svg
-                              className="h-3.5 w-3.5"
-                              fill="none"
-                              viewBox="0 0 24 24"
-                              stroke="currentColor"
-                              strokeWidth={2}
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                            >
-                              <rect width="14" height="14" x="8" y="8" rx="2" ry="2" />
-                              <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2" />
-                            </svg>
-                          )}
-                        </button>
+                          ariaLabel="Copy commit SHA"
+                        />
                       </div>
                     </>
                   )}
