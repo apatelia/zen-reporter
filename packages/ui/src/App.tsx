@@ -6,12 +6,14 @@ import HistorySection from '@/components/history/HistorySection';
 import Sidebar, { type TabKey } from '@/components/layout/Sidebar';
 import Header from '@/components/layout/Header';
 import { ConfigGeneratorModal } from '@/components/layout/ConfigGeneratorModal';
+import NotificationCenterModal from '@/components/layout/NotificationCenterModal';
 import { ShortcutsModal } from '@/components/shared/ShortcutsModal';
 import BackToTopButton from '@/components/shared/BackToTopButton';
 import RunSwitcherModal from '@/components/shared/RunSwitcherModal';
 import Toast, { type ToastNotification } from '@/components/shared/Toast';
 import SuitesSection from '@/components/suites/SuitesSection';
 import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts';
+import { useNotifications } from '@/hooks/useNotifications';
 import { copyToClipboard } from '@/utils/clipboard';
 import {
   buildProjectColorMap,
@@ -63,6 +65,7 @@ export default function App() {
   const [isRunSwitcherOpen, setIsRunSwitcherOpen] = useState(false);
   const [isConfigGeneratorOpen, setIsConfigGeneratorOpen] = useState(false);
   const [isShortcutsModalOpen, setIsShortcutsModalOpen] = useState(false);
+  const [isNotificationCenterOpen, setIsNotificationCenterOpen] = useState(false);
   const initialReportData = useMemo(() => {
     if (typeof document === 'undefined') return null;
 
@@ -533,6 +536,9 @@ export default function App() {
   const timedOutCount = summary ? summary.timedOut : 0;
   const interruptedCount = summary ? summary.interrupted || 0 : 0;
 
+  const { notifications, unreadCount, totalCount, toggleRead, markAllAsRead, isRead } =
+    useNotifications(reportData, effectiveRunId);
+
   const isHistoryDisabled = useMemo(() => {
     return reportData?.testRun?.enableHistory === false;
   }, [reportData]);
@@ -833,7 +839,8 @@ export default function App() {
     });
   }, []);
 
-  const isAnyModalOpen = isRunSwitcherOpen || isConfigGeneratorOpen || isShortcutsModalOpen;
+  const isAnyModalOpen =
+    isRunSwitcherOpen || isConfigGeneratorOpen || isShortcutsModalOpen || isNotificationCenterOpen;
 
   useKeyboardShortcuts({
     onToggleSidebar: () => setIsCollapsed((prev) => !prev),
@@ -866,6 +873,7 @@ export default function App() {
       }
     },
     onOpenConfigGenerator: () => setIsConfigGeneratorOpen(true),
+    onOpenNotifications: () => setIsNotificationCenterOpen(true),
     onOpenHelp: () => setIsShortcutsModalOpen(true),
     onCopyCommit: handleCopyCommit,
     onCopyBranch: handleCopyBranch,
@@ -911,6 +919,9 @@ export default function App() {
           interruptedCount={interruptedCount}
           isHistoryDisabled={isHistoryDisabled}
           isMinimalReport={isMinimalReport}
+          notificationCount={unreadCount}
+          totalNotificationCount={totalCount}
+          onOpenNotifications={() => setIsNotificationCenterOpen(true)}
           onOpenConfigGenerator={() => setIsConfigGeneratorOpen(true)}
           onOpenHelp={() => setIsShortcutsModalOpen(true)}
         />
@@ -1196,6 +1207,16 @@ export default function App() {
       <ShortcutsModal
         isOpen={isShortcutsModalOpen}
         onClose={() => setIsShortcutsModalOpen(false)}
+      />
+
+      <NotificationCenterModal
+        isOpen={isNotificationCenterOpen}
+        onClose={() => setIsNotificationCenterOpen(false)}
+        notifications={notifications}
+        unreadCount={unreadCount}
+        onToggleRead={toggleRead}
+        onMarkAllAsRead={markAllAsRead}
+        isRead={isRead}
       />
     </div>
   );

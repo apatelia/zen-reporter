@@ -69,6 +69,25 @@ function warnCorruptedLine(file: string, lineNum: number, err: unknown, runId?: 
   );
 }
 
+/**
+ * Safely parses a JSON serialized array of strings, validating element types.
+ *
+ * @param value - Raw database value to parse.
+ * @returns Array of validated strings, or undefined if parsing or type validation fails.
+ */
+function parseStringArray(value: unknown): string[] | undefined {
+  if (!value) return undefined;
+  try {
+    const parsed: unknown = JSON.parse(String(value));
+    if (Array.isArray(parsed) && parsed.length > 0 && parsed.every((v) => typeof v === 'string')) {
+      return parsed;
+    }
+  } catch {
+    // Malformed JSON fallback
+  }
+  return undefined;
+}
+
 import type { MigrationResult } from './migration';
 
 export interface SqliteHistoryStoreOptions {
@@ -240,6 +259,16 @@ export class SqliteHistoryStore implements HistoryStore {
       /* column already exists */
     }
     try {
+      this.db.exec('ALTER TABLE history_runs ADD COLUMN config_warnings TEXT;');
+    } catch {
+      /* column already exists */
+    }
+    try {
+      this.db.exec('ALTER TABLE history_runs ADD COLUMN system_notices TEXT;');
+    } catch {
+      /* column already exists */
+    }
+    try {
       this.db.exec('ALTER TABLE history_attachments ADD COLUMN project TEXT;');
     } catch {
       /* column already exists */
@@ -311,7 +340,8 @@ export class SqliteHistoryStore implements HistoryStore {
         run_workers, run_projects, step_assertions, step_actions,
         step_network, step_hooks, step_waits, step_others,
         git_branch, git_commit, git_commit_full,
-        playwright_version, os_name
+        playwright_version, os_name,
+        config_warnings, system_notices
       ) VALUES (
         ?, ?, ?, ?, ?, ?,
         ?, ?, ?,
@@ -319,6 +349,7 @@ export class SqliteHistoryStore implements HistoryStore {
         ?, ?, ?, ?,
         ?, ?, ?, ?,
         ?, ?, ?,
+        ?, ?,
         ?, ?
       )
     `);
@@ -351,7 +382,9 @@ export class SqliteHistoryStore implements HistoryStore {
       summary.gitCommit ?? null,
       summary.gitCommitFull ?? null,
       summary.playwrightVersion ?? null,
-      summary.osName ?? null
+      summary.osName ?? null,
+      options.configWarnings ? JSON.stringify(options.configWarnings) : null,
+      options.systemNotices ? JSON.stringify(options.systemNotices) : null
     );
 
     if (options.testCases.length > 0) {
@@ -1306,6 +1339,9 @@ export class SqliteHistoryStore implements HistoryStore {
       osName: runRow.os_name ? String(runRow.os_name) : undefined,
     };
 
+    const configWarnings = parseStringArray(runRow.config_warnings);
+    const systemNotices = parseStringArray(runRow.system_notices);
+
     const testRun: TestRun = {
       summary,
       suites,
@@ -1313,6 +1349,8 @@ export class SqliteHistoryStore implements HistoryStore {
       testRunName: String(runRow.run_name || runId),
       rawTestRunName: runRow.raw_test_run_name ? String(runRow.raw_test_run_name) : undefined,
       enableHistory: 'auto',
+      configWarnings,
+      systemNotices,
     };
 
     return { testRun };

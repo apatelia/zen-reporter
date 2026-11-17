@@ -10,6 +10,7 @@ export interface ShortcutHandlers {
   onOpenRunSwitcher?: () => void;
   onOpenRunSwitcherQuick?: () => void;
   onOpenConfigGenerator?: () => void;
+  onOpenNotifications?: () => void;
   onOpenHelp?: () => void;
   onCopyCommit?: () => void;
   onCopyBranch?: () => void;
@@ -134,6 +135,14 @@ export function useKeyboardShortcuts(handlers: ShortcutHandlers) {
         case 'C': {
           event.preventDefault();
           currentHandlers.onOpenConfigGenerator?.();
+          break;
+        }
+
+        // Notification Center modal
+        case 'o':
+        case 'O': {
+          event.preventDefault();
+          currentHandlers.onOpenNotifications?.();
           break;
         }
 

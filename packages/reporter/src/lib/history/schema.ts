@@ -34,6 +34,8 @@ CREATE TABLE IF NOT EXISTS history_runs (
   git_commit_full TEXT,
   playwright_version TEXT,
   os_name TEXT,
+  config_warnings TEXT,
+  system_notices TEXT,
   created_at TEXT DEFAULT CURRENT_TIMESTAMP
 );
 `;

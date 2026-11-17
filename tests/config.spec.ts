@@ -156,4 +156,20 @@ test.describe('Zen Reporter Configuration Tests', () => {
       'Invalid history configuration for remote mode (missing or empty "serverUrl"). Falling back to local history.',
     ]);
   });
+
+  test('warns on unknown or misspelled configuration keys with suggestions', () => {
+    const config = resolveConfig({
+      thme: 'Sage',
+      outDir: 'custom',
+      unknownProp: 123,
+    });
+
+    expect(config.configWarnings).toContain(
+      'Unknown configuration key "thme". Did you mean "theme"?'
+    );
+    expect(config.configWarnings).toContain(
+      'Unknown configuration key "outDir". Did you mean "outputDir"?'
+    );
+    expect(config.configWarnings).toContain('Unknown configuration key "unknownProp".');
+  });
 });

@@ -20,7 +20,8 @@ packages/core/
     ├── index.ts             # Public entry point / re-exports
     ├── types/
     │   ├── report.ts        # Core Playwright execution report models (TestCase, ResultSummary, etc.)
-    │   └── history.ts       # Historical analytics & run row schemas
+    │   ├── history.ts       # Historical analytics & run row schemas
+    │   └── notifications.ts # Structured notification schemas (AppNotification, preferences, extractor)
     ├── codeHighlighting.ts  # Syntax highlighting for step code snippets & error stack traces
     ├── cryptoUtils.ts       # MD5/SHA-256 hashing & error signature clustering
     ├── exportFilename.ts    # Sanitized export filename builder
@@ -40,6 +41,7 @@ packages/core/
 | :-------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `types/report.ts`           | Canonical report models shared by all packages: `TestCase`, `ResultSummary`, run metadata, attachment records                                     |
 | `types/history.ts`          | Historical run/test row schemas shared by the SQLite store, remote store, and server                                                              |
+| `types/notifications.ts`    | Notification models (`AppNotification`, category, scope, preferences) & report extractor (`extractNotificationsFromReport`)                       |
 | `statsUtils.ts`             | Single-pass O(N) project statistics, latency percentiles (`p50`, `p75`, `p95`), and executive KPI computation (used by UI and summary generation) |
 | `theme.ts`                  | Theme tokens (Sage, Lotus, Oasis), project identity color palette & status color palettes consumed by the UI                                      |
 | `exportToCsv.ts`            | RFC 4180 CSV export with UTF-8 BOM (used by UI exports and `zr summary`)                                                                          |

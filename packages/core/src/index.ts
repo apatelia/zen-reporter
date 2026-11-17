@@ -1,5 +1,6 @@
 export * from './types/report.js';
 export * from './types/history.js';
+export * from './types/notifications.js';
 export * from './formatters.js';
 export * from './statsUtils.js';
 export * from './stepCategoryClassifier.js';

@@ -28,6 +28,7 @@ const SHORTCUT_SECTIONS: ShortcutSection[] = [
     title: 'Sidebar & Layout',
     shortcuts: [
       { keyDesc: ['\\'], description: 'Toggle collapse / expand sidebar' },
+      { keyDesc: ['O'], description: 'Open notification center' },
       { keyDesc: ['C'], description: 'Open Playwright config generator' },
     ],
   },

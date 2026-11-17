@@ -27,16 +27,17 @@ These shortcuts are globally accessible from any tab in the report when no modal
 
 ## Search & Quick Actions
 
-| Shortcut       | Action             | Description                                                                                                                                            |
-| :------------- | :----------------- | :----------------------------------------------------------------------------------------------------------------------------------------------------- |
-| <kbd>/</kbd>   | Run Switcher       | Open the **Switch Execution Run** modal to browse or search across historical test runs.                                                               |
-| <kbd>Q</kbd>   | Quick Run Switcher | Open the **Switch Run** quick dropdown in the header to toggle between recent runs without leaving the active view.                                    |
-| <kbd>F</kbd>   | Focus Search       | Jump focus directly into the contextual search or filter input on the active tab (e.g. Suites search, Failure filter, File search, or History search). |
-| <kbd>G</kbd>   | Copy Commit SHA    | Copy the active test run's Git commit SHA to the clipboard with an interactive toast notification.                                                     |
-| <kbd>B</kbd>   | Copy Branch        | Copy the active test run's Git branch name to the clipboard with a toast notification.                                                                 |
-| <kbd>C</kbd>   | Config Generator   | Open the interactive Playwright Configuration Generator modal.                                                                                         |
-| <kbd>?</kbd>   | Cheatsheet         | Display the keyboard shortcuts cheatsheet modal.                                                                                                       |
-| <kbd>Esc</kbd> | Smart Escape       | Blurs active search/text inputs on the first press; closes open modals, menus, and overlays on subsequent press.                                       |
+| Shortcut       | Action              | Description                                                                                                                                            |
+| :------------- | :------------------ | :----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| <kbd>/</kbd>   | Run Switcher        | Open the **Switch Execution Run** modal to browse or search across historical test runs.                                                               |
+| <kbd>Q</kbd>   | Quick Run Switcher  | Open the **Switch Run** quick dropdown in the header to toggle between recent runs without leaving the active view.                                    |
+| <kbd>O</kbd>   | Notification Center | Open the **Notification Center** modal to inspect and dismiss active warnings and execution notices.                                                   |
+| <kbd>F</kbd>   | Focus Search        | Jump focus directly into the contextual search or filter input on the active tab (e.g. Suites search, Failure filter, File search, or History search). |
+| <kbd>G</kbd>   | Copy Commit SHA     | Copy the active test run's Git commit SHA to the clipboard with an interactive toast notification.                                                     |
+| <kbd>B</kbd>   | Copy Branch         | Copy the active test run's Git branch name to the clipboard with a toast notification.                                                                 |
+| <kbd>C</kbd>   | Config Generator    | Open the interactive Playwright Configuration Generator modal.                                                                                         |
+| <kbd>?</kbd>   | Cheatsheet          | Display the keyboard shortcuts cheatsheet modal.                                                                                                       |
+| <kbd>Esc</kbd> | Smart Escape        | Blurs active search/text inputs on the first press; closes open modals, menus, and overlays on subsequent press.                                       |
 
 ---
 
@@ -80,6 +81,20 @@ When inspecting test case attachments, screenshots, traces, or standard output i
 | <kbd>N</kbd> or <kbd>→</kbd> | Next Artifact     | View the next attachment in the test case artifact carousel.                             |
 | <kbd>F</kbd>                 | Find in Artifact  | When viewing text attachments or stdout/stderr logs, focus the inline filter search bar. |
 | <kbd>Esc</kbd>               | Close / Blur      | Blurs the search input if focused; closes the attachment previewer on next press.        |
+
+---
+
+### Notification Center Modal
+
+When inspecting active warnings, configuration notices, or system alerts in the Notification Center modal (<kbd>O</kbd>):
+
+| Shortcut                    | Action         | Description                                                                                 |
+| :-------------------------- | :------------- | :------------------------------------------------------------------------------------------ |
+| <kbd>1</kbd> – <kbd>9</kbd> | Toggle Read    | Toggle read/unread status on the corresponding notice card (1st through 9th) from the list. |
+| <kbd>R</kbd>                | Mark All Read  | Mark all visible notifications as read.                                                     |
+| <kbd>Esc</kbd>              | Dismiss / Blur | Closes the Notification Center modal.                                                       |
+
+> **Note**: While the Notification Center modal is open, <kbd>R</kbd> triggers **Mark All Read** rather than scrolling to the top. When the modal is closed, global behavior is instantly restored.
 
 ---
 

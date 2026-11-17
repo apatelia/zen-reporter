@@ -75,6 +75,7 @@ const remoteHistory: RemoteHistoryConfig = {
 | `history`           | `HistoryConfig`                            | _unset_                     | Advanced history configuration: `true`, `false`, `{ mode: 'local', ... }`, `{ mode: 'remote', ... }`, or `{ mode: 'off' }`. Takes precedence over `enableHistory` when both are set. See History Configuration Details below. |
 | `consoleProgress`   | `'auto' \| 'line' \| 'dot' \| boolean`     | `"auto"`                    | Terminal execution ticker style. `"auto"` chooses `line` in interactive TTY sessions and `dot` in non-interactive CI environments.                                                                                            |
 | `openAutomatically` | `'always' \| 'never' \| 'on-failure-only'` | `"never"`                   | Controls whether to automatically open the report in a web browser upon test completion.                                                                                                                                      |
+| `systemNotices`     | `string[]`                                 | _unset_                     | Custom environment notices, CI runner announcements, or operational alerts displayed as system-scoped notices in the Notification Center.                                                                                     |
 
 > `packageManager` appears in the resolved configuration but is auto-detected from the project — it is not a user-facing option.
 
@@ -256,6 +257,37 @@ export default defineConfig({
 
 ---
 
+### 5. System Notices & Operational Alerts (`systemNotices`)
+
+Zen Reporter allows test platforms, DevOps leads, and CI pipelines to broadcast environmental notices or operational alerts directly to developers through the report's Notification Center (<kbd>O</kbd>):
+
+```ts
+export default defineConfig({
+  reporter: [
+    [
+      '@arpanp/zen-reporter',
+      {
+        systemNotices: [
+          // 1. CI / Runner Infrastructure Context
+          `Running on AWS Spot instance (${process.env.RUNNER_NAME || 'agent-1'}) with worker memory limits.`,
+
+          // 2. Ephemeral or Degraded Test Environments
+          'Staging cluster maintenance: Payment gateway sandbox is operating in mock mode.',
+
+          // 3. Framework or Deprecation Announcements
+          'Notice: Legacy @company/auth-fixture is deprecated; migrate to v2 by end of month.',
+        ],
+      },
+    ],
+  ],
+});
+```
+
+- **Scope & Badge**: Emitted with a distinct purple `SYSTEM` badge to differentiate from run-scoped configuration warnings.
+- **Persistence**: Persisted to SQLite (`history.db`) alongside the test run, so teams can review environmental caveats when inspecting past runs.
+
+---
+
 ## Keeping Options in a Separate File
 
 When the options object grows — most commonly with remote history and its credentials — move it into a dedicated `zen.config.json` file and keep `playwright.config.ts` lean. The reporter auto-discovers this file: on startup it probes for `zen.config.json` in the same directory as your `playwright.config.ts` and merges it into the resolved options.
@@ -289,6 +321,16 @@ Rules:
 - **One directory only**: the file is probed exactly where `playwright.config.ts` lives — no upward search, no global locations.
 - **Fail loudly**: a malformed `zen.config.json` (invalid JSON, or anything other than a plain object) aborts the run with a clear error — the file is never silently ignored.
 - **Plain data only**: the file is JSON, so no code executes in it (no `process.env`, no computed values) — credentials must be static values.
+
+### Key Validation & Misspelling Suggestions
+
+When resolving reporter configuration, unexpected or misspelled properties are validated against recognized schema keys. If a key is unrecognized, a warning notice is emitted indicating the closest matching key using Levenshtein distance:
+
+```text
+[Zen Reporter Warning] Unknown configuration key "thme". Did you mean "theme"?
+```
+
+These configuration warnings are surfaced in the terminal, recorded in the report summary, and displayed inside the Notification Center on the dashboard.
 
 ### Manual import (for comments or `process.env`)
 

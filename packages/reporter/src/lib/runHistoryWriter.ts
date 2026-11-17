@@ -23,6 +23,8 @@ export interface WriteRunHistoryOptions {
   historyConfig?: HistoryConfig;
   maxRuns?: number;
   windowSize?: number;
+  configWarnings?: string[];
+  systemNotices?: string[];
 }
 
 /**
@@ -53,12 +55,15 @@ export function resolveHistoryDbPath(
 }
 
 /**
- * Persists test run data to the centralized SQLite database (`history.db`).
+ * Persists test run data to the centralized SQLite database (`history.db`) or remote server.
  * Failure policy: catch-and-log only — history writing must never break report/HTML generation.
  *
  * @param options - Configuration options containing run metrics, metadata, and test cases.
+ * @returns Array of system notice strings if any were added during write (e.g. fallback to local).
  */
-export async function writeRunHistory(options: WriteRunHistoryOptions): Promise<void> {
+export async function writeRunHistory(
+  options: WriteRunHistoryOptions
+): Promise<string[] | undefined> {
   const cwd = process.cwd();
   const normalizedCwd = cwd.endsWith('/') ? cwd.slice(0, -1) : cwd;
   const outputDir = path.resolve(normalizedCwd, options.outputDir);
@@ -69,13 +74,53 @@ export async function writeRunHistory(options: WriteRunHistoryOptions): Promise<
       options.historyConfig !== null &&
       options.historyConfig.mode === 'remote'
     ) {
-      const remoteStore = new RemoteHistoryStore({
-        ...options.historyConfig,
-        outputDir: options.outputDir,
-      });
-      await remoteStore.saveRun(options);
-      await remoteStore.close();
-      return;
+      const fallbackToLocal = options.historyConfig.fallbackToLocal !== false;
+      let remoteStore: RemoteHistoryStore | undefined;
+      try {
+        remoteStore = new RemoteHistoryStore({
+          ...options.historyConfig,
+          outputDir: options.outputDir,
+        });
+        await remoteStore.saveRun(options);
+        return;
+      } catch (remoteError) {
+        if (!fallbackToLocal) {
+          throw remoteError;
+        }
+
+        const isTTY =
+          typeof process !== 'undefined' && process.stderr && Boolean(process.stderr.isTTY);
+        const prefix = isTTY ? '\x1b[33m[Zen Reporter Warning]\x1b[0m' : '[Zen Reporter Warning]';
+
+        console.warn(
+          `${prefix} Remote history ingestion failed; falling back to local SQLite store.`,
+          remoteError
+        );
+
+        const notice =
+          'Remote history ingestion server unreachable or rejected upload. Execution history was preserved in local SQLite storage.';
+        const systemNotices = options.systemNotices ? [...options.systemNotices, notice] : [notice];
+
+        const dbPath = resolveHistoryDbPath(normalizedCwd, outputDir, options.historyConfig);
+        const store = new SqliteHistoryStore({
+          dbPath,
+          maxRuns: options.maxRuns,
+          windowSize: options.windowSize,
+        });
+        try {
+          await store.saveRun({
+            ...options,
+            systemNotices,
+          });
+        } finally {
+          await store.close();
+        }
+        return systemNotices;
+      } finally {
+        if (remoteStore) {
+          await remoteStore.close();
+        }
+      }
     }
 
     const dbPath = resolveHistoryDbPath(normalizedCwd, outputDir, options.historyConfig);
@@ -84,9 +129,14 @@ export async function writeRunHistory(options: WriteRunHistoryOptions): Promise<
       maxRuns: options.maxRuns,
       windowSize: options.windowSize,
     });
-    await store.saveRun(options);
-    await store.close();
+    try {
+      await store.saveRun(options);
+    } finally {
+      await store.close();
+    }
+    return options.systemNotices;
   } catch (e) {
     console.warn('History write failed:', e);
+    return options.systemNotices;
   }
 }

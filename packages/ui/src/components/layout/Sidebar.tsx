@@ -275,10 +275,34 @@ interface SidebarProps {
   interruptedCount: number;
   isHistoryDisabled: boolean;
   isMinimalReport?: boolean;
+  notificationCount?: number;
+  totalNotificationCount?: number;
+  onOpenNotifications?: () => void;
   onOpenConfigGenerator?: () => void;
   onOpenHelp?: () => void;
 }
 
+/**
+ * Sidebar navigation component for Zen Reporter, including page tabs, brand logo,
+ * collapse toggle, notification center, and utility modals.
+ *
+ * @param props - Sidebar properties.
+ * @param props.activeTab - Currently selected tab key.
+ * @param props.setActiveTab - Callback to change active tab.
+ * @param props.isCollapsed - Whether the sidebar is collapsed to icon-only mode.
+ * @param props.setIsCollapsed - Callback to toggle sidebar collapse state.
+ * @param props.failedCount - Total number of failed test cases.
+ * @param props.timedOutCount - Total number of timed out test cases.
+ * @param props.interruptedCount - Total number of interrupted test cases.
+ * @param props.isHistoryDisabled - Whether historical features are disabled.
+ * @param props.isMinimalReport - Whether report is running in minimal mode.
+ * @param props.notificationCount - Number of unread notifications to display on badge.
+ * @param props.totalNotificationCount - Total number of notifications across read and unread states.
+ * @param props.onOpenNotifications - Callback to open the Notification Center modal.
+ * @param props.onOpenConfigGenerator - Callback to open the Config Generator modal.
+ * @param props.onOpenHelp - Callback to open the Shortcuts cheatsheet modal.
+ * @returns The rendered sidebar aside element.
+ */
 export default function Sidebar({
   activeTab,
   setActiveTab,
@@ -289,6 +313,9 @@ export default function Sidebar({
   interruptedCount,
   isHistoryDisabled,
   isMinimalReport,
+  notificationCount = 0,
+  totalNotificationCount = 0,
+  onOpenNotifications,
   onOpenConfigGenerator,
   onOpenHelp,
 }: SidebarProps) {
@@ -464,16 +491,22 @@ export default function Sidebar({
         ))}
       </nav>
 
-      {/* Sidebar Footer with Config Generator, Shortcuts Help & Collapse/Expand Toggle */}
+      {/* Sidebar Footer with Notifications, Config Generator, Shortcuts Help & Collapse/Expand Toggle */}
       <div className="border-t border-border-default p-2 space-y-1">
-        {onOpenHelp && (
+        {onOpenNotifications && (
           <button
             type="button"
-            onClick={onOpenHelp}
+            onClick={onOpenNotifications}
             className={`flex w-full items-center ${
-              isCollapsed ? 'justify-center p-2' : 'justify-between px-3 py-2'
+              isCollapsed ? 'justify-center p-2 relative' : 'justify-between px-3 py-2'
             } rounded-md text-xs font-semibold text-text-body-mid hover:bg-surface-100 hover:text-text-ink dark:text-text-muted dark:hover:bg-surface-100 dark:hover:text-text-on-primary transition-colors cursor-pointer group focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-blue/50`}
-            title={isCollapsed ? 'Keyboard Shortcuts (?)' : undefined}
+            title={
+              isCollapsed
+                ? notificationCount > 0
+                  ? `Notifications (${notificationCount} unread) (o)`
+                  : 'Notifications (o)'
+                : undefined
+            }
           >
             <div className="flex items-center gap-2.5 min-w-0">
               <svg
@@ -485,16 +518,43 @@ export default function Sidebar({
                 strokeLinecap="round"
                 strokeLinejoin="round"
               >
-                <rect width="20" height="16" x="2" y="4" rx="2" ry="2" />
-                <path d="M6 8h.01M10 8h.01M14 8h.01M18 8h.01M8 12h.01M12 12h.01M16 12h.01M7 16h10" />
+                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+                <path d="M13.73 21a2 2 0 0 1-3.46 0" />
               </svg>
-              {!isCollapsed && <span className="truncate">Shortcuts</span>}
+              {!isCollapsed && <span className="truncate">Notifications</span>}
             </div>
-            {!isCollapsed && (
-              <kbd className="opacity-0 group-hover:opacity-100 transition-opacity hidden sm:inline-flex h-4.5 min-w-4.5 items-center justify-center rounded px-1 text-[11px] font-medium leading-none text-text-muted border border-border-default/60 bg-surface-100/60 dark:bg-surface-200/50">
-                ?
-              </kbd>
-            )}
+            {!isCollapsed ? (
+              <div className="flex items-center gap-1.5 shrink-0">
+                {notificationCount > 0 ? (
+                  <span
+                    aria-label={`${notificationCount} unread notification${notificationCount > 1 ? 's' : ''}`}
+                    className="flex h-4.5 min-w-4.5 items-center justify-center rounded-full bg-amber-500 px-1 text-[10px] font-bold text-white dark:text-surface-950 shadow-xs"
+                  >
+                    {notificationCount}
+                  </span>
+                ) : totalNotificationCount > 0 ? (
+                  <span
+                    aria-label={`${totalNotificationCount} read notification${totalNotificationCount > 1 ? 's' : ''}`}
+                    className="flex h-4.5 min-w-4.5 items-center justify-center rounded-full bg-surface-200 dark:bg-surface-100 border border-border-default px-1 text-[10px] font-semibold text-text-muted shadow-2xs"
+                  >
+                    {totalNotificationCount}
+                  </span>
+                ) : null}
+                <kbd className="opacity-0 group-hover:opacity-100 transition-opacity hidden sm:inline-flex h-4.5 min-w-4.5 items-center justify-center rounded px-1 text-[11px] font-medium leading-none text-text-muted border border-border-default/60 bg-surface-100/60 dark:bg-surface-200/50">
+                  o
+                </kbd>
+              </div>
+            ) : notificationCount > 0 ? (
+              <span
+                aria-label={`${notificationCount} unread notification${notificationCount > 1 ? 's' : ''}`}
+                className="absolute top-1 right-1 flex h-2.5 w-2.5 rounded-full bg-amber-500 ring-2 ring-canvas"
+              />
+            ) : totalNotificationCount > 0 ? (
+              <span
+                aria-label={`${totalNotificationCount} read notification${totalNotificationCount > 1 ? 's' : ''}`}
+                className="absolute top-1 right-1 flex h-2 w-2 rounded-full bg-surface-400 dark:bg-surface-100 ring-1 ring-canvas"
+              />
+            ) : null}
           </button>
         )}
         {onOpenConfigGenerator && (
@@ -526,6 +586,37 @@ export default function Sidebar({
             {!isCollapsed && (
               <kbd className="opacity-0 group-hover:opacity-100 transition-opacity hidden sm:inline-flex h-4.5 min-w-4.5 items-center justify-center rounded px-1 text-[11px] font-medium leading-none text-text-muted border border-border-default/60 bg-surface-100/60 dark:bg-surface-200/50">
                 c
+              </kbd>
+            )}
+          </button>
+        )}
+        {onOpenHelp && (
+          <button
+            type="button"
+            onClick={onOpenHelp}
+            className={`flex w-full items-center ${
+              isCollapsed ? 'justify-center p-2' : 'justify-between px-3 py-2'
+            } rounded-md text-xs font-semibold text-text-body-mid hover:bg-surface-100 hover:text-text-ink dark:text-text-muted dark:hover:bg-surface-100 dark:hover:text-text-on-primary transition-colors cursor-pointer group focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-blue/50`}
+            title={isCollapsed ? 'Keyboard Shortcuts (?)' : undefined}
+          >
+            <div className="flex items-center gap-2.5 min-w-0">
+              <svg
+                className="h-4 w-4 shrink-0 text-text-body-mid group-hover:text-accent-blue dark:text-text-muted dark:group-hover:text-accent-blue transition-colors"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={1.75}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <rect width="20" height="16" x="2" y="4" rx="2" ry="2" />
+                <path d="M6 8h.01M10 8h.01M14 8h.01M18 8h.01M8 12h.01M12 12h.01M16 12h.01M7 16h10" />
+              </svg>
+              {!isCollapsed && <span className="truncate">Shortcuts</span>}
+            </div>
+            {!isCollapsed && (
+              <kbd className="opacity-0 group-hover:opacity-100 transition-opacity hidden sm:inline-flex h-4.5 min-w-4.5 items-center justify-center rounded px-1 text-[11px] font-medium leading-none text-text-muted border border-border-default/60 bg-surface-100/60 dark:bg-surface-200/50">
+                ?
               </kbd>
             )}
           </button>

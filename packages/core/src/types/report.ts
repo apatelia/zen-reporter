@@ -87,6 +87,7 @@ export interface TestRun {
   singleSummaryFile?: boolean;
   openAutomatically?: 'always' | 'never' | 'on-failure-only';
   configWarnings?: string[];
+  systemNotices?: string[];
 }
 
 export interface ReportData {
@@ -135,4 +136,5 @@ export interface ReporterConfig {
   history?: HistoryConfig;
   minimalReport?: boolean;
   openAutomatically?: 'always' | 'never' | 'on-failure-only';
+  systemNotices?: string[];
 }

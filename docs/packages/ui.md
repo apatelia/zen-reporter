@@ -22,7 +22,8 @@ packages/ui/
 │   ├── vite-env.d.ts
 │   ├── assets/
 │   ├── hooks/
-│   │   └── useKeyboardShortcuts.ts   # Global keyboard shortcut handling
+│   │   ├── useKeyboardShortcuts.ts   # Global keyboard shortcut handling
+│   │   └── useNotifications.ts       # Notification center state management & preferences sync
 │   └── utils/
 │       └── clipboard.ts              # Clipboard copy helper
 ```
@@ -73,7 +74,8 @@ src/components/
 │   ├── Sidebar.tsx
 │   ├── HeaderRunSwitcher.tsx           # Header run switcher dropdown
 │   ├── ThemeControls.tsx               # Theme selector & dark mode toggle
-│   └── ConfigGeneratorModal.tsx        # Interactive Playwright config generator
+│   ├── ConfigGeneratorModal.tsx        # Interactive Playwright config generator
+│   └── NotificationCenterModal.tsx     # Centralized notification & alert center modal
 ├── pagination/            # Centralized pagination
 │   ├── PaginationFooter.tsx
 │   ├── PageSizeControl.tsx

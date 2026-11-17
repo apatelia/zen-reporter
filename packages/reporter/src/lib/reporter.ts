@@ -128,6 +128,89 @@ export interface ReporterConfig {
   consoleProgress: 'auto' | 'line' | 'dot' | boolean;
   openAutomatically: 'always' | 'never' | 'on-failure-only';
   configWarnings?: string[];
+  systemNotices?: string[];
+}
+
+/**
+ * Recognized configuration keys accepted by `resolveConfig`.
+ */
+const KNOWN_CONFIG_KEYS = new Set([
+  'outputDir',
+  'projectName',
+  'testRunName',
+  'singleSummaryFile',
+  'minimalReport',
+  'theme',
+  'darkMode',
+  'enableHistory',
+  'history',
+  'consoleProgress',
+  'openAutomatically',
+  'systemNotices',
+]);
+
+/**
+ * Playwright internal or runner-injected keys passed to reporter constructors
+ * that should be ignored during unrecognized key validation.
+ */
+const PLAYWRIGHT_INTERNAL_KEYS = new Set(['configDir', '_mode', '_commandHash']);
+
+/**
+ * Computes Levenshtein edit distance between two strings.
+ *
+ * @param a - First string.
+ * @param b - Second string.
+ * @returns Number of single-character edits required to transform a into b.
+ */
+function levenshteinDistance(a: string, b: string): number {
+  const an = a.length;
+  const bn = b.length;
+  if (an === 0) return bn;
+  if (bn === 0) return an;
+
+  const matrix: number[][] = [];
+  for (let i = 0; i <= an; i++) {
+    matrix[i] = [i];
+  }
+  for (let j = 0; j <= bn; j++) {
+    matrix[0][j] = j;
+  }
+
+  for (let i = 1; i <= an; i++) {
+    for (let j = 1; j <= bn; j++) {
+      const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+      matrix[i][j] = Math.min(
+        matrix[i - 1][j] + 1,
+        matrix[i][j - 1] + 1,
+        matrix[i - 1][j - 1] + cost
+      );
+    }
+  }
+
+  return matrix[an][bn];
+}
+
+/**
+ * Finds the closest matching configuration key for a misspelled property.
+ *
+ * @param input - The unrecognized property key.
+ * @param candidates - Set or array of allowed property names.
+ * @returns Best matching key if edit distance is within reasonable threshold (<= 3), or null.
+ */
+function findClosestConfigKey(input: string, candidates: Iterable<string>): string | null {
+  const lowerInput = input.toLowerCase();
+  let bestMatch: string | null = null;
+  let minDistance = Infinity;
+
+  for (const candidate of candidates) {
+    const dist = levenshteinDistance(lowerInput, candidate.toLowerCase());
+    if (dist < minDistance && dist <= 3) {
+      minDistance = dist;
+      bestMatch = candidate;
+    }
+  }
+
+  return bestMatch;
 }
 
 /**
@@ -150,12 +233,27 @@ export function resolveConfig(
 
   const configWarnings: string[] = [];
 
+  for (const key of Object.keys(rawConfig)) {
+    if (PLAYWRIGHT_INTERNAL_KEYS.has(key)) {
+      continue;
+    }
+    if (!KNOWN_CONFIG_KEYS.has(key)) {
+      const suggestion = findClosestConfigKey(key, KNOWN_CONFIG_KEYS);
+      if (suggestion) {
+        configWarnings.push(`Unknown configuration key "${key}". Did you mean "${suggestion}"?`);
+      } else {
+        configWarnings.push(`Unknown configuration key "${key}".`);
+      }
+    }
+  }
+
   let outputDir = 'zen-report';
   let isCustomOutputDir = false;
   if (rawConfig?.outputDir !== undefined) {
     if (typeof rawConfig.outputDir === 'string' && rawConfig.outputDir.trim().length > 0) {
       outputDir = rawConfig.outputDir.trim();
       isCustomOutputDir = true;
+      configWarnings.push(`Info: Custom outputDir configured: "${outputDir}".`);
     } else {
       configWarnings.push(
         `Invalid outputDir "${String(rawConfig.outputDir)}". Falling back to default "zen-report".`
@@ -414,6 +512,13 @@ export function resolveConfig(
 
   const testRunName = testRunNamePattern.replaceAll('{N}', String(runNumber));
 
+  let systemNotices: string[] | undefined = undefined;
+  if (Array.isArray(rawConfig?.systemNotices)) {
+    systemNotices = rawConfig.systemNotices.filter(
+      (item): item is string => typeof item === 'string' && item.trim().length > 0
+    );
+  }
+
   return {
     outputDir,
     isCustomOutputDir,
@@ -432,6 +537,7 @@ export function resolveConfig(
     consoleProgress,
     openAutomatically,
     configWarnings: configWarnings.length > 0 ? configWarnings : undefined,
+    systemNotices: systemNotices && systemNotices.length > 0 ? systemNotices : undefined,
   };
 }
 
@@ -649,9 +755,15 @@ class ZenReporter implements Reporter {
    */
   onBegin(config: FullConfig, suite: Suite): void {
     this.config = config;
-    this.reportConfig = resolveConfig(
+    const rawReporterConfig = (config as FullConfig & { reporterConfig?: unknown }).reporterConfig;
+    const configOptions =
       this.options ||
-        (config as FullConfig & { reporterConfig?: Record<string, unknown> }).reporterConfig,
+      (typeof rawReporterConfig === 'object' && rawReporterConfig !== null
+        ? (rawReporterConfig as Record<string, unknown>)
+        : undefined);
+
+    this.reportConfig = resolveConfig(
+      configOptions,
       process.cwd(),
       config.configFile ? path.dirname(config.configFile) : process.cwd()
     );
@@ -889,7 +1001,7 @@ class ZenReporter implements Reporter {
           ? this.reportConfig.history
           : undefined;
 
-      await writeRunHistory({
+      const updatedSystemNotices = await writeRunHistory({
         startTime: this.startTime,
         testRunName: this.reportConfig.testRunName,
         rawTestRunName: this.reportConfig.rawTestRunName,
@@ -903,7 +1015,13 @@ class ZenReporter implements Reporter {
         historyConfig: this.reportConfig.history,
         maxRuns: historyOptions?.maxRuns,
         windowSize: historyOptions?.windowSize,
+        configWarnings: this.reportConfig.configWarnings,
+        systemNotices: this.reportConfig.systemNotices,
       });
+
+      if (updatedSystemNotices) {
+        this.reportConfig.systemNotices = updatedSystemNotices;
+      }
     }
 
     const testRun: TestRunModel = {
@@ -924,6 +1042,7 @@ class ZenReporter implements Reporter {
       singleSummaryFile: this.reportConfig.singleSummaryFile,
       openAutomatically: this.reportConfig.openAutomatically,
       configWarnings: this.reportConfig.configWarnings,
+      systemNotices: this.reportConfig.systemNotices,
     };
 
     const reportData: ReportData = { testRun };
