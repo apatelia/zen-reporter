@@ -9,6 +9,7 @@ export interface HeaderProps {
   summary: ResultSummary | null;
   historyData: HistoryData | null;
   currentRunId: string | null;
+  isSummaryView?: boolean;
   onSelectRun: (runId: string) => void;
   onOpenFullRunSwitcher: () => void;
   onActiveRunSelected: (run: HistoryRun) => void;
@@ -87,6 +88,7 @@ function CopyButton({ onClick, copied, title, ariaLabel }: CopyButtonProps) {
  * @param summary - Run summary powering the date range, duration, and git metadata chips.
  * @param historyData - Run history; the quick switcher renders only when more than one run exists.
  * @param currentRunId - Id of the run currently being viewed, passed to the quick switcher.
+ * @param isSummaryView - Whether the dashboard is operating in standalone summary view mode.
  * @param onSelectRun - Callback that loads the run picked from the quick switcher.
  * @param onOpenFullRunSwitcher - Callback that opens the full run switcher modal.
  * @param onActiveRunSelected - Callback shown when the already-active run is picked from the quick switcher.
@@ -106,6 +108,7 @@ export default function Header({
   summary,
   historyData,
   currentRunId,
+  isSummaryView = false,
   onSelectRun,
   onOpenFullRunSwitcher,
   onActiveRunSelected,
@@ -145,7 +148,7 @@ export default function Header({
 
         {/* Row 2: Controls & Metadata */}
         <div className="flex items-center gap-2.5 flex-wrap text-xs text-text-body-mid dark:text-text-muted min-w-0">
-          {historyData && historyData.runs && historyData.runs.length > 1 && (
+          {!isSummaryView && historyData && historyData.runs && historyData.runs.length > 1 && (
             <>
               <HeaderRunSwitcher
                 currentRunId={currentRunId}

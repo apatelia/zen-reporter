@@ -95,7 +95,7 @@ function NotificationMessageBody({ title, message }: { title?: string; message?:
         <p
           className={`${
             !isGenericTitle ? 'mt-1' : 'mt-2'
-          } text-xs text-text-body-mid dark:text-text-muted leading-relaxed font-mono break-words select-text`}
+          } text-xs text-text-body-mid dark:text-text-muted leading-relaxed font-mono wrap-break-word select-text`}
         >
           {message}
         </p>
@@ -270,11 +270,22 @@ export default function NotificationCenterModal({
 
   const modalShortcuts = useMemo<ModalShortcut[]>(() => {
     if (!hasNotifications) return [];
+    const count = Math.min(notifications.length, 9);
+    let keyDesc: string | string[];
+
+    if (count === 1) {
+      keyDesc = '1';
+    } else if (count === 2) {
+      keyDesc = ['1', '2'];
+    } else {
+      keyDesc = ['1', '…', String(count)];
+    }
+
     return [
-      { keyDesc: '1–9', label: 'Toggle Read', preserveCase: true },
+      { keyDesc, label: 'Toggle Read', preserveCase: true },
       { keyDesc: 'R', label: 'Mark All Read', preserveCase: true },
     ];
-  }, [hasNotifications]);
+  }, [hasNotifications, notifications.length]);
 
   const titleNode = (
     <div className="flex items-center gap-2.5">

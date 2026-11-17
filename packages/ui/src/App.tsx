@@ -936,6 +936,7 @@ export default function App() {
           summary={summary}
           historyData={historyData}
           currentRunId={effectiveRunId}
+          isSummaryView={isSummaryView}
           onSelectRun={handleSelectRun}
           onOpenFullRunSwitcher={() => setIsRunSwitcherOpen(true)}
           onActiveRunSelected={handleActiveRunSelected}
@@ -1064,7 +1065,14 @@ export default function App() {
               reportData &&
               (isSummaryView || activeTab === 'overview') &&
               summary && (
-                <Overview summary={summary} suites={suites} isMinimalReport={isMinimalReport} />
+                <Overview
+                  summary={summary}
+                  suites={suites}
+                  isMinimalReport={isMinimalReport}
+                  notifications={isSummaryView ? notifications : undefined}
+                  unreadNotificationCount={unreadCount}
+                  onOpenNotifications={() => setIsNotificationCenterOpen(true)}
+                />
               )}
 
             {!isLoading &&

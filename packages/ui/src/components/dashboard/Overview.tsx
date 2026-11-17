@@ -1,29 +1,56 @@
 import { useMemo } from 'react';
-import type { ResultSummary, TestSuite } from '@arpanp/zen-core';
+import type { AppNotification, ResultSummary, TestSuite } from '@arpanp/zen-core';
 import { collectAllCases } from '@arpanp/zen-core';
 import TestResultsHero from './TestResultsHero';
 import ParallelSpeedupCard from './ParallelSpeedupCard';
 import TestSpeedConsistencyCard from './TestSpeedConsistencyCard';
 import WorkerUtilizationCard from './WorkerUtilizationCard';
+import NotificationsBanner from '@/components/shared/NotificationsBanner';
 
 export interface OverviewProps {
   summary: ResultSummary;
   suites: TestSuite[];
   isMinimalReport?: boolean;
+  notifications?: AppNotification[];
+  unreadNotificationCount?: number;
+  onOpenNotifications?: () => void;
 }
 
 /**
  * Executive dashboard overview tab component.
  *
- * @param props - Component props containing summary, suites, and minimal report flag.
+ * @param props.summary - Test execution result summary.
+ * @param props.suites - Test suites payload.
+ * @param props.isMinimalReport - Whether running in minimal report mode.
+ * @param props.notifications - Optional notifications list for top alert banner.
+ * @param props.unreadNotificationCount - Unread notifications count.
+ * @param props.onOpenNotifications - Callback to open notification center modal.
  * @returns React functional component rendering the Overview page.
  */
-export default function Overview({ summary, suites, isMinimalReport }: OverviewProps) {
+export default function Overview({
+  summary,
+  suites,
+  isMinimalReport,
+  notifications,
+  unreadNotificationCount = 0,
+  onOpenNotifications,
+}: OverviewProps) {
   const allCases = useMemo(() => collectAllCases(suites), [suites]);
 
   return (
     <div className="w-full space-y-6">
       <h1 className="sr-only">Overview</h1>
+
+      {/* Notifications Alert Banner (Run/System alerts) */}
+      {notifications && notifications.length > 0 && onOpenNotifications && (
+        <section>
+          <NotificationsBanner
+            notifications={notifications}
+            unreadCount={unreadNotificationCount}
+            onOpenNotifications={onOpenNotifications}
+          />
+        </section>
+      )}
 
       {/* Section 1: Executive Test Results & Metadata Hero */}
       <section>

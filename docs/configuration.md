@@ -239,7 +239,9 @@ export default defineConfig({
 
 When `singleSummaryFile: true` is enabled, Zen Reporter generates an independent, self-contained `summary.html` in your `outputDir`:
 
-- **Ultra-compact file size**: Single lightweight HTML file containing key KPIs, pass rates, duration, and top failures.
+- **Ultra-compact file size**: Single lightweight HTML file containing key KPIs, pass rates, duration, and top failures without historical runs or full suite trace attachments.
+- **Streamlined executive header**: Hides multi-run switching dropdowns ("Switch Run") since historical runs are not embedded in standalone summaries.
+- **Persistent inline notifications**: Directly surfaces run-scoped configuration notices and system alerts (`systemNotices`) in a prominent banner atop the Overview, with a shortcut keycap <kbd>O</kbd> to inspect the Notification Center.
 - **Perfect for CI/CD integrations**: Attach it as a GitHub Actions Job Summary, GitLab artifact, or embed it in automated Slack / email notifications.
 
 ```ts

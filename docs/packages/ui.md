@@ -123,7 +123,7 @@ src/components/
     ├── SearchInput.tsx, MultiSelectFilter.tsx, TagCloudModal.tsx
     ├── StatCard.tsx, PassRateBadge.tsx, StatusCountBadge.tsx, TestCaseCard.tsx
     ├── TestCaseDetail.tsx, RunSwitcherModal.tsx, Toast.tsx
-    ├── BackToTopButton.tsx, HistoryDisabledBanner.tsx, OfflineHistoryNotice.tsx
+    ├── BackToTopButton.tsx, HistoryDisabledBanner.tsx, OfflineHistoryNotice.tsx, NotificationsBanner.tsx
 ```
 
 ---
