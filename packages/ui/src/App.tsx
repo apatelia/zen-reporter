@@ -158,7 +158,6 @@ export default function App() {
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
-    localStorage.setItem('zen-theme', theme);
   }, [theme]);
 
   useEffect(() => {
@@ -947,7 +946,12 @@ export default function App() {
           theme={theme}
           onThemeChange={(t) => {
             const normalized = toThemeMode(t);
-            if (normalized) setTheme(normalized);
+            if (normalized) {
+              setTheme(normalized);
+              if (typeof window !== 'undefined') {
+                localStorage.setItem('zen-theme', normalized);
+              }
+            }
           }}
           darkMode={darkMode}
           onDarkModeChange={(mode) => {
