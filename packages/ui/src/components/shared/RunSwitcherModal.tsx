@@ -113,8 +113,19 @@ export default function RunSwitcherModal({
     const switchableRunsCount = pagedRuns.filter((r) => r.run_id !== currentRunId).length;
     const list = [];
     if (switchableRunsCount > 0) {
+      let keyDesc: string | string[];
+      if (switchableRunsCount === 1) {
+        keyDesc = '1';
+      } else if (switchableRunsCount === 2) {
+        keyDesc = ['1', '2'];
+      } else if (switchableRunsCount === 3) {
+        keyDesc = ['1', '2', '3'];
+      } else {
+        keyDesc = ['1', '…', String(switchableRunsCount)];
+      }
+
       list.push({
-        keyDesc: ['1', '…', String(switchableRunsCount)],
+        keyDesc,
         label: 'select run',
       });
     }

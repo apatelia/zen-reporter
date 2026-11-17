@@ -277,6 +277,8 @@ export default function NotificationCenterModal({
       keyDesc = '1';
     } else if (count === 2) {
       keyDesc = ['1', '2'];
+    } else if (count === 3) {
+      keyDesc = ['1', '2', '3'];
     } else {
       keyDesc = ['1', '…', String(count)];
     }
