@@ -518,7 +518,7 @@ export function ConfigGeneratorModal({ isOpen, onClose, activeConfig }: ConfigGe
           'export default defineConfig({',
           '  reporter: [',
           '    [',
-          "      '@arpanp/zen-reporter',",
+          "      '@arpanp/zen-reporter-playwright',",
           '      {',
         ]
       : [
@@ -527,7 +527,7 @@ export function ConfigGeneratorModal({ isOpen, onClose, activeConfig }: ConfigGe
           'module.exports = defineConfig({',
           '  reporter: [',
           '    [',
-          "      '@arpanp/zen-reporter',",
+          "      '@arpanp/zen-reporter-playwright',",
           '      {',
         ];
 

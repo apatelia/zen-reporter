@@ -3,7 +3,7 @@ import { expect, test } from '@playwright/test';
 import * as fs from 'fs';
 import * as path from 'path';
 import { DatabaseSync } from 'node:sqlite';
-import { resolveConfig } from '../packages/reporter/src/lib/reporter';
+import { resolveConfig } from '../packages/reporter-playwright/src/lib/reporter';
 
 /**
  * Creates a SQLite history database preloaded with the given run names.

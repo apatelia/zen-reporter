@@ -1,5 +1,5 @@
 {
-  "name": "@arpanp/zen-reporter",
+  "name": "@arpanp/zen-reporter-playwright",
   "version": "1.0.0-dev",
   "type": "module",
   "description": "Beautiful test execution reports for Playwright",

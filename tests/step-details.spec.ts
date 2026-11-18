@@ -1,6 +1,6 @@
 import { fileURLToPath } from 'url';
 import { expect, test } from '@playwright/test';
-import { processRawData } from '../packages/reporter/src/lib/dataProcessor';
+import { processRawData } from '../packages/reporter-playwright/src/lib/dataProcessor';
 import { convertPlaywrightSteps } from '@arpanp/zen-core';
 
 const currentFile = fileURLToPath(import.meta.url);

@@ -23,7 +23,7 @@ const serveReportAssets: Plugin = {
       if (!req.url || req.method !== 'GET') return next();
 
       try {
-        const { SqliteHistoryStore } = await import('@arpanp/zen-reporter');
+        const { SqliteHistoryStore } = await import('@arpanp/zen-cli');
         const dbPath = resolve(REPORT_DIR, 'history.db');
         if (!existsSync(dbPath)) {
           res.statusCode = 404;
@@ -70,7 +70,7 @@ const serveReportAssets: Plugin = {
       if (!req.url || req.method !== 'GET') return next();
 
       try {
-        const { SqliteHistoryStore } = await import('@arpanp/zen-reporter');
+        const { SqliteHistoryStore } = await import('@arpanp/zen-cli');
         const dbPath = resolve(REPORT_DIR, 'history.db');
         if (!existsSync(dbPath)) {
           res.statusCode = 404;
@@ -175,7 +175,10 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': resolve(__dirname, './src'),
-      '@arpanp/zen-reporter': resolve(__dirname, '../reporter/src/lib/reporter.ts'),
+      '@arpanp/zen-reporter-playwright': resolve(
+        __dirname,
+        '../reporter-playwright/src/lib/reporter.ts'
+      ),
     },
   },
   build: {

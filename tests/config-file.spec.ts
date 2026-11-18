@@ -2,7 +2,7 @@
 import { expect, test } from '@playwright/test';
 import * as fs from 'fs';
 import * as path from 'path';
-import { resolveConfig } from '../packages/reporter/src/lib/reporter';
+import { resolveConfig } from '../packages/reporter-playwright/src/lib/reporter';
 
 test.describe('zen.config.json Discovery & Loading', () => {
   test('auto-discovers zen.config.json next to the Playwright config', ({}, testInfo) => {

@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
-import { ProgressPrinter } from '../packages/reporter/src/lib/progressPrinter';
-import type { TestStatus } from '../packages/reporter/src/lib/progressPrinter';
+import { ProgressPrinter } from '../packages/reporter-playwright/src/lib/progressPrinter';
+import type { TestStatus } from '../packages/reporter-playwright/src/lib/progressPrinter';
 
 let restoreStdout: (() => void) | null = null;
 let fakeTTYActive = false;
