@@ -1,20 +1,24 @@
-import type { FullConfig } from '@playwright/test/reporter';
 import * as path from 'path';
 import { SqliteHistoryStore } from './history/SqliteHistoryStore';
 import { RemoteHistoryStore } from './history/RemoteHistoryStore';
 import type { HistoryConfig, ResultSummary, TestCase as TestCaseModel } from '@arpanp/zen-core';
 
+export interface ShardConfig {
+  current: number;
+  total: number;
+}
+
 export interface WriteRunHistoryOptions {
   startTime: string;
   testRunName: string;
   /**
-   * Original user-supplied test run name template (e.g. "Unit Tests Run #{N}"
-   *), before `{N}` is replaced with the actual run number. Persisted so
+   * Original user-supplied test run name template (e.g. "Unit Tests Run #{N}"),
+   * before `{N}` is replaced with the actual run number. Persisted so
    * historical run reconstruction can restore the configured template.
    */
   rawTestRunName?: string;
   projectName: string;
-  shard?: FullConfig['shard'];
+  shard?: ShardConfig | null;
   outputDir: string;
   summary: ResultSummary;
   endedAt: string;

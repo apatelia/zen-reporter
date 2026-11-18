@@ -396,7 +396,7 @@ export class RemoteHistoryStore implements HistoryStore {
       gitCommitFull: gitCommitInfo?.full || null,
       playwrightVersion: options.summary.playwrightVersion ?? null,
       osName: options.summary.osName ?? null,
-      testCases: options.testCases.map((tc) => {
+      testCases: options.testCases.map((tc: TestCase) => {
         const suite = (tc.describePath?.length ? tc.describePath.join(' > ') : tc.parent) || '';
         const attempts = tc.attempts ?? 1;
         const failedAttempts = tc.failedAttempts?.length ?? 0;

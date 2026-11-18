@@ -2,7 +2,7 @@ import { spawn } from 'child_process';
 import { createReadStream, existsSync, statSync } from 'fs';
 import { createServer } from 'http';
 import { extname, join, normalize, relative, resolve } from 'path';
-import { SqliteHistoryStore } from '../../dist/reporter.js';
+import { SqliteHistoryStore } from '../../dist/index.js';
 import { checkDatabaseSizeWarning } from './common.js';
 
 const MIME_TYPES = {

@@ -4,7 +4,7 @@ import * as clack from '@clack/prompts';
 import pc from 'picocolors';
 import { exportToCsvString, generateExportFilename } from '@arpanp/zen-core';
 
-export { getOsName, getPlaywrightVersion, getZenReporterVersion } from './system.js';
+export { getOsName, getPlaywrightVersion, getZenReporterVersion } from '../../dist/index.js';
 
 /**
  * Checks SQLite history database file size and outputs proactive maintenance tips if size exceeds thresholds.

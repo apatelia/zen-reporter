@@ -3,10 +3,6 @@
   "version": "1.0.0-dev",
   "type": "module",
   "description": "Beautiful test execution reports for Playwright",
-  "bin": {
-    "zen-reporter": "bin/zen-reporter.js",
-    "zr": "bin/zen-reporter.js"
-  },
   "main": "dist/reporter.cjs",
   "module": "dist/reporter.js",
   "types": "dist/reporter.d.ts",
@@ -19,7 +15,6 @@
     "./package.json": "./package.json"
   },
   "files": [
-    "bin",
     "dist"
   ],
   "author": {
@@ -36,8 +31,8 @@
     "build": "mkdir -p dist && npm run build:template && npm run build:reporter"
   },
   "dependencies": {
+    "@arpanp/zen-cli": "^1.0.0-dev",
     "@arpanp/zen-core": "^1.0.0-dev",
-    "@clack/prompts": "^1.9.0",
     "picocolors": "^1.1.1"
   },
   "peerDependencies": {

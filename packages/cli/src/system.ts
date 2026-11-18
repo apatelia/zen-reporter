@@ -6,9 +6,9 @@ import { resolve } from 'path';
 /**
  * Returns OS friendly name for system diagnostic output and report metadata.
  *
- * @returns {string} Operating system name (e.g. 'macOS 23.6.0', 'Windows 10 Pro', 'Ubuntu 24.04 LTS').
+ * @returns Operating system name (e.g. 'macOS 23.6.0', 'Windows 10 Pro', 'Ubuntu 24.04 LTS').
  */
-export function getOsName() {
+export function getOsName(): string {
   const p = platform();
 
   if (p === 'darwin') return `macOS ${release()}`;
@@ -34,10 +34,10 @@ export function getOsName() {
 /**
  * Detects installed @playwright/test package version in the project.
  *
- * @param {string} [cwd=process.cwd()] - Project directory path.
- * @returns {string|undefined} Installed Playwright version string or undefined if not installed.
+ * @param cwd - Project directory path.
+ * @returns Installed Playwright version string or undefined if not installed.
  */
-export function getPlaywrightVersion(cwd = process.cwd()) {
+export function getPlaywrightVersion(cwd: string = process.cwd()): string | undefined {
   try {
     const req = createRequire(resolve(cwd, 'package.json'));
     const pwPkg = req('@playwright/test/package.json');
@@ -49,15 +49,15 @@ export function getPlaywrightVersion(cwd = process.cwd()) {
 }
 
 /**
- * Detects installed zen-reporter package version.
+ * Detects installed package version of the CLI or reporter.
  *
- * @returns {string} Package version string or 'unknown'.
+ * @returns Package version string or 'unknown'.
  */
-export function getZenReporterVersion() {
+export function getZenReporterVersion(): string {
   const req = createRequire(import.meta.url);
 
   try {
-    const pkg = req('../../package.json');
+    const pkg = req('../package.json');
 
     return pkg.version || 'unknown';
   } catch {

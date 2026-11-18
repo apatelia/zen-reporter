@@ -160,7 +160,7 @@ export async function handleHistory(subArgs, cwd = process.cwd()) {
       );
     }
 
-    const { SqliteHistoryStore } = await import('../../dist/reporter.js');
+    const { SqliteHistoryStore } = await import('../../dist/index.js');
     const store = new SqliteHistoryStore({
       dbPath,
       autoMigrate: false,
@@ -216,7 +216,7 @@ export async function handleHistory(subArgs, cwd = process.cwd()) {
       throw new Error('Invalid value for --run-name: run name cannot be empty.');
     }
 
-    const { SqliteHistoryStore } = await import('../../dist/reporter.js');
+    const { SqliteHistoryStore } = await import('../../dist/index.js');
     const store = new SqliteHistoryStore({
       dbPath,
       autoMigrate: false,
@@ -575,7 +575,7 @@ export async function handleHistory(subArgs, cwd = process.cwd()) {
               const newLatestRunId = remainingRuns[0].run_id;
               const newReportData = await store.getRunReport(newLatestRunId);
               if (newReportData) {
-                const { updateReportHtmlFiles } = await import('../../dist/reporter.js');
+                const { updateReportHtmlFiles } = await import('../../dist/index.js');
                 const updated = updateReportHtmlFiles(reportDirPath, newReportData);
                 if (updated) {
                   console.log(
@@ -769,7 +769,7 @@ export async function handleHistory(subArgs, cwd = process.cwd()) {
             `SQLite history database not found at "${historyDir}/history.db". Vacuum is supported for local SQLite engine only.`
           );
         }
-        const { SqliteHistoryStore } = await import('../../dist/reporter.js');
+        const { SqliteHistoryStore } = await import('../../dist/index.js');
         const store = new SqliteHistoryStore({
           dbPath,
           autoMigrate: false,
@@ -787,7 +787,7 @@ export async function handleHistory(subArgs, cwd = process.cwd()) {
       case 'migrate': {
         const clean = subArgs.includes('--clean');
         const dbPath = resolve(cwd, historyDir, 'history.db');
-        const { migrateJsonlToSqlite } = await import('../../dist/reporter.js');
+        const { migrateJsonlToSqlite } = await import('../../dist/index.js');
         console.log(`Migrating historical JSONL runs to SQLite (${historyDir}/history.db)...`);
         const result = await migrateJsonlToSqlite({
           runsDir: runsDirPath,

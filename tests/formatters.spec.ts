@@ -48,7 +48,7 @@ test.describe('CryptoUtils Performance Optimizations Tests', () => {
 
 test.describe('Range Selection Parser Tests', () => {
   test('parses single numbers, lists, ranges and "all"', async () => {
-    const { parseRangeSelection } = await import('../packages/reporter/bin/commands/history.js');
+    const { parseRangeSelection } = await import('../packages/cli/bin/commands/history.js');
 
     expect(parseRangeSelection('', 10)).toEqual([]);
     expect(parseRangeSelection('all', 5)).toEqual([1, 2, 3, 4, 5]);

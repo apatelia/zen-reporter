@@ -1,9 +1,5 @@
 import { expect, test } from '@playwright/test';
-import {
-  getOsName,
-  getPlaywrightVersion,
-  getZenReporterVersion,
-} from '../packages/reporter/bin/commands/system.js';
+import { getOsName, getPlaywrightVersion, getZenReporterVersion } from '../packages/cli/src/system';
 
 test.describe('System Diagnostics & Shared Utilities Tests', () => {
   test('getOsName returns a non-empty string', () => {

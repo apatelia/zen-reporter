@@ -9,7 +9,14 @@ import type {
 import * as fs from 'fs';
 import * as path from 'path';
 import { createRequire } from 'module';
-import { getOsName, getPlaywrightVersion } from '../../bin/commands/system.js';
+import {
+  getGitBranch,
+  getGitCommit,
+  getOsName,
+  getPlaywrightVersion,
+  resolveHistoryDbPath,
+  writeRunHistory,
+} from '@arpanp/zen-cli';
 import { processAttachments } from './attachmentManager';
 import {
   convertPlaywrightSteps,
@@ -20,10 +27,8 @@ import {
 } from '@arpanp/zen-core';
 import { generateTerminalSummaryTable } from '@arpanp/zen-core';
 import { detectPackageManager } from './dataProcessor';
-import { getGitBranch, getGitCommit } from './gitUtils';
 import { generateHtmlReport } from './htmlReportGenerator';
 import { ProgressPrinter, type ProgressMode, type TestStatus } from './progressPrinter';
-import { resolveHistoryDbPath, writeRunHistory } from './runHistoryWriter';
 import { buildSuitesFromCases } from '@arpanp/zen-core';
 import { countStepCategories } from '@arpanp/zen-core';
 import type {
@@ -1073,14 +1078,13 @@ class ZenReporter implements Reporter {
 }
 
 export { getShowReportCommand, updateReportHtmlFiles } from './htmlReportGenerator';
-export { SqliteHistoryStore } from './history/SqliteHistoryStore';
+export { SqliteHistoryStore, RemoteHistoryStore, migrateJsonlToSqlite } from '@arpanp/zen-cli';
 export type {
   CleanHistoryOptions,
   CleanHistoryResult,
   ConflictingRunDetail,
-} from './history/SqliteHistoryStore';
-export { RemoteHistoryStore } from './history/RemoteHistoryStore';
-export { migrateJsonlToSqlite } from './history/migration';
-export type { MigrationOptions, MigrationResult } from './history/migration';
+  MigrationOptions,
+  MigrationResult,
+} from '@arpanp/zen-cli';
 export type { DisabledHistoryConfig, HistoryConfig, LocalHistoryConfig, RemoteHistoryConfig };
 export default ZenReporter;

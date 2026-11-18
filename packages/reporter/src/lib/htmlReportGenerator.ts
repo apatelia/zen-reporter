@@ -1,5 +1,6 @@
 import { execFileSync, spawn } from 'child_process';
 import * as fs from 'fs';
+import { createRequire } from 'module';
 import * as path from 'path';
 import { fileURLToPath } from 'url';
 import { detectPackageManager } from './dataProcessor';
@@ -17,15 +18,28 @@ export interface HtmlReportOptions {
 }
 
 /**
- * Finds the absolute path to `bin/zen-reporter.js` by checking current and parent directories.
+ * Finds the absolute path to `bin/zen-reporter.js` by checking @arpanp/zen-cli and parent directories.
  *
  * @returns Absolute path to `bin/zen-reporter.js`, or `null` if not found.
  */
 export function findBinPath(): string | null {
   const moduleFile =
     typeof __filename !== 'undefined' ? __filename : fileURLToPath(import.meta.url);
-  let dir = path.dirname(moduleFile);
 
+  // 1. Resolve through @arpanp/zen-cli package resolution
+  try {
+    const req = createRequire(moduleFile);
+    const cliPkgJson = req.resolve('@arpanp/zen-cli/package.json');
+    const binPath = path.join(path.dirname(cliPkgJson), 'bin', 'zen-reporter.js');
+    if (fs.existsSync(binPath)) {
+      return binPath;
+    }
+  } catch {
+    /* fallback to directory walking */
+  }
+
+  // 2. Fallback: check current and parent directories
+  let dir = path.dirname(moduleFile);
   for (let i = 0; i < 4; i++) {
     const candidate = path.join(dir, 'bin', 'zen-reporter.js');
     if (fs.existsSync(candidate)) {

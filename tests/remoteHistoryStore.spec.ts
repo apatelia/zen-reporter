@@ -3,8 +3,8 @@ import * as http from 'node:http';
 import type { AddressInfo } from 'node:net';
 import * as path from 'path';
 import * as fs from 'fs';
-import { RemoteHistoryStore } from '../packages/reporter/src/lib/history/RemoteHistoryStore.js';
-import type { WriteRunHistoryOptions } from '../packages/reporter/src/lib/runHistoryWriter.js';
+import { RemoteHistoryStore } from '../packages/cli/src/history/RemoteHistoryStore.js';
+import type { WriteRunHistoryOptions } from '../packages/cli/src/runHistoryWriter.js';
 
 interface MockRunDto {
   id: string;
