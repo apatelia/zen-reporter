@@ -51,7 +51,7 @@ Zen Reporter performs automatic migrations silently in the background when initi
 
 ### How It Works
 
-1. When `@arpanp/zen-reporter` runs at the end of a Playwright test run (or when launching `npx zr show`), `SqliteHistoryStore` initializes.
+1. When `@arpanp/zen-reporter-playwright` runs at the end of a Playwright test run (or when launching `npx zr show`), `SqliteHistoryStore` initializes.
 2. It checks if a legacy `runs/` directory exists immediately adjacent to `history.db` (e.g., `<outputDir>/runs`).
 3. If `.jsonl` files are found:
    - Existing run IDs in `history_runs` are retrieved to avoid duplicate insertions.
@@ -76,7 +76,7 @@ import { defineConfig } from '@playwright/test';
 export default defineConfig({
   reporter: [
     [
-      '@arpanp/zen-reporter',
+      '@arpanp/zen-reporter-playwright',
       {
         outputDir: 'zen-report',
         historyOptions: {

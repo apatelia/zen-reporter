@@ -1,46 +1,24 @@
-# `@arpanp/zen-reporter` — Playwright Reporter & CLI
+# `@arpanp/zen-reporter-playwright` — Playwright Reporter Adapter
 
-> Package: `packages/reporter` · Runtime dep: `@arpanp/zen-core` · Dev dep: `@arpanp/zen-ui` (build-time template only) · Entry: `dist/reporter.cjs`
+> Package: `packages/reporter-playwright` · Runtime deps: `@arpanp/zen-core`, `@arpanp/zen-cli` · Dev dep: `@arpanp/zen-ui` (build-time template only) · Entry: `dist/reporter.cjs`
 
-The core of Zen Reporter. It plugs into Playwright as a custom reporter,
-processes test execution data, persists run history, generates the
-self-contained HTML report bundle, and ships the `zr` CLI.
+The official Playwright reporter adapter for Zen Reporter. It plugs into Playwright as a custom reporter,
+processes test execution data, persists run history via `@arpanp/zen-cli`, and generates the
+self-contained HTML report bundle.
 
 ---
 
 ## Source Layout
 
 ```text
-packages/reporter/
-├── bin/
-│   ├── zen-reporter.js          # Executable CLI entry ('zr' / 'zen-reporter')
-│   └── commands/
-│       ├── common.js            # Shared CLI helpers, ANSI table formatting & DuckDB loader
-│       ├── menu.js              # Interactive Clack-powered menu & navigation router
-│       ├── show.js              # Local 127.0.0.1 static HTTP report server ('zr show')
-│       ├── history.js           # History report & query engine ('zr history ...')
-│       ├── summary.js           # Markdown summary snippet generator ('zr summary')
-│       ├── env.js               # System environment diagnostics ('zr env')
-│       ├── help.js              # Help & usage documentation renderer
-│       ├── system.js            # OS name & package version resolution
-│       └── system.d.ts
+packages/reporter-playwright/
 ├── src/
 │   └── lib/
 │       ├── reporter.ts          # Playwright reporter lifecycle orchestrator (onBegin, onTestEnd, onEnd)
 │       ├── progressPrinter.ts   # TTY console progress rendering ('line' | 'dot' | 'none')
 │       ├── attachmentManager.ts # Attachment extraction, MIME resolution & disk persistence
 │       ├── dataProcessor.ts     # Raw data conversion, duration calculation & package manager detection
-│       ├── gitUtils.ts          # Git commit/branch resolution (CI env + local `git rev-parse`)
-│       ├── htmlReportGenerator.ts # Loads the UI template, injects JSON datasets, emits report
-│       ├── runHistory.ts        # Run identifier builder & analytics row flattening
-│       ├── runHistoryWriter.ts  # Self-contained per-run JSONL persistence under <outputDir>/runs/
-│       └── history/
-│           ├── HistoryStore.ts      # Storage interface for test run persistence
-│           ├── SqliteHistoryStore.ts # SQLite implementation (tables ➔ migrations ➔ indexes ➔ views)
-│           ├── RemoteHistoryStore.ts # Remote SaaS ingestion client (presigned uploads)
-│           ├── schema.ts            # Relational DDL definitions
-│           ├── migration.ts         # Legacy JSONL ➔ SQLite migration handler
-│           └── index.ts
+│       └── htmlReportGenerator.ts # Loads the UI template, injects JSON datasets, emits report
 ├── vite.reporter.config.ts    # Vite build for the reporter bundle
 └── tsconfig.lib.json
 ```
@@ -92,7 +70,7 @@ PostgreSQL-backed ingestion API. See [server.md](server.md).
 ## Build Pipeline
 
 ```bash
-npm run build -w @arpanp/zen-reporter
+npm run build -w @arpanp/zen-reporter-playwright
 ```
 
 1. **`build:template`** — copies the data-free UI bundle
@@ -102,7 +80,7 @@ npm run build -w @arpanp/zen-reporter
 
 Build order from the monorepo root: `core → reporter (bundle) → ui →
 reporter (template) → server` (`npm run build`). The reporter is bundled
-before the UI because the UI's `vite.config.ts` imports `@arpanp/zen-reporter`,
+before the UI because the UI's `vite.config.ts` imports `@arpanp/zen-reporter-playwright`,
 which resolves through the reporter's `dist/`; the template copy then runs
 after the UI build.
 

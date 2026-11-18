@@ -1,12 +1,12 @@
 # Zen Reporter
 
-[![npm version](https://img.shields.io/npm/v/@arpanp/zen-reporter.svg)](https://www.npmjs.com/package/@arpanp/zen-reporter)
-[![npm downloads](https://img.shields.io/npm/dm/@arpanp/zen-reporter.svg)](https://www.npmjs.com/package/@arpanp/zen-reporter)
+[![npm version](https://img.shields.io/npm/v/@arpanp/zen-reporter-playwright.svg)](https://www.npmjs.com/package/@arpanp/zen-reporter-playwright)
+[![npm downloads](https://img.shields.io/npm/dm/@arpanp/zen-reporter-playwright.svg)](https://www.npmjs.com/package/@arpanp/zen-reporter-playwright)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
 Beautiful test execution reports for Playwright.
 
-[🚀 Live Demo](https://zen-reporter.vercel.app/demo) | [📚 Documentation](https://zen-reporter.vercel.app) | [📦 NPM Package](https://www.npmjs.com/package/@arpanp/zen-reporter)
+[🚀 Live Demo](https://zen-reporter.vercel.app/demo) | [📚 Documentation](https://zen-reporter.vercel.app) | [📦 NPM Package](https://www.npmjs.com/package/@arpanp/zen-reporter-playwright)
 
 [📝 Release Notes](https://github.com/apatelia/zen-reporter/releases) | [🐛 Report an Issue](https://github.com/apatelia/zen-reporter/issues)
 
@@ -66,14 +66,14 @@ Odd-numbered interim versions (e.g., 23.x, 25.x) are unsupported.
 ## Installation
 
 ```bash
-npm install @arpanp/zen-reporter
+npm install -D @arpanp/zen-reporter-playwright @arpanp/zen-cli
 ```
 
 ---
 
 ## Configuring Zen Reporter in Playwright
 
-Add `@arpanp/zen-reporter` to your `playwright.config.ts` (or `playwright.config.js`):
+Add `@arpanp/zen-reporter-playwright` to your `playwright.config.ts` (or `playwright.config.js`):
 
 ### Basic Configuration
 
@@ -81,7 +81,7 @@ Add `@arpanp/zen-reporter` to your `playwright.config.ts` (or `playwright.config
 import { defineConfig } from '@playwright/test';
 
 export default defineConfig({
-  reporter: '@arpanp/zen-reporter',
+  reporter: '@arpanp/zen-reporter-playwright',
 });
 ```
 
@@ -95,7 +95,7 @@ import { defineConfig } from '@playwright/test';
 export default defineConfig({
   reporter: [
     [
-      '@arpanp/zen-reporter',
+      '@arpanp/zen-reporter-playwright',
       {
         outputDir: 'zen-report', // Output directory for reports and SQLite history
         projectName: 'My E2E Project', // Project name displayed in top navigation bar

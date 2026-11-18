@@ -8,7 +8,7 @@ Because Playwright shards execute as separate, isolated processes, each shard on
 
 ## Why Shards Need to be Merged
 
-If you run Playwright shards directly with `@arpanp/zen-reporter`:
+If you run Playwright shards directly with `@arpanp/zen-reporter-playwright`:
 
 - Each shard runs independently and overwrites the previous shard's `zen-report/index.html` and `zen-report/summary.html`.
 - Each shard creates its own separate run entry in the execution history (e.g. `Run #1` with 50 tests and `Run #2` with 50 tests), instead of a single consolidated `Run #1` with 100 tests.

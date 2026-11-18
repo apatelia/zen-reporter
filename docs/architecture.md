@@ -10,51 +10,51 @@ zen-reporter/
 ├── tests/                     # Playwright specs for Zen Reporter itself
 ├── zen-report/                # Generated self-contained report bundle output
 └── packages/
-    ├── core/                  # @arpanp/zen-core      → see [core](packages/core.md)
-    ├── ui/                    # @arpanp/zen-ui        → see [ui](packages/ui.md)
-    ├── reporter/              # @arpanp/zen-reporter  → see [reporter](packages/reporter.md)
-    └── server/                # @arpanp/zen-server    → see [server](packages/server.md)
+    ├── core/                  # @arpanp/zen-core                → see [core](packages/core.md)
+    ├── cli/                   # @arpanp/zen-cli                 → see [cli](packages/cli.md)
+    ├── ui/                    # @arpanp/zen-ui                  → see [ui](packages/ui.md)
+    ├── reporter-playwright/   # @arpanp/zen-reporter-playwright → see [reporter](packages/reporter-playwright.md)
+    └── server/                # @arpanp/zen-server              → see [server](packages/server.md)
 ```
 
 ---
 
 ## Package Dependency Graph
 
-The packages form a **star topology** — every package's runtime dependency is
-only `@arpanp/zen-core`, which has no internal dependencies. The one addition:
-`zen-reporter` declares `zen-ui` as a **devDependency** purely for the
-build-time template copy (it never imports it at runtime):
-
 ```mermaid
 flowchart TD
     CORE["@arpanp/zen-core<br/>types, schemas & shared utilities"]
+    CLI["@arpanp/zen-cli<br/>CLI (zr), history engine & viewer"]
     UI["@arpanp/zen-ui<br/>React dashboard (report viewer)"]
-    REP["@arpanp/zen-reporter<br/>Playwright reporter + CLI"]
+    REP["@arpanp/zen-reporter-playwright<br/>Playwright reporter adapter"]
     SRV["@arpanp/zen-server<br/>Hono SaaS ingestion API"]
 
+    CLI -->|depends on| CORE
     UI -->|depends on| CORE
     REP -->|depends on| CORE
+    REP -->|depends on| CLI
     SRV -->|depends on| CORE
     REP -. devDependency (build-time template) .-> UI
 ```
 
 ### Package Overview
 
-| Package                | Role                                                                                                                           | Depends on                                                          | Built with                  |
-| :--------------------- | :----------------------------------------------------------------------------------------------------------------------------- | :------------------------------------------------------------------ | :-------------------------- |
-| `@arpanp/zen-core`     | Shared domain types, report/history schemas, and pure utility functions (CSV export, formatting, stats, theming, highlighting) | —                                                                   | `tsc` (ESM + CJS dual emit) |
-| `@arpanp/zen-ui`       | Interactive HTML report dashboard; single-file Vite/React bundle with all UI tabs                                              | `zen-core`                                                          | `vite`                      |
-| `@arpanp/zen-reporter` | Playwright reporter lifecycle, history persistence (SQLite / remote SaaS), report bundle generation, and the `zr` CLI          | `zen-core` (runtime); `zen-ui` (devDependency, build-time template) | `vite` + `tsc`              |
-| `@arpanp/zen-server`   | Multi-tenant Hono API for run ingestion, PostgreSQL persistence, and multi-cloud (S3/GCS/Azure) attachment storage             | `zen-core`                                                          | `tsc`                       |
+| Package                           | Role                                                                                                                           | Depends on                                                      | Built with                  |
+| :-------------------------------- | :----------------------------------------------------------------------------------------------------------------------------- | :-------------------------------------------------------------- | :-------------------------- |
+| `@arpanp/zen-core`                | Shared domain types, report/history schemas, and pure utility functions (CSV export, formatting, stats, theming, highlighting) | —                                                               | `tsc` (ESM + CJS dual emit) |
+| `@arpanp/zen-cli`                 | CLI commands (`zr`, `zen-reporter`), history querying & persistence (SQLite/DuckDB), report serving, and system diagnostics    | `zen-core`                                                      | `vite` + `tsc`              |
+| `@arpanp/zen-ui`                  | Interactive HTML report dashboard; single-file Vite/React bundle with all UI tabs                                              | `zen-core`                                                      | `vite`                      |
+| `@arpanp/zen-reporter-playwright` | Playwright reporter lifecycle, report bundle generation, and test execution data processing                                    | `zen-core`, `zen-cli` (runtime); `zen-ui` (build-time template) | `vite` + `tsc`              |
+| `@arpanp/zen-server`              | Multi-tenant Hono API for run ingestion, PostgreSQL persistence, and multi-cloud (S3/GCS/Azure) attachment storage             | `zen-core`                                                      | `tsc`                       |
 
-> **Note:** `zen-reporter` consumes the built UI bundle as a build-time asset:
+> **Note:** `zen-reporter-playwright` consumes the built UI bundle as a build-time asset:
 > `zen-ui` is declared as a devDependency, and `build:template`
 > (`scripts/copy-template.mjs`) copies `index.html` + `favicon-*.svg` from the
 > resolved `zen-ui` package into the reporter's `dist/`. It is never imported
 > at runtime. Conversely, the UI's `vite.config.ts` imports
-> `@arpanp/zen-reporter` (resolved via its `dist/` when Vite bundles the
+> `@arpanp/zen-reporter-playwright` (resolved via its `dist/` when Vite bundles the
 > config file), so the reporter must be bundled before the UI builds.
-> Build order: `core → reporter (bundle) → ui → reporter (template) → server`
+> Build order: `core → cli → reporter:playwright (bundle) → ui → reporter:playwright (template) → server`
 > (root script: `npm run build`).
 
 ---

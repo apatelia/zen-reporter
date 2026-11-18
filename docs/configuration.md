@@ -1,6 +1,6 @@
 # Zen Reporter Configuration Guide
 
-This guide covers all configuration options, type specifications, theme selections, and production recipes for `@arpanp/zen-reporter`.
+This guide covers all configuration options, type specifications, theme selections, and production recipes for `@arpanp/zen-reporter-playwright`.
 
 ---
 
@@ -16,7 +16,7 @@ By default, Zen Reporter operates out of the box with sensible defaults (`output
 import { defineConfig } from '@playwright/test';
 
 export default defineConfig({
-  reporter: '@arpanp/zen-reporter',
+  reporter: '@arpanp/zen-reporter-playwright',
 });
 ```
 
@@ -39,14 +39,14 @@ const zenOptions = {
 };
 
 export default defineConfig({
-  reporter: [['@arpanp/zen-reporter', zenOptions]],
+  reporter: [['@arpanp/zen-reporter-playwright', zenOptions]],
 });
 ```
 
 If you want to type the advanced `history` object, the package exports `HistoryConfig`, `LocalHistoryConfig`, `RemoteHistoryConfig`, and `DisabledHistoryConfig`:
 
 ```ts
-import type { RemoteHistoryConfig } from '@arpanp/zen-reporter';
+import type { RemoteHistoryConfig } from '@arpanp/zen-reporter-playwright';
 
 const remoteHistory: RemoteHistoryConfig = {
   mode: 'remote',
@@ -144,7 +144,7 @@ Zen Reporter provides three nature-inspired color themes crafted for data clarit
 export default defineConfig({
   reporter: [
     [
-      '@arpanp/zen-reporter',
+      '@arpanp/zen-reporter-playwright',
       {
         theme: 'Oasis',
         darkMode: true, // Force dark mode on first visit
@@ -173,7 +173,7 @@ Zen Reporter provides sleek console progress tickers during test execution:
 export default defineConfig({
   reporter: [
     [
-      '@arpanp/zen-reporter',
+      '@arpanp/zen-reporter-playwright',
       {
         consoleProgress: process.env.CI ? 'dot' : 'line',
       },
@@ -194,7 +194,7 @@ By default, Zen Reporter records cross-run execution metrics and media reference
 export default defineConfig({
   reporter: [
     [
-      '@arpanp/zen-reporter',
+      '@arpanp/zen-reporter-playwright',
       {
         enableHistory: 'auto', // Records to <outputDir>/history.db
       },
@@ -219,7 +219,7 @@ For distributed teams or enterprise multi-shard architectures, Zen Reporter can 
 export default defineConfig({
   reporter: [
     [
-      '@arpanp/zen-reporter',
+      '@arpanp/zen-reporter-playwright',
       {
         history: {
           mode: 'remote',
@@ -248,7 +248,7 @@ When `singleSummaryFile: true` is enabled, Zen Reporter generates an independent
 export default defineConfig({
   reporter: [
     [
-      '@arpanp/zen-reporter',
+      '@arpanp/zen-reporter-playwright',
       {
         singleSummaryFile: true,
       },
@@ -267,7 +267,7 @@ Zen Reporter allows test platforms, DevOps leads, and CI pipelines to broadcast 
 export default defineConfig({
   reporter: [
     [
-      '@arpanp/zen-reporter',
+      '@arpanp/zen-reporter-playwright',
       {
         systemNotices: [
           // 1. CI / Runner Infrastructure Context
@@ -313,7 +313,7 @@ No change to `playwright.config.ts` is required — keep only the options you wa
 
 ```ts
 export default defineConfig({
-  reporter: [['@arpanp/zen-reporter', { theme: 'Oasis' }]],
+  reporter: [['@arpanp/zen-reporter-playwright', { theme: 'Oasis' }]],
 });
 ```
 
@@ -357,7 +357,7 @@ import { defineConfig } from '@playwright/test';
 import zenOptions from './zen.config';
 
 export default defineConfig({
-  reporter: [['@arpanp/zen-reporter', zenOptions]],
+  reporter: [['@arpanp/zen-reporter-playwright', zenOptions]],
 });
 ```
 
@@ -377,7 +377,7 @@ import { defineConfig } from '@playwright/test';
 export default defineConfig({
   reporter: [
     [
-      '@arpanp/zen-reporter',
+      '@arpanp/zen-reporter-playwright',
       {
         outputDir: 'zen-report',
         projectName: 'Web App E2E',
@@ -401,7 +401,7 @@ import { defineConfig } from '@playwright/test';
 export default defineConfig({
   reporter: [
     [
-      '@arpanp/zen-reporter',
+      '@arpanp/zen-reporter-playwright',
       {
         projectName: 'Local Dev Suite',
         consoleProgress: 'line',
@@ -423,7 +423,7 @@ import { defineConfig } from '@playwright/test';
 export default defineConfig({
   reporter: [
     [
-      '@arpanp/zen-reporter',
+      '@arpanp/zen-reporter-playwright',
       {
         minimalReport: true, // Disables history and hides Trends/Insights tabs
         consoleProgress: 'line',
